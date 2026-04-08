@@ -639,11 +639,12 @@ def upload_to_blob(pdf_buffer, filename):
 # UPDATE NOTION PAGE WITH PDF LINK
 # ═══════════════════════════════════════════════════════════════
 
-def update_notion_pdf_link(page_id, pdf_url):
-    """Write the PDF URL back to the Notion quotation page."""
+def update_notion_page(page_id, pdf_url, total_amount):
+    """Write the PDF URL and computed Amount back to the Notion quotation page."""
     notion_patch(f"/pages/{page_id}", {
         "properties": {
-            "PDF": {"url": pdf_url}
+            "PDF": {"url": pdf_url},
+            "Amount": {"number": total_amount},
         }
     })
 
@@ -687,9 +688,15 @@ class handler(BaseHTTPRequestHandler):
             pdf_url = upload_to_blob(pdf_buffer, filename)
             print(f"PDF uploaded: {pdf_url}", file=sys.stderr)
 
-            # Write PDF URL back to Notion page
-            update_notion_pdf_link(page_id, pdf_url)
-            print(f"Notion page updated with PDF link", file=sys.stderr)
+            # Compute total from line items
+            items = data.get("line_items", [])
+            total_amount = sum(
+                item.get("qty", 1) * item.get("unit_price", 0) for item in items
+            )
+
+            # Write PDF URL + Amount back to Notion page
+            update_notion_page(page_id, pdf_url, total_amount)
+            print(f"Notion page updated — PDF link + Amount: {total_amount}", file=sys.stderr)
 
             # Respond
             self.send_response(200)
