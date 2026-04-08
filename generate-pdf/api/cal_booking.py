@@ -12,6 +12,7 @@ CLIENTS_DB   = "036622227fd244ad9a77633d5ae0a64b"  # Clients (People)
 COMPANIES_DB = "33c8b289e31a80fe82d2ccd18bcaec68"  # Companies
 LEADS_DB     = "8690d55c4d0449068c51ef49d92a26a2"  # Leads CRM
 MEETINGS_DB  = "e283b9d542a34865bf518c3a0e43f1fe"  # Meetings
+PIC_HIST_DB  = "3c870b0a06b647b3bc85c042d56cfb6f"  # PIC History
 
 # Valid Source options per database
 CLIENTS_SOURCES  = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal"}
@@ -47,6 +48,20 @@ ROLE_MAP = {
     "other":                    None,                 # skip — no matching option
 }
 
+# Map Notion Role → Department (auto-populated on client creation)
+DEPT_MAP = {
+    "CEO":              "Board of Directors",
+    "COO":              "Operations",
+    "CTO":              "Technology",
+    "CFO":              "Finance",
+    "CMO":              "Sales & Marketing",
+    "Marketing Manager":"Sales & Marketing",
+    "Biz Dev Manager":  "Sales & Marketing",
+    "Executive Staff":  "Board of Directors",
+    "Ops Manager":      "Operations",
+    # Project Manager — no clear dept match, left blank
+}
+
 
 # ─────────────────────────────────────────────
 #  Helpers
@@ -73,10 +88,10 @@ def search_db(db_id, filter_payload, hdrs):
     return results[0] if results else None
 
 
-def create_page(db_id, properties, hdrs, icon_url=None):
+def create_page(db_id, properties, hdrs, icon_emoji=None):
     body = {"parent": {"database_id": db_id}, "properties": properties}
-    if icon_url:
-        body["icon"] = {"type": "external", "external": {"url": icon_url}}
+    if icon_emoji:
+        body["icon"] = {"type": "emoji", "emoji": icon_emoji}
     r = requests.post("https://api.notion.com/v1/pages", headers=hdrs, json=body, timeout=10)
     if not r.ok:
         raise ValueError(f"Notion create_page {r.status_code}: {r.text[:600]}")
@@ -140,13 +155,18 @@ def process_booking(payload):
     name         = rv(responses, "name",   "fullName")   or attendee.get("name", "")
     email        = rv(responses, "email")                 or attendee.get("email", "")
     company_name = rv(responses, "company", "companyName", "Company Name")
-    phone        = rv(responses, "phone",  "phoneNumber")
+    phone        = rv(responses, "phone", "phoneNumber", "phone_number", "mobile", "contact_number", "contactNumber")
     industry_raw = rv(responses, "industry", default=[])
     role_raw     = rv(responses, "role")
     team_size    = rv(responses, "team_size", "teamSize")
     challenge    = rv(responses, "notes", "challenge", "operationalChallenge")
     referral_raw = rv(responses, "source", "referral", "whereDidYouFindMe", default=[])
     notion_exp   = rv(responses, "notion_familiarity", "notionExperience", "notion")
+
+    # Cal.com guests field — additional attendees who added their emails
+    guests_raw   = rv(responses, "guests", default=[])
+    guest_emails = guests_raw if isinstance(guests_raw, list) else ([guests_raw] if guests_raw else [])
+    guest_emails = [g.strip() for g in guest_emails if g and g.strip() != email]
 
     # Booking metadata
     start_time   = payload.get("startTime", "")  # ISO-8601
@@ -161,6 +181,15 @@ def process_booking(payload):
         meeting_url = payload["location"]
     elif payload.get("meetingUrl"):
         meeting_url = payload["meetingUrl"]
+
+    # Location text — "Online Meeting (Cal Video)" if video call, else physical address
+    location_text = ""
+    if meeting_url:
+        location_text = "Online Meeting (Cal Video)"
+    elif isinstance(payload.get("location"), str):
+        loc = payload["location"]
+        if not loc.startswith("integrations:") and not loc.startswith("http"):
+            location_text = loc
 
     # Normalise industry to single string (MultiSelect → first value)
     industry = ""
@@ -181,10 +210,17 @@ def process_booking(payload):
                 notion_role = val
                 break
 
+    # Resolve department from role
+    notion_dept = DEPT_MAP.get(notion_role) if notion_role else None
+
     # Normalise referral to list
     referral_list = referral_raw if isinstance(referral_raw, list) else ([referral_raw] if referral_raw else [])
 
-    print(f"[INFO] Booking: name={name!r} email={email!r} company={company_name!r}", file=sys.stderr)
+    # Debug: log all response keys + values to help trace missing fields
+    print(f"[DEBUG] Response keys: {list(responses.keys())}", file=sys.stderr)
+    for k, v in responses.items():
+        print(f"[DEBUG]   {k!r} = {v!r}", file=sys.stderr)
+    print(f"[INFO] Booking: name={name!r} email={email!r} company={company_name!r} phone={phone!r}", file=sys.stderr)
 
     # ── 1. Find or create Company ──────────────
     company_id         = None
@@ -204,14 +240,14 @@ def process_booking(payload):
             print(f"[INFO] Existing company: {company_id}, has_people={company_has_people}", file=sys.stderr)
         else:
             co_props = {
-                "Name":   {"title": [{"text": {"content": company_name}}]},
-                "Status": {"select": {"name": "Prospect"}},
+                "Company": {"title": [{"text": {"content": company_name}}]},
+                "Status":  {"select": {"name": "Prospect"}},
             }
             if industry:
                 co_props["Industry"] = {"select": {"name": industry}}
             if team_size:
                 co_props["Team Size"] = {"select": {"name": team_size}}
-            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_url="https://www.notion.so/icons/building_blue.svg")
+            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_emoji="🏢")
             company_id = new_co["id"].replace("-", "")
             company_is_new = True
             print(f"[INFO] Created company: {company_id}", file=sys.stderr)
@@ -219,6 +255,7 @@ def process_booking(payload):
     # ── 2. Find or create Client (Person) ──────
     client_id     = None
     is_new_client = False
+    existing_cl   = None
 
     if email:
         existing_cl = search_db(
@@ -251,6 +288,8 @@ def process_booking(payload):
                 cl_props["Phone"] = {"phone_number": phone}
             if notion_role:
                 cl_props["Role"] = {"select": {"name": notion_role}}
+            if notion_dept:
+                cl_props["Department"] = {"select": {"name": notion_dept}}
             if company_id:
                 cl_props["Company"] = {"relation": [{"id": company_id}]}
 
@@ -258,7 +297,7 @@ def process_booking(payload):
             if src:
                 cl_props["Source"] = {"multi_select": src}
 
-            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_url="https://www.notion.so/icons/person_blue.svg")
+            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_emoji="👤")
             client_id = new_cl["id"].replace("-", "")
             is_new_client = True
             print(f"[INFO] Created client: {client_id}", file=sys.stderr)
@@ -299,15 +338,17 @@ def process_booking(payload):
         update_page(client_id, {"Deals": {"relation": [{"id": lead_id}]}}, hdrs)
 
     # ── 5. Create Meeting ──────────────────────
-    mtg_name  = f"Discovery Call – {name}" if name else "Discovery Call"
+    mtg_title = f"Discovery Call – {name}" if name else "Discovery Call"
     mtg_props = {
-        "Name": {"title": [{"text": {"content": mtg_name}}]},
-        "Type": {"select": {"name": "Discovery"}},
+        "Meeting Title": {"title": [{"text": {"content": mtg_title}}]},
+        "Type":          {"select": {"name": "Discovery"}},
     }
     if start_time:
         mtg_props["Date"] = {"date": {"start": start_time, "end": end_time or None}}
     if meeting_url:
         mtg_props["Meeting URL"] = {"url": meeting_url}
+    if location_text:
+        mtg_props["Location"] = {"rich_text": [{"text": {"content": location_text}}]}
     if company_id:
         mtg_props["Company"] = {"relation": [{"id": company_id}]}
 
@@ -315,11 +356,92 @@ def process_booking(payload):
     mtg_id  = new_mtg["id"]
     print(f"[INFO] Created meeting: {mtg_id}", file=sys.stderr)
 
-    # ── 6. Link meeting back to Lead & Client ──
-    # Participants and Attendee are synced relations — must be set from primary side
+    # ── 6. PIC History entry (new PIC only) ───
+    if is_new_client and is_pic and client_id:
+        booking_date = start_time[:10] if start_time else ""
+        hist_props = {
+            "PIC Name":   {"title": [{"text": {"content": name}}]},
+            "Event Type": {"select": {"name": "PIC Assigned"}},
+        }
+        if booking_date:
+            hist_props["Start Date"] = {"date": {"start": booking_date}}
+        if notion_role:
+            hist_props["Role"] = {"select": {"name": notion_role}}
+
+        try:
+            new_hist = create_page(PIC_HIST_DB, hist_props, hdrs)
+            hist_id  = new_hist["id"]          # keep hyphens for API calls
+            print(f"[INFO] Created PIC history: {hist_id}", file=sys.stderr)
+
+            # Link Person: try PIC History.Person directly first;
+            # if synced (read-only), fall back to Clients.History
+            try:
+                update_page(hist_id, {"Person": {"relation": [{"id": client_id}]}}, hdrs)
+            except Exception:
+                existing_hist = existing_cl.get("properties", {}).get("History", {}).get("relation", []) if existing_cl else []
+                update_page(client_id, {"History": {"relation": existing_hist + [{"id": hist_id}]}}, hdrs)
+
+            # Link Related Deal: try via Leads.PIC Changes (primary side)
+            try:
+                update_page(lead_id, {"PIC Changes": {"relation": [{"id": hist_id}]}}, hdrs)
+            except Exception as e:
+                print(f"[WARN] Could not link PIC history to lead: {e}", file=sys.stderr)
+
+        except Exception as e:
+            print(f"[WARN] PIC history creation failed: {e}", file=sys.stderr)
+
+    # ── 7. Link meeting back to Lead & Client ──
+    # Participants is synced from Leads.Meetings (primary side = Leads)
+    # Attendee is synced from Clients.Meetings (primary side = Clients)
+    # Must update from the primary side to populate the synced view on Meetings
+
+    # Main booker's lead → Participants
     update_page(lead_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
+
+    # Main booker's client → Attendee
     if client_id:
-        update_page(client_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
+        existing_cl_mtgs = []
+        if existing_cl:
+            existing_cl_mtgs = existing_cl.get("properties", {}).get("Meetings", {}).get("relation", [])
+        update_page(client_id, {
+            "Meetings": {"relation": existing_cl_mtgs + [{"id": mtg_id}]}
+        }, hdrs)
+
+    # ── 8. Link guest attendees (Cal.com "guests" field) ──
+    for guest_email in guest_emails:
+        guest_cl = search_db(
+            CLIENTS_DB,
+            {"property": "Email", "email": {"equals": guest_email}},
+            hdrs,
+        )
+        if not guest_cl:
+            print(f"[INFO] Guest {guest_email!r} not found in Clients — skipping", file=sys.stderr)
+            continue
+
+        guest_cl_id = guest_cl["id"].replace("-", "")
+        print(f"[INFO] Linking guest {guest_email!r} (client {guest_cl_id}) to meeting", file=sys.stderr)
+
+        # Link to Attendee (via Clients.Meetings — primary side)
+        existing_guest_mtgs = guest_cl.get("properties", {}).get("Meetings", {}).get("relation", [])
+        update_page(guest_cl_id, {
+            "Meetings": {"relation": existing_guest_mtgs + [{"id": mtg_id}]}
+        }, hdrs)
+
+        # Link to Participants (via Leads.Meetings — primary side)
+        # Find this guest's leads from their Deals relation
+        guest_deals = guest_cl.get("properties", {}).get("Deals", {}).get("relation", [])
+        for deal in guest_deals:
+            deal_id = deal["id"].replace("-", "")
+            # Fetch existing meetings on this lead to append
+            deal_page = requests.get(
+                f"https://api.notion.com/v1/pages/{deal_id}",
+                headers=hdrs, timeout=10,
+            ).json()
+            existing_deal_mtgs = deal_page.get("properties", {}).get("Meetings", {}).get("relation", [])
+            update_page(deal_id, {
+                "Meetings": {"relation": existing_deal_mtgs + [{"id": mtg_id}]}
+            }, hdrs)
+            print(f"[INFO] Linked guest lead {deal_id} to meeting", file=sys.stderr)
 
     return {
         "status":         "success",
