@@ -26,6 +26,27 @@ VALID_INDUSTRIES = {
     "Printing & Packaging", "Other",
 }
 
+# Map Cal.com role labels → Notion Role select options
+ROLE_MAP = {
+    "chief executive officer": "CEO",
+    "ceo":                     "CEO",
+    "chief technical officer":  "CTO",
+    "cto":                     "CTO",
+    "chief financial officer":  "CFO",
+    "cfo":                     "CFO",
+    "chief operations officer": "COO",
+    "coo":                     "COO",
+    "chief marketing officer":  "CMO",
+    "cmo":                     "CMO",
+    "operations manager":       "Ops Manager",
+    "ops manager":              "Ops Manager",
+    "marketing manager":        "Marketing Manager",
+    "project manager":          "Biz Dev Manager",   # closest match in Notion
+    "executive staff":          "Ops Manager",        # closest match in Notion
+    "biz dev manager":          "Biz Dev Manager",
+    "other":                    None,                 # skip — no matching option
+}
+
 
 # ─────────────────────────────────────────────
 #  Helpers
@@ -117,10 +138,11 @@ def process_booking(payload):
     company_name = rv(responses, "company", "companyName", "Company Name")
     phone        = rv(responses, "phone",  "phoneNumber")
     industry_raw = rv(responses, "industry", default=[])
-    team_size    = rv(responses, "teamSize", "team_size")
-    challenge    = rv(responses, "challenge", "operationalChallenge")
+    role_raw     = rv(responses, "role")
+    team_size    = rv(responses, "team_size", "teamSize")
+    challenge    = rv(responses, "notes", "challenge", "operationalChallenge")
     referral_raw = rv(responses, "referral", "source", "whereDidYouFindMe", default=[])
-    notion_exp   = rv(responses, "notionExperience", "notion", "notionBefore")
+    notion_exp   = rv(responses, "notion_familiarity", "notionExperience", "notion")
 
     # Booking metadata
     start_time   = payload.get("startTime", "")  # ISO-8601
@@ -144,6 +166,16 @@ def process_booking(payload):
         industry = industry_raw
     if industry and industry not in VALID_INDUSTRIES:
         industry = "Other"
+
+    # Resolve role label → Notion select option
+    notion_role = None
+    if role_raw:
+        role_key = role_raw.lower().strip()
+        # strip parenthetical abbreviation e.g. "Chief Executive Officer (CEO)" → match on full name
+        for key, val in ROLE_MAP.items():
+            if key in role_key:
+                notion_role = val
+                break
 
     # Normalise referral to list
     referral_list = referral_raw if isinstance(referral_raw, list) else ([referral_raw] if referral_raw else [])
@@ -211,6 +243,8 @@ def process_booking(payload):
             }
             if phone:
                 cl_props["Phone"] = {"phone_number": phone}
+            if notion_role:
+                cl_props["Role"] = {"select": {"name": notion_role}}
             if company_id:
                 cl_props["Company"] = {"relation": [{"id": company_id}]}
 
