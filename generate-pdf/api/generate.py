@@ -698,7 +698,7 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(content_length) if content_length else b"{}"
             body = json.loads(raw)
-            print(f"Webhook payload: {json.dumps(body)[:500]}", file=sys.stderr)
+            print(f"[DEBUG] Payload keys: {list(body.keys())}", file=sys.stderr)
 
             # Try body first (Notion webhook)
             try:
