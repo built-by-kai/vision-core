@@ -1,6 +1,6 @@
 """
-builtbykai Quotation PDF Generator — Vercel Serverless Function
-================================================================
+Vision Core — Quotation PDF Generator (Vercel Serverless Function)
+===================================================================
 Webhook endpoint that:
 1. Receives POST from Notion button automation
 2. Pulls quotation data from Notion API (page props, company, PIC, line items)
@@ -39,27 +39,27 @@ NOTION_HEADERS = {
     "Content-Type": "application/json",
 }
 
-# ── Dark Navy + Gold Palette ──
-CLR_NAVY = HexColor("#1c1f2e")
-CLR_DARK = HexColor("#252836")
-CLR_TEXT = HexColor("#3a3a3a")
-CLR_MUTED = HexColor("#8a8a8a")
-CLR_LIGHT = HexColor("#e8e8e8")
-CLR_ZEBRA = HexColor("#f5f5f7")
-CLR_GOLD = HexColor("#c9a84c")
+# ── Black & White Palette ──
+CLR_BLACK = HexColor("#111111")
+CLR_DARK = HexColor("#222222")
+CLR_TEXT = HexColor("#333333")
+CLR_MUTED = HexColor("#999999")
+CLR_LIGHT = HexColor("#e0e0e0")
+CLR_BORDER = HexColor("#cccccc")
+CLR_BG = HexColor("#f7f7f7")
 CLR_WHITE = HexColor("#ffffff")
 
 # ── Your Company Defaults (edit these) ──
 COMPANY_INFO = {
-    "name": "builtbykai",
+    "name": "Vision Core",
     "tagline": "Digital Systems & Creative Studio",
     "address": "Kuala Lumpur, Malaysia",
-    "email": "hello@builtbykai.com",
+    "email": "hello@visioncore.co",
     "phone": "+60 12-345 6789",
     "bank_name": "Maybank",
-    "account_name": "builtbykai",
+    "account_name": "Vision Core",
     "account_number": "1234-5678-9012",
-    "prepared_by": "Nadia — builtbykai",
+    "prepared_by": "Nadia — Vision Core",
 }
 
 TERMS = [
@@ -317,34 +317,24 @@ def fetch_quotation_data(page_id):
 # ═══════════════════════════════════════════════════════════════
 
 def _draw_page_bg(canvas_obj, doc):
-    """Draw dark footer band and gold accent corners on each page."""
+    """Draw minimal black & white page accents."""
     w, h = A4
-    # Dark footer band
-    canvas_obj.setFillColor(CLR_NAVY)
-    canvas_obj.rect(0, 0, w, 28 * mm, fill=1, stroke=0)
-    # Gold accent strip at top
-    canvas_obj.setFillColor(CLR_GOLD)
-    canvas_obj.rect(0, h - 2.5 * mm, w, 2.5 * mm, fill=1, stroke=0)
-    # Small gold triangle top-right
-    canvas_obj.setFillColor(CLR_GOLD)
-    p = canvas_obj.beginPath()
-    p.moveTo(w - 25 * mm, h)
-    p.lineTo(w, h)
-    p.lineTo(w, h - 25 * mm)
-    p.close()
-    canvas_obj.drawPath(p, fill=1, stroke=0)
-    # Dark triangle overlay (makes a corner fold effect)
-    canvas_obj.setFillColor(CLR_DARK)
-    p2 = canvas_obj.beginPath()
-    p2.moveTo(w - 18 * mm, h - 2.5 * mm)
-    p2.lineTo(w, h - 2.5 * mm)
-    p2.lineTo(w, h - 20 * mm)
-    p2.close()
-    canvas_obj.drawPath(p2, fill=1, stroke=0)
+    # Thin black line at top
+    canvas_obj.setStrokeColor(CLR_BLACK)
+    canvas_obj.setLineWidth(1.5)
+    canvas_obj.line(18 * mm, h - 10 * mm, w - 18 * mm, h - 10 * mm)
+    # Thin black line at bottom
+    canvas_obj.setLineWidth(0.5)
+    canvas_obj.line(18 * mm, 18 * mm, w - 18 * mm, 18 * mm)
+    # Footer text
+    canvas_obj.setFillColor(CLR_MUTED)
+    canvas_obj.setFont("Helvetica", 6.5)
+    canvas_obj.drawString(18 * mm, 12 * mm, "Vision Core  |  Digital Systems & Creative Studio")
+    canvas_obj.drawRightString(w - 18 * mm, 12 * mm, f"Page {doc.page}")
 
 
 def generate_pdf(data):
-    """Generate a dark navy + gold quotation PDF, returns BytesIO buffer."""
+    """Generate a clean black & white quotation PDF, returns BytesIO buffer."""
     buffer = BytesIO()
 
     from reportlab.platypus import KeepTogether
@@ -352,41 +342,39 @@ def generate_pdf(data):
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
         leftMargin=18 * mm, rightMargin=18 * mm,
-        topMargin=12 * mm, bottomMargin=34 * mm,  # space for dark footer band
+        topMargin=14 * mm, bottomMargin=24 * mm,
     )
     styles = getSampleStyleSheet()
     W = 174 * mm  # usable width
 
     # ── Styles ──
-    styles.add(ParagraphStyle(name="CompanyName", fontName="Helvetica-Bold", fontSize=14, textColor=CLR_NAVY, spaceAfter=1 * mm, leading=16))
-    styles.add(ParagraphStyle(name="Tagline", fontName="Helvetica", fontSize=7.5, textColor=CLR_MUTED, leading=9))
-    styles.add(ParagraphStyle(name="DocTitle", fontName="Helvetica-Bold", fontSize=26, textColor=CLR_NAVY, spaceBefore=4 * mm, spaceAfter=5 * mm, leading=28))
+    styles.add(ParagraphStyle(name="CompanyName", fontName="Helvetica-Bold", fontSize=16, textColor=CLR_BLACK, spaceAfter=1 * mm, leading=18, letterSpacing=2))
+    styles.add(ParagraphStyle(name="Tagline", fontName="Helvetica", fontSize=7, textColor=CLR_MUTED, leading=9, spaceBefore=0.5 * mm))
+    styles.add(ParagraphStyle(name="DocTitle", fontName="Helvetica-Bold", fontSize=24, textColor=CLR_BLACK, spaceBefore=6 * mm, spaceAfter=6 * mm, leading=26))
     styles.add(ParagraphStyle(name="SectionLabel", fontName="Helvetica-Bold", fontSize=7, textColor=CLR_MUTED, spaceBefore=0, spaceAfter=2 * mm, leading=9))
-    styles.add(ParagraphStyle(name="MetaLabel", fontName="Helvetica", fontSize=7, textColor=CLR_MUTED, leading=10))
-    styles.add(ParagraphStyle(name="MetaValue", fontName="Helvetica-Bold", fontSize=8.5, textColor=CLR_NAVY, leading=12))
+    styles.add(ParagraphStyle(name="MetaLabel", fontName="Helvetica", fontSize=6.5, textColor=CLR_MUTED, leading=9))
+    styles.add(ParagraphStyle(name="MetaValue", fontName="Helvetica-Bold", fontSize=8.5, textColor=CLR_BLACK, leading=12))
     styles["BodyText"].fontName = "Helvetica"
     styles["BodyText"].fontSize = 8
     styles["BodyText"].textColor = CLR_TEXT
     styles["BodyText"].leading = 12
-    styles.add(ParagraphStyle(name="BodyBold", fontName="Helvetica-Bold", fontSize=8, textColor=CLR_NAVY, leading=12))
+    styles.add(ParagraphStyle(name="BodyBold", fontName="Helvetica-Bold", fontSize=8, textColor=CLR_BLACK, leading=12))
     styles.add(ParagraphStyle(name="Small", fontName="Helvetica", fontSize=7, textColor=CLR_MUTED, leading=10))
-    styles.add(ParagraphStyle(name="FooterWhite", fontName="Helvetica", fontSize=7, textColor=CLR_WHITE, leading=10))
-    styles.add(ParagraphStyle(name="FooterGold", fontName="Helvetica-Bold", fontSize=6.5, textColor=CLR_GOLD, leading=9))
 
     story = []
 
     # ═══════════════════════════════════════════
     # HEADER — Company name + tagline
     # ═══════════════════════════════════════════
-    story.append(Spacer(1, 2 * mm))
-    story.append(Paragraph(data.get("company_name", "builtbykai").upper(), styles["CompanyName"]))
-    story.append(Paragraph(data.get("company_tagline", "").upper(), styles["Tagline"]))
+    story.append(Spacer(1, 1 * mm))
+    story.append(Paragraph(data.get("company_name", "Vision Core").upper(), styles["CompanyName"]))
+    story.append(Paragraph(data.get("company_tagline", ""), styles["Tagline"]))
 
-    # Big QUOTATION title
+    # QUOTATION title
     story.append(Paragraph("QUOTATION", styles["DocTitle"]))
 
     # ═══════════════════════════════════════════
-    # QUOTE META — number + date row
+    # QUOTE META — clean row with separator dots
     # ═══════════════════════════════════════════
     def meta_pair(label, value, w):
         t = Table([
@@ -396,19 +384,17 @@ def generate_pdf(data):
         t.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
         return t
 
-    # Gold arrow separator between quote no and date
-    arrow_style = ParagraphStyle(name="Arrow", fontName="Helvetica-Bold", fontSize=12, textColor=CLR_GOLD, alignment=TA_CENTER)
-
     meta_row = Table([[
-        meta_pair("Quotation No.", data.get("quotation_no", ""), 40 * mm),
-        Paragraph("►", arrow_style),
-        meta_pair("Date", data.get("issue_date", ""), 35 * mm),
-        meta_pair("Valid Until", data.get("valid_until", ""), 30 * mm),
-        meta_pair("Type", data.get("quote_type", ""), 25 * mm),
-        meta_pair("Terms", data.get("payment_terms", ""), 25 * mm),
-    ]], colWidths=[40 * mm, 8 * mm, 35 * mm, 30 * mm, 25 * mm, 25 * mm])
-    meta_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
+        meta_pair("Quotation No.", data.get("quotation_no", ""), 38 * mm),
+        meta_pair("Date", data.get("issue_date", ""), 32 * mm),
+        meta_pair("Valid Until", data.get("valid_until", ""), 32 * mm),
+        meta_pair("Type", data.get("quote_type", ""), 30 * mm),
+        meta_pair("Terms", data.get("payment_terms", ""), 30 * mm),
+    ]], colWidths=[38 * mm, 32 * mm, 32 * mm, 30 * mm, 30 * mm])
+    meta_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 4)]))
     story.append(meta_row)
+    story.append(Spacer(1, 5 * mm))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=CLR_LIGHT))
     story.append(Spacer(1, 5 * mm))
 
     # ═══════════════════════════════════════════
@@ -439,15 +425,15 @@ def generate_pdf(data):
     story.append(Spacer(1, 6 * mm))
 
     # ═══════════════════════════════════════════
-    # LINE ITEMS — dark navy header bar
+    # LINE ITEMS — clean black header
     # ═══════════════════════════════════════════
-    hdr_s = lambda n, a=TA_LEFT: ParagraphStyle(name=n, fontName="Helvetica-Bold", fontSize=7.5, textColor=CLR_WHITE, alignment=a)
+    hdr_s = lambda n, a=TA_LEFT: ParagraphStyle(name=n, fontName="Helvetica-Bold", fontSize=7, textColor=CLR_WHITE, alignment=a, leading=9)
     cell_s = lambda n, a=TA_LEFT, b=False: ParagraphStyle(name=n, fontName="Helvetica-Bold" if b else "Helvetica", fontSize=8, textColor=CLR_TEXT, alignment=a, leading=12)
 
     header = [
-        Paragraph("ITEM DESCRIPTION", hdr_s("H1")),
+        Paragraph("DESCRIPTION", hdr_s("H1")),
         Paragraph("QTY", hdr_s("H2", TA_CENTER)),
-        Paragraph("PRICE (RM)", hdr_s("H3", TA_RIGHT)),
+        Paragraph("AMOUNT (RM)", hdr_s("H3", TA_RIGHT)),
     ]
     table_data = [header]
     items = data.get("line_items", [])
@@ -463,26 +449,29 @@ def generate_pdf(data):
             Paragraph(f"{sub:,.2f}", cell_s(f"C{i}3", TA_RIGHT, True)),
         ])
 
-    col_widths = [110 * mm, 20 * mm, 34 * mm]
+    col_widths = [112 * mm, 18 * mm, 34 * mm]
     lt = Table(table_data, colWidths=col_widths, repeatRows=1)
     style_cmds = [
-        # Dark navy header
-        ("BACKGROUND", (0, 0), (-1, 0), CLR_NAVY),
+        # Black header bar
+        ("BACKGROUND", (0, 0), (-1, 0), CLR_BLACK),
         ("TEXTCOLOR", (0, 0), (-1, 0), CLR_WHITE),
         ("TOPPADDING", (0, 0), (-1, 0), 5),
         ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
-        ("LEFTPADDING", (0, 0), (-1, 0), 6),
-        ("RIGHTPADDING", (0, 0), (-1, 0), 6),
+        ("LEFTPADDING", (0, 0), (-1, 0), 8),
+        ("RIGHTPADDING", (0, 0), (-1, 0), 8),
         # Data rows
-        ("TOPPADDING", (0, 1), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
-        ("LEFTPADDING", (0, 1), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 1), (-1, -1), 6),
+        ("TOPPADDING", (0, 1), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 7),
+        ("LEFTPADDING", (0, 1), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 1), (-1, -1), 8),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]
     # Light separator lines between rows
     for i in range(1, len(table_data)):
         style_cmds.append(("LINEBELOW", (0, i), (-1, i), 0.5, CLR_LIGHT))
+    # Alternating row backgrounds
+    for i in range(2, len(table_data), 2):
+        style_cmds.append(("BACKGROUND", (0, i), (-1, i), CLR_BG))
     lt.setStyle(TableStyle(style_cmds))
     story.append(lt)
     story.append(Spacer(1, 4 * mm))
@@ -497,8 +486,9 @@ def generate_pdf(data):
     payment_terms = data.get("payment_terms", "Full Upfront")
 
     def tot_row(label, value, highlight=False, bold=False):
-        lbl_s = ParagraphStyle(name=f"TL_{label[:5]}", fontName="Helvetica-Bold" if (bold or highlight) else "Helvetica", fontSize=8.5 if highlight else 8, textColor=CLR_NAVY if highlight else CLR_TEXT, alignment=TA_RIGHT)
-        val_s = ParagraphStyle(name=f"TV_{label[:5]}", fontName="Helvetica-Bold", fontSize=9 if highlight else 8, textColor=CLR_NAVY if highlight else CLR_TEXT, alignment=TA_RIGHT)
+        tc = CLR_WHITE if highlight else (CLR_BLACK if bold else CLR_TEXT)
+        lbl_s = ParagraphStyle(name=f"TL_{label[:5]}", fontName="Helvetica-Bold" if (bold or highlight) else "Helvetica", fontSize=8.5 if highlight else 8, textColor=tc, alignment=TA_RIGHT)
+        val_s = ParagraphStyle(name=f"TV_{label[:5]}", fontName="Helvetica-Bold", fontSize=9.5 if highlight else 8, textColor=tc, alignment=TA_RIGHT)
         return [Paragraph(label, lbl_s), Paragraph(f"RM {value:,.2f}", val_s)]
 
     totals_rows = [tot_row("SUBTOTAL", subtotal)]
@@ -508,20 +498,22 @@ def generate_pdf(data):
     if "50-50" in payment_terms:
         totals_rows.append(tot_row("DEPOSIT (50%)", total * 0.5, bold=True))
 
-    totals_tbl = Table(totals_rows, colWidths=[30 * mm, 35 * mm])
+    totals_tbl = Table(totals_rows, colWidths=[30 * mm, 38 * mm])
     tot_style = [
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),
         ("RIGHTPADDING", (0, 0), (-1, -1), 4),
     ]
-    # Gold background on TOTAL row
+    # Black background on TOTAL row
     total_idx = 2 if tax_rate else 1
-    tot_style.append(("BACKGROUND", (0, total_idx), (-1, total_idx), CLR_GOLD))
+    tot_style.append(("BACKGROUND", (0, total_idx), (-1, total_idx), CLR_BLACK))
     tot_style.append(("TEXTCOLOR", (0, total_idx), (-1, total_idx), CLR_WHITE))
+    # Top border on totals
+    tot_style.append(("LINEABOVE", (0, 0), (-1, 0), 0.5, CLR_LIGHT))
     totals_tbl.setStyle(TableStyle(tot_style))
 
-    wrapper = Table([["", totals_tbl]], colWidths=[W - 65 * mm, 65 * mm])
+    wrapper = Table([["", totals_tbl]], colWidths=[W - 68 * mm, 68 * mm])
     wrapper.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
     story.append(wrapper)
     story.append(Spacer(1, 8 * mm))
@@ -532,7 +524,7 @@ def generate_pdf(data):
     bank = data.get("bank_details", {})
     bank_rows = []
     if bank:
-        bank_rows.append([Paragraph("► PAYMENT METHOD", ParagraphStyle(name="PMH", fontName="Helvetica-Bold", fontSize=8, textColor=CLR_NAVY, leading=11))])
+        bank_rows.append([Paragraph("PAYMENT METHOD", ParagraphStyle(name="PMH", fontName="Helvetica-Bold", fontSize=7.5, textColor=CLR_BLACK, leading=11))])
         bank_lines = []
         if bank.get("bank_name"):
             bank_lines.append(f"By Bank")
@@ -548,7 +540,7 @@ def generate_pdf(data):
     if bank_rows:
         bank_cell.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
 
-    terms_rows = [[Paragraph("TERMS AND CONDITIONS", ParagraphStyle(name="TCH", fontName="Helvetica-Bold", fontSize=8, textColor=CLR_NAVY, leading=11))]]
+    terms_rows = [[Paragraph("TERMS & CONDITIONS", ParagraphStyle(name="TCH", fontName="Helvetica-Bold", fontSize=7.5, textColor=CLR_BLACK, leading=11))]]
     for i, term in enumerate(data.get("terms", TERMS), 1):
         terms_rows.append([Paragraph(f"{i}. {term}", styles["Small"])])
 
@@ -684,7 +676,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({
-            "service": "builtbykai Quotation PDF Generator",
+            "service": "Vision Core Quotation PDF Generator",
             "status": "ready",
             "usage": "POST /api/generate with { data: { page_id: '...' } }",
         }).encode())
