@@ -283,8 +283,6 @@ def process_booking(payload):
     }
     if company_id:
         lead_props["Company"] = {"relation": [{"id": company_id}]}
-    if client_id:
-        lead_props["Contacted Lead"] = {"relation": [{"id": client_id}]}
     if notes_text:
         lead_props["Notes"] = {"rich_text": [{"text": {"content": notes_text}}]}
 
@@ -295,6 +293,10 @@ def process_booking(payload):
     new_lead = create_page(LEADS_DB, lead_props, hdrs)
     lead_id  = new_lead["id"].replace("-", "")
     print(f"[INFO] Created lead: {lead_id}", file=sys.stderr)
+
+    # Link lead → client via the Clients "Deals" property (synced relation)
+    if client_id:
+        update_page(client_id, {"Deals": {"relation": [{"id": lead_id}]}}, hdrs)
 
     # ── 5. Create Meeting ──────────────────────
     mtg_name  = f"Discovery Call – {name}" if name else "Discovery Call"
