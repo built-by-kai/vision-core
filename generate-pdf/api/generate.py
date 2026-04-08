@@ -316,7 +316,7 @@ def fetch_quotation_data(page_id):
                     try:
                         prod_page = notion_get(f"/pages/{product_ids[0]}")
                         pp = prod_page.get("properties", {})
-                        product_name = get_prop_value(pp, "Name", "title")
+                        product_name = get_prop_value(pp, "Product Name", "title")
                     except Exception:
                         pass
 
