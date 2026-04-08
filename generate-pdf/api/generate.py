@@ -15,17 +15,8 @@ from reportlab.platypus import (
     Paragraph, Spacer, HRFlowable
 )
 
-# ─────────────────────────────────────────────
-#  Customise these to match your company
-# ─────────────────────────────────────────────
-COMPANY_INFO = {
-    "name":    "Vision Core",
-    "address": "Kuala Lumpur, Malaysia",
-    "phone":   "+60 12-345 6789",
-    "email":   "hello@visioncore.com",
-    "website": "visioncore.com",
-    "reg_no":  "SA0012345-X",
-}
+# Vision Core Details database ID (Notion)
+VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
 
 TERMS = [
     "This quotation is valid for 30 days from the issue date.",
@@ -48,6 +39,49 @@ MID_TEXT   = colors.HexColor("#666666")
 # ─────────────────────────────────────────────
 def _plain(rich_text_array):
     return "".join(t.get("plain_text", "") for t in (rich_text_array or []))
+
+
+# ─────────────────────────────────────────────
+#  Fetch Vision Core company details from Notion
+# ─────────────────────────────────────────────
+def fetch_company_details(headers):
+    try:
+        resp = requests.post(
+            f"https://api.notion.com/v1/databases/{VISION_CORE_DETAILS_DB}/query",
+            headers=headers, json={}, timeout=10
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        if not results:
+            return {}
+        props = results[0].get("properties", {})
+
+        def _text(key):
+            p = props.get(key, {})
+            if p.get("type") == "rich_text":
+                return _plain(p.get("rich_text", []))
+            if p.get("type") == "title":
+                return _plain(p.get("title", []))
+            if p.get("type") == "email":
+                return p.get("email") or ""
+            if p.get("type") == "phone_number":
+                return p.get("phone_number") or ""
+            if p.get("type") == "select":
+                return (p.get("select") or {}).get("name", "")
+            return ""
+
+        return {
+            "name":                _text("Name"),
+            "email":               _text("Email"),
+            "phone":               _text("Phone"),
+            "bank_name":           _text("Bank Name"),
+            "bank_account_holder": _text("Bank Account Holder Name"),
+            "bank_number":         _text("Bank Number"),
+            "payment_method":      _text("Payment Method"),
+        }
+    except Exception as e:
+        print(f"[WARN] Could not fetch company details: {e}", file=sys.stderr)
+        return {}
 
 
 # ─────────────────────────────────────────────
@@ -180,49 +214,51 @@ def fetch_quotation_data(page_id):
                         rp = row.get("properties", {})
                         item = {}
 
-                        # ── Product name ──────────────────────────
-                        # 1. Try Product Description rollup (array of rich_text/title)
+                        # ── Product Name (title from Product relation) ────
+                        product_name = ""
+                        prod_rel = rp.get("Product", {}).get("relation", [])
+                        if prod_rel:
+                            try:
+                                pr = requests.get(
+                                    f"https://api.notion.com/v1/pages/{prod_rel[0]['id']}",
+                                    headers=headers, timeout=10
+                                )
+                                pr.raise_for_status()
+                                pp = pr.json().get("properties", {})
+                                name_prop = pp.get("Product Name", {})
+                                if name_prop.get("type") == "title":
+                                    product_name = _plain(name_prop.get("title", []))
+                            except Exception as e:
+                                print(f"[WARN] Could not fetch product: {e}", file=sys.stderr)
+
+                        # ── Product Description (rollup of Description field) ──
+                        product_desc = ""
                         pd_prop = rp.get("Product Description", {})
                         if pd_prop.get("type") == "rollup":
                             rollup = pd_prop.get("rollup", {})
                             if rollup.get("type") == "array":
                                 for arr in rollup.get("array", []):
-                                    text = ""
-                                    if arr.get("type") == "title":
-                                        text = _plain(arr.get("title", []))
-                                    elif arr.get("type") == "rich_text":
-                                        text = _plain(arr.get("rich_text", []))
-                                    if text:
-                                        item["description"] = text
+                                    if arr.get("type") == "rich_text":
+                                        product_desc = _plain(arr.get("rich_text", []))
+                                    elif arr.get("type") == "title":
+                                        product_desc = _plain(arr.get("title", []))
+                                    if product_desc:
                                         break
 
-                        # 2. Fallback: follow the Product relation to get its name
-                        if not item.get("description"):
-                            prod_rel = rp.get("Product", {}).get("relation", [])
-                            if prod_rel:
-                                try:
-                                    pr = requests.get(
-                                        f"https://api.notion.com/v1/pages/{prod_rel[0]['id']}",
-                                        headers=headers, timeout=10
-                                    )
-                                    pr.raise_for_status()
-                                    pp = pr.json().get("properties", {})
-                                    for key in ["Name", "Product Name", "name", "Title"]:
-                                        if key in pp and pp[key].get("type") == "title":
-                                            item["description"] = _plain(pp[key].get("title", []))
-                                            if item["description"]:
-                                                break
-                                except Exception as e:
-                                    print(f"[WARN] Could not fetch product: {e}", file=sys.stderr)
-
-                        # 3. Fallback: Notes title field
-                        if not item.get("description"):
-                            item["description"] = _plain(rp.get("Notes", {}).get("title", []))
-
-                        # Append Notes as extra detail if product name already found
+                        # ── Notes (extra line item note) ──────────────────────
                         notes = _plain(rp.get("Notes", {}).get("title", []))
-                        if notes and item.get("description") and notes != item["description"]:
-                            item["description"] += f"\n{notes}"
+
+                        # Build description cell: bold name + description below
+                        if product_name:
+                            cell = f"<b>{product_name}</b>"
+                            if product_desc:
+                                cell += f"<br/><font size='8' color='#666666'>{product_desc}</font>"
+                            if notes:
+                                cell += f"<br/><font size='8' color='#888888'><i>{notes}</i></font>"
+                        else:
+                            cell = product_desc or notes or ""
+
+                        item["description"] = cell
 
                         # ── Qty & Unit Price ──────────────────────
                         item["qty"]        = rp.get("Qty", {}).get("number") or 1
@@ -243,18 +279,21 @@ def fetch_quotation_data(page_id):
     if not line_items and amount:
         line_items = [{"description": "Professional Services", "qty": 1, "unit_price": float(amount)}]
 
+    # Fetch our own company details
+    company_details = fetch_company_details(headers)
+
     return {
         "quotation_no":    quotation_no or "QUOTE",
         "issue_date":      issue_date,
         "payment_terms":   payment_terms,
         "quote_type":      quote_type,
-        "status":          status,
         "amount":          amount,
         "company_name":    company_name,
         "company_address": company_address,
         "pic_name":        pic_name,
         "pic_email":       pic_email,
         "line_items":      line_items,
+        "our_company":     company_details,
     }
 
 
@@ -266,6 +305,16 @@ def generate_pdf(data):
     W, H = A4
     margin = 18 * mm
     usable = W - 2 * margin
+
+    # Company info from Notion (with sensible fallbacks)
+    co = data.get("our_company", {})
+    co_name   = co.get("name")   or "Vision Core"
+    co_email  = co.get("email")  or ""
+    co_phone  = co.get("phone")  or ""
+    co_bank   = co.get("bank_name")           or ""
+    co_holder = co.get("bank_account_holder") or ""
+    co_acc    = co.get("bank_number")         or ""
+    co_pay    = co.get("payment_method")      or ""
 
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
@@ -293,10 +342,13 @@ def generate_pdf(data):
     story = []
 
     # Header banner
+    hdr_left_body = co_phone
+    if co_email:
+        hdr_left_body += f"<br/>{co_email}" if hdr_left_body else co_email
     hdr = Table([
-        [Paragraph(COMPANY_INFO["name"], s_gold_b),
+        [Paragraph(co_name, s_gold_b),
          Paragraph("QUOTATION", s("qt", textColor=WHITE, fontName="Helvetica-Bold", fontSize=22, alignment=2))],
-        [Paragraph(f"{COMPANY_INFO['address']}<br/>{COMPANY_INFO['phone']}<br/>{COMPANY_INFO['email']}", s_white),
+        [Paragraph(hdr_left_body, s_white),
          Paragraph(f"<font color='#C9A84C'><b>{data['quotation_no']}</b></font>",
                    s("qn", textColor=WHITE, fontSize=11, alignment=2))],
     ], colWidths=[usable * 0.6, usable * 0.4])
@@ -330,7 +382,6 @@ def generate_pdf(data):
         [Paragraph("Issue Date:",    s_label), Paragraph(issue_display or "—", s_body)],
         [Paragraph("Quote Type:",    s_label), Paragraph(data.get("quote_type")    or "—", s_body)],
         [Paragraph("Payment Terms:", s_label), Paragraph(data.get("payment_terms") or "—", s_body)],
-        [Paragraph("Status:",        s_label), Paragraph(data.get("status")        or "Draft", s_body)],
     ], colWidths=[usable * 0.17, usable * 0.28],
        style=TableStyle([("PADDING", (0, 0), (-1, -1), 2), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
 
@@ -384,10 +435,10 @@ def generate_pdf(data):
         rows.append([
             "", "",
             Paragraph("<b>DEPOSIT DUE (50%)</b>",
-                      s("dl2", textColor=GOLD, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
+                      s("dl2", textColor=WHITE, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
             "",
             Paragraph(f"<b>MYR {deposit:,.2f}</b>",
-                      s("dv", textColor=GOLD, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
+                      s("dv", textColor=WHITE, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
         ])
 
     ts = TableStyle([
@@ -411,6 +462,27 @@ def generate_pdf(data):
     story.append(items_tbl)
     story.append(Spacer(1, 8 * mm))
 
+    # Payment / Bank Details
+    if co_bank or co_acc:
+        story.append(Paragraph("Payment Details", s("pay_ttl", textColor=NAVY, fontName="Helvetica-Bold", fontSize=10)))
+        story.append(Spacer(1, 2 * mm))
+        pay_rows = []
+        if co_pay:
+            pay_rows.append([Paragraph("Payment Method:", s_label), Paragraph(co_pay, s_body)])
+        if co_bank:
+            pay_rows.append([Paragraph("Bank:", s_label), Paragraph(co_bank, s_body)])
+        if co_holder:
+            pay_rows.append([Paragraph("Account Name:", s_label), Paragraph(co_holder, s_body)])
+        if co_acc:
+            pay_rows.append([Paragraph("Account No.:", s_label), Paragraph(co_acc, s_body)])
+        pay_tbl = Table(pay_rows, colWidths=[usable * 0.2, usable * 0.8])
+        pay_tbl.setStyle(TableStyle([
+            ("PADDING", (0, 0), (-1, -1), 3),
+            ("VALIGN",  (0, 0), (-1, -1), "TOP"),
+        ]))
+        story.append(pay_tbl)
+        story.append(Spacer(1, 6 * mm))
+
     # Terms
     story.append(Paragraph("Terms &amp; Conditions", s_terms_t))
     story.append(Spacer(1, 2 * mm))
@@ -422,7 +494,7 @@ def generate_pdf(data):
     # Signature block
     sig = Table([
         [Paragraph("Authorised Signature", s_label), Paragraph("Client Acceptance", s_label)],
-        [Paragraph(f"<br/><br/><br/>{'─'*28}<br/><b>{COMPANY_INFO['name']}</b>", s_body),
+        [Paragraph(f"<br/><br/><br/>{'─'*28}<br/><b>{co_name}</b>", s_body),
          Paragraph(f"<br/><br/><br/>{'─'*28}<br/>{data.get('company_name', '')}", s_body)],
     ], colWidths=[usable * 0.5, usable * 0.5])
     sig.setStyle(TableStyle([("PADDING", (0, 0), (-1, -1), 6), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -432,11 +504,12 @@ def generate_pdf(data):
     # Footer
     story.append(HRFlowable(width=usable, color=GOLD, thickness=1))
     story.append(Spacer(1, 2 * mm))
-    story.append(Paragraph(
-        f"{COMPANY_INFO['name']}  ·  {COMPANY_INFO['email']}  ·  "
-        f"{COMPANY_INFO['website']}  ·  Reg: {COMPANY_INFO['reg_no']}",
-        s_footer
-    ))
+    footer_parts = [co_name]
+    if co_email:
+        footer_parts.append(co_email)
+    if co_phone:
+        footer_parts.append(co_phone)
+    story.append(Paragraph("  ·  ".join(footer_parts), s_footer))
 
     doc.build(story)
     buffer.seek(0)
