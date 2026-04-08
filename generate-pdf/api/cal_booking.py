@@ -77,11 +77,9 @@ def create_page(db_id, properties, hdrs, icon_url=None):
     body = {"parent": {"database_id": db_id}, "properties": properties}
     if icon_url:
         body["icon"] = {"type": "external", "external": {"url": icon_url}}
-    r = requests.post(
-        "https://api.notion.com/v1/pages",
-        headers=hdrs, json=body, timeout=10,
-    )
-    r.raise_for_status()
+    r = requests.post("https://api.notion.com/v1/pages", headers=hdrs, json=body, timeout=10)
+    if not r.ok:
+        raise ValueError(f"Notion create_page {r.status_code}: {r.text[:600]}")
     return r.json()
 
 
@@ -90,7 +88,8 @@ def update_page(page_id, properties, hdrs):
         f"https://api.notion.com/v1/pages/{page_id}",
         headers=hdrs, json={"properties": properties}, timeout=10,
     )
-    r.raise_for_status()
+    if not r.ok:
+        raise ValueError(f"Notion update_page {r.status_code}: {r.text[:400]}")
     return r.json()
 
 
