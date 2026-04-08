@@ -110,7 +110,7 @@ def fetch_company_details(hdrs):
             "bank_name":           _v("Bank Name"),
             "bank_account_holder": _v("Bank Account Holder Name"),
             "bank_number":         _v("Bank Number"),
-            "payment_method":      _v("Payment Method"),
+            "payment_method":      _v("Payment Method") or "Bank Transfer",
         }
     except Exception as e:
         print(f"[WARN] company details: {e}", file=sys.stderr)
@@ -191,11 +191,12 @@ def fetch_invoice_data(page_id, hdrs):
     invoice_type  = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
     total_amount  = props.get("Total Amount", {}).get("number") or 0
-    deposit_paid  = props.get("Deposit Paid", {}).get("number") or 0
+    deposit_paid     = props.get("Deposit Amount", {}).get("number") or 0
+    payment_balance  = props.get("Payment Balance", {}).get("number") or 0
 
-    # Due date: use Payment Deposit Date for Deposit invoices, else Balance Date
-    dep_date = (props.get("Payment Deposit Date", {}).get("date") or {}).get("start", "")
-    bal_date = (props.get("Payment Balance Date", {}).get("date") or {}).get("start", "")
+    # Due date: use Deposit Due for Deposit invoices, else Balance Due
+    dep_date = (props.get("Deposit Due", {}).get("date") or {}).get("start", "")
+    bal_date = (props.get("Balance Due", {}).get("date") or {}).get("start", "")
     due_date = dep_date if invoice_type == "Deposit" else (bal_date or dep_date)
 
     # ── Company (billing client) ──
@@ -327,22 +328,53 @@ def fetch_invoice_data(page_id, hdrs):
     )
 
     return {
-        "invoice_no":      invoice_no or "INV",
-        "issue_date":      issue_date,
-        "due_date":        due_date,
-        "invoice_type":    invoice_type,
-        "status":          status,
-        "total_amount":    total_amount,
-        "deposit_paid":    deposit_paid,
-        "company_name":    company_name,
-        "company_address": company_address,
-        "company_id":      company_id,
-        "pic_name":        pic_name,
-        "pic_email":       pic_email,
-        "line_items":      line_items,
-        "pkg_slug":        pkg_slug,
-        "our_company":     fetch_company_details(hdrs),
+        "invoice_no":       invoice_no or "INV",
+        "issue_date":       issue_date,
+        "due_date":         due_date,
+        "invoice_type":     invoice_type,
+        "status":           status,
+        "total_amount":     total_amount,
+        "deposit_paid":     deposit_paid,
+        "payment_balance":  payment_balance,
+        "company_name":     company_name,
+        "company_address":  company_address,
+        "company_id":       company_id,
+        "pic_name":         pic_name,
+        "pic_email":        pic_email,
+        "line_items":       line_items,
+        "pkg_slug":         pkg_slug,
+        "our_company":      fetch_company_details(hdrs),
     }
+
+
+# ─────────────────────────────────────────────
+#  1b. Activate Invoice: Draft → Deposit Pending + set Issue Date + Payment Balance
+# ─────────────────────────────────────────────
+def activate_invoice(page_id, total_amount, deposit_paid, hdrs):
+    """
+    Called when Generate Invoice PDF button is clicked.
+    - Status: Draft → Deposit Pending
+    - Issue Date: today
+    - Payment Balance: total - deposit (if deposit invoice)
+    """
+    today = __import__("datetime").datetime.now().date().isoformat()
+
+    pay_balance = round(total_amount - deposit_paid, 2) if deposit_paid > 0 else total_amount
+
+    payload = {
+        "properties": {
+            "Status":           {"select": {"name": "Deposit Pending"}},
+            "Issue Date":       {"date":   {"start": today}},
+            "Payment Balance":  {"number": pay_balance},
+        }
+    }
+    r = requests.patch(
+        f"https://api.notion.com/v1/pages/{page_id}",
+        headers=hdrs, json=payload, timeout=10
+    )
+    if not r.ok:
+        print(f"[WARN] activate_invoice PATCH {r.status_code}: {r.text[:200]}", file=sys.stderr)
+    return today
 
 
 # ─────────────────────────────────────────────
@@ -735,6 +767,16 @@ class handler(BaseHTTPRequestHandler):
                 "Content-Type":   "application/json",
             }
 
+            # Fetch once to get amounts for activation
+            _pre = fetch_invoice_data(page_id, hdrs)
+            activate_invoice(
+                page_id,
+                total_amount  = float(_pre.get("total_amount", 0) or 0),
+                deposit_paid  = float(_pre.get("deposit_paid", 0) or 0),
+                hdrs          = hdrs,
+            )
+
+            # Re-fetch after activation so issue_date etc. are current
             data        = fetch_invoice_data(page_id, hdrs)
             pdf_buffer, amount_due = generate_pdf(data)
 

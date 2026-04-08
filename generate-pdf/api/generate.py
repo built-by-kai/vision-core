@@ -124,7 +124,7 @@ def next_quotation_number(year, hdrs):
         return None
 
 
-def assign_quotation_number(page_id, issue_date, current_no, hdrs):
+def assign_quotation_number(page_id, issue_date, current_no, title_prop_name, hdrs):
     """If page title isn't already formatted, assign the next QUO-YYYY-XXXX."""
     if QUO_PATTERN.match(current_no or ""):
         return current_no   # already formatted — nothing to do
@@ -141,15 +141,18 @@ def assign_quotation_number(page_id, issue_date, current_no, hdrs):
         return current_no
 
     try:
-        requests.patch(
+        resp = requests.patch(
             f"https://api.notion.com/v1/pages/{page_id}",
             headers=hdrs,
             json={"properties": {
-                "Quotation No.": {"title": [{"text": {"content": new_no}}]}
+                title_prop_name: {"title": [{"text": {"content": new_no}}]}
             }},
             timeout=10
-        ).raise_for_status()
-        print(f"[INFO] Quotation numbered: {new_no}", file=sys.stderr)
+        )
+        if not resp.ok:
+            print(f"[WARN] PATCH failed {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
+        resp.raise_for_status()
+        print(f"[INFO] Quotation numbered: {new_no} (property: '{title_prop_name}')", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] Could not update quotation title: {e}", file=sys.stderr)
     return new_no
@@ -175,14 +178,21 @@ def fetch_quotation_data(page_id):
     resp.raise_for_status()
     props = resp.json().get("properties", {})
 
-    quotation_no  = _plain(props.get("Quotation No.", {}).get("title", []))
+    # Find title property name dynamically (robust if DB uses different name)
+    title_prop_name = "Quotation No."
+    for _k, _v in props.items():
+        if _v.get("type") == "title":
+            title_prop_name = _k
+            break
+
+    quotation_no  = _plain(props.get(title_prop_name, {}).get("title", []))
     issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
     payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
     quote_type    = (props.get("Quote Type", {}).get("select") or {}).get("name", "")
     amount        = props.get("Amount", {}).get("number") or 0
 
     # Auto-assign formatted quotation number if not already set
-    quotation_no = assign_quotation_number(page_id, issue_date, quotation_no, hdrs)
+    quotation_no = assign_quotation_number(page_id, issue_date, quotation_no, title_prop_name, hdrs)
 
     # Company
     company_name = company_address = ""
@@ -202,7 +212,7 @@ def fetch_quotation_data(page_id):
             print(f"[WARN] company: {e}", file=sys.stderr)
 
     # PIC
-    pic_name = pic_email = ""
+    pic_name = pic_email = pic_phone = ""
     for rel in props.get("PIC", {}).get("relation", [])[:1]:
         try:
             pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
@@ -215,6 +225,12 @@ def fetch_quotation_data(page_id):
             for k in ["Email", "email"]:
                 if pp.get(k, {}).get("type") == "email":
                     pic_email = pp[k].get("email") or ""; break
+            for k in ["Phone", "phone", "Phone Number", "Mobile", "WhatsApp"]:
+                prop = pp.get(k, {})
+                if prop.get("type") == "phone_number":
+                    pic_phone = prop.get("phone_number") or ""; break
+                if prop.get("type") == "rich_text":
+                    pic_phone = _plain(prop.get("rich_text", [])); break
         except Exception as e:
             print(f"[WARN] PIC: {e}", file=sys.stderr)
 
@@ -306,6 +322,7 @@ def fetch_quotation_data(page_id):
         "company_address": company_address,
         "pic_name":        pic_name,
         "pic_email":       pic_email,
+        "pic_phone":       pic_phone,
         "line_items":      line_items,
         "our_company":     fetch_company_details(hdrs),
     }

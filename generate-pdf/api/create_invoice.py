@@ -17,6 +17,7 @@ Projects DB  : 5719b2672d3442a29a22637a35398260
 """
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler
@@ -26,6 +27,26 @@ import requests
 QUOTATION_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 INVOICE_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
 PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
+
+QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
+INV_SUFFIX  = {
+    "Deposit":       "-D",
+    "Supplementary": "-S",
+    "Final Payment": "-F",
+    "Retainer":      "-R",
+    "Full Payment":  "",
+}
+
+def format_invoice_number(quotation_no, invoice_type):
+    """Derive INV number from the linked quotation's QUO number."""
+    suffix = INV_SUFFIX.get(invoice_type, "-D")
+    m = QUO_PATTERN.match(quotation_no or "")
+    if m:
+        return f"INV-{m.group(1)}-{m.group(2)}{suffix}"
+    # Fallback: timestamp-based
+    from datetime import datetime as _dt
+    ts = _dt.now().strftime("%H%M")
+    return f"INV-{_dt.now().year}-{ts}{suffix}"
 
 
 def _plain(arr):
@@ -136,6 +157,9 @@ def fetch_quotation(page_id, hdrs):
                     company_name = _plain(v.get("title", []))
                     break
 
+    # PIC / Client relation IDs (to populate Client field on Invoice)
+    pic_ids = [rel["id"] for rel in props.get("PIC", {}).get("relation", [])]
+
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
 
@@ -151,50 +175,67 @@ def fetch_quotation(page_id, hdrs):
         "quote_type":        quote_type,
         "company_ids":       company_ids,
         "company_name":      company_name,
+        "pic_ids":           pic_ids,
         "existing_invoices": existing_invoices,
         "line_items":        line_items,
     }
 
 
 def create_invoice(quotation_id, quotation_data, hdrs):
-    """Create the Invoice page in Notion and link it back to the Quotation."""
+    """Create the Invoice page in Notion linked to the Quotation. Status = Draft."""
     today  = datetime.now().date().isoformat()
     terms  = quotation_data.get("payment_terms", "")
     amount = quotation_data.get("amount", 0)
+    quo_no = quotation_data.get("quotation_no", "")
 
-    # Determine invoice type and due date
+    # Determine invoice type
     if terms == "Full Upfront":
         inv_type   = "Full Payment"
         dep_amount = None
         due_date   = (datetime.now() + timedelta(days=7)).date().isoformat()
-        inv_status = "Deposit Pending"
     else:
         # 50% Deposit (default)
         inv_type   = "Deposit"
         dep_amount = round(amount * 0.5, 2) if amount else None
         due_date   = (datetime.now() + timedelta(days=7)).date().isoformat()
-        inv_status = "Deposit Pending"
+
+    # Format invoice number immediately
+    inv_no = format_invoice_number(quo_no, inv_type)
+
+    # Payment balance = Total - Deposit Amount
+    if dep_amount is not None:
+        pay_balance = round(amount - dep_amount, 2)
+    else:
+        pay_balance = None
 
     # Build properties
     props = {
-        "Invoice No.":  {"title": [{"text": {"content": ""}}]},  # auto-numbered on Generate PDF
-        "Invoice Type": {"select": {"name": inv_type}},
-        "Status":       {"select": {"name": inv_status}},
-        "Issue Date":   {"date": {"start": today}},
-        "Total Amount": {"number": amount},
-        "Quotation":    {"relation": [{"id": quotation_id}]},
+        "Invoice No.":      {"title": [{"text": {"content": inv_no}}]},
+        "Invoice Type":     {"select": {"name": inv_type}},
+        "Status":           {"select": {"name": "Draft"}},
+        "Issue Date":       {"date": {"start": today}},
+        "Total Amount":     {"number": amount},
+        "Quotation":        {"relation": [{"id": quotation_id}]},
+        "Payment Method":   {"select": {"name": "Bank Transfer"}},
     }
 
-    if quotation_data["company_ids"]:
+    if quotation_data.get("company_ids"):
         props["Company"] = {"relation": [{"id": quotation_data["company_ids"][0]}]}
 
+    # Client / PIC relation
+    if quotation_data.get("pic_ids"):
+        props["Client"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
+
     if dep_amount is not None:
-        props["Deposit Paid"] = {"number": dep_amount}
+        props["Deposit Amount"] = {"number": dep_amount}
+
+    if pay_balance is not None:
+        props["Payment Balance"] = {"number": pay_balance}
 
     if inv_type == "Deposit":
-        props["Payment Deposit Date"] = {"date": {"start": due_date}}
+        props["Deposit Due"] = {"date": {"start": due_date}}
     else:
-        props["Payment Balance Date"] = {"date": {"start": due_date}}
+        props["Balance Due"] = {"date": {"start": due_date}}
 
     body = {
         "parent":     {"database_id": INVOICE_DB},
@@ -204,6 +245,8 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs, json=body, timeout=15)
+    if not r.ok:
+        print(f"[WARN] Create invoice PATCH {r.status_code}: {r.text[:300]}", file=sys.stderr)
     r.raise_for_status()
     return r.json()
 
@@ -384,6 +427,7 @@ class handler(BaseHTTPRequestHandler):
                 "status":       "success",
                 "quotation_no": quotation["quotation_no"],
                 "invoice_id":   inv_id,
+                "invoice_no":   new_inv.get("properties", {}).get("Invoice No.", {}).get("title", [{}])[0].get("plain_text", ""),
                 "invoice_type": "Full Payment" if quotation["payment_terms"] == "Full Upfront" else "Deposit",
                 "project_id":   project_id,
                 "line_items":   len(quotation["line_items"]),
