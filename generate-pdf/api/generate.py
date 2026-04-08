@@ -49,18 +49,59 @@ CLR_BORDER = HexColor("#cccccc")
 CLR_BG = HexColor("#f7f7f7")
 CLR_WHITE = HexColor("#ffffff")
 
-# ── Your Company Defaults (edit these) ──
-COMPANY_INFO = {
+# ── Vision Core Details DB (fetched dynamically) ──
+COMPANY_DETAILS_DB_ID = os.environ.get(
+    "COMPANY_DETAILS_DB_ID", "33c8b289e31a80b1aa85fc1921cc0adc"
+)
+
+# Fallback defaults (used if Notion fetch fails)
+COMPANY_INFO_DEFAULTS = {
     "name": "Vision Core",
-    "tagline": "Digital Systems & Creative Studio",
-    "address": "Kuala Lumpur, Malaysia",
-    "email": "hello@visioncore.co",
-    "phone": "+60 12-345 6789",
-    "bank_name": "Maybank",
-    "account_name": "Vision Core",
-    "account_number": "1234-5678-9012",
+    "tagline": "Systems Builder & Notion Consultant",
+    "email": "kaikhairula@gmail.com",
+    "phone": "+60 11-5408 3044",
+    "bank_name": "AMBANK ISLAMIC BERHAD",
+    "account_name": "AQILAH BINTI KHAIRUL AZHAR",
+    "account_number": "8881-06934-4034",
+    "payment_method": "Bank Transfer",
     "prepared_by": "Nadia — Vision Core",
 }
+
+
+def fetch_company_info():
+    """Fetch company details from Vision Core Details DB in Notion."""
+    try:
+        resp = notion_post(f"/databases/{COMPANY_DETAILS_DB_ID}/query", {
+            "page_size": 1
+        })
+        results = resp.get("results", [])
+        if not results:
+            return dict(COMPANY_INFO_DEFAULTS)
+
+        props = results[0].get("properties", {})
+        name = get_prop_value(props, "Name", "title") or COMPANY_INFO_DEFAULTS["name"]
+        industry = get_prop_value(props, "Industry", "select")
+        email = get_prop_value(props, "Email", "email") or COMPANY_INFO_DEFAULTS["email"]
+        phone = get_prop_value(props, "Phone", "phone_number") or COMPANY_INFO_DEFAULTS["phone"]
+        bank_name = get_prop_value(props, "Bank Name", "rich_text") or COMPANY_INFO_DEFAULTS["bank_name"]
+        account_name = get_prop_value(props, "Bank Account Holder Name", "rich_text") or COMPANY_INFO_DEFAULTS["account_name"]
+        account_number = get_prop_value(props, "Bank Number", "rich_text") or COMPANY_INFO_DEFAULTS["account_number"]
+        payment_method = get_prop_value(props, "Payment Method", "select") or COMPANY_INFO_DEFAULTS["payment_method"]
+
+        return {
+            "name": name,
+            "tagline": industry or COMPANY_INFO_DEFAULTS["tagline"],
+            "email": email,
+            "phone": phone,
+            "bank_name": bank_name.replace("**", ""),  # strip markdown bold
+            "account_name": account_name,
+            "account_number": account_number.replace("**", ""),  # strip markdown bold
+            "payment_method": payment_method,
+            "prepared_by": f"Nadia — {name}",
+        }
+    except Exception as e:
+        print(f"Error fetching company info: {e}", file=sys.stderr)
+        return dict(COMPANY_INFO_DEFAULTS)
 
 TERMS = [
     "This quotation is valid for 30 days from the issue date.",
@@ -283,14 +324,16 @@ def fetch_quotation_data(page_id):
     contact_email = pic_email or client_email
     contact_phone = pic_phone or client_phone
 
+    # Fetch company info dynamically from Notion
+    co = fetch_company_info()
+
     return {
         "page_id": page_id,
         "quotation_no": quotation_no or "QUO-DRAFT",
-        "company_name": COMPANY_INFO["name"],
-        "company_tagline": COMPANY_INFO["tagline"],
-        "company_address": COMPANY_INFO["address"],
-        "company_email": COMPANY_INFO["email"],
-        "company_phone": COMPANY_INFO["phone"],
+        "company_name": co["name"],
+        "company_tagline": co["tagline"],
+        "company_email": co["email"],
+        "company_phone": co["phone"],
         "client_company": client_company,
         "client_pic": client_pic,
         "client_address": client_address,
@@ -299,16 +342,17 @@ def fetch_quotation_data(page_id):
         "issue_date": issue_date,
         "valid_until": valid_until,
         "quote_type": quote_type or "New Business",
-        "payment_terms": payment_terms or "50-50",
+        "payment_terms": payment_terms or "50% Deposit",
         "line_items": line_items,
         "tax_rate": 0,
         "bank_details": {
-            "bank_name": COMPANY_INFO["bank_name"],
-            "account_name": COMPANY_INFO["account_name"],
-            "account_number": COMPANY_INFO["account_number"],
+            "bank_name": co["bank_name"],
+            "account_name": co["account_name"],
+            "account_number": co["account_number"],
+            "payment_method": co.get("payment_method", "Bank Transfer"),
         },
         "terms": TERMS,
-        "prepared_by": COMPANY_INFO["prepared_by"],
+        "prepared_by": co["prepared_by"],
     }
 
 
@@ -526,8 +570,8 @@ def generate_pdf(data):
     if bank:
         bank_rows.append([Paragraph("PAYMENT METHOD", ParagraphStyle(name="PMH", fontName="Helvetica-Bold", fontSize=7.5, textColor=CLR_BLACK, leading=11))])
         bank_lines = []
-        if bank.get("bank_name"):
-            bank_lines.append(f"By Bank")
+        pm = bank.get("payment_method", "Bank Transfer")
+        bank_lines.append(pm)
         if bank.get("account_name"):
             bank_lines.append(f"{bank['account_name']}")
         if bank.get("bank_name"):
