@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler
 from io import BytesIO
 
 import requests
@@ -63,7 +64,6 @@ def fetch_quotation_data(page_id):
         "Content-Type": "application/json",
     }
 
-    # ── Page properties ──────────────────────
     resp = requests.get(
         f"https://api.notion.com/v1/pages/{page_id}",
         headers=headers, timeout=15
@@ -71,32 +71,25 @@ def fetch_quotation_data(page_id):
     resp.raise_for_status()
     props = resp.json().get("properties", {})
 
-    # Quotation No.
     quotation_no = _plain(props.get("Quotation No.", {}).get("title", []))
 
-    # Issue Date
     issue_date = ""
     date_prop = props.get("Issue Date", {})
     if date_prop.get("type") == "date" and date_prop.get("date"):
         issue_date = date_prop["date"].get("start", "")
 
-    # Payment Terms
-    payment_terms = ""
     pt = props.get("Payment Terms", {}).get("select") or {}
     payment_terms = pt.get("name", "")
 
-    # Quote Type
     qt = props.get("Quote Type", {}).get("select") or {}
     quote_type = qt.get("name", "")
 
-    # Status
     st = props.get("Status", {}).get("select") or {}
     status = st.get("name", "Draft")
 
-    # Amount (stored directly on the row)
     amount = props.get("Amount", {}).get("number") or 0
 
-    # ── Company (relation) ───────────────────
+    # Company
     company_name = ""
     company_address = ""
     company_rel = props.get("Company", {}).get("relation", [])
@@ -108,15 +101,11 @@ def fetch_quotation_data(page_id):
             )
             c_resp.raise_for_status()
             c_props = c_resp.json().get("properties", {})
-
-            # Title property (try a few common names)
             for key in ["Name", "Company Name", "name"]:
                 if key in c_props and c_props[key].get("type") == "title":
                     company_name = _plain(c_props[key].get("title", []))
                     if company_name:
                         break
-
-            # Address (rich_text)
             for key in ["Address", "address", "Company Address"]:
                 if key in c_props and c_props[key].get("type") == "rich_text":
                     company_address = _plain(c_props[key].get("rich_text", []))
@@ -125,7 +114,7 @@ def fetch_quotation_data(page_id):
         except Exception as e:
             print(f"[WARN] Could not fetch company: {e}", file=sys.stderr)
 
-    # ── PIC – Person In Charge (relation) ────
+    # PIC
     pic_name = ""
     pic_email = ""
     pic_rel = props.get("PIC", {}).get("relation", [])
@@ -137,13 +126,11 @@ def fetch_quotation_data(page_id):
             )
             p_resp.raise_for_status()
             p_props = p_resp.json().get("properties", {})
-
             for key in ["Name", "Full Name", "Contact Name", "name"]:
                 if key in p_props and p_props[key].get("type") == "title":
                     pic_name = _plain(p_props[key].get("title", []))
                     if pic_name:
                         break
-
             for key in ["Email", "email", "Email Address"]:
                 if key in p_props and p_props[key].get("type") == "email":
                     pic_email = p_props[key].get("email") or ""
@@ -152,7 +139,7 @@ def fetch_quotation_data(page_id):
         except Exception as e:
             print(f"[WARN] Could not fetch PIC: {e}", file=sys.stderr)
 
-    # ── Line items (from child blocks / child database) ──
+    # Line items from child database inside the page
     line_items = []
     try:
         b_resp = requests.get(
@@ -163,10 +150,7 @@ def fetch_quotation_data(page_id):
         blocks = b_resp.json().get("results", [])
 
         for block in blocks:
-            btype = block.get("type")
-
-            # Child database (most common pattern for line-item tables)
-            if btype == "child_database":
+            if block.get("type") == "child_database":
                 db_id = block["id"].replace("-", "")
                 try:
                     db_resp = requests.post(
@@ -174,13 +158,9 @@ def fetch_quotation_data(page_id):
                         headers=headers, json={}, timeout=10
                     )
                     db_resp.raise_for_status()
-                    rows = db_resp.json().get("results", [])
-
-                    for row in rows:
+                    for row in db_resp.json().get("results", []):
                         rp = row.get("properties", {})
                         item = {}
-
-                        # Description / item name
                         for key in ["Item", "Description", "Service", "Name", "name"]:
                             prop = rp.get(key, {})
                             if prop.get("type") == "title":
@@ -189,51 +169,40 @@ def fetch_quotation_data(page_id):
                                 item["description"] = _plain(prop.get("rich_text", []))
                             if item.get("description"):
                                 break
-
-                        # Quantity
                         for key in ["Qty", "Quantity", "qty", "quantity", "Units"]:
                             prop = rp.get(key, {})
                             if prop.get("type") == "number" and prop.get("number") is not None:
                                 item["qty"] = prop["number"]
                                 break
-
-                        # Unit price
                         for key in ["Unit Price", "Price", "Rate", "Unit Rate", "unit_price"]:
                             prop = rp.get(key, {})
                             if prop.get("type") == "number" and prop.get("number") is not None:
                                 item["unit_price"] = prop["number"]
                                 break
-
                         if item.get("description"):
                             item.setdefault("qty", 1)
                             item.setdefault("unit_price", 0)
                             line_items.append(item)
                 except Exception as e:
                     print(f"[WARN] Could not query child DB: {e}", file=sys.stderr)
-
     except Exception as e:
         print(f"[WARN] Could not fetch page blocks: {e}", file=sys.stderr)
 
-    # Fallback: use the Amount field directly if no line items found
     if not line_items and amount:
-        line_items = [{
-            "description": "Professional Services",
-            "qty": 1,
-            "unit_price": float(amount),
-        }]
+        line_items = [{"description": "Professional Services", "qty": 1, "unit_price": float(amount)}]
 
     return {
-        "quotation_no":   quotation_no or "QUOTE",
-        "issue_date":     issue_date,
-        "payment_terms":  payment_terms,
-        "quote_type":     quote_type,
-        "status":         status,
-        "amount":         amount,
-        "company_name":   company_name,
+        "quotation_no":    quotation_no or "QUOTE",
+        "issue_date":      issue_date,
+        "payment_terms":   payment_terms,
+        "quote_type":      quote_type,
+        "status":          status,
+        "amount":          amount,
+        "company_name":    company_name,
         "company_address": company_address,
-        "pic_name":       pic_name,
-        "pic_email":      pic_email,
-        "line_items":     line_items,
+        "pic_name":        pic_name,
+        "pic_email":       pic_email,
+        "line_items":      line_items,
     }
 
 
@@ -254,64 +223,41 @@ def generate_pdf(data):
 
     styles = getSampleStyleSheet()
 
-    def style(name, **kw):
+    def s(name, **kw):
         kw.setdefault("fontName", "Helvetica")
         kw.setdefault("fontSize", 9)
         kw.setdefault("leading", 13)
         return ParagraphStyle(name, parent=styles["Normal"], **kw)
 
-    s_white     = style("white",    textColor=WHITE)
-    s_white_b   = style("white_b",  textColor=WHITE, fontName="Helvetica-Bold")
-    s_gold_b    = style("gold_b",   textColor=GOLD,  fontName="Helvetica-Bold", fontSize=16)
-    s_body      = style("body",     textColor=DARK_TEXT)
-    s_label     = style("label",    textColor=MID_TEXT, fontSize=8)
-    s_th        = style("th",       textColor=WHITE, fontName="Helvetica-Bold", alignment=1)
-    s_num       = style("num",      textColor=DARK_TEXT, alignment=2)
-    s_num_b     = style("num_b",    textColor=WHITE, fontName="Helvetica-Bold", alignment=2)
-    s_footer    = style("footer",   textColor=MID_TEXT, fontSize=7, alignment=1)
-    s_terms_ttl = style("terms_ttl",textColor=NAVY, fontName="Helvetica-Bold", fontSize=10)
+    s_white   = s("white",   textColor=WHITE)
+    s_gold_b  = s("gold_b",  textColor=GOLD, fontName="Helvetica-Bold", fontSize=16)
+    s_body    = s("body",    textColor=DARK_TEXT)
+    s_label   = s("label",   textColor=MID_TEXT, fontSize=8)
+    s_th      = s("th",      textColor=WHITE, fontName="Helvetica-Bold", alignment=1)
+    s_num     = s("num",     textColor=DARK_TEXT, alignment=2)
+    s_footer  = s("footer",  textColor=MID_TEXT, fontSize=7, alignment=1)
+    s_terms_t = s("terms_t", textColor=NAVY, fontName="Helvetica-Bold", fontSize=10)
 
     story = []
 
-    # ── Header banner ────────────────────────
-    hdr_left = [
-        [Paragraph(COMPANY_INFO["name"], s_gold_b)],
-        [Paragraph(
-            f"{COMPANY_INFO['address']}<br/>"
-            f"{COMPANY_INFO['phone']}<br/>"
-            f"{COMPANY_INFO['email']}",
-            s_white
-        )],
-    ]
-    hdr_right = [
-        [Paragraph("QUOTATION",
-                   style("q_ttl", textColor=WHITE, fontName="Helvetica-Bold",
-                         fontSize=22, alignment=2))],
-        [Paragraph(
-            f"<font color='#C9A84C'><b>{data['quotation_no']}</b></font>",
-            style("q_no", textColor=WHITE, fontSize=11, alignment=2)
-        )],
-    ]
-
-    hdr_tbl = Table(
-        [[Table(hdr_left, colWidths=[usable * 0.6],
-                style=TableStyle([("BACKGROUND", (0,0),(-1,-1), NAVY),
-                                  ("PADDING",    (0,0),(-1,-1), 0)])),
-          Table(hdr_right, colWidths=[usable * 0.4],
-                style=TableStyle([("BACKGROUND", (0,0),(-1,-1), NAVY),
-                                  ("PADDING",    (0,0),(-1,-1), 0)]))]],
-        colWidths=[usable * 0.6, usable * 0.4]
-    )
-    hdr_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0),(-1,-1), NAVY),
-        ("PADDING",    (0,0),(-1,-1), 12),
-        ("VALIGN",     (0,0),(-1,-1), "MIDDLE"),
-        ("LINEBELOW",  (0,-1),(-1,-1), 2, GOLD),
+    # Header banner
+    hdr = Table([
+        [Paragraph(COMPANY_INFO["name"], s_gold_b),
+         Paragraph("QUOTATION", s("qt", textColor=WHITE, fontName="Helvetica-Bold", fontSize=22, alignment=2))],
+        [Paragraph(f"{COMPANY_INFO['address']}<br/>{COMPANY_INFO['phone']}<br/>{COMPANY_INFO['email']}", s_white),
+         Paragraph(f"<font color='#C9A84C'><b>{data['quotation_no']}</b></font>",
+                   s("qn", textColor=WHITE, fontSize=11, alignment=2))],
+    ], colWidths=[usable * 0.6, usable * 0.4])
+    hdr.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+        ("PADDING",    (0, 0), (-1, -1), 12),
+        ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBELOW",  (0, -1), (-1, -1), 2, GOLD),
     ]))
-    story.append(hdr_tbl)
-    story.append(Spacer(1, 6*mm))
+    story.append(hdr)
+    story.append(Spacer(1, 6 * mm))
 
-    # ── Bill-to / Details row ────────────────
+    # Issue date display
     issue_display = data.get("issue_date", "")
     if issue_display:
         try:
@@ -319,47 +265,40 @@ def generate_pdf(data):
         except Exception:
             pass
 
-    bill_to_lines = f"<b>{data.get('company_name') or 'N/A'}</b>"
+    # Bill-to / Details
+    bill_lines = f"<b>{data.get('company_name') or 'N/A'}</b>"
     if data.get("company_address"):
-        bill_to_lines += f"<br/>{data['company_address'].replace(chr(10), '<br/>')}"
+        bill_lines += f"<br/>{data['company_address'].replace(chr(10), '<br/>')}"
     if data.get("pic_name"):
-        bill_to_lines += f"<br/>Attn: {data['pic_name']}"
+        bill_lines += f"<br/>Attn: {data['pic_name']}"
         if data.get("pic_email"):
-            bill_to_lines += f"<br/>{data['pic_email']}"
+            bill_lines += f"<br/>{data['pic_email']}"
 
     detail_inner = Table([
         [Paragraph("Issue Date:",    s_label), Paragraph(issue_display or "—", s_body)],
         [Paragraph("Quote Type:",    s_label), Paragraph(data.get("quote_type")    or "—", s_body)],
         [Paragraph("Payment Terms:", s_label), Paragraph(data.get("payment_terms") or "—", s_body)],
         [Paragraph("Status:",        s_label), Paragraph(data.get("status")        or "Draft", s_body)],
-    ], colWidths=[usable*0.17, usable*0.28],
-       style=TableStyle([("PADDING", (0,0),(-1,-1), 2), ("VALIGN",(0,0),(-1,-1),"TOP")]))
+    ], colWidths=[usable * 0.17, usable * 0.28],
+       style=TableStyle([("PADDING", (0, 0), (-1, -1), 2), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
 
-    info_tbl = Table(
-        [[Paragraph("<b>BILL TO</b>",
-                    style("bill_lbl", textColor=NAVY, fontName="Helvetica-Bold", fontSize=8)),
-          "",
-          Paragraph("<b>DETAILS</b>",
-                    style("det_lbl",  textColor=NAVY, fontName="Helvetica-Bold", fontSize=8))],
-         [Paragraph(bill_to_lines, s_body), "", detail_inner]],
-        colWidths=[usable*0.45, usable*0.1, usable*0.45]
-    )
-    info_tbl.setStyle(TableStyle([
-        ("VALIGN",  (0,0),(-1,-1), "TOP"),
-        ("PADDING", (0,0),(-1,-1), 4),
-    ]))
-    story.append(info_tbl)
-    story.append(Spacer(1, 6*mm))
+    info = Table([
+        [Paragraph("<b>BILL TO</b>", s("bl", textColor=NAVY, fontName="Helvetica-Bold", fontSize=8)),
+         "", Paragraph("<b>DETAILS</b>", s("dl", textColor=NAVY, fontName="Helvetica-Bold", fontSize=8))],
+        [Paragraph(bill_lines, s_body), "", detail_inner],
+    ], colWidths=[usable * 0.45, usable * 0.1, usable * 0.45])
+    info.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("PADDING", (0, 0), (-1, -1), 4)]))
+    story.append(info)
+    story.append(Spacer(1, 6 * mm))
 
-    # ── Line-items table ─────────────────────
+    # Line items
     col_w = [usable*0.05, usable*0.47, usable*0.08, usable*0.20, usable*0.20]
-
     rows = [[
         Paragraph("NO.",          s_th),
         Paragraph("DESCRIPTION",  s_th),
         Paragraph("QTY",          s_th),
-        Paragraph("UNIT PRICE",   style("th_r", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
-        Paragraph("AMOUNT (MYR)", style("th_r2",textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
+        Paragraph("UNIT PRICE",   s("thr", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
+        Paragraph("AMOUNT (MYR)", s("thr2", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
     ]]
 
     total = 0.0
@@ -376,95 +315,71 @@ def generate_pdf(data):
             Paragraph(f"{amt:,.2f}", s_num),
         ])
 
-    # Total row
+    has_deposit = (data.get("payment_terms") == "50% Deposit")
+    total_i = len(rows)
+
     rows.append([
         "", "",
         Paragraph("<b>TOTAL</b>",
-                  style("tot_lbl", textColor=WHITE, fontName="Helvetica-Bold",
-                        fontSize=10, alignment=2)),
+                  s("tl", textColor=WHITE, fontName="Helvetica-Bold", fontSize=10, alignment=2)),
         "",
         Paragraph(f"<b>MYR {total:,.2f}</b>",
-                  style("tot_val", textColor=WHITE, fontName="Helvetica-Bold",
-                        fontSize=10, alignment=2)),
+                  s("tv", textColor=WHITE, fontName="Helvetica-Bold", fontSize=10, alignment=2)),
     ])
 
-    # Optional deposit row
-    has_deposit = (data.get("payment_terms") == "50% Deposit")
     if has_deposit:
         deposit = total * 0.5
         rows.append([
             "", "",
             Paragraph("<b>DEPOSIT DUE (50%)</b>",
-                      style("dep_lbl", textColor=GOLD, fontName="Helvetica-Bold",
-                            fontSize=9, alignment=2)),
+                      s("dl2", textColor=GOLD, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
             "",
             Paragraph(f"<b>MYR {deposit:,.2f}</b>",
-                      style("dep_val", textColor=GOLD, fontName="Helvetica-Bold",
-                            fontSize=9, alignment=2)),
+                      s("dv", textColor=GOLD, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
         ])
 
-    n_data = len(rows)
-    total_row_i = n_data - 2 if has_deposit else n_data - 1
-
     ts = TableStyle([
-        # Header
-        ("BACKGROUND",  (0, 0),  (-1, 0),  NAVY),
-        ("TEXTCOLOR",   (0, 0),  (-1, 0),  WHITE),
-        # Data rows alternating background
-        ("ROWBACKGROUNDS", (0, 1), (-1, total_row_i - 1), [WHITE, LIGHT_GRAY]),
-        # Grid for data rows
-        ("GRID",        (0, 0),  (-1, total_row_i - 1), 0.5, colors.HexColor("#DDDDDD")),
-        ("PADDING",     (0, 0),  (-1, -1), 6),
-        ("VALIGN",      (0, 0),  (-1, -1), "TOP"),
-        # Total row
-        ("BACKGROUND",  (0, total_row_i), (-1, total_row_i), NAVY),
-        ("LINEABOVE",   (0, total_row_i), (-1, total_row_i), 1.5, GOLD),
-        ("SPAN",        (0, total_row_i), (1, total_row_i)),
-        ("SPAN",        (2, total_row_i), (3, total_row_i)),
+        ("BACKGROUND",     (0, 0),       (-1, 0),       NAVY),
+        ("ROWBACKGROUNDS", (0, 1),       (-1, total_i - 1), [WHITE, LIGHT_GRAY]),
+        ("GRID",           (0, 0),       (-1, total_i - 1), 0.5, colors.HexColor("#DDDDDD")),
+        ("PADDING",        (0, 0),       (-1, -1),      6),
+        ("VALIGN",         (0, 0),       (-1, -1),      "TOP"),
+        ("BACKGROUND",     (0, total_i), (-1, -1),      NAVY),
+        ("LINEABOVE",      (0, total_i), (-1, total_i), 1.5, GOLD),
+        ("SPAN",           (0, total_i), (1, total_i)),
+        ("SPAN",           (2, total_i), (3, total_i)),
     ])
-
     if has_deposit:
-        dep_i = n_data - 1
-        ts.add("BACKGROUND", (0, dep_i), (-1, dep_i), NAVY)
-        ts.add("SPAN",       (0, dep_i), (1, dep_i))
-        ts.add("SPAN",       (2, dep_i), (3, dep_i))
+        dep_i = len(rows) - 1
+        ts.add("SPAN", (0, dep_i), (1, dep_i))
+        ts.add("SPAN", (2, dep_i), (3, dep_i))
 
     items_tbl = Table(rows, colWidths=col_w)
     items_tbl.setStyle(ts)
     story.append(items_tbl)
-    story.append(Spacer(1, 8*mm))
+    story.append(Spacer(1, 8 * mm))
 
-    # ── Terms & conditions ───────────────────
-    story.append(Paragraph("Terms &amp; Conditions", s_terms_ttl))
-    story.append(Spacer(1, 2*mm))
+    # Terms
+    story.append(Paragraph("Terms &amp; Conditions", s_terms_t))
+    story.append(Spacer(1, 2 * mm))
     for idx, term in enumerate(TERMS, 1):
         story.append(Paragraph(f"{idx}.  {term}", s_body))
 
-    story.append(Spacer(1, 10*mm))
+    story.append(Spacer(1, 10 * mm))
 
-    # ── Signature block ──────────────────────
-    sig_tbl = Table([
-        [Paragraph("Authorised Signature", s_label),
-         Paragraph("Client Acceptance",    s_label)],
-        [Paragraph(
-             f"<br/><br/><br/>{'─'*28}<br/>"
-             f"<b>{COMPANY_INFO['name']}</b>",
-             s_body),
-         Paragraph(
-             f"<br/><br/><br/>{'─'*28}<br/>"
-             f"{data.get('company_name', '')}",
-             s_body)],
-    ], colWidths=[usable*0.5, usable*0.5])
-    sig_tbl.setStyle(TableStyle([
-        ("PADDING", (0,0),(-1,-1), 6),
-        ("VALIGN",  (0,0),(-1,-1), "TOP"),
-    ]))
-    story.append(sig_tbl)
-    story.append(Spacer(1, 6*mm))
+    # Signature block
+    sig = Table([
+        [Paragraph("Authorised Signature", s_label), Paragraph("Client Acceptance", s_label)],
+        [Paragraph(f"<br/><br/><br/>{'─'*28}<br/><b>{COMPANY_INFO['name']}</b>", s_body),
+         Paragraph(f"<br/><br/><br/>{'─'*28}<br/>{data.get('company_name', '')}", s_body)],
+    ], colWidths=[usable * 0.5, usable * 0.5])
+    sig.setStyle(TableStyle([("PADDING", (0, 0), (-1, -1), 6), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(sig)
+    story.append(Spacer(1, 6 * mm))
 
-    # ── Footer ───────────────────────────────
+    # Footer
     story.append(HRFlowable(width=usable, color=GOLD, thickness=1))
-    story.append(Spacer(1, 2*mm))
+    story.append(Spacer(1, 2 * mm))
     story.append(Paragraph(
         f"{COMPANY_INFO['name']}  ·  {COMPANY_INFO['email']}  ·  "
         f"{COMPANY_INFO['website']}  ·  Reg: {COMPANY_INFO['reg_no']}",
@@ -522,89 +437,86 @@ def update_notion_page(page_id, pdf_url, total_amount):
         headers=headers, json=payload, timeout=10,
     )
     resp.raise_for_status()
-    return resp.json()
 
 
 # ─────────────────────────────────────────────
-#  Vercel handler
+#  Vercel handler (class-based — required by
+#  @vercel/python runtime)
 # ─────────────────────────────────────────────
-def handler(request):
-    try:
-        # ── Health check ──
-        if request.method == "GET":
-            return {
-                "statusCode": 200,
-                "body": json.dumps({
-                    "service": "Vision Core Quotation PDF Generator",
-                    "status":  "ready",
-                })
-            }
+class handler(BaseHTTPRequestHandler):
 
-        if request.method != "POST":
-            return {"statusCode": 405, "body": json.dumps({"error": "Method not allowed"})}
+    def _respond(self, status_code, body_dict):
+        body = json.dumps(body_dict).encode()
+        self.send_response(status_code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-        # ── Optional auth ──
-        secret = os.environ.get("WEBHOOK_SECRET", "")
-        if secret:
-            auth = request.headers.get("authorization", "")
-            if auth != f"Bearer {secret}":
-                return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized"})}
+    def do_GET(self):
+        self._respond(200, {
+            "service": "Vision Core Quotation PDF Generator",
+            "status":  "ready",
+        })
 
-        # ── Parse body ──
+    def do_POST(self):
         try:
-            body = request.json()
-        except Exception:
-            body = {}
+            # Optional auth
+            secret = os.environ.get("WEBHOOK_SECRET", "")
+            if secret:
+                auth = self.headers.get("Authorization", "")
+                if auth != f"Bearer {secret}":
+                    self._respond(401, {"error": "Unauthorized"})
+                    return
 
-        print(f"[DEBUG] Payload keys: {list(body.keys())}", file=sys.stderr)
+            # Parse body
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                body = json.loads(raw)
+            except Exception:
+                body = {}
 
-        # ── Extract page_id (Notion sends it in source.page_id) ──
-        page_id = None
-        if "source" in body:
-            page_id = body["source"].get("page_id")
-        if not page_id and "data" in body:
-            page_id = body["data"].get("page_id")
-        if not page_id:
-            page_id = body.get("page_id")
-        if not page_id:
-            page_id = (request.query or {}).get("pageId")
+            print(f"[DEBUG] Payload keys: {list(body.keys())}", file=sys.stderr)
 
-        if not page_id:
-            return {"statusCode": 400, "body": json.dumps({"error": "No page_id found in request"})}
+            # Extract page_id (Notion sends it in source.page_id)
+            page_id = None
+            if "source" in body:
+                page_id = body["source"].get("page_id")
+            if not page_id and "data" in body:
+                page_id = body["data"].get("page_id")
+            if not page_id:
+                page_id = body.get("page_id")
 
-        print(f"[INFO] Generating PDF for page: {page_id}", file=sys.stderr)
+            if not page_id:
+                self._respond(400, {"error": "No page_id found in request"})
+                return
 
-        # ── Core workflow ──
-        data       = fetch_quotation_data(page_id)
-        pdf_buffer = generate_pdf(data)
+            print(f"[INFO] Generating PDF for page: {page_id}", file=sys.stderr)
 
-        safe_name = (data["quotation_no"]
-                     .replace(" ", "-").replace("/", "-").replace("\\", "-"))
-        filename  = f"quotations/{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            data       = fetch_quotation_data(page_id)
+            pdf_buffer = generate_pdf(data)
 
-        pdf_url = upload_to_blob(pdf_buffer, filename)
+            safe_name = (data["quotation_no"]
+                         .replace(" ", "-").replace("/", "-").replace("\\", "-"))
+            filename  = f"quotations/{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
 
-        total_amount = sum(
-            float(item.get("qty", 1)) * float(item.get("unit_price", 0))
-            for item in data.get("line_items", [])
-        )
+            pdf_url = upload_to_blob(pdf_buffer, filename)
 
-        update_notion_page(page_id, pdf_url, total_amount)
+            total_amount = sum(
+                float(item.get("qty", 1)) * float(item.get("unit_price", 0))
+                for item in data.get("line_items", [])
+            )
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
+            update_notion_page(page_id, pdf_url, total_amount)
+
+            self._respond(200, {
                 "status":       "success",
                 "quotation_no": data["quotation_no"],
                 "pdf_url":      pdf_url,
             })
-        }
 
-    except Exception as e:
-        print(f"[ERROR] {str(e)}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
+        except Exception as e:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            self._respond(500, {"error": str(e)})
