@@ -39,7 +39,7 @@ VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
 IMPL_FORM_BASE = "https://vision-core-delta.vercel.app/api/implementation_form"
 
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
-INV_PATTERN = re.compile(r"^INV-\d{4}-\d{4}(-[DFR])?$")
+INV_PATTERN = re.compile(r"^INV-\d{4}-\d{4}(-[DSFR])?$")
 
 # Map Quotation "Quote Type" values → package slugs for intake form
 QUOTE_TYPE_TO_PKG = {
@@ -123,6 +123,7 @@ def fetch_company_details(hdrs):
 # Invoice type → suffix mapping
 INV_SUFFIX = {
     "Deposit":       "-D",
+    "Supplementary": "-S",
     "Final Payment": "-F",
     "Retainer":      "-R",
     "Full Payment":  "",   # no suffix — it's the only invoice
