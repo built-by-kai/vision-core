@@ -139,7 +139,7 @@ def fetch_quotation_data(page_id):
         except Exception as e:
             print(f"[WARN] Could not fetch PIC: {e}", file=sys.stderr)
 
-    # Line items from child database inside the page
+    # Line items from the inline "Line Items" child database inside the page
     line_items = []
     try:
         b_resp = requests.get(
@@ -149,7 +149,21 @@ def fetch_quotation_data(page_id):
         b_resp.raise_for_status()
         blocks = b_resp.json().get("results", [])
 
+        # Also check one level deeper (Line Items db is inside a callout block)
+        all_blocks = list(blocks)
         for block in blocks:
+            if block.get("type") in ("callout", "column_list", "column"):
+                try:
+                    nested = requests.get(
+                        f"https://api.notion.com/v1/blocks/{block['id']}/children",
+                        headers=headers, timeout=10
+                    )
+                    nested.raise_for_status()
+                    all_blocks.extend(nested.json().get("results", []))
+                except Exception:
+                    pass
+
+        for block in all_blocks:
             if block.get("type") == "child_database":
                 db_id = block["id"].replace("-", "")
                 try:
@@ -158,31 +172,69 @@ def fetch_quotation_data(page_id):
                         headers=headers, json={}, timeout=10
                     )
                     db_resp.raise_for_status()
-                    for row in db_resp.json().get("results", []):
+                    rows = db_resp.json().get("results", [])
+                    if not rows:
+                        continue
+
+                    for row in rows:
                         rp = row.get("properties", {})
                         item = {}
-                        for key in ["Item", "Description", "Service", "Name", "name"]:
-                            prop = rp.get(key, {})
-                            if prop.get("type") == "title":
-                                item["description"] = _plain(prop.get("title", []))
-                            elif prop.get("type") == "rich_text":
-                                item["description"] = _plain(prop.get("rich_text", []))
-                            if item.get("description"):
-                                break
-                        for key in ["Qty", "Quantity", "qty", "quantity", "Units"]:
-                            prop = rp.get(key, {})
-                            if prop.get("type") == "number" and prop.get("number") is not None:
-                                item["qty"] = prop["number"]
-                                break
-                        for key in ["Unit Price", "Price", "Rate", "Unit Rate", "unit_price"]:
-                            prop = rp.get(key, {})
-                            if prop.get("type") == "number" and prop.get("number") is not None:
-                                item["unit_price"] = prop["number"]
-                                break
+
+                        # ── Product name ──────────────────────────
+                        # 1. Try Product Description rollup (array of rich_text/title)
+                        pd_prop = rp.get("Product Description", {})
+                        if pd_prop.get("type") == "rollup":
+                            rollup = pd_prop.get("rollup", {})
+                            if rollup.get("type") == "array":
+                                for arr in rollup.get("array", []):
+                                    text = ""
+                                    if arr.get("type") == "title":
+                                        text = _plain(arr.get("title", []))
+                                    elif arr.get("type") == "rich_text":
+                                        text = _plain(arr.get("rich_text", []))
+                                    if text:
+                                        item["description"] = text
+                                        break
+
+                        # 2. Fallback: follow the Product relation to get its name
+                        if not item.get("description"):
+                            prod_rel = rp.get("Product", {}).get("relation", [])
+                            if prod_rel:
+                                try:
+                                    pr = requests.get(
+                                        f"https://api.notion.com/v1/pages/{prod_rel[0]['id']}",
+                                        headers=headers, timeout=10
+                                    )
+                                    pr.raise_for_status()
+                                    pp = pr.json().get("properties", {})
+                                    for key in ["Name", "Product Name", "name", "Title"]:
+                                        if key in pp and pp[key].get("type") == "title":
+                                            item["description"] = _plain(pp[key].get("title", []))
+                                            if item["description"]:
+                                                break
+                                except Exception as e:
+                                    print(f"[WARN] Could not fetch product: {e}", file=sys.stderr)
+
+                        # 3. Fallback: Notes title field
+                        if not item.get("description"):
+                            item["description"] = _plain(rp.get("Notes", {}).get("title", []))
+
+                        # Append Notes as extra detail if product name already found
+                        notes = _plain(rp.get("Notes", {}).get("title", []))
+                        if notes and item.get("description") and notes != item["description"]:
+                            item["description"] += f"\n{notes}"
+
+                        # ── Qty & Unit Price ──────────────────────
+                        item["qty"]        = rp.get("Qty", {}).get("number") or 1
+                        item["unit_price"] = rp.get("Unit Price", {}).get("number") or 0
+
                         if item.get("description"):
-                            item.setdefault("qty", 1)
-                            item.setdefault("unit_price", 0)
                             line_items.append(item)
+
+                    # Stop after finding the first non-empty Line Items db
+                    if line_items:
+                        break
+
                 except Exception as e:
                     print(f"[WARN] Could not query child DB: {e}", file=sys.stderr)
     except Exception as e:
