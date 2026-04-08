@@ -495,7 +495,7 @@ def generate_pdf(data):
     if tax_rate:
         totals_rows.append(tot_row("TAX", tax_amount))
     totals_rows.append(tot_row("TOTAL", total, highlight=True))
-    if "50-50" in payment_terms:
+    if "50%" in payment_terms.lower() or "50-50" in payment_terms.lower():
         totals_rows.append(tot_row("DEPOSIT (50%)", total * 0.5, bold=True))
 
     totals_tbl = Table(totals_rows, colWidths=[30 * mm, 38 * mm])
