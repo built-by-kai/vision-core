@@ -6,7 +6,7 @@ POST /api/implementation_form?c=COMPANY_ID&pkg=PACKAGE
      → Submits responses, creates a rich Implementation page in Notion
 
 PACKAGE slugs: workflow-os | sales-crm | full-agency-os | complete-os |
-               revenue-os  | modular-os | custom-os | creative | branding
+               revenue-os  | modular-os | custom-os
 """
 import json
 import os
@@ -30,8 +30,6 @@ PKG_LABELS = {
     "revenue-os":     "Revenue OS",
     "modular-os":     "Modular OS",
     "custom-os":      "Custom OS",
-    "creative":       "Creative",
-    "branding":       "Branding",
 }
 PKG_DESC = {
     "workflow-os":    "We'll be mapping and automating your core business workflows.",
@@ -41,8 +39,6 @@ PKG_DESC = {
     "revenue-os":     "We'll be building your revenue tracking and financial OS.",
     "modular-os":     "We'll be building selected modules for your operating system.",
     "custom-os":      "We'll be building a fully customised operating system for your team.",
-    "creative":       "We'll be building your creative project and content management system.",
-    "branding":       "We'll be building your brand identity and asset management system.",
 }
 
 
@@ -265,46 +261,6 @@ def pkg_section_html(pkg_slug):
             <label class="check-item"><input type="checkbox" name="fin_metrics" value="Profit margin"> Profit margin</label>
             <label class="check-item"><input type="checkbox" name="fin_metrics" value="Cash flow"> Cash flow</label>
           </div>
-        </div>
-"""
-    elif pkg_slug in ("creative", "branding"):
-        return """
-        <div class="field">
-          <label>What types of creative work does your team produce?</label>
-          <div class="check-grid">
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Social media posts"> Social media posts</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Short-form video / Reels"> Short-form video</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Long-form video"> Long-form video</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Graphic design / print"> Graphic / print</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Photography"> Photography</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Copywriting / captions"> Copywriting</label>
-            <label class="check-item"><input type="checkbox" name="creative_types" value="Brand assets / guidelines"> Brand assets</label>
-          </div>
-        </div>
-        <div class="field">
-          <label>Do you work on a content calendar? If so, how far in advance?</label>
-          <div class="radio-group">
-            <label class="radio-item"><input type="radio" name="content_calendar" value="No calendar"> No calendar</label>
-            <label class="radio-item"><input type="radio" name="content_calendar" value="1 week ahead"> 1 week ahead</label>
-            <label class="radio-item"><input type="radio" name="content_calendar" value="2 weeks ahead"> 2 weeks ahead</label>
-            <label class="radio-item"><input type="radio" name="content_calendar" value="1 month ahead"> 1 month ahead</label>
-          </div>
-        </div>
-        <div class="field">
-          <label>How is client approval currently handled?</label>
-          <textarea name="approval_process" rows="3" placeholder="e.g. We send drafts via email, client replies, we revise up to 3 rounds…"></textarea>
-        </div>
-        <div class="field">
-          <label>Do you have existing brand guidelines?</label>
-          <div class="radio-group">
-            <label class="radio-item"><input type="radio" name="has_guidelines" value="No"> No guidelines yet</label>
-            <label class="radio-item"><input type="radio" name="has_guidelines" value="Yes – partial"> Partial / informal</label>
-            <label class="radio-item"><input type="radio" name="has_guidelines" value="Yes – full"> Full brand guide</label>
-          </div>
-        </div>
-        <div class="field">
-          <label>Link to existing brand guidelines or asset folder <span style="font-weight:400;color:#aaa">(optional)</span></label>
-          <input type="text" name="brand_guide_link" placeholder="Google Drive, Canva, Figma…">
         </div>
 """
     else:
@@ -768,20 +724,6 @@ def build_page_body(data, pkg_slug, pkg_label):
         metrics = multi("fin_metrics")
         blocks.append(_h3("Key financial metrics"))
         blocks.append(_p(", ".join(metrics) if metrics else "—"))
-
-    elif pkg_slug in ("creative", "branding"):
-        ctypes = multi("creative_types")
-        blocks.append(_h3("Creative work types"))
-        blocks.append(_p(", ".join(ctypes) if ctypes else "—"))
-        blocks.append(_h3("Content calendar planning"))
-        blocks.append(_p(g("content_calendar") or "—"))
-        blocks.append(_h3("Client approval process"))
-        blocks.append(_p(g("approval_process") or "—"))
-        blocks.append(_h3("Existing brand guidelines"))
-        blocks.append(_p(g("has_guidelines") or "—"))
-        bg = g("brand_guide_link")
-        if bg:
-            blocks.append(_p(f"Guidelines link: {bg}"))
 
     else:  # modular-os, custom-os
         modules = multi("os_modules")

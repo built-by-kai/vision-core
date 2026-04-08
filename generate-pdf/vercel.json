@@ -1,13 +1,15 @@
 {
   "version": 2,
   "builds": [
-    {"src": "api/generate.py", "use": "@vercel/python"},
-    {"src": "api/cal_booking.py", "use": "@vercel/python"},
-    {"src": "api/implementation_form.py", "use": "@vercel/python"}
+    {"src": "api/generate.py",         "use": "@vercel/python"},
+    {"src": "api/cal_booking.py",       "use": "@vercel/python"},
+    {"src": "api/implementation_form.py","use": "@vercel/python"},
+    {"src": "api/generate_invoice.py",  "use": "@vercel/python"}
   ],
   "routes": [
-    {"src": "/api/generate", "dest": "api/generate.py"},
-    {"src": "/api/cal_booking", "dest": "api/cal_booking.py"},
-    {"src": "/api/implementation_form", "dest": "api/implementation_form.py"}
+    {"src": "/api/generate",             "dest": "api/generate.py"},
+    {"src": "/api/cal_booking",          "dest": "api/cal_booking.py"},
+    {"src": "/api/implementation_form",  "dest": "api/implementation_form.py"},
+    {"src": "/api/generate_invoice",     "dest": "api/generate_invoice.py"}
   ]
 }
