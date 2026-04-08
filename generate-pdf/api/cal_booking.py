@@ -73,12 +73,13 @@ def search_db(db_id, filter_payload, hdrs):
     return results[0] if results else None
 
 
-def create_page(db_id, properties, hdrs):
+def create_page(db_id, properties, hdrs, icon_emoji=None):
+    body = {"parent": {"database_id": db_id}, "properties": properties}
+    if icon_emoji:
+        body["icon"] = {"type": "emoji", "emoji": icon_emoji}
     r = requests.post(
         "https://api.notion.com/v1/pages",
-        headers=hdrs,
-        json={"parent": {"database_id": db_id}, "properties": properties},
-        timeout=10,
+        headers=hdrs, json=body, timeout=10,
     )
     r.raise_for_status()
     return r.json()
@@ -114,7 +115,11 @@ def rv(responses, *keys, default=""):
         if val is None:
             continue
         if isinstance(val, dict):
+            # Cal.com wraps values as {"label": "...", "value": "..."}
             v = val.get("value")
+            # Phone type can also nest as {"value": {"phone": "+60...", "countryCode": "MY"}}
+            if isinstance(v, dict):
+                v = v.get("phone") or v.get("number") or str(v)
         else:
             v = val
         if v is not None and v != "":
@@ -205,7 +210,9 @@ def process_booking(payload):
             }
             if industry:
                 co_props["Industry"] = {"select": {"name": industry}}
-            new_co     = create_page(COMPANIES_DB, co_props, hdrs)
+            if team_size:
+                co_props["Team Size"] = {"select": {"name": team_size}}
+            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_emoji="🏢")
             company_id = new_co["id"].replace("-", "")
             company_is_new = True
             print(f"[INFO] Created company: {company_id}", file=sys.stderr)
@@ -252,7 +259,7 @@ def process_booking(payload):
             if src:
                 cl_props["Source"] = {"multi_select": src}
 
-            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs)
+            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_emoji="👤")
             client_id = new_cl["id"].replace("-", "")
             is_new_client = True
             print(f"[INFO] Created client: {client_id}", file=sys.stderr)
