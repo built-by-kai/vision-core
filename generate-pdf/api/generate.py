@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler
@@ -17,6 +18,10 @@ from reportlab.platypus import (
 
 # Vision Core Details DB
 VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
+# Quotations DB (collection 2c4b070c-d8f3-4cc7-8fe4-67ef7f5241d3)
+QUOTATIONS_DB          = "2c4b070cd8f34cc78fe467ef7f5241d3"
+
+QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
 
 TERMS = [
     "This quotation is valid for 30 days from the issue date.",
@@ -88,6 +93,69 @@ def fetch_company_details(headers):
 
 
 # ─────────────────────────────────────────────
+#  Auto-numbering
+# ─────────────────────────────────────────────
+def next_quotation_number(year, hdrs):
+    """Scan all quotations, find highest QUO-YYYY-XXXX for this year, return next."""
+    try:
+        has_more, cursor, max_seq = True, None, 0
+        while has_more:
+            body = {"page_size": 100}
+            if cursor:
+                body["start_cursor"] = cursor
+            r = requests.post(
+                f"https://api.notion.com/v1/databases/{QUOTATIONS_DB}/query",
+                headers=hdrs, json=body, timeout=15
+            )
+            r.raise_for_status()
+            data     = r.json()
+            has_more = data.get("has_more", False)
+            cursor   = data.get("next_cursor")
+            for page in data.get("results", []):
+                props     = page.get("properties", {})
+                title_arr = props.get("Quotation No.", {}).get("title", [])
+                title     = "".join(t.get("plain_text", "") for t in title_arr)
+                m = QUO_PATTERN.match(title)
+                if m and int(m.group(1)) == year:
+                    max_seq = max(max_seq, int(m.group(2)))
+        return f"QUO-{year}-{max_seq + 1:04d}"
+    except Exception as e:
+        print(f"[WARN] auto-number quotation: {e}", file=sys.stderr)
+        return None
+
+
+def assign_quotation_number(page_id, issue_date, current_no, hdrs):
+    """If page title isn't already formatted, assign the next QUO-YYYY-XXXX."""
+    if QUO_PATTERN.match(current_no or ""):
+        return current_no   # already formatted — nothing to do
+
+    year = datetime.now().year
+    if issue_date:
+        try:
+            year = datetime.fromisoformat(issue_date).year
+        except Exception:
+            pass
+
+    new_no = next_quotation_number(year, hdrs)
+    if not new_no:
+        return current_no
+
+    try:
+        requests.patch(
+            f"https://api.notion.com/v1/pages/{page_id}",
+            headers=hdrs,
+            json={"properties": {
+                "Quotation No.": {"title": [{"text": {"content": new_no}}]}
+            }},
+            timeout=10
+        ).raise_for_status()
+        print(f"[INFO] Quotation numbered: {new_no}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Could not update quotation title: {e}", file=sys.stderr)
+    return new_no
+
+
+# ─────────────────────────────────────────────
 #  1. Fetch quotation data
 # ─────────────────────────────────────────────
 def fetch_quotation_data(page_id):
@@ -112,6 +180,9 @@ def fetch_quotation_data(page_id):
     payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
     quote_type    = (props.get("Quote Type", {}).get("select") or {}).get("name", "")
     amount        = props.get("Amount", {}).get("number") or 0
+
+    # Auto-assign formatted quotation number if not already set
+    quotation_no = assign_quotation_number(page_id, issue_date, quotation_no, hdrs)
 
     # Company
     company_name = company_address = ""

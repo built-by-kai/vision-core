@@ -16,6 +16,7 @@ Collection    : cbe7a0bc-4856-49c2-99fa-29ec147df2a1
 """
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler
@@ -36,6 +37,9 @@ from reportlab.platypus import (
 # ─────────────────────────────────────────────
 VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
 IMPL_FORM_BASE = "https://vision-core-delta.vercel.app/api/implementation_form"
+
+QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
+INV_PATTERN = re.compile(r"^INV-\d{4}-\d{4}(-[DFR])?$")
 
 # Map Quotation "Quote Type" values → package slugs for intake form
 QUOTE_TYPE_TO_PKG = {
@@ -114,6 +118,63 @@ def fetch_company_details(hdrs):
 
 
 # ─────────────────────────────────────────────
+#  Auto-numbering
+# ─────────────────────────────────────────────
+# Invoice type → suffix mapping
+INV_SUFFIX = {
+    "Deposit":       "-D",
+    "Final Payment": "-F",
+    "Retainer":      "-R",
+    "Full Payment":  "",   # no suffix — it's the only invoice
+}
+
+def format_invoice_number(quotation_no, invoice_type, issue_date):
+    """
+    Derive invoice number from quotation number.
+    QUO-2026-0001 + Deposit  →  INV-2026-0001-D
+    QUO-2026-0001 + Final    →  INV-2026-0001-F
+    QUO-2026-0001 + Full     →  INV-2026-0001
+    QUO-2026-0001 + Retainer →  INV-2026-0001-R
+    Falls back to INV-YYYY-XXXX (timestamp-based) if no quotation link.
+    """
+    suffix = INV_SUFFIX.get(invoice_type, "")
+    m = QUO_PATTERN.match(quotation_no or "")
+    if m:
+        return f"INV-{m.group(1)}-{m.group(2)}{suffix}"
+
+    # No linked quotation — use current year + timestamp as fallback
+    year = datetime.now().year
+    if issue_date:
+        try:
+            year = datetime.fromisoformat(issue_date).year
+        except Exception:
+            pass
+    ts = datetime.now().strftime("%H%M")   # e.g. 1432 — unique enough within a day
+    return f"INV-{year}-{ts}{suffix}"
+
+
+def assign_invoice_number(page_id, current_no, quotation_no, invoice_type, issue_date, hdrs):
+    """If invoice title isn't already formatted, assign the derived number."""
+    if INV_PATTERN.match(current_no or ""):
+        return current_no   # already formatted
+
+    new_no = format_invoice_number(quotation_no, invoice_type, issue_date)
+    try:
+        requests.patch(
+            f"https://api.notion.com/v1/pages/{page_id}",
+            headers=hdrs,
+            json={"properties": {
+                "Invoice No.": {"title": [{"text": {"content": new_no}}]}
+            }},
+            timeout=10
+        ).raise_for_status()
+        print(f"[INFO] Invoice numbered: {new_no}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Could not update invoice title: {e}", file=sys.stderr)
+    return new_no
+
+
+# ─────────────────────────────────────────────
 #  1. Fetch invoice + linked quotation data
 # ─────────────────────────────────────────────
 def fetch_invoice_data(page_id, hdrs):
@@ -171,9 +232,10 @@ def fetch_invoice_data(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] PIC: {e}", file=sys.stderr)
 
-    # ── Quotation: pull line items + package type ──
+    # ── Quotation: pull line items + package type + quotation number ──
     line_items = []
     pkg_slug = ""
+    quotation_no = ""
     for rel in props.get("Quotation", {}).get("relation", [])[:1]:
         try:
             qid = rel["id"].replace("-", "")
@@ -181,6 +243,9 @@ def fetch_invoice_data(page_id, hdrs):
                               headers=hdrs, timeout=10)
             qr.raise_for_status()
             qprops = qr.json().get("properties", {})
+
+            # Quotation number for deriving invoice number
+            quotation_no = _plain(qprops.get("Quotation No.", {}).get("title", []))
 
             # Package slug from Quote Type
             qt = (qprops.get("Quote Type", {}).get("select") or {}).get("name", "")
@@ -254,6 +319,11 @@ def fetch_invoice_data(page_id, hdrs):
     if not line_items and total_amount:
         line_items = [{"name": "Professional Services", "desc": "",
                        "qty": 1, "unit_price": float(total_amount)}]
+
+    # Auto-assign formatted invoice number if not already set
+    invoice_no = assign_invoice_number(
+        page_id, invoice_no, quotation_no, invoice_type, issue_date, hdrs
+    )
 
     return {
         "invoice_no":      invoice_no or "INV",
