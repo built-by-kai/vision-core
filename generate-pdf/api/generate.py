@@ -622,7 +622,7 @@ class handler(BaseHTTPRequestHandler):
 
             safe     = (data["quotation_no"]
                         .replace(" ","-").replace("/","-").replace("\\","-"))
-            filename = f"quotations/{safe}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            filename = f"quotations/{safe}.pdf"
 
             pdf_url = upload_to_blob(pdf_buffer, filename)
 
