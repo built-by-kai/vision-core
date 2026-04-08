@@ -138,15 +138,24 @@ def notion_patch(endpoint, data):
 
 
 def extract_page_id(body):
-    """Extract page_id from Notion webhook payload."""
-    # Notion button webhook sends: { "data": { "page_id": "..." } }
+    """Extract page_id from Notion webhook payload.
+
+    Notion button webhook format:
+    {
+      "source": { "type": "automation", "page_id": "..." },
+      "data": { "Quotation No.": "...", ... }
+    }
+    """
+    # Notion button: page_id is under "source"
+    if "source" in body and "page_id" in body.get("source", {}):
+        return body["source"]["page_id"]
+    # Also check under "data" (older format / manual calls)
     if "data" in body and "page_id" in body["data"]:
         return body["data"]["page_id"]
     # Fallback: check for page_id at top level
     if "page_id" in body:
         return body["page_id"]
-    # Fallback: check query params passed in URL
-    raise ValueError("No page_id found in webhook payload")
+    raise ValueError(f"No page_id found in webhook payload. Keys received: {list(body.keys())}")
 
 
 def get_prop_value(props, name, prop_type=None):
@@ -669,7 +678,9 @@ class handler(BaseHTTPRequestHandler):
 
             # Parse body
             content_length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(content_length)) if content_length else {}
+            raw = self.rfile.read(content_length) if content_length else b"{}"
+            body = json.loads(raw)
+            print(f"Webhook payload: {json.dumps(body)[:500]}", file=sys.stderr)
 
             # Extract page_id
             page_id = extract_page_id(body)
