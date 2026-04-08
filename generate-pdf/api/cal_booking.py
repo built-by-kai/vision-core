@@ -41,8 +41,8 @@ ROLE_MAP = {
     "operations manager":       "Ops Manager",
     "ops manager":              "Ops Manager",
     "marketing manager":        "Marketing Manager",
-    "project manager":          "Biz Dev Manager",   # closest match in Notion
-    "executive staff":          "Ops Manager",        # closest match in Notion
+    "project manager":          "Project Manager",
+    "executive staff":          "Executive Staff",
     "biz dev manager":          "Biz Dev Manager",
     "other":                    None,                 # skip — no matching option
 }
