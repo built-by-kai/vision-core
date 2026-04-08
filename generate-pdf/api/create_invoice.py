@@ -3,15 +3,17 @@ create_invoice.py
 POST /api/create_invoice   { "page_id": "<quotation_page_id>" }
 
 Triggered by Notion automation when Quotation Status → Approved.
-Creates a pre-filled Invoice page, links it to the Quotation, and
-returns the new Invoice page ID.
+1. Creates a pre-filled Invoice page linked to the Quotation
+2. Creates a Project page (central hub) linked to Company, Quotation,
+   Invoice — with line items from the quotation written as Notes
 
 Auto-determines Invoice Type:
   Payment Terms = "Full Upfront"  → Full Payment (no deposit)
   Payment Terms = "50% Deposit"   → Deposit invoice first
 
-Quotation DB  : f8167f0bda054307b90b17ad6b9c5cf8
-Invoice DB    : 9227dda9c4be42a1a4c6b1bce4862f8c
+Quotation DB : f8167f0bda054307b90b17ad6b9c5cf8
+Invoice DB   : 9227dda9c4be42a1a4c6b1bce4862f8c
+Projects DB  : 5719b2672d3442a29a22637a35398260
 """
 import json
 import os
@@ -23,6 +25,7 @@ import requests
 
 QUOTATION_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 INVOICE_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
+PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
 
 
 def _plain(arr):
@@ -38,23 +41,106 @@ def _hdrs():
     }
 
 
+def fetch_line_items(quotation_page_id, hdrs):
+    """
+    Fetch child blocks of the Quotation page and look for a child_database
+    (the line-items inline DB). Then query that DB for all rows.
+    Returns a list of dicts: {name, qty, unit_price, amount, description}
+    """
+    line_items = []
+
+    # 1. Get child blocks to find the inline line-items database
+    r = requests.get(
+        f"https://api.notion.com/v1/blocks/{quotation_page_id}/children",
+        headers=hdrs, timeout=15
+    )
+    r.raise_for_status()
+    blocks = r.json().get("results", [])
+
+    child_db_id = None
+    for block in blocks:
+        if block.get("type") == "child_database":
+            child_db_id = block["id"].replace("-", "")
+            break
+
+    if not child_db_id:
+        return line_items
+
+    # 2. Query the child DB for all rows
+    has_more = True
+    cursor   = None
+    while has_more:
+        payload = {"page_size": 100}
+        if cursor:
+            payload["start_cursor"] = cursor
+
+        r = requests.post(
+            f"https://api.notion.com/v1/databases/{child_db_id}/query",
+            headers=hdrs, json=payload, timeout=15
+        )
+        r.raise_for_status()
+        data     = r.json()
+        has_more = data.get("has_more", False)
+        cursor   = data.get("next_cursor")
+
+        for page in data.get("results", []):
+            props = page.get("properties", {})
+
+            name        = _plain(props.get("Item", props.get("Name", props.get("Service", {}))).get("title", []))
+            description = _plain(props.get("Description", {}).get("rich_text", []))
+            qty         = (props.get("Qty",      {}).get("number") or
+                           props.get("Quantity", {}).get("number") or 1)
+            unit_price  = (props.get("Unit Price", {}).get("number") or
+                           props.get("Rate",       {}).get("number") or 0)
+            amount      = (props.get("Amount", {}).get("number") or
+                           props.get("Total",  {}).get("formula", {}).get("number") or
+                           (qty * unit_price))
+
+            if name:
+                line_items.append({
+                    "name":        name,
+                    "qty":         qty,
+                    "unit_price":  unit_price,
+                    "amount":      amount,
+                    "description": description,
+                })
+
+    return line_items
+
+
 def fetch_quotation(page_id, hdrs):
     r = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
                      headers=hdrs, timeout=15)
     r.raise_for_status()
     props = r.json().get("properties", {})
 
-    quotation_no   = _plain(props.get("Quotation No.", {}).get("title", []))
-    amount         = props.get("Amount", {}).get("number") or 0
-    payment_terms  = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
-    issue_date     = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
-    status         = (props.get("Status", {}).get("select") or {}).get("name", "")
+    quotation_no  = _plain(props.get("Quotation No.", {}).get("title", []))
+    amount        = props.get("Amount", {}).get("number") or 0
+    payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
+    issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
+    status        = (props.get("Status", {}).get("select") or {}).get("name", "")
+    quote_type    = (props.get("Package", props.get("Type", props.get("Quote Type", {}))).get("select") or {}).get("name", "")
 
-    # Company relation IDs
-    company_ids = [rel["id"] for rel in props.get("Company", {}).get("relation", [])]
+    # Company relation IDs + name
+    company_rels = props.get("Company", {}).get("relation", [])
+    company_ids  = [rel["id"] for rel in company_rels]
+    company_name = ""
+    if company_ids:
+        cr = requests.get(f"https://api.notion.com/v1/pages/{company_ids[0]}",
+                          headers=hdrs, timeout=15)
+        if cr.ok:
+            cp = cr.json().get("properties", {})
+            # Company name is usually the title property
+            for v in cp.values():
+                if v.get("type") == "title":
+                    company_name = _plain(v.get("title", []))
+                    break
 
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
+
+    # Fetch line items from the quotation's child inline DB
+    line_items = fetch_line_items(page_id, hdrs)
 
     return {
         "quotation_no":      quotation_no,
@@ -62,24 +148,26 @@ def fetch_quotation(page_id, hdrs):
         "payment_terms":     payment_terms,
         "issue_date":        issue_date,
         "status":            status,
+        "quote_type":        quote_type,
         "company_ids":       company_ids,
+        "company_name":      company_name,
         "existing_invoices": existing_invoices,
+        "line_items":        line_items,
     }
 
 
 def create_invoice(quotation_id, quotation_data, hdrs):
     """Create the Invoice page in Notion and link it back to the Quotation."""
-    today     = datetime.now().date().isoformat()
-    terms     = quotation_data.get("payment_terms", "")
-    amount    = quotation_data.get("amount", 0)
+    today  = datetime.now().date().isoformat()
+    terms  = quotation_data.get("payment_terms", "")
+    amount = quotation_data.get("amount", 0)
 
     # Determine invoice type and due date
     if terms == "Full Upfront":
         inv_type   = "Full Payment"
         dep_amount = None
-        # Due in 7 days
         due_date   = (datetime.now() + timedelta(days=7)).date().isoformat()
-        inv_status = "Deposit Pending"   # reuse field — treated as "payment pending"
+        inv_status = "Deposit Pending"
     else:
         # 50% Deposit (default)
         inv_type   = "Deposit"
@@ -89,12 +177,12 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
     # Build properties
     props = {
-        "Invoice No.":   {"title": [{"text": {"content": ""}}]},  # auto-numbered on Generate PDF
-        "Invoice Type":  {"select": {"name": inv_type}},
-        "Status":        {"select": {"name": inv_status}},
-        "Issue Date":    {"date": {"start": today}},
-        "Total Amount":  {"number": amount},
-        "Quotation":     {"relation": [{"id": quotation_id}]},
+        "Invoice No.":  {"title": [{"text": {"content": ""}}]},  # auto-numbered on Generate PDF
+        "Invoice Type": {"select": {"name": inv_type}},
+        "Status":       {"select": {"name": inv_status}},
+        "Issue Date":   {"date": {"start": today}},
+        "Total Amount": {"number": amount},
+        "Quotation":    {"relation": [{"id": quotation_id}]},
     }
 
     if quotation_data["company_ids"]:
@@ -118,6 +206,88 @@ def create_invoice(quotation_id, quotation_data, hdrs):
                       headers=hdrs, json=body, timeout=15)
     r.raise_for_status()
     return r.json()
+
+
+def create_project(company_ids, company_name, quotation_id, invoice_id,
+                   quotation_no, amount, quote_type, line_items, hdrs):
+    """
+    Create a Project page as the central hub for this client system build.
+    Links Company, Quotation, and Invoice. Writes line items as Notes blocks.
+    Returns the new project page ID.
+    """
+    project_name = f"{company_name} — {quotation_no}" if company_name else quotation_no
+
+    props = {
+        "Project Name": {"title": [{"text": {"content": project_name}}]},
+        "Status":       {"select": {"name": "Deposit Paid"}},
+        "Phase":        {"select": {"name": "Phase 1"}},
+        "Total Value":  {"number": amount},
+        "Quotation":    {"relation": [{"id": quotation_id}]},
+        "Invoice":      {"relation": [{"id": invoice_id}]},
+    }
+
+    if company_ids:
+        props["Company"] = {"relation": [{"id": company_ids[0]}]}
+
+    if quote_type:
+        props["Package"] = {"select": {"name": quote_type}}
+
+    # Build line-item notes as rich_text blocks
+    notes_blocks = []
+    if line_items:
+        # Heading
+        notes_blocks.append({
+            "object": "block",
+            "type":   "heading_3",
+            "heading_3": {
+                "rich_text": [{"type": "text", "text": {"content": "Quoted Line Items"}}]
+            }
+        })
+        for item in line_items:
+            label = item["name"]
+            if item.get("qty") and item.get("unit_price"):
+                label += f"  ×{item['qty']}  @ ${item['unit_price']:,.2f}"
+            if item.get("amount"):
+                label += f"  =  ${item['amount']:,.2f}"
+            if item.get("description"):
+                label += f"\n{item['description']}"
+
+            notes_blocks.append({
+                "object": "block",
+                "type":   "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [{"type": "text", "text": {"content": label}}]
+                }
+            })
+
+    body = {
+        "parent":     {"database_id": PROJECTS_DB},
+        "icon":       {"type": "emoji", "emoji": "🏗️"},
+        "properties": props,
+        "children":   notes_blocks,
+    }
+
+    r = requests.post("https://api.notion.com/v1/pages",
+                      headers=hdrs, json=body, timeout=15)
+    r.raise_for_status()
+    return r.json()["id"]
+
+
+def link_project_to_invoice(invoice_id, project_id, hdrs):
+    """Write the Project relation back onto the Invoice page (if the field exists)."""
+    body = {"properties": {"Project": {"relation": [{"id": project_id}]}}}
+    r = requests.patch(f"https://api.notion.com/v1/pages/{invoice_id}",
+                       headers=hdrs, json=body, timeout=15)
+    # Non-fatal — field may not exist yet; caller logs the outcome
+    return r.ok
+
+
+def link_project_to_quotation(quotation_id, project_id, hdrs):
+    """Write the Project relation back onto the Quotation page (if the field exists)."""
+    body = {"properties": {"Project": {"relation": [{"id": project_id}]}}}
+    r = requests.patch(f"https://api.notion.com/v1/pages/{quotation_id}",
+                       headers=hdrs, json=body, timeout=15)
+    return r.ok
 
 
 class handler(BaseHTTPRequestHandler):
@@ -163,7 +333,7 @@ class handler(BaseHTTPRequestHandler):
             if not os.environ.get("NOTION_API_KEY"):
                 self._respond(500, {"error": "NOTION_API_KEY not set"}); return
 
-            hdrs = _hdrs()
+            hdrs      = _hdrs()
             quotation = fetch_quotation(page_id, hdrs)
 
             print(f"[INFO] Quotation: {quotation['quotation_no']} | "
@@ -173,28 +343,50 @@ class handler(BaseHTTPRequestHandler):
             # Guard: only create if Approved
             if quotation["status"] != "Approved":
                 self._respond(200, {
-                    "status":  "skipped",
-                    "reason":  f"Quotation status is '{quotation['status']}', not Approved",
+                    "status": "skipped",
+                    "reason": f"Quotation status is '{quotation['status']}', not Approved",
                 }); return
 
             # Guard: don't create duplicate if an invoice already exists
             if quotation["existing_invoices"]:
                 self._respond(200, {
-                    "status":  "skipped",
-                    "reason":  "Invoice already exists for this quotation",
+                    "status":      "skipped",
+                    "reason":      "Invoice already exists for this quotation",
                     "invoice_ids": quotation["existing_invoices"],
                 }); return
 
+            # 1. Create Invoice
             new_inv = create_invoice(page_id, quotation, hdrs)
             inv_id  = new_inv["id"]
-
             print(f"[INFO] Invoice created: {inv_id}", file=sys.stderr)
+
+            # 2. Create Project hub
+            project_id = create_project(
+                company_ids  = quotation["company_ids"],
+                company_name = quotation["company_name"],
+                quotation_id = page_id,
+                invoice_id   = inv_id,
+                quotation_no = quotation["quotation_no"],
+                amount       = quotation["amount"],
+                quote_type   = quotation["quote_type"],
+                line_items   = quotation["line_items"],
+                hdrs         = hdrs,
+            )
+            print(f"[INFO] Project created: {project_id}", file=sys.stderr)
+
+            # 3. Back-link Project onto Invoice and Quotation (non-fatal if field missing)
+            inv_linked  = link_project_to_invoice(inv_id, project_id, hdrs)
+            quo_linked  = link_project_to_quotation(page_id, project_id, hdrs)
+            print(f"[INFO] Back-linked Project → Invoice:{inv_linked}  Quotation:{quo_linked}",
+                  file=sys.stderr)
 
             self._respond(200, {
                 "status":       "success",
                 "quotation_no": quotation["quotation_no"],
                 "invoice_id":   inv_id,
                 "invoice_type": "Full Payment" if quotation["payment_terms"] == "Full Upfront" else "Deposit",
+                "project_id":   project_id,
+                "line_items":   len(quotation["line_items"]),
             })
 
         except Exception as e:
