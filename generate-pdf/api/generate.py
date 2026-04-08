@@ -700,8 +700,17 @@ class handler(BaseHTTPRequestHandler):
             body = json.loads(raw)
             print(f"Webhook payload: {json.dumps(body)[:500]}", file=sys.stderr)
 
-            # Extract page_id
-            page_id = extract_page_id(body)
+            # Try body first (Notion webhook)
+            try:
+                page_id = extract_page_id(body)
+            except:
+                # Fallback: query param (for manual/button testing)
+                query = parse_qs(urlparse(self.path).query)
+                page_id = query.get("pageId", [None])[0]
+
+            if not page_id:
+                raise ValueError("No page_id found in body or query")
+
             print(f"Generating PDF for page: {page_id}", file=sys.stderr)
 
             # Fetch data from Notion
