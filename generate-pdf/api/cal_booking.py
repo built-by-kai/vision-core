@@ -141,7 +141,7 @@ def process_booking(payload):
     role_raw     = rv(responses, "role")
     team_size    = rv(responses, "team_size", "teamSize")
     challenge    = rv(responses, "notes", "challenge", "operationalChallenge")
-    referral_raw = rv(responses, "referral", "source", "whereDidYouFindMe", default=[])
+    referral_raw = rv(responses, "source", "referral", "whereDidYouFindMe", default=[])
     notion_exp   = rv(responses, "notion_familiarity", "notionExperience", "notion")
 
     # Booking metadata
