@@ -346,45 +346,48 @@ def generate_pdf(data):
     story.append(meta)
     story.append(Spacer(1, 8*mm))
 
-    # ── 4. Prepared for ───────────────────────
-    story.append(Paragraph("Prepared for",
-                            st("pf", fontSize=11, fontName="Helvetica-Bold",
-                               textColor=C_D400, leading=16)))
-    story.append(Spacer(1, 3*mm))
-    story.append(Paragraph(f"<b>{data.get('company_name') or 'N/A'}</b>",
-                            st("co2", fontSize=11, fontName="Helvetica-Bold",
-                               textColor=C_BLACK, leading=15)))
+    # ── 4. Bill To ────────────────────────────
+    story.append(Paragraph(
+        tracked("BILL TO"),
+        st("bt_lbl", fontSize=7, textColor=C_D400, leading=12)
+    ))
+    story.append(Spacer(1, 2*mm))
+    story.append(Paragraph(
+        f"<b>{data.get('company_name') or 'N/A'}</b>",
+        st("co2", fontSize=11, fontName="Helvetica-Bold", textColor=C_BLACK, leading=15)
+    ))
     if data.get("pic_name"):
-        story.append(Paragraph(f"PIC: {data['pic_name']}",
-                                st("pic", fontSize=9, textColor=C_D500, leading=13)))
+        story.append(Paragraph(
+            f"Attn: {data['pic_name']}",
+            st("pic", fontSize=9, textColor=C_D500, leading=13)
+        ))
     if data.get("company_address"):
-        story.append(Paragraph(data["company_address"].replace("\n","<br/>"),
-                                st("adr", fontSize=9, textColor=C_D500, leading=13)))
+        story.append(Paragraph(
+            data["company_address"].replace("\n", "<br/>"),
+            st("adr", fontSize=9, textColor=C_D500, leading=13)
+        ))
     if data.get("pic_email"):
-        story.append(Paragraph(data["pic_email"],
-                                st("em", fontSize=9, textColor=C_D500, leading=13)))
+        story.append(Paragraph(
+            data["pic_email"],
+            st("em", fontSize=9, textColor=C_D500, leading=13)
+        ))
     story.append(Spacer(1, 8*mm))
 
     # ── 5. Line items ─────────────────────────
-    # Columns: PRODUCT | DESCRIPTION | QTY | UNIT PRICE | AMOUNT
-    # widths:  26%     | 32%         | 8%  | 17%        | 17%
-    cw = [usable*0.26, usable*0.32, usable*0.08, usable*0.17, usable*0.17]
+    # Columns: DESCRIPTION (product name + detail) | QTY | UNIT PRICE | AMOUNT
+    # widths:  55%                                  | 10% | 18%        | 17%
+    cw = [usable*0.55, usable*0.10, usable*0.18, usable*0.17]
 
-    s_th  = st("th",  fontSize=7, fontName="Helvetica-Bold",
-               textColor=C_WHITE)
-    s_thr = st("thr", fontSize=7, fontName="Helvetica-Bold",
-               textColor=C_WHITE, alignment=2)
-    s_thc = st("thc", fontSize=7, fontName="Helvetica-Bold",
-               textColor=C_WHITE, alignment=1)
+    s_th  = st("th",  fontSize=7, fontName="Helvetica-Bold", textColor=C_WHITE)
+    s_thr = st("thr", fontSize=7, fontName="Helvetica-Bold", textColor=C_WHITE, alignment=2)
+    s_thc = st("thc", fontSize=7, fontName="Helvetica-Bold", textColor=C_WHITE, alignment=1)
 
     s_name = st("nm",  fontSize=9, fontName="Helvetica-Bold", textColor=C_BLACK)
-    s_desc = st("dc",  fontSize=8, textColor=C_D500, leading=11)
-    s_body = st("bd",  fontSize=9, textColor=C_D700)
+    s_desc = st("dc",  fontSize=8, textColor=C_D500, leading=12)
     s_num  = st("nu",  fontSize=9, textColor=C_D700, alignment=2)
     s_numc = st("nuc", fontSize=9, textColor=C_D700, alignment=1)
 
     rows = [[
-        Paragraph(tracked("PRODUCT"),     s_th),
         Paragraph(tracked("DESCRIPTION"), s_th),
         Paragraph(tracked("QTY"),         s_thc),
         Paragraph(tracked("UNIT PRICE"),  s_thr),
@@ -398,16 +401,24 @@ def generate_pdf(data):
         amt   = qty * price
         total += amt
 
-        # Description column: plain text, wrapped
+        # Description cell: product name bold on top, detail text below
+        desc_inner = [
+            [Paragraph(item.get("name", ""), s_name)],
+        ]
+        if item.get("desc"):
+            desc_inner.append(
+                [Paragraph(item["desc"], s_desc)]
+            )
         desc_cell = Table(
-            [[Paragraph(item.get("desc", "") or "—", s_desc)]],
-            colWidths=[cw[1] - 16],
-            style=TableStyle([("PADDING",(0,0),(-1,-1),0),
-                               ("VALIGN", (0,0),(-1,-1),"TOP")])
+            desc_inner,
+            colWidths=[cw[0] - 16],
+            style=TableStyle([
+                ("PADDING", (0,0),(-1,-1), 0),
+                ("VALIGN",  (0,0),(-1,-1), "TOP"),
+            ])
         )
 
         rows.append([
-            Paragraph(item.get("name", ""), s_name),
             desc_cell,
             Paragraph(f"{qty:g}", s_numc),
             Paragraph(f"RM {price:,.2f}", s_num),
@@ -450,47 +461,49 @@ def generate_pdf(data):
                      textColor=C_BLACK, alignment=2)),
     ])
 
-    tot_tbl = Table(tot_rows, colWidths=[usable*0.72, usable*0.28])
+    # Totals align to the right two columns of the table (UNIT PRICE + AMOUNT = 35%)
+    tot_tbl = Table(tot_rows, colWidths=[usable*0.65, usable*0.35])
     tot_tbl.setStyle(TableStyle([
-        ("PADDING",   (0,0),(-1,-1),        5),
+        ("PADDING",   (0,0),(-1,-1),        [4, 5, 4, 5]),
         ("VALIGN",    (0,0),(-1,-1),        "MIDDLE"),
         ("BACKGROUND",(0,n_tot),(-1,n_tot), C_D50),
         ("LINEABOVE", (0,n_tot),(-1,n_tot), 1, C_BLACK),
         ("LINEBELOW", (0,n_tot),(-1,n_tot), 1, C_BLACK),
     ]))
     story.append(tot_tbl)
-    story.append(Spacer(1, 7*mm))
+    story.append(Spacer(1, 9*mm))
 
     # ── 7. Thin divider ───────────────────────
     story.append(HRFlowable(width=usable, color=C_D200, thickness=0.5))
     story.append(Spacer(1, 6*mm))
 
-    # ── 8. NOTES & TERMS  |  PAYMENT DETAILS ─
+    # ── 8. NOTES & TERMS  |  PAYMENT DETAILS (two columns) ───
     terms_html = (f"<font size='7' color='#9CA3AF'>{tracked('NOTES & TERMS')}</font>"
                   f"<br/><br/>")
     for term in TERMS:
         terms_html += f"<font size='8' color='#4B5563'>{term}</font><br/>"
 
+    pay_lines = []
+    if co_pay:    pay_lines.append(f"<b>Method</b>  {co_pay}")
+    if co_bank:   pay_lines.append(f"<b>Bank</b>  {co_bank}")
+    if co_holder: pay_lines.append(f"<b>Account Name</b>  {co_holder}")
+    if co_acc:    pay_lines.append(f"<b>Account No.</b>  {co_acc}")
+
     pay_html = (f"<font size='7' color='#9CA3AF'>{tracked('PAYMENT DETAILS')}</font>"
                 f"<br/><br/>")
-    if co_pay:
-        pay_html += f"<font size='8' color='#4B5563'><b>Method</b>  {co_pay}</font><br/>"
-    if co_bank:
-        pay_html += f"<font size='8' color='#4B5563'><b>Bank</b>  {co_bank}</font><br/>"
-    if co_holder:
-        pay_html += f"<font size='8' color='#4B5563'><b>Account Name</b>  {co_holder}</font><br/>"
-    if co_acc:
-        pay_html += f"<font size='8' color='#4B5563'><b>Account No.</b>  {co_acc}</font>"
+    pay_html += "<br/>".join(
+        f"<font size='8' color='#4B5563'>{l}</font>" for l in pay_lines
+    )
 
     bot = Table([[
-        Paragraph(terms_html, st("tp", fontSize=8, leading=13, textColor=C_D600)),
-        Paragraph(pay_html,   st("pp", fontSize=8, leading=13, textColor=C_D600)),
+        Paragraph(terms_html, st("tp", fontSize=8, leading=14, textColor=C_D600)),
+        Paragraph(pay_html,   st("pp", fontSize=8, leading=14, textColor=C_D600)),
     ]], colWidths=[usable*0.55, usable*0.45])
     bot.setStyle(TableStyle([
         ("VALIGN",       (0,0),(-1,-1), "TOP"),
         ("LEFTPADDING",  (0,0),(0,-1),  0),
-        ("RIGHTPADDING", (0,0),(0,-1),  16),
-        ("LEFTPADDING",  (1,0),(1,-1),  16),
+        ("RIGHTPADDING", (0,0),(0,-1),  20),
+        ("LEFTPADDING",  (1,0),(1,-1),  20),
         ("LINEAFTER",    (0,0),(0,-1),  0.5, C_D200),
     ]))
     story.append(bot)
