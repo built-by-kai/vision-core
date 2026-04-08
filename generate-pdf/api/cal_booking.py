@@ -211,7 +211,7 @@ def process_booking(payload):
                 co_props["Industry"] = {"select": {"name": industry}}
             if team_size:
                 co_props["Team Size"] = {"select": {"name": team_size}}
-            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_url="https://www.notion.so/icons/building_gray.svg")
+            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_url="https://www.notion.so/icons/building_blue.svg")
             company_id = new_co["id"].replace("-", "")
             company_is_new = True
             print(f"[INFO] Created company: {company_id}", file=sys.stderr)
@@ -258,7 +258,7 @@ def process_booking(payload):
             if src:
                 cl_props["Source"] = {"multi_select": src}
 
-            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_url="https://www.notion.so/icons/person_gray.svg")
+            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_url="https://www.notion.so/icons/person_blue.svg")
             client_id = new_cl["id"].replace("-", "")
             is_new_client = True
             print(f"[INFO] Created client: {client_id}", file=sys.stderr)
@@ -308,17 +308,18 @@ def process_booking(payload):
         mtg_props["Date"] = {"date": {"start": start_time, "end": end_time or None}}
     if meeting_url:
         mtg_props["Meeting URL"] = {"url": meeting_url}
-    if client_id:
-        mtg_props["Attendee"] = {"relation": [{"id": client_id}]}
-    if lead_id:
-        mtg_props["Participants"] = {"relation": [{"id": lead_id}]}
+    if company_id:
+        mtg_props["Company"] = {"relation": [{"id": company_id}]}
 
     new_mtg = create_page(MEETINGS_DB, mtg_props, hdrs)
     mtg_id  = new_mtg["id"]
     print(f"[INFO] Created meeting: {mtg_id}", file=sys.stderr)
 
-    # ── 6. Link meeting back to Lead ───────────
+    # ── 6. Link meeting back to Lead & Client ──
+    # Participants and Attendee are synced relations — must be set from primary side
     update_page(lead_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
+    if client_id:
+        update_page(client_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
 
     return {
         "status":         "success",
