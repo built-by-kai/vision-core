@@ -309,16 +309,34 @@ def fetch_quotation_data(page_id):
                 unit_price = get_prop_value(ip, "Unit Price", "number") or 0
                 notes = get_prop_value(ip, "Notes", "title")
 
-                # Try to get product description from rollup
-                desc = ""
+                # Get product NAME from relation
+                product_name = ""
+                product_ids = get_prop_value(ip, "Product", "relation")
+                if product_ids:
+                    try:
+                        prod_page = notion_get(f"/pages/{product_ids[0]}")
+                        pp = prod_page.get("properties", {})
+                        product_name = get_prop_value(pp, "Name", "title")
+                    except Exception:
+                        pass
+
+                # Get product description from rollup
+                prod_desc = ""
                 product_desc = get_prop_value(ip, "Product Description", "rollup")
                 if isinstance(product_desc, list) and product_desc:
-                    desc = product_desc[0]
+                    prod_desc = product_desc[0]
                 elif isinstance(product_desc, str):
-                    desc = product_desc
+                    prod_desc = product_desc
 
-                # Use notes as description fallback, or product description
-                description = notes if notes else desc
+                # Build description: "Product Name — description" or fallback to notes
+                if product_name and prod_desc:
+                    description = f"<b>{product_name}</b> — {prod_desc}"
+                elif product_name:
+                    description = f"<b>{product_name}</b>"
+                elif notes:
+                    description = notes
+                else:
+                    description = prod_desc
 
                 if description or unit_price:
                     line_items.append({
