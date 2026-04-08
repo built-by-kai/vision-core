@@ -477,16 +477,22 @@ class handler(BaseHTTPRequestHandler):
             except Exception:
                 body = {}
 
-            print(f"[DEBUG] Payload keys: {list(body.keys())}", file=sys.stderr)
+            print(f"[DEBUG] Full payload: {json.dumps(body)}", file=sys.stderr)
 
-            # Extract page_id (Notion sends it in source.page_id)
+            # Extract page_id — Notion button webhooks send it in several possible places
             page_id = None
             if "source" in body:
-                page_id = body["source"].get("page_id")
+                src = body["source"]
+                page_id = src.get("page_id") or src.get("id")
             if not page_id and "data" in body:
-                page_id = body["data"].get("page_id")
+                dat = body["data"]
+                # Notion automation sends full page object under data, with id at top level
+                page_id = dat.get("page_id") or dat.get("id")
             if not page_id:
-                page_id = body.get("page_id")
+                page_id = body.get("page_id") or body.get("id")
+            # Strip hyphens if present (Notion sometimes sends without dashes)
+            if page_id:
+                page_id = page_id.replace("-", "")
 
             if not page_id:
                 self._respond(400, {"error": "No page_id found in request"})
