@@ -248,23 +248,15 @@ def fetch_quotation_data(page_id):
                         # ── Notes (extra line item note) ──────────────────────
                         notes = _plain(rp.get("Notes", {}).get("title", []))
 
-                        # Build description cell: bold name + description below
-                        if product_name:
-                            cell = f"<b>{product_name}</b>"
-                            if product_desc:
-                                cell += f"<br/><font size='8' color='#666666'>{product_desc}</font>"
-                            if notes:
-                                cell += f"<br/><font size='8' color='#888888'><i>{notes}</i></font>"
-                        else:
-                            cell = product_desc or notes or ""
-
-                        item["description"] = cell
+                        # Store name and description separately for distinct columns
+                        item["name"] = product_name or notes or ""
+                        item["desc"] = product_desc or ""
 
                         # ── Qty & Unit Price ──────────────────────
                         item["qty"]        = rp.get("Qty", {}).get("number") or 1
                         item["unit_price"] = rp.get("Unit Price", {}).get("number") or 0
 
-                        if item.get("description"):
+                        if item.get("name") or item.get("desc"):
                             line_items.append(item)
 
                     # Stop after finding the first non-empty Line Items db
@@ -277,7 +269,7 @@ def fetch_quotation_data(page_id):
         print(f"[WARN] Could not fetch page blocks: {e}", file=sys.stderr)
 
     if not line_items and amount:
-        line_items = [{"description": "Professional Services", "qty": 1, "unit_price": float(amount)}]
+        line_items = [{"name": "Professional Services", "desc": "", "qty": 1, "unit_price": float(amount)}]
 
     # Fetch our own company details
     company_details = fetch_company_details(headers)
@@ -392,28 +384,37 @@ def generate_pdf(data):
     ], colWidths=[usable * 0.45, usable * 0.1, usable * 0.45])
     info.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("PADDING", (0, 0), (-1, -1), 4)]))
     story.append(info)
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 4 * mm))
 
-    # Line items
-    col_w = [usable*0.05, usable*0.47, usable*0.08, usable*0.20, usable*0.20]
+    # ── Line items table: # | PRODUCT | DESCRIPTION | QTY | UNIT PRICE | AMOUNT ──
+    # col widths: 4% | 22% | 32% | 7% | 17% | 18%
+    col_w = [usable*0.04, usable*0.22, usable*0.32, usable*0.07, usable*0.17, usable*0.18]
+
+    s_th_l = s("thl", textColor=WHITE, fontName="Helvetica-Bold")          # left-aligned header
+    s_th_r = s("thr", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)  # right-aligned header
+    s_th_c = s("thc", textColor=WHITE, fontName="Helvetica-Bold", alignment=1)  # centre-aligned header
+
     rows = [[
-        Paragraph("NO.",          s_th),
-        Paragraph("DESCRIPTION",  s_th),
-        Paragraph("QTY",          s_th),
-        Paragraph("UNIT PRICE",   s("thr", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
-        Paragraph("AMOUNT (MYR)", s("thr2", textColor=WHITE, fontName="Helvetica-Bold", alignment=2)),
+        Paragraph("#",           s_th_c),
+        Paragraph("PRODUCT",     s_th_l),
+        Paragraph("DESCRIPTION", s_th_l),
+        Paragraph("QTY",         s_th_c),
+        Paragraph("UNIT PRICE",  s_th_r),
+        Paragraph("AMOUNT",      s_th_r),
     ]]
 
     total = 0.0
+    s_num_c = s("numc", textColor=DARK_TEXT, alignment=1)  # centre for qty
     for i, item in enumerate(data.get("line_items", []), 1):
         qty   = float(item.get("qty", 1))
         price = float(item.get("unit_price", 0))
         amt   = qty * price
         total += amt
         rows.append([
-            Paragraph(str(i), s_body),
-            Paragraph(item.get("description", ""), s_body),
-            Paragraph(f"{qty:g}", s_num),
+            Paragraph(str(i), s_num_c),
+            Paragraph(f"<b>{item.get('name', '')}</b>", s_body),
+            Paragraph(item.get("desc", ""), s("desc_cell", textColor=MID_TEXT, fontSize=8, leading=11)),
+            Paragraph(f"{qty:g}", s_num_c),
             Paragraph(f"{price:,.2f}", s_num),
             Paragraph(f"{amt:,.2f}", s_num),
         ])
@@ -421,11 +422,11 @@ def generate_pdf(data):
     has_deposit = (data.get("payment_terms") == "50% Deposit")
     total_i = len(rows)
 
+    # Total row — span cols 0-4 for label side, col 5 for amount
     rows.append([
-        "", "",
+        "", "", "", "",
         Paragraph("<b>TOTAL</b>",
                   s("tl", textColor=WHITE, fontName="Helvetica-Bold", fontSize=10, alignment=2)),
-        "",
         Paragraph(f"<b>MYR {total:,.2f}</b>",
                   s("tv", textColor=WHITE, fontName="Helvetica-Bold", fontSize=10, alignment=2)),
     ])
@@ -433,73 +434,69 @@ def generate_pdf(data):
     if has_deposit:
         deposit = total * 0.5
         rows.append([
-            "", "",
+            "", "", "", "",
             Paragraph("<b>DEPOSIT DUE (50%)</b>",
                       s("dl2", textColor=WHITE, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
-            "",
             Paragraph(f"<b>MYR {deposit:,.2f}</b>",
                       s("dv", textColor=WHITE, fontName="Helvetica-Bold", fontSize=9, alignment=2)),
         ])
 
     ts = TableStyle([
-        ("BACKGROUND",     (0, 0),       (-1, 0),       NAVY),
+        ("BACKGROUND",     (0, 0),       (-1, 0),           NAVY),
         ("ROWBACKGROUNDS", (0, 1),       (-1, total_i - 1), [WHITE, LIGHT_GRAY]),
         ("GRID",           (0, 0),       (-1, total_i - 1), 0.5, colors.HexColor("#DDDDDD")),
-        ("PADDING",        (0, 0),       (-1, -1),      6),
-        ("VALIGN",         (0, 0),       (-1, -1),      "TOP"),
-        ("BACKGROUND",     (0, total_i), (-1, -1),      NAVY),
-        ("LINEABOVE",      (0, total_i), (-1, total_i), 1.5, GOLD),
-        ("SPAN",           (0, total_i), (1, total_i)),
-        ("SPAN",           (2, total_i), (3, total_i)),
+        ("PADDING",        (0, 0),       (-1, -1),          5),
+        ("VALIGN",         (0, 0),       (-1, -1),          "TOP"),
+        ("BACKGROUND",     (0, total_i), (-1, -1),          NAVY),
+        ("LINEABOVE",      (0, total_i), (-1, total_i),     1.5, GOLD),
+        ("SPAN",           (0, total_i), (3, total_i)),     # merge first 4 cols
     ])
     if has_deposit:
         dep_i = len(rows) - 1
-        ts.add("SPAN", (0, dep_i), (1, dep_i))
-        ts.add("SPAN", (2, dep_i), (3, dep_i))
+        ts.add("SPAN", (0, dep_i), (3, dep_i))
 
     items_tbl = Table(rows, colWidths=col_w)
     items_tbl.setStyle(ts)
     story.append(items_tbl)
-    story.append(Spacer(1, 8 * mm))
+    story.append(Spacer(1, 5 * mm))
 
-    # Payment / Bank Details
-    if co_bank or co_acc:
-        story.append(Paragraph("Payment Details", s("pay_ttl", textColor=NAVY, fontName="Helvetica-Bold", fontSize=10)))
-        story.append(Spacer(1, 2 * mm))
-        pay_rows = []
-        if co_pay:
-            pay_rows.append([Paragraph("Payment Method:", s_label), Paragraph(co_pay, s_body)])
-        if co_bank:
-            pay_rows.append([Paragraph("Bank:", s_label), Paragraph(co_bank, s_body)])
-        if co_holder:
-            pay_rows.append([Paragraph("Account Name:", s_label), Paragraph(co_holder, s_body)])
-        if co_acc:
-            pay_rows.append([Paragraph("Account No.:", s_label), Paragraph(co_acc, s_body)])
-        pay_tbl = Table(pay_rows, colWidths=[usable * 0.2, usable * 0.8])
-        pay_tbl.setStyle(TableStyle([
-            ("PADDING", (0, 0), (-1, -1), 3),
-            ("VALIGN",  (0, 0), (-1, -1), "TOP"),
-        ]))
-        story.append(pay_tbl)
-        story.append(Spacer(1, 6 * mm))
+    # ── Payment Details + Terms & Conditions — side by side ──────────────────
+    # Left: Payment Details
+    pay_lines = "<b>Payment Details</b><br/>"
+    if co_pay:
+        pay_lines += f"<font color='#888888' size='8'>Method</font>  {co_pay}<br/>"
+    if co_bank:
+        pay_lines += f"<font color='#888888' size='8'>Bank</font>  {co_bank}<br/>"
+    if co_holder:
+        pay_lines += f"<font color='#888888' size='8'>Account Name</font>  {co_holder}<br/>"
+    if co_acc:
+        pay_lines += f"<font color='#888888' size='8'>Account No.</font>  {co_acc}"
 
-    # Terms
-    story.append(Paragraph("Terms &amp; Conditions", s_terms_t))
-    story.append(Spacer(1, 2 * mm))
+    # Right: Terms & Conditions
+    terms_lines = "<b>Terms &amp; Conditions</b><br/>"
     for idx, term in enumerate(TERMS, 1):
-        story.append(Paragraph(f"{idx}.  {term}", s_body))
+        terms_lines += f"<font size='8'>{idx}. {term}</font><br/>"
 
-    story.append(Spacer(1, 10 * mm))
+    two_col = Table([
+        [Paragraph(pay_lines,   s("pay_p",   textColor=DARK_TEXT, fontSize=9, leading=14)),
+         Paragraph(terms_lines, s("terms_p", textColor=DARK_TEXT, fontSize=9, leading=13))],
+    ], colWidths=[usable * 0.42, usable * 0.58])
+    two_col.setStyle(TableStyle([
+        ("VALIGN",  (0, 0), (-1, -1), "TOP"),
+        ("PADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(two_col)
+    story.append(Spacer(1, 6 * mm))
 
     # Signature block
     sig = Table([
         [Paragraph("Authorised Signature", s_label), Paragraph("Client Acceptance", s_label)],
-        [Paragraph(f"<br/><br/><br/>{'─'*28}<br/><b>{co_name}</b>", s_body),
-         Paragraph(f"<br/><br/><br/>{'─'*28}<br/>{data.get('company_name', '')}", s_body)],
+        [Paragraph(f"<br/><br/>{'─'*30}<br/><b>{co_name}</b>", s_body),
+         Paragraph(f"<br/><br/>{'─'*30}<br/>{data.get('company_name', '')}", s_body)],
     ], colWidths=[usable * 0.5, usable * 0.5])
-    sig.setStyle(TableStyle([("PADDING", (0, 0), (-1, -1), 6), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    sig.setStyle(TableStyle([("PADDING", (0, 0), (-1, -1), 4), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
     story.append(sig)
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 4 * mm))
 
     # Footer
     story.append(HRFlowable(width=usable, color=GOLD, thickness=1))
