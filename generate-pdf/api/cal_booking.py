@@ -73,10 +73,10 @@ def search_db(db_id, filter_payload, hdrs):
     return results[0] if results else None
 
 
-def create_page(db_id, properties, hdrs, icon_emoji=None):
+def create_page(db_id, properties, hdrs, icon_url=None):
     body = {"parent": {"database_id": db_id}, "properties": properties}
-    if icon_emoji:
-        body["icon"] = {"type": "emoji", "emoji": icon_emoji}
+    if icon_url:
+        body["icon"] = {"type": "external", "external": {"url": icon_url}}
     r = requests.post(
         "https://api.notion.com/v1/pages",
         headers=hdrs, json=body, timeout=10,
@@ -212,7 +212,7 @@ def process_booking(payload):
                 co_props["Industry"] = {"select": {"name": industry}}
             if team_size:
                 co_props["Team Size"] = {"select": {"name": team_size}}
-            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_emoji="🏢")
+            new_co     = create_page(COMPANIES_DB, co_props, hdrs, icon_url="https://www.notion.so/icons/building_gray.svg")
             company_id = new_co["id"].replace("-", "")
             company_is_new = True
             print(f"[INFO] Created company: {company_id}", file=sys.stderr)
@@ -259,7 +259,7 @@ def process_booking(payload):
             if src:
                 cl_props["Source"] = {"multi_select": src}
 
-            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_emoji="👤")
+            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_url="https://www.notion.so/icons/person_gray.svg")
             client_id = new_cl["id"].replace("-", "")
             is_new_client = True
             print(f"[INFO] Created client: {client_id}", file=sys.stderr)
@@ -272,7 +272,12 @@ def process_booking(payload):
     notes_text = "\n".join(notes_parts)
 
     # ── 4. Create Lead ─────────────────────────
-    lead_name  = f"{company_name} – Discovery Call" if company_name else f"{name} – Discovery Call"
+    if company_name and name:
+        lead_name = f"{company_name} · {name}"
+    elif company_name:
+        lead_name = company_name
+    else:
+        lead_name = name or "New Lead"
     lead_props = {
         "Lead Name": {"title": [{"text": {"content": lead_name}}]},
         "Stage":     {"status": {"name": "Contacted"}},
