@@ -266,23 +266,20 @@ def create_invoice(quotation_id, quotation_data, hdrs):
         # Full payment
         props["Balance Due"] = {"date": {"start": due_date}}
 
-    # Ensure Company relation property exists in Invoice DB
+    # Check that Company relation property exists in Invoice DB (log only — don't remove it)
     if quotation_data.get("company_ids"):
         try:
             schema_r = requests.get(f"https://api.notion.com/v1/databases/{INVOICE_DB}",
                                     headers=hdrs, timeout=10)
             if schema_r.ok:
                 existing = schema_r.json().get("properties", {})
-                if "Company" not in existing:
-                    requests.patch(
-                        f"https://api.notion.com/v1/databases/{INVOICE_DB}",
-                        headers=hdrs,
-                        json={"properties": {"Company": {"relation": {"database_id": quotation_data["company_ids"][0][:8] + "-" + quotation_data["company_ids"][0][8:12] + "-" + quotation_data["company_ids"][0][12:16] + "-" + quotation_data["company_ids"][0][16:20] + "-" + quotation_data["company_ids"][0][20:]}}}},
-                        timeout=10
-                    )
+                if "Company" in existing:
+                    print(f"[INFO] 'Company' property found in Invoice DB (type: {existing['Company'].get('type')})", file=sys.stderr)
+                else:
+                    print(f"[WARN] 'Company' property NOT found in Invoice DB — props: {list(existing.keys())}", file=sys.stderr)
+                    props.pop("Company", None)
         except Exception as e:
-            print(f"[WARN] Company schema check: {e}", file=sys.stderr)
-            props.pop("Company", None)  # remove if we can't ensure it exists
+            print(f"[WARN] Company schema check failed: {e}", file=sys.stderr)
 
     body = {
         "parent":     {"database_id": INVOICE_DB},
@@ -402,6 +399,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         from urllib.parse import urlparse, parse_qs
         qs = parse_qs(urlparse(self.path).query)
+
         if "schema" in qs:
             # Return Invoice DB schema so we can see exact property names + types
             try:
@@ -415,6 +413,33 @@ class handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._respond(500, {"error": str(e)})
             return
+
+        if "debug" in qs:
+            # ?debug=1&page_id=<quotation_page_id> — show what would be fetched, no creation
+            page_id = (qs.get("page_id") or [None])[0]
+            if not page_id:
+                self._respond(400, {"error": "Missing page_id"}); return
+            page_id = page_id.replace("-", "")
+            try:
+                hdrs = _hdrs()
+                quotation = fetch_quotation(page_id, hdrs)
+                self._respond(200, {
+                    "quotation_no":  quotation["quotation_no"],
+                    "status":        quotation["status"],
+                    "amount":        quotation["amount"],
+                    "payment_terms": quotation["payment_terms"],
+                    "company_ids":   quotation["company_ids"],
+                    "company_name":  quotation["company_name"],
+                    "pic_ids":       quotation["pic_ids"],
+                    "existing_invoices": quotation["existing_invoices"],
+                    "line_items_count": len(quotation["line_items"]),
+                    "line_items": quotation["line_items"],
+                })
+            except Exception as e:
+                import traceback; traceback.print_exc(file=sys.stderr)
+                self._respond(500, {"error": str(e)})
+            return
+
         self._respond(200, {"service": "Vision Core — Create Invoice from Quotation",
                             "status":  "ready"})
 
