@@ -364,22 +364,29 @@ def fetch_invoice_data(page_id, hdrs):
 
 
 # ─────────────────────────────────────────────
-#  1b. Activate Invoice: Draft → Deposit Pending + set Issue Date + Payment Balance
+#  1b. Activate Invoice: set Issue Date + Payment Balance (status depends on type)
 # ─────────────────────────────────────────────
-def activate_invoice(page_id, total_amount, deposit_paid, hdrs):
+def activate_invoice(page_id, total_amount, deposit_paid, invoice_type, hdrs):
     """
     Called when Generate Invoice PDF button is clicked.
-    - Status: Draft → Deposit Pending
-    - Issue Date: today
-    - Payment Balance: total - deposit (if deposit invoice)
+    - Deposit invoice   → Status: Deposit Pending
+    - Final invoice     → Status: Balance Pending (keep as-is, already set)
+    - Issue Date: today (only if not already set)
+    - Payment Balance: total - deposit
     """
     today = __import__("datetime").datetime.now().date().isoformat()
 
     pay_balance = round(total_amount - deposit_paid, 2) if deposit_paid > 0 else total_amount
 
+    # Only update status for Deposit invoices — Final invoices are already Balance Pending
+    if invoice_type == "Final Payment":
+        status_prop = {}
+    else:
+        status_prop = {"Status": {"select": {"name": "Deposit Pending"}}}
+
     payload = {
         "properties": {
-            "Status":           {"select": {"name": "Deposit Pending"}},
+            **status_prop,
             "Issue Date":       {"date":   {"start": today}},
             "Payment Balance":  {"number": pay_balance},
         }
@@ -904,6 +911,7 @@ class handler(BaseHTTPRequestHandler):
                 page_id,
                 total_amount  = float(_pre.get("total_amount", 0) or 0),
                 deposit_paid  = float(_pre.get("deposit_paid", 0) or 0),
+                invoice_type  = _pre.get("invoice_type", ""),
                 hdrs          = hdrs,
             )
             print(f"[INFO] Step OK: {step}", file=sys.stderr)
