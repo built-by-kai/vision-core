@@ -712,6 +712,19 @@ def process(payload):
             # Non-fatal — quotation still exists, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
 
+    # ── Advance Lead stage → Proposed ────────────────────────────────────────
+    if lead_id:
+        try:
+            requests.patch(
+                f"https://api.notion.com/v1/pages/{lead_id}",
+                headers=hdrs,
+                json={"properties": {"Stage": {"status": {"name": "Proposed"}}}},
+                timeout=10,
+            )
+            print(f"[INFO] Lead {lead_id[:8]} → Proposed", file=sys.stderr)
+        except Exception as e:
+            print(f"[WARN] Stage advance to Proposed: {e}", file=sys.stderr)
+
     return {
         "status":          "success",
         "source_type":     source_type,

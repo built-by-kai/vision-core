@@ -205,9 +205,10 @@ def process(payload):
     if lead_id:
         lp = get_page(lead_id, hdrs).get("properties", {})
         current = (lp.get("Stage", {}).get("status") or {}).get("name", "")
-        if current not in ("Pending Final Payment", "Closed – Paid"):
-            patch_page(lead_id, {"Stage": {"status": {"name": "Pending Final Payment"}}}, hdrs)
-            print(f"[INFO] Lead {lead_id[:8]} → Pending Final Payment", file=sys.stderr)
+        if current not in ("Balance Due", "Delivered",
+                           "Pending Final Payment", "Closed – Paid"):   # legacy names
+            patch_page(lead_id, {"Stage": {"status": {"name": "Balance Due"}}}, hdrs)
+            print(f"[INFO] Lead {lead_id[:8]} → Balance Due", file=sys.stderr)
 
     return {
         "status":          "success",

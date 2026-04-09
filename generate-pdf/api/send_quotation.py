@@ -204,21 +204,22 @@ def advance_lead_stage(page_id, hdrs):
 
         for rel in lead_rels:
             lead_id = rel["id"].replace("-", "")
-            # Only advance if currently at Lead or Qualified (don't revert a won deal)
+            # Only advance if early-stage (don't revert a deal already in progress)
             lp = requests.get(f"https://api.notion.com/v1/pages/{lead_id}",
                               headers=hdrs, timeout=10).json()
             current_stage = (lp.get("properties", {}).get("Stage", {})
                                .get("status", {}) or {}).get("name", "")
-            if current_stage in ("Lead", "Qualified"):
+            if current_stage in ("Incoming", "Contacted", "Qualified",
+                                 "Lead", "Quotation Issued"):   # legacy names
                 requests.patch(
                     f"https://api.notion.com/v1/pages/{lead_id}",
                     headers=hdrs,
-                    json={"properties": {"Stage": {"status": {"name": "Quotation Issued"}}}},
+                    json={"properties": {"Stage": {"status": {"name": "Proposed"}}}},
                     timeout=10,
                 )
-                print(f"[INFO] Lead {lead_id[:8]} advanced to Quotation Issued", file=sys.stderr)
+                print(f"[INFO] Lead {lead_id[:8]} → Proposed", file=sys.stderr)
             else:
-                print(f"[INFO] Lead {lead_id[:8]} already at {current_stage!r} — no stage change", file=sys.stderr)
+                print(f"[INFO] Lead {lead_id[:8]} already at {current_stage!r} — no change", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] advance_lead_stage: {e}", file=sys.stderr)
 

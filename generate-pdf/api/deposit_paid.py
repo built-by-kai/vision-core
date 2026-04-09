@@ -413,13 +413,14 @@ def process(payload):
         except Exception as e:
             print(f"[WARN] Lead via DB query: {e}", file=sys.stderr)
 
-    # ── 3. Advance Lead stage → Active ───────
+    # ── 3. Advance Lead stage → Building ───────
     if lead_id:
         lp = get_page(lead_id, hdrs).get("properties", {})
         current_stage = (lp.get("Stage", {}).get("status") or {}).get("name", "")
-        if current_stage not in ("Active", "Closed – Paid"):
-            patch_page(lead_id, {"Stage": {"status": {"name": "Active"}}}, hdrs)
-            print(f"[INFO] Lead {lead_id[:8]} → Active", file=sys.stderr)
+        if current_stage not in ("Building", "Balance Due", "Delivered",
+                                 "Active", "Closed – Paid"):   # legacy names
+            patch_page(lead_id, {"Stage": {"status": {"name": "Building"}}}, hdrs)
+            print(f"[INFO] Lead {lead_id[:8]} → Building", file=sys.stderr)
     else:
         print(f"[WARN] No lead found for invoice", file=sys.stderr)
 

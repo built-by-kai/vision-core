@@ -616,10 +616,10 @@ class handler(BaseHTTPRequestHandler):
                     requests.patch(
                         f"https://api.notion.com/v1/pages/{lead_id}",
                         headers=hdrs,
-                        json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},
+                        json={"properties": {"Stage": {"status": {"name": "Deposit Due"}}}},
                         timeout=10,
                     )
-                    print(f"[INFO] Deal {lead_id[:8]} advanced to Won – Pending Deposit", file=sys.stderr)
+                    print(f"[INFO] Deal {lead_id[:8]} → Deposit Due", file=sys.stderr)
             except Exception as e:
                 print(f"[WARN] Deal stage update: {e}", file=sys.stderr)
 
