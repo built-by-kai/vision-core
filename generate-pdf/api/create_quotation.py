@@ -540,8 +540,6 @@ def process(payload):
             li_db_id = find_line_items_db(quot_id, hdrs)
             if not li_db_id:
                 li_db_id = create_line_items_db(quot_id, hdrs)
-                # Append Terms, Acceptance table, footer after DB creation
-                append_template_blocks(quot_id, hdrs)
 
             # For OS packages, insert Base OS (RM 0, included) as first row
             if product.get("slug") in OS_PACKAGE_SLUGS:
