@@ -118,11 +118,13 @@ def detect_source(page_id, hdrs):
     return "unknown", props
 
 
-def fetch_quote_type_for_slug(slug, hdrs):
+def fetch_product_info(slug, hdrs):
     """
-    Query Products DB for a product with the given slug and return its Quote Type.
-    Falls back to 'New Business' if not found or on any error.
+    Query Products DB for the given slug.
+    Returns dict: {id, name, price, quote_type}.
+    Falls back to safe defaults on any error.
     """
+    default = {"id": None, "name": None, "price": None, "quote_type": "New Business"}
     try:
         r = requests.post(
             f"https://api.notion.com/v1/databases/{PRODUCTS_DB}/query",
@@ -133,19 +135,95 @@ def fetch_quote_type_for_slug(slug, hdrs):
         if r.ok:
             results = r.json().get("results", [])
             if results:
-                qt = (results[0].get("properties", {})
-                      .get("Quote Type", {}).get("select") or {}).get("name", "")
-                if qt:
-                    print(f"[INFO] Quote Type '{qt}' from product slug '{slug}'", file=sys.stderr)
-                    return qt
-        print(f"[WARN] No product found for slug '{slug}', defaulting to New Business", file=sys.stderr)
+                p     = results[0]
+                props = p.get("properties", {})
+                qt    = (props.get("Quote Type", {}).get("select") or {}).get("name", "New Business")
+                name  = _plain(props.get("Product Name", {}).get("title", []))
+                price = props.get("Price", {}).get("number")
+                pid   = p["id"].replace("-", "")
+                print(f"[INFO] Product found: '{name}' slug='{slug}' quote_type='{qt}'", file=sys.stderr)
+                return {"id": pid, "name": name, "price": price, "quote_type": qt}
+        print(f"[WARN] No product found for slug '{slug}'", file=sys.stderr)
     except Exception as e:
-        print(f"[WARN] fetch_quote_type_for_slug: {e}", file=sys.stderr)
-    return "New Business"
+        print(f"[WARN] fetch_product_info: {e}", file=sys.stderr)
+    return default
+
+
+def create_line_items_db(page_id, hdrs):
+    """
+    Append a child_database block called 'Line Items' to the quotation page.
+    Then patch its schema to add Product relation, Qty, Unit Price.
+    Returns the new DB id (str, no dashes).
+    """
+    # 1. Append child_database block
+    r = requests.patch(
+        f"https://api.notion.com/v1/blocks/{page_id}/children",
+        headers=hdrs,
+        json={"children": [{"type": "child_database", "child_database": {"title": "Line Items"}}]},
+        timeout=15,
+    )
+    if not r.ok:
+        raise ValueError(f"child_database append failed {r.status_code}: {r.text[:200]}")
+    blocks = r.json().get("results", [])
+    if not blocks:
+        raise ValueError("No block returned after appending child_database")
+    db_id = blocks[0]["id"].replace("-", "")
+    print(f"[INFO] Line Items DB created: {db_id}", file=sys.stderr)
+
+    # 2. Update schema — add Product relation, Qty, Unit Price
+    schema_r = requests.patch(
+        f"https://api.notion.com/v1/databases/{db_id}",
+        headers=hdrs,
+        json={"properties": {
+            "Product": {
+                "type": "relation",
+                "relation": {
+                    "database_id": PRODUCTS_DB,
+                    "type": "single_property",
+                    "single_property": {},
+                },
+            },
+            "Qty":        {"number": {"format": "number"}},
+            "Unit Price": {"number": {"format": "ringgit"}},
+        }},
+        timeout=15,
+    )
+    if not schema_r.ok:
+        print(f"[WARN] Line Items schema patch failed: {schema_r.text[:200]}", file=sys.stderr)
+
+    return db_id
+
+
+def create_line_item(db_id, product_id, product_name, price, hdrs):
+    """Create the first line item row in the Line Items DB."""
+    props = {
+        "Name": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
+        "Qty":  {"number": 1},
+    }
+    if product_id:
+        props["Product"] = {"relation": [{"id": product_id}]}
+    if price is not None:
+        props["Unit Price"] = {"number": float(price)}
+
+    r = requests.post(
+        "https://api.notion.com/v1/pages",
+        headers=hdrs,
+        json={"parent": {"database_id": db_id}, "properties": props},
+        timeout=15,
+    )
+    if not r.ok:
+        print(f"[WARN] Line item create failed {r.status_code}: {r.text[:200]}", file=sys.stderr)
+    else:
+        print(f"[INFO] Line item created: '{product_name}' × 1 @ RM{price}", file=sys.stderr)
+    return r.ok
 
 
 def extract_lead_info(props, hdrs):
-    """Pull Company relation and Quote Type from a Lead page via Products DB lookup."""
+    """
+    Pull Company relation and full product info from a Lead page.
+    Returns (company_ids, product_dict) where product_dict has
+    {id, name, price, quote_type}.
+    """
     company_ids = [r["id"].replace("-", "")
                    for r in props.get("Company", {}).get("relation", [])]
 
@@ -161,12 +239,12 @@ def extract_lead_info(props, hdrs):
             if slug:
                 break
 
-    print(f"[INFO] Package Type='{pkg_raw}' → slug='{slug}'", file=sys.stderr)
+    print(f"[INFO] Package Type='{pkg_raw}' → slug='{slug or 'not found'}'", file=sys.stderr)
 
-    # 3. Read Quote Type from Products DB — defaults to New Business if no match
-    quote_type = fetch_quote_type_for_slug(slug or "operations-os", hdrs)
+    # 3. Fetch full product info from Products DB
+    product = fetch_product_info(slug or "operations-os", hdrs)
 
-    return company_ids, quote_type
+    return company_ids, product
 
 
 def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
@@ -283,20 +361,38 @@ def process(payload):
     # ── Build quotation fields ─────────────────
     lead_id     = None
     company_ids = []
-    quote_type  = "New Business"
+    product     = {"id": None, "name": None, "price": None, "quote_type": "New Business"}
 
     if source_type == "lead":
         lead_id = page_id
-        company_ids, quote_type = extract_lead_info(props, hdrs)
-        print(f"[INFO] Lead → Companies: {company_ids}, Quote Type: {quote_type}", file=sys.stderr)
+        company_ids, product = extract_lead_info(props, hdrs)
+        print(f"[INFO] Lead → Companies: {company_ids}, Product: {product['name']}, Quote Type: {product['quote_type']}", file=sys.stderr)
 
     elif source_type == "company":
         company_ids = [page_id]
         print(f"[INFO] Company: {page_id}", file=sys.stderr)
 
-    # ── Create Quotation ──────────────────────
+    quote_type = product["quote_type"]
+
+    # ── Create Quotation page ─────────────────
     quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
     print(f"[INFO] Created Quotation: {quot_id} → {quot_url}", file=sys.stderr)
+
+    # ── Auto-create Line Items DB + first line item ──
+    # Only when triggered from a lead with a resolved product
+    if source_type == "lead" and product.get("id"):
+        try:
+            li_db_id = create_line_items_db(quot_id, hdrs)
+            create_line_item(
+                li_db_id,
+                product["id"],
+                product["name"],
+                product["price"],
+                hdrs,
+            )
+        except Exception as e:
+            # Non-fatal — quotation still created, user can add line items manually
+            print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
 
     return {
         "status":        "success",
@@ -306,6 +402,7 @@ def process(payload):
         "quote_type":    quote_type,
         "lead_id":       lead_id,
         "company_ids":   company_ids,
+        "line_item":     product.get("name"),
     }
 
 
