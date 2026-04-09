@@ -157,13 +157,15 @@ def fetch_invoice_data(page_id, hdrs):
     bal_date = (props.get("Balance Paid",  {}).get("date") or {}).get("start", "")
     pay_date = bal_date if invoice_type in ("Final Payment", "Full Payment") else (dep_date or bal_date)
 
-    # Amount actually paid on this invoice
+    # Amount for receipt display
     if invoice_type == "Deposit":
         amount_paid = deposit_amt if deposit_amt > 0 else round(total_amount * 0.5, 2)
-    elif invoice_type == "Final Payment":
-        amount_paid = pay_balance if pay_balance > 0 else (total_amount - deposit_amt)
-    else:  # Full Payment
+    else:
+        # Final Payment or Full Payment — show total project amount
         amount_paid = total_amount
+
+    # Keep the breakdown amounts for the summary section
+    balance_paid = pay_balance if pay_balance > 0 else (total_amount - deposit_amt)
 
     # Company
     company_name = company_id = ""
@@ -213,9 +215,12 @@ def fetch_invoice_data(page_id, hdrs):
         "total_amount": total_amount,
         "deposit_amt":  deposit_amt,
         "pay_balance":  pay_balance,
+        "balance_paid": balance_paid,
         "amount_paid":  amount_paid,
         "pay_methods":  pay_methods,
         "pay_date":     pay_date,
+        "dep_date":     dep_date,
+        "bal_date":     bal_date,
         "company_name": company_name,
         "company_id":   company_id,
         "pic_name":     pic_name,
@@ -362,21 +367,43 @@ def generate_pdf(receipt_no, data):
     inv_type    = data.get("invoice_type", "")
     pay_methods = data.get("pay_methods", [])
     pay_str     = ", ".join(pay_methods) if pay_methods else "—"
+    is_full_pay = inv_type in ("Final Payment", "Full Payment")
+
+    def _fmt_date(d):
+        if not d: return "—"
+        try: return datetime.fromisoformat(d).strftime("%d %B %Y")
+        except: return d
 
     summary_rows = [
-        [Paragraph(tracked("PAYMENT FOR"),   st("sl", fontSize=7, textColor=C_D400)),
+        [Paragraph(tracked("PAYMENT FOR"),    st("sl",  fontSize=7, textColor=C_D400)),
          Paragraph(f"Invoice {data.get('invoice_no', '')} — {inv_type}",
-                   st("sv", fontSize=9, textColor=C_D700))],
+                   st("sv",  fontSize=9, textColor=C_D700))],
         [Paragraph(tracked("PAYMENT METHOD"), st("ml2", fontSize=7, textColor=C_D400)),
-         Paragraph(pay_str, st("mv2", fontSize=9, textColor=C_D700))],
+         Paragraph(pay_str,                   st("mv2", fontSize=9, textColor=C_D700))],
     ]
-    summary_tbl = Table(summary_rows, colWidths=[usable * 0.32, usable * 0.68])
-    summary_tbl.setStyle(TableStyle([
+
+    if is_full_pay and data.get("deposit_amt"):
+        dep_amt  = data["deposit_amt"]
+        bal_amt  = data["balance_paid"]
+        dep_date = _fmt_date(data.get("dep_date", ""))
+        bal_date = _fmt_date(data.get("bal_date", ""))
+        summary_rows += [
+            [Paragraph(tracked("DEPOSIT PAID"),  st("dl", fontSize=7, textColor=C_D400)),
+             Paragraph(f"RM {dep_amt:,.2f}  ·  {dep_date}",
+                       st("dv", fontSize=9, textColor=C_D700))],
+            [Paragraph(tracked("BALANCE PAID"),  st("bl", fontSize=7, textColor=C_D400)),
+             Paragraph(f"RM {bal_amt:,.2f}  ·  {bal_date}",
+                       st("bv", fontSize=9, textColor=C_D700))],
+        ]
+
+    n_sum = len(summary_rows)
+    sum_style = [
         ("BACKGROUND", (0,0),(-1,-1), C_D50),
         ("PADDING",    (0,0),(-1,-1), 10),
-        ("LINEBELOW",  (0,0),(-1,0),  0.5, C_D200),
         ("VALIGN",     (0,0),(-1,-1), "MIDDLE"),
-    ]))
+    ] + [("LINEBELOW", (0,r),(-1,r), 0.5, C_D200) for r in range(n_sum - 1)]
+    summary_tbl = Table(summary_rows, colWidths=[usable * 0.32, usable * 0.68])
+    summary_tbl.setStyle(TableStyle(sum_style))
     story.append(summary_tbl)
     story.append(Spacer(1, 8*mm))
 
