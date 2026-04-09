@@ -49,6 +49,110 @@ def _hdrs():
     }
 
 
+# ── One-time Phases DB setup (callable via GET ?setup=1) ─────────────────────
+
+def run_phases_setup(hdrs):
+    """
+    Create the Phases DB (if not already present) and patch Projects DB
+    with tracking fields: Start Date, Target End Date, Add-on Value, Phases.
+    """
+    # Check for existing Phases DB
+    phases_db_id = None
+    sr = requests.post(
+        "https://api.notion.com/v1/search",
+        headers=hdrs,
+        json={"query": "Phases", "filter": {"value": "database", "property": "object"}},
+        timeout=10,
+    )
+    if sr.ok:
+        for result in sr.json().get("results", []):
+            title = "".join(t.get("plain_text", "") for t in result.get("title", []))
+            if title.strip().lower() in ("phases", "project phases"):
+                phases_db_id = result["id"].replace("-", "")
+                break
+
+    already_existed = bool(phases_db_id)
+
+    if not phases_db_id:
+        # Get parent page of Projects DB
+        dr = requests.get(
+            f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+            headers=hdrs, timeout=10
+        )
+        dr.raise_for_status()
+        parent = dr.json().get("parent", {})
+        parent_id = (parent.get("page_id") or parent.get("block_id") or "").replace("-", "")
+        if not parent_id:
+            raise ValueError("Could not determine parent page for Phases DB")
+
+        # Create Phases DB
+        cr = requests.post(
+            "https://api.notion.com/v1/databases",
+            headers=hdrs,
+            json={
+                "parent":    {"type": "page_id", "page_id": parent_id},
+                "is_inline": False,
+                "title": [{"type": "text", "text": {"content": "Phases"}}],
+                "icon": {"type": "emoji", "emoji": "🗂️"},
+                "properties": {
+                    "Phase Name": {"title": {}},
+                    "Project":    {"relation": {"database_id": PROJECTS_DB, "single_property": {}}},
+                    "Status": {
+                        "select": {"options": [
+                            {"name": "Not Started", "color": "gray"},
+                            {"name": "In Progress", "color": "blue"},
+                            {"name": "Review",      "color": "yellow"},
+                            {"name": "Done",        "color": "green"},
+                            {"name": "On Hold",     "color": "orange"},
+                        ]}
+                    },
+                    "Phase No.":    {"number": {"format": "number"}},
+                    "Start Date":   {"date": {}},
+                    "Due Date":     {"date": {}},
+                    "Deliverables": {"rich_text": {}},
+                    "Notes":        {"rich_text": {}},
+                },
+            },
+            timeout=20,
+        )
+        cr.raise_for_status()
+        phases_db_id = cr.json()["id"].replace("-", "")
+        print(f"[INFO] Phases DB created: {phases_db_id}", file=sys.stderr)
+
+    # Patch Projects DB with new fields
+    schema_r = requests.get(
+        f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+        headers=hdrs, timeout=10
+    )
+    schema_r.raise_for_status()
+    existing = set(schema_r.json().get("properties", {}).keys())
+
+    new_props = {}
+    if "Start Date"      not in existing: new_props["Start Date"]      = {"date": {}}
+    if "Target End Date" not in existing: new_props["Target End Date"] = {"date": {}}
+    if "Add-on Value"    not in existing: new_props["Add-on Value"]    = {"number": {"format": "ringgit"}}
+    if "Phases"          not in existing:
+        new_props["Phases"] = {"relation": {"database_id": phases_db_id, "single_property": {}}}
+
+    added_fields = []
+    if new_props:
+        pr = requests.patch(
+            f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+            headers=hdrs, json={"properties": new_props}, timeout=15
+        )
+        if pr.ok:
+            added_fields = list(new_props.keys())
+            print(f"[INFO] Projects DB fields added: {added_fields}", file=sys.stderr)
+
+    return {
+        "status":          "success",
+        "phases_db_id":    phases_db_id,
+        "phases_db_url":   f"https://notion.so/{phases_db_id}",
+        "already_existed": already_existed,
+        "fields_added_to_projects_db": added_fields,
+    }
+
+
 def _plain(arr):
     return "".join(t.get("plain_text", "") for t in (arr or []))
 
@@ -291,10 +395,25 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+
+        # ?setup=1  →  one-time Phases DB + Projects DB field setup
+        if "setup" in qs:
+            if not os.environ.get("NOTION_API_KEY"):
+                self._respond(500, {"error": "NOTION_API_KEY not set"}); return
+            try:
+                result = run_phases_setup(_hdrs())
+                self._respond(200, result)
+            except Exception as e:
+                import traceback; traceback.print_exc(file=sys.stderr)
+                self._respond(500, {"error": str(e)})
+            return
+
         self._respond(200, {
             "service": "Vision Core — Create Add-on Quotation",
             "status":  "ready",
-            "usage":   "POST with {page_id} from a Project page",
+            "usage":   "POST with {page_id} from a Project page | GET ?setup=1 for one-time Phases DB setup",
         })
 
     def do_POST(self):

@@ -13,7 +13,6 @@
     {"src": "api/issue_final_invoice.py",   "use": "@vercel/python"},
     {"src": "api/expansion_invoice.py",     "use": "@vercel/python"},
     {"src": "api/wa_redirect.py",           "use": "@vercel/python"},
-    {"src": "api/setup_phases_db.py",       "use": "@vercel/python"},
     {"src": "api/create_addon.py",          "use": "@vercel/python"}
   ],
   "routes": [
@@ -29,7 +28,6 @@
     {"src": "/api/issue_final_invoice",     "dest": "api/issue_final_invoice.py"},
     {"src": "/api/expansion_invoice",       "dest": "api/expansion_invoice.py"},
     {"src": "/api/wa_redirect",             "dest": "api/wa_redirect.py"},
-    {"src": "/api/setup_phases_db",         "dest": "api/setup_phases_db.py"},
     {"src": "/api/create_addon",            "dest": "api/create_addon.py"}
   ]
 }
