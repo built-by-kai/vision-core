@@ -355,11 +355,17 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
 
 def create_project(company_ids, company_name, quotation_id, invoice_id,
-                   quotation_no, amount, quote_type, line_items, hdrs, lead_ids=None):
+                   quotation_no, amount, quote_type, line_items, hdrs,
+                   lead_ids=None, pic_ids=None, package_name=None):
     """
     Create a Project page as the central hub for this client system build.
-    Links Company, Quotation, and Invoice. Writes line items as Notes blocks.
+    Links Company, Quotation, Invoice, Deals (lead), and PIC (contact).
     Returns the new project page ID.
+
+    Field mappings on Projects DB:
+      Package  → actual product name (e.g. "Operations OS"), NOT quote_type
+      Deals    → Lead/Deal CRM page relation
+      PIC      → actual contact person relation (separate from Deals)
     """
     project_name = f"{company_name} — {quotation_no}" if company_name else quotation_no
 
@@ -375,12 +381,25 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
     if company_ids:
         props["Company"] = {"relation": [{"id": company_ids[0]}]}
 
-    if quote_type:
+    # Package = actual product name (e.g. "Operations OS"), not the billing type
+    if package_name:
+        props["Package"] = {"select": {"name": package_name}}
+    elif quote_type:
+        # Fallback: use quote_type only if no product name available
         props["Package"] = {"select": {"name": quote_type}}
 
-    # Lead (Deal) relation — links project directly to the pipeline deal
+    # Deals = Lead/Deal CRM relation (previously incorrectly stored in PIC)
     if lead_ids:
-        props["PIC"] = {"relation": [{"id": lead_ids[0]}]}
+        for field in ("Deals", "Deal Source", "Lead"):
+            try:
+                props[field] = {"relation": [{"id": lead_ids[0]}]}
+                break
+            except Exception:
+                pass
+
+    # PIC = actual contact person (separate relation field)
+    if pic_ids:
+        props["PIC"] = {"relation": [{"id": pic_ids[0]}]}
 
     # Build line-item notes as rich_text blocks
     notes_blocks = []
@@ -646,6 +665,8 @@ class handler(BaseHTTPRequestHandler):
                     quote_type   = quotation["quote_type"],
                     line_items   = quotation["line_items"],
                     lead_ids     = quotation.get("lead_ids", []),
+                    pic_ids      = quotation.get("pic_ids", []),
+                    package_name = quotation.get("package_type_text") or None,
                     hdrs         = hdrs,
                 )
                 print(f"[INFO] Project created: {project_id}", file=sys.stderr)

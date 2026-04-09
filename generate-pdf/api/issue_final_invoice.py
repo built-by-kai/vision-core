@@ -105,7 +105,8 @@ def process(payload):
     company_ids   = [r["id"].replace("-", "") for r in props.get("Company", {}).get("relation", [])]
     quotation_ids = [r["id"].replace("-", "") for r in props.get("Quotation", {}).get("relation", [])]
     invoice_ids   = [r["id"].replace("-", "") for r in props.get("Invoice", {}).get("relation", [])]
-    lead_ids      = [r["id"].replace("-", "") for r in props.get("PIC", {}).get("relation", [])]  # PIC = Lead relation on Projects DB
+    # Lead/Deal — try "Deals" first (new field name), fall back to legacy "PIC" field
+    lead_ids = [r["id"].replace("-", "") for r in props.get("Deals", props.get("Deal Source", props.get("PIC", {}))).get("relation", [])]
 
     company_id   = company_ids[0]   if company_ids   else None
     quotation_id = quotation_ids[0] if quotation_ids else None
