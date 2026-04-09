@@ -111,6 +111,9 @@ def fetch_deposit_invoice(page_id, hdrs):
     # Deposit Paid date (to copy onto Final invoice)
     deposit_paid_date = (props.get("Deposit Paid", {}).get("date") or {}).get("start", "")
 
+    # Customer Receipt (D) URL — copy to Final invoice so client can see deposit receipt
+    receipt_d = props.get("Customer Receipt (D)", {}).get("url") or ""
+
     return {
         "invoice_no":        invoice_no,
         "invoice_type":      invoice_type,
@@ -124,6 +127,7 @@ def fetch_deposit_invoice(page_id, hdrs):
         "pic_ids":           pic_ids,
         "payment_terms":     payment_terms,
         "deposit_paid_date": deposit_paid_date,
+        "receipt_d":         receipt_d,
     }
 
 
@@ -214,6 +218,10 @@ def create_final_invoice(deposit_data, hdrs):
     # Copy Deposit Paid date so Final invoice shows when deposit was received
     if deposit_data.get("deposit_paid_date"):
         props["Deposit Paid"] = {"date": {"start": deposit_data["deposit_paid_date"]}}
+
+    # Copy Customer Receipt (D) so Final invoice references the deposit receipt
+    if deposit_data.get("receipt_d"):
+        props["Customer Receipt (D)"] = {"url": deposit_data["receipt_d"]}
 
     # Link back to the Deposit invoice (two-way — also auto-populates Final Invoice on deposit row)
     if deposit_data.get("deposit_page_id"):
@@ -325,6 +333,16 @@ class handler(BaseHTTPRequestHandler):
 
             # 2. Ensure date fields exist in Invoice DB
             ensure_date_fields(hdrs)
+
+            # If Deposit Paid is null, Notion may not have committed it yet — retry once
+            if not deposit.get("deposit_paid_date"):
+                import time; time.sleep(3)
+                deposit2 = fetch_deposit_invoice(page_id, hdrs)
+                if deposit2.get("deposit_paid_date"):
+                    deposit["deposit_paid_date"] = deposit2["deposit_paid_date"]
+                    print(f"[INFO] Deposit Paid date found on retry: {deposit['deposit_paid_date']}", file=sys.stderr)
+                else:
+                    print(f"[WARN] Deposit Paid date still null after retry", file=sys.stderr)
 
             # 3. Create Final Payment invoice (pass deposit page ID for back-link)
             deposit["deposit_page_id"] = page_id
