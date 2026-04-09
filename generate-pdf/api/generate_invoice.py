@@ -218,11 +218,26 @@ def fetch_invoice_data(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # ── PIC (from PIC relation) ──
+    # ── PIC (rollup of Primary Contact relation, or direct relation) ──
     pic_name = pic_email = ""
-    for rel in props.get("PIC", {}).get("relation", [])[:1]:
+    pic_prop = props.get("PIC", {})
+    pic_page_ids = []
+    if pic_prop.get("type") == "rollup":
+        for item in pic_prop.get("rollup", {}).get("array", []):
+            t = item.get("type", "")
+            if t == "relation":
+                pic_page_ids = [r["id"] for r in item.get("relation", [])]
+                break
+            if t == "title":
+                pic_name = _plain(item.get("title", [])); break
+            if t == "rich_text":
+                pic_name = _plain(item.get("rich_text", [])); break
+    elif pic_prop.get("type") == "relation":
+        pic_page_ids = [r["id"] for r in pic_prop.get("relation", [])]
+
+    for pid in pic_page_ids[:1]:
         try:
-            pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+            pr = requests.get(f"https://api.notion.com/v1/pages/{pid}",
                               headers=hdrs, timeout=10)
             pr.raise_for_status()
             pp = pr.json().get("properties", {})
@@ -233,7 +248,7 @@ def fetch_invoice_data(page_id, hdrs):
                 if pp.get(k, {}).get("type") == "email":
                     pic_email = pp[k].get("email") or ""; break
         except Exception as e:
-            print(f"[WARN] PIC: {e}", file=sys.stderr)
+            print(f"[WARN] PIC fetch: {e}", file=sys.stderr)
 
     # ── Quotation: pull line items + package type + quotation number ──
     line_items = []
@@ -374,7 +389,8 @@ def activate_invoice(page_id, total_amount, deposit_paid, hdrs):
         headers=hdrs, json=payload, timeout=10
     )
     if not r.ok:
-        print(f"[WARN] activate_invoice PATCH {r.status_code}: {r.text[:200]}", file=sys.stderr)
+        print(f"[WARN] activate_invoice PATCH {r.status_code}: {r.text[:400]}", file=sys.stderr)
+        # Non-fatal — continue even if status update fails
     return today
 
 
