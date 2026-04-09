@@ -725,6 +725,241 @@ def process(payload):
     }
 
 
+# ── Phases DB one-time setup ──────────────────────────────────────────────────
+
+PROJECTS_DB = "5719b2672d3442a29a22637a35398260"
+
+def run_phases_setup(hdrs):
+    """
+    Creates the Phases DB (if not present) and patches Projects DB with
+    Start Date, Target End Date, Add-on Value (RM), and a Phases relation.
+    Safe to re-run — only adds missing fields.
+    """
+    # Search for existing Phases DB
+    phases_db_id = None
+    sr = requests.post(
+        "https://api.notion.com/v1/search",
+        headers=hdrs,
+        json={"query": "Phases", "filter": {"value": "database", "property": "object"}},
+        timeout=10,
+    )
+    if sr.ok:
+        for result in sr.json().get("results", []):
+            title = "".join(t.get("plain_text", "") for t in result.get("title", []))
+            if title.strip().lower() in ("phases", "project phases"):
+                phases_db_id = result["id"].replace("-", "")
+                break
+
+    already_existed = bool(phases_db_id)
+
+    if not phases_db_id:
+        # Find parent page of Projects DB
+        dr = requests.get(
+            f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+            headers=hdrs, timeout=10
+        )
+        dr.raise_for_status()
+        parent = dr.json().get("parent", {})
+        parent_id = (parent.get("page_id") or parent.get("block_id") or "").replace("-", "")
+        if not parent_id:
+            raise ValueError("Could not determine parent page for Phases DB")
+
+        # Create Phases DB
+        cr = requests.post(
+            "https://api.notion.com/v1/databases",
+            headers=hdrs,
+            json={
+                "parent":    {"type": "page_id", "page_id": parent_id},
+                "is_inline": False,
+                "title": [{"type": "text", "text": {"content": "Phases"}}],
+                "icon": {"type": "emoji", "emoji": "🗂️"},
+                "properties": {
+                    "Phase Name": {"title": {}},
+                    "Project": {
+                        "relation": {
+                            "database_id": PROJECTS_DB,
+                            "single_property": {},
+                        }
+                    },
+                    "Status": {
+                        "select": {"options": [
+                            {"name": "Not Started", "color": "gray"},
+                            {"name": "In Progress", "color": "blue"},
+                            {"name": "Review",      "color": "yellow"},
+                            {"name": "Done",        "color": "green"},
+                            {"name": "On Hold",     "color": "orange"},
+                        ]}
+                    },
+                    "Phase No.":    {"number": {"format": "number"}},
+                    "Start Date":   {"date": {}},
+                    "Due Date":     {"date": {}},
+                    "Deliverables": {"rich_text": {}},
+                    "Notes":        {"rich_text": {}},
+                },
+            },
+            timeout=20,
+        )
+        cr.raise_for_status()
+        phases_db_id = cr.json()["id"].replace("-", "")
+        print(f"[INFO] Phases DB created: {phases_db_id}", file=sys.stderr)
+
+    # Patch Projects DB with new tracking fields
+    schema_r = requests.get(
+        f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+        headers=hdrs, timeout=10
+    )
+    schema_r.raise_for_status()
+    existing = set(schema_r.json().get("properties", {}).keys())
+
+    new_props = {}
+    if "Start Date"      not in existing: new_props["Start Date"]      = {"date": {}}
+    if "Target End Date" not in existing: new_props["Target End Date"] = {"date": {}}
+    if "Add-on Value"    not in existing: new_props["Add-on Value"]    = {"number": {"format": "ringgit"}}
+    if "Phases"          not in existing:
+        new_props["Phases"] = {
+            "relation": {
+                "database_id": phases_db_id,
+                "single_property": {},
+            }
+        }
+
+    added_fields = []
+    if new_props:
+        pr = requests.patch(
+            f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+            headers=hdrs, json={"properties": new_props}, timeout=15
+        )
+        if pr.ok:
+            added_fields = list(new_props.keys())
+            print(f"[INFO] Projects DB updated: {added_fields}", file=sys.stderr)
+
+    return {
+        "status":          "success",
+        "phases_db_id":    phases_db_id,
+        "phases_db_url":   f"https://notion.so/{phases_db_id}",
+        "already_existed": already_existed,
+        "fields_added_to_projects_db": added_fields,
+    }
+
+
+# ── Add-on quotation (triggered from Project page) ────────────────────────────
+
+def process_addon(payload):
+    """
+    Creates a new Draft Quotation linked to an existing Project page.
+    Payload: { "type": "addon", "page_id": "<project_page_id>" }
+    """
+    hdrs = _hdrs()
+
+    # Parse project_id
+    raw_id = None
+    source = payload.get("source") or {}
+    if isinstance(source, dict):
+        raw_id = source.get("page_id") or source.get("id")
+    if not raw_id:
+        data = payload.get("data") or {}
+        if isinstance(data, dict):
+            raw_id = data.get("page_id") or data.get("id")
+    if not raw_id:
+        raw_id = payload.get("page_id") or payload.get("id")
+    if not raw_id:
+        raise ValueError("No page_id found in addon payload")
+
+    project_id = raw_id.replace("-", "")
+    print(f"[INFO] Add-on for Project: {project_id}", file=sys.stderr)
+
+    # Fetch project → Company, Lead, Package
+    pr = requests.get(
+        f"https://api.notion.com/v1/pages/{project_id}",
+        headers=hdrs, timeout=15
+    )
+    pr.raise_for_status()
+    props = pr.json().get("properties", {})
+
+    company_ids = [
+        r["id"].replace("-", "")
+        for r in props.get("Company", {}).get("relation", [])
+    ]
+    lead_ids = []
+    for field in ("Deal Source", "Lead", "PIC", "Deals"):
+        rels = props.get(field, {}).get("relation", [])
+        if rels:
+            lead_ids = [r["id"].replace("-", "") for r in rels]
+            break
+    package = (props.get("Package", {}).get("select") or {}).get("name", "New Business")
+    project_name = _plain(props.get("Project Name", {}).get("title", []))
+
+    # Create add-on quotation
+    today = date.today().isoformat()
+    quo_props = {
+        "Quotation No.": {"title": [{"text": {"content": ""}}]},
+        "Status":        {"select": {"name": "Draft"}},
+        "Issue Date":    {"date": {"start": today}},
+        "Payment Terms": {"select": {"name": "Full Upfront"}},
+        "Quote Type":    {"select": {"name": package}},
+        "Package Type":  {"rich_text": [{"text": {"content": "Add-on"}}]},
+    }
+    if company_ids:
+        quo_props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
+    try:
+        quo_props["Project"] = {"relation": [{"id": project_id}]}
+    except Exception:
+        pass
+
+    # Try with lead field, fall back without
+    created = False
+    quot_id = quot_url = None
+    for field_name in ((lead_ids and ["Deal Source", "Lead", "Deals"]) or [None]):
+        try:
+            test = dict(quo_props)
+            if field_name and lead_ids:
+                test[field_name] = {"relation": [{"id": lead_ids[0]}]}
+            r = requests.post(
+                "https://api.notion.com/v1/pages",
+                headers=hdrs,
+                json={"parent": {"database_id": QUOTATIONS_DB}, "properties": test},
+                timeout=15,
+            )
+            if r.ok:
+                page     = r.json()
+                quot_id  = page["id"].replace("-", "")
+                quot_url = page.get("url", f"https://notion.so/{quot_id}")
+                created  = True
+                break
+        except Exception as e:
+            print(f"[WARN] add-on create ({field_name}): {e}", file=sys.stderr)
+
+    if not created:
+        r = requests.post(
+            "https://api.notion.com/v1/pages",
+            headers=hdrs,
+            json={"parent": {"database_id": QUOTATIONS_DB}, "properties": quo_props},
+            timeout=15,
+        )
+        r.raise_for_status()
+        page     = r.json()
+        quot_id  = page["id"].replace("-", "")
+        quot_url = page.get("url", f"https://notion.so/{quot_id}")
+
+    # Blank Products & Services DB on the add-on quotation
+    try:
+        li_db = create_line_items_db(quot_id, hdrs)
+        print(f"[INFO] Add-on P&S DB: {li_db}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Add-on P&S DB: {e}", file=sys.stderr)
+
+    print(f"[INFO] Add-on quotation created: {quot_id}", file=sys.stderr)
+    return {
+        "status":        "success",
+        "type":          "addon",
+        "project_id":    project_id,
+        "project_name":  project_name,
+        "quotation_id":  quot_id,
+        "quotation_url": quot_url,
+        "note":          "Fill in add-on line items in Notion, then set Status → Approved to auto-generate Supplementary invoice",
+    }
+
+
 # ── Vercel handler ────────────────────────────
 class handler(BaseHTTPRequestHandler):
 
@@ -737,10 +972,28 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+
+        # GET ?setup=1  →  one-time Phases DB + Projects DB fields setup
+        if "setup" in qs:
+            if not os.environ.get("NOTION_API_KEY"):
+                self._respond(500, {"error": "NOTION_API_KEY not set"}); return
+            try:
+                result = run_phases_setup(_hdrs())
+                self._respond(200, result)
+            except Exception as e:
+                import traceback; traceback.print_exc(file=sys.stderr)
+                self._respond(500, {"error": str(e)})
+            return
+
         self._respond(200, {
             "service": "Vision Core — Create Quotation",
             "status":  "ready",
-            "usage":   "POST with {page_id} from a Lead or Company page",
+            "usage":   (
+                "POST {page_id} from Lead/Company — or {page_id, type:'addon'} from Project. "
+                "GET ?setup=1 for one-time Phases DB setup."
+            ),
         })
 
     def do_POST(self):
@@ -751,7 +1004,10 @@ class handler(BaseHTTPRequestHandler):
 
             print(f"[DEBUG] create_quotation payload: {json.dumps(payload)[:400]}", file=sys.stderr)
 
-            result = process(payload)
+            if payload.get("type") == "addon":
+                result = process_addon(payload)
+            else:
+                result = process(payload)
             self._respond(200, result)
 
         except Exception as e:
