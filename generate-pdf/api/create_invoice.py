@@ -349,6 +349,21 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+        if "schema" in qs:
+            # Return Invoice DB schema so we can see exact property names + types
+            try:
+                hdrs = _hdrs()
+                r = requests.get(f"https://api.notion.com/v1/databases/{INVOICE_DB}",
+                                 headers=hdrs, timeout=10)
+                r.raise_for_status()
+                props = r.json().get("properties", {})
+                schema = {k: v.get("type") for k, v in props.items()}
+                self._respond(200, {"invoice_db_schema": schema})
+            except Exception as e:
+                self._respond(500, {"error": str(e)})
+            return
         self._respond(200, {"service": "Vision Core — Create Invoice from Quotation",
                             "status":  "ready"})
 
