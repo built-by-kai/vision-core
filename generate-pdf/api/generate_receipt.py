@@ -181,8 +181,8 @@ def fetch_invoice_data(page_id, hdrs):
             except Exception as e:
                 print(f"[WARN] deposit invoice ref: {e}", file=sys.stderr)
 
-    # Company
-    company_name = company_id = ""
+    # Company — fetch name, address, phone
+    company_name = company_id = company_address = company_phone = ""
     for rel in props.get("Company", {}).get("relation", [])[:1]:
         try:
             cr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
@@ -193,6 +193,26 @@ def fetch_invoice_data(page_id, hdrs):
             for k in ["Company", "Name", "Company Name"]:
                 if cp.get(k, {}).get("type") == "title":
                     company_name = _plain(cp[k]["title"]); break
+            # Address — try common field names
+            for k in ["Address", "Company Address", "Billing Address", "Mailing Address"]:
+                prop = cp.get(k, {})
+                t = prop.get("type", "")
+                if t == "rich_text":
+                    val = _plain(prop.get("rich_text", []))
+                    if val: company_address = val; break
+                elif t == "title":
+                    val = _plain(prop.get("title", []))
+                    if val: company_address = val; break
+            # Phone — try common field names
+            for k in ["Phone", "Phone Number", "Contact Number", "Tel", "Mobile"]:
+                prop = cp.get(k, {})
+                t = prop.get("type", "")
+                if t == "phone_number":
+                    val = prop.get("phone_number") or ""
+                    if val: company_phone = val; break
+                elif t == "rich_text":
+                    val = _plain(prop.get("rich_text", []))
+                    if val: company_phone = val; break
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
@@ -238,9 +258,11 @@ def fetch_invoice_data(page_id, hdrs):
         "company_name": company_name,
         "company_id":   company_id,
         "pic_name":     pic_name,
-        "pic_email":       pic_email,
-        "deposit_inv_no":  deposit_inv_no,
-        "our_company":     fetch_company_details(hdrs),
+        "pic_email":        pic_email,
+        "deposit_inv_no":   deposit_inv_no,
+        "company_address":  company_address,
+        "company_phone":    company_phone,
+        "our_company":      fetch_company_details(hdrs),
     }
 
 
@@ -369,12 +391,17 @@ def generate_pdf(receipt_no, data):
         [Paragraph(f"<b>{data.get('company_name') or 'N/A'}</b>",
                    st("co2", fontSize=11, fontName="Helvetica-Bold", textColor=C_BLACK, leading=15))],
     ]
+    if data.get("company_address"):
+        rf_rows.append([Paragraph(data["company_address"],
+                                  st("addr", fontSize=9, textColor=C_D500, leading=12))])
+    if data.get("company_phone"):
+        rf_rows.append([Paragraph(data["company_phone"],
+                                  st("cph", fontSize=9, textColor=C_D500, leading=12))])
     if data.get("pic_name"):
-        rf_rows.append([Paragraph(f"Attn: {data['pic_name']}",
-                                  st("pic", fontSize=9, textColor=C_D500, leading=12))])
-    if data.get("pic_email"):
-        rf_rows.append([Paragraph(data["pic_email"],
-                                  st("em", fontSize=9, textColor=C_D500, leading=12))])
+        attn = f"Attn: {data['pic_name']}"
+        if data.get("pic_email"):
+            attn += f"  ·  {data['pic_email']}"
+        rf_rows.append([Paragraph(attn, st("pic", fontSize=9, textColor=C_D600, leading=12))])
     rf_tbl = Table(rf_rows, colWidths=[usable])
     rf_tbl.setStyle(TableStyle([
         ("PADDING",    (0,0),(-1,-1), 0),
