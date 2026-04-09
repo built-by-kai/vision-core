@@ -97,8 +97,9 @@ def fetch_company_details(headers):
 # ─────────────────────────────────────────────
 def next_quotation_number(year, hdrs):
     """Scan all quotations, find highest QUO-YYYY-XXXX for this year, return next."""
+    max_seq = 0
     try:
-        has_more, cursor, max_seq = True, None, 0
+        has_more, cursor = True, None
         while has_more:
             body = {"page_size": 100}
             if cursor:
@@ -112,16 +113,18 @@ def next_quotation_number(year, hdrs):
             has_more = data.get("has_more", False)
             cursor   = data.get("next_cursor")
             for page in data.get("results", []):
-                props     = page.get("properties", {})
-                title_arr = props.get("Quotation No.", {}).get("title", [])
-                title     = "".join(t.get("plain_text", "") for t in title_arr)
-                m = QUO_PATTERN.match(title)
-                if m and int(m.group(1)) == year:
-                    max_seq = max(max_seq, int(m.group(2)))
-        return f"QUO-{year}-{max_seq + 1:04d}"
+                props = page.get("properties", {})
+                # Search all properties for a title that matches QUO pattern
+                for prop_val in props.values():
+                    if prop_val.get("type") == "title":
+                        title = "".join(t.get("plain_text", "") for t in prop_val.get("title", []))
+                        m = QUO_PATTERN.match(title)
+                        if m and int(m.group(1)) == year:
+                            max_seq = max(max_seq, int(m.group(2)))
     except Exception as e:
         print(f"[WARN] auto-number quotation: {e}", file=sys.stderr)
-        return None
+    # Always return a number — fallback to 0001 if DB query failed entirely
+    return f"QUO-{year}-{max_seq + 1:04d}"
 
 
 def assign_quotation_number(page_id, issue_date, current_no, title_prop_name, hdrs):
@@ -137,24 +140,28 @@ def assign_quotation_number(page_id, issue_date, current_no, title_prop_name, hd
             pass
 
     new_no = next_quotation_number(year, hdrs)
-    if not new_no:
-        return current_no
 
-    try:
-        resp = requests.patch(
-            f"https://api.notion.com/v1/pages/{page_id}",
-            headers=hdrs,
-            json={"properties": {
-                title_prop_name: {"title": [{"text": {"content": new_no}}]}
-            }},
-            timeout=10
-        )
-        if not resp.ok:
-            print(f"[WARN] PATCH failed {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
-        resp.raise_for_status()
-        print(f"[INFO] Quotation numbered: {new_no} (property: '{title_prop_name}')", file=sys.stderr)
-    except Exception as e:
-        print(f"[WARN] Could not update quotation title: {e}", file=sys.stderr)
+    # Patch Notion page title with retry
+    for attempt in range(3):
+        try:
+            resp = requests.patch(
+                f"https://api.notion.com/v1/pages/{page_id}",
+                headers=hdrs,
+                json={"properties": {
+                    title_prop_name: {"title": [{"text": {"content": new_no}}]}
+                }},
+                timeout=10
+            )
+            if not resp.ok:
+                print(f"[WARN] PATCH attempt {attempt+1} failed {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
+                resp.raise_for_status()
+            print(f"[INFO] Quotation numbered: {new_no} (property: '{title_prop_name}')", file=sys.stderr)
+            break
+        except Exception as e:
+            print(f"[WARN] Could not update quotation title (attempt {attempt+1}): {e}", file=sys.stderr)
+            if attempt == 2:
+                print(f"[WARN] All retries exhausted — PDF will still use {new_no}", file=sys.stderr)
+
     return new_no
 
 
