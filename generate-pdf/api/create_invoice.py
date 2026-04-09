@@ -111,10 +111,25 @@ def fetch_line_items(quotation_page_id, hdrs):
             description = _plain(props.get("Description", {}).get("rich_text", []))
             qty         = (props.get("Qty",      {}).get("number") or
                            props.get("Quantity", {}).get("number") or 1)
+
+            # Catalog Price — rollup from Products DB (the "list price")
+            cp_prop = props.get("Catalog Price", {})
+            catalog_price = 0
+            if cp_prop.get("type") == "rollup":
+                rl = cp_prop.get("rollup", {})
+                catalog_price = (rl.get("number") or
+                                 next((a.get("number", 0) for a in rl.get("array", [])
+                                       if a.get("type") == "number"), 0))
+            elif cp_prop.get("type") == "number":
+                catalog_price = cp_prop.get("number") or 0
+
+            # Unit Price — manual discount override; fall back to Catalog Price
             unit_price  = (props.get("Unit Price", {}).get("number") or
-                           props.get("Rate",       {}).get("number") or 0)
-            amount      = (props.get("Total Amount", {}).get("number") or
-                           props.get("Total",  {}).get("formula", {}).get("number") or
+                           props.get("Rate",       {}).get("number") or
+                           catalog_price)
+
+            amount      = (props.get("Subtotal", {}).get("formula", {}).get("number") or
+                           props.get("Total",    {}).get("formula", {}).get("number") or
                            (qty * unit_price))
 
             if name:
@@ -136,7 +151,8 @@ def fetch_quotation(page_id, hdrs):
     props = r.json().get("properties", {})
 
     quotation_no  = _plain(props.get("Quotation No.", {}).get("title", []))
-    amount        = props.get("Total Amount", {}).get("number") or 0
+    # Quotation DB field is still "Amount" (only Invoice DB was renamed to "Total Amount")
+    amount        = props.get("Amount", {}).get("number") or 0
     payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
     issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
@@ -264,7 +280,7 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
     if inv_type == "Deposit":
         if dep_amount is not None:
-            props["Deposit Due (50%)"] = {"number": dep_amount}   # deposit amount
+            props["Deposit (50%)"] = {"number": dep_amount}   # deposit amount
         if pay_balance is not None:
             props["Final Payment"]   = {"number": pay_balance}  # balance amount
         props["Deposit Due"]           = {"date": {"start": due_date}}   # deposit due date
@@ -506,6 +522,27 @@ class handler(BaseHTTPRequestHandler):
             inv_id  = new_inv["id"]
             print(f"[INFO] Invoice created: {inv_id}", file=sys.stderr)
 
+            # 1b. Auto-generate invoice PDF immediately
+            pdf_url = ""
+            try:
+                gen_hdrs = {"Content-Type": "application/json"}
+                webhook_secret = os.environ.get("WEBHOOK_SECRET", "")
+                if webhook_secret:
+                    gen_hdrs["Authorization"] = f"Bearer {webhook_secret}"
+                gr = requests.post(
+                    "https://vision-core-delta.vercel.app/api/generate_invoice",
+                    headers=gen_hdrs,
+                    json={"page_id": inv_id},
+                    timeout=55,
+                )
+                if gr.ok:
+                    pdf_url = gr.json().get("pdf_url", "")
+                    print(f"[INFO] Invoice PDF auto-generated: {pdf_url[:60]}", file=sys.stderr)
+                else:
+                    print(f"[WARN] PDF generation returned {gr.status_code}: {gr.text[:200]}", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Auto PDF generation failed: {e}", file=sys.stderr)
+
             # 2. Create Project hub
             project_id = create_project(
                 company_ids  = quotation["company_ids"],
@@ -532,6 +569,7 @@ class handler(BaseHTTPRequestHandler):
                 "invoice_id":   inv_id,
                 "invoice_no":   new_inv.get("properties", {}).get("Invoice No.", {}).get("title", [{}])[0].get("plain_text", ""),
                 "invoice_type": "Full Payment" if quotation["payment_terms"] == "Full Upfront" else "Deposit",
+                "invoice_pdf":  pdf_url,
                 "project_id":   project_id,
                 "line_items":   len(quotation["line_items"]),
             })
