@@ -167,6 +167,20 @@ def fetch_invoice_data(page_id, hdrs):
     # Keep the breakdown amounts for the summary section
     balance_paid = pay_balance if pay_balance > 0 else (total_amount - deposit_amt)
 
+    # Linked invoice refs — for Final Payment, also pull the Deposit invoice number
+    deposit_inv_no = ""
+    if invoice_type == "Final Payment":
+        dep_rels = props.get("Deposit Invoice", {}).get("relation", [])
+        for dep_rel in dep_rels[:1]:
+            try:
+                dr = requests.get(f"https://api.notion.com/v1/pages/{dep_rel['id']}",
+                                  headers=hdrs, timeout=10)
+                dr.raise_for_status()
+                dp = dr.json().get("properties", {})
+                deposit_inv_no = _plain(dp.get("Invoice No.", {}).get("title", []))
+            except Exception as e:
+                print(f"[WARN] deposit invoice ref: {e}", file=sys.stderr)
+
     # Company
     company_name = company_id = ""
     for rel in props.get("Company", {}).get("relation", [])[:1]:
@@ -224,8 +238,9 @@ def fetch_invoice_data(page_id, hdrs):
         "company_name": company_name,
         "company_id":   company_id,
         "pic_name":     pic_name,
-        "pic_email":    pic_email,
-        "our_company":  fetch_company_details(hdrs),
+        "pic_email":       pic_email,
+        "deposit_inv_no":  deposit_inv_no,
+        "our_company":     fetch_company_details(hdrs),
     }
 
 
@@ -327,10 +342,16 @@ def generate_pdf(receipt_no, data):
            style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     pay_date_display = _fmt_date(data.get("pay_date")) or datetime.now().strftime("%d %B %Y")
+    dep_inv_no  = data.get("deposit_inv_no", "")
+    cur_inv_no  = data.get("invoice_no") or "—"
+    if dep_inv_no and dep_inv_no != cur_inv_no:
+        inv_ref_display = f"{dep_inv_no} / {cur_inv_no}"
+    else:
+        inv_ref_display = cur_inv_no
     meta = Table([[
         _mcell("RECEIPT NO.", receipt_no),
         _mcell("DATE",        pay_date_display),
-        _mcell("INVOICE REF", data.get("invoice_no") or "—"),
+        _mcell("INVOICE REF", inv_ref_display),
     ]], colWidths=[usable/3]*3)
     meta.setStyle(TableStyle([
         ("BACKGROUND", (0,0),(-1,-1), C_D50),
@@ -376,7 +397,7 @@ def generate_pdf(receipt_no, data):
 
     summary_rows = [
         [Paragraph(tracked("PAYMENT FOR"),    st("sl",  fontSize=7, textColor=C_D400)),
-         Paragraph(f"Invoice {data.get('invoice_no', '')} — {inv_type}",
+         Paragraph(f"Invoice {inv_ref_display} — {inv_type}",
                    st("sv",  fontSize=9, textColor=C_D700))],
         [Paragraph(tracked("PAYMENT METHOD"), st("ml2", fontSize=7, textColor=C_D400)),
          Paragraph(pay_str,                   st("mv2", fontSize=9, textColor=C_D700))],
@@ -410,18 +431,20 @@ def generate_pdf(receipt_no, data):
     # ── Amount received (large) ───────────────
     amount_paid = data.get("amount_paid", 0)
     amt_tbl = Table([[
-        Paragraph(tracked("AMOUNT RECEIVED"),
-                  st("al", fontSize=9, textColor=C_D400, alignment=2)),
+        Paragraph("AMOUNT RECEIVED",
+                  st("al", fontSize=9, textColor=C_D400, alignment=0)),
         Paragraph(f"<b>RM {amount_paid:,.2f}</b>",
-                  st("av", fontSize=20, fontName="Helvetica-Bold",
+                  st("av", fontSize=18, fontName="Helvetica-Bold",
                      textColor=C_BLACK, alignment=2)),
-    ]], colWidths=[usable * 0.45, usable * 0.55])
+    ]], colWidths=[usable * 0.5, usable * 0.5])
     amt_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0),(-1,-1), C_D50),
-        ("LINEABOVE",  (0,0),(-1,0),  2, C_BLACK),
-        ("LINEBELOW",  (0,0),(-1,0),  2, C_BLACK),
-        ("PADDING",    (0,0),(-1,-1), 14),
-        ("VALIGN",     (0,0),(-1,-1), "MIDDLE"),
+        ("BACKGROUND",   (0,0),(-1,-1), C_D50),
+        ("LINEABOVE",    (0,0),(-1,0),  2, C_BLACK),
+        ("LINEBELOW",    (0,0),(-1,0),  2, C_BLACK),
+        ("PADDING",      (0,0),(-1,-1), 14),
+        ("RIGHTPADDING", (1,0),(1,0),   16),
+        ("VALIGN",       (0,0),(-1,-1), "MIDDLE"),
+        ("ALIGN",        (1,0),(1,0),   "RIGHT"),
     ]))
     story.append(amt_tbl)
     story.append(Spacer(1, 12*mm))
