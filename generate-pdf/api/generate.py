@@ -238,9 +238,13 @@ def fetch_quotation_data(page_id):
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # PIC — handles both direct relation and rollup-of-relation
+    # PIC — priority order:
+    #   1. Quotation.PIC rollup if it returns relation page IDs
+    #   2. Company.People relation (Current PIC? preferred) ← most reliable
+    #   3. Company.People relation (any first person)
     pic_name = pic_email = pic_phone = ""
     pic_page_ids = []
+
     pic_prop = props.get("PIC", {})
     if pic_prop.get("type") == "rollup":
         for item in pic_prop.get("rollup", {}).get("array", []):
@@ -248,6 +252,37 @@ def fetch_quotation_data(page_id):
                 pic_page_ids = [r2["id"] for r2 in item.get("relation", [])]; break
     elif pic_prop.get("type") == "relation":
         pic_page_ids = [rel["id"] for rel in pic_prop.get("relation", [])]
+
+    # Fallback: pull PIC directly from Company.People relation
+    if not pic_page_ids:
+        for rel in props.get("Company", {}).get("relation", [])[:1]:
+            try:
+                cr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+                                  headers=hdrs, timeout=10)
+                cr.raise_for_status()
+                cp_people = cr.json().get("properties", {})
+                people_rels = (cp_people.get("People", {}).get("relation", [])
+                               or cp_people.get("Clients", {}).get("relation", [])
+                               or cp_people.get("Contacts", {}).get("relation", []))
+                # Prefer Current PIC? = True; fall back to first person
+                pic_candidates = []
+                for person_rel in people_rels:
+                    try:
+                        pr2 = requests.get(f"https://api.notion.com/v1/pages/{person_rel['id']}",
+                                           headers=hdrs, timeout=10)
+                        pr2.raise_for_status()
+                        pp2 = pr2.json().get("properties", {})
+                        is_pic = pp2.get("Current PIC?", {}).get("checkbox", False)
+                        pic_candidates.append((is_pic, person_rel["id"]))
+                    except Exception:
+                        pass
+                # Sort: Current PIC first
+                pic_candidates.sort(key=lambda x: x[0], reverse=True)
+                if pic_candidates:
+                    pic_page_ids = [pic_candidates[0][1]]
+            except Exception as e:
+                print(f"[WARN] Company PIC fallback: {e}", file=sys.stderr)
+
     for pid in pic_page_ids[:1]:
         try:
             pr = requests.get(f"https://api.notion.com/v1/pages/{pid}",
@@ -267,7 +302,7 @@ def fetch_quotation_data(page_id):
                 if prop.get("type") == "rich_text":
                     pic_phone = _plain(prop.get("rich_text", [])); break
         except Exception as e:
-            print(f"[WARN] PIC: {e}", file=sys.stderr)
+            print(f"[WARN] PIC fetch: {e}", file=sys.stderr)
 
     # Line items
     line_items = []
