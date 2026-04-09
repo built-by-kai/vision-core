@@ -56,6 +56,25 @@ def _plain(arr):
     return "".join(t.get("plain_text", "") for t in (arr or []))
 
 
+def _fmt_address(addr):
+    """Format a long address string into 2-3 tidy lines for the PDF."""
+    if not addr:
+        return ""
+    import re
+    # Already has real newlines — honour them
+    if "\n" in addr:
+        return addr.replace("\n", "<br/>")
+    # Split before postcode (5-digit MY code) e.g. "..., 50450 KL..."
+    addr = re.sub(r",\s*(\d{5}\b)", r"<br/>\1", addr, count=1)
+    # If still one long line, split after the 2nd comma segment
+    if "<br/>" not in addr:
+        parts = [p.strip() for p in addr.split(",")]
+        if len(parts) >= 4:
+            mid = len(parts) // 2
+            addr = ", ".join(parts[:mid]) + "<br/>" + ", ".join(parts[mid:])
+    return addr
+
+
 def fetch_company_details(headers):
     try:
         r = requests.post(
@@ -464,7 +483,7 @@ def generate_pdf(data):
     ))
     if data.get("company_address"):
         story.append(Paragraph(
-            data["company_address"].replace("\n", "<br/>"),
+            _fmt_address(data["company_address"]),
             st("adr", fontSize=9, textColor=C_D500, leading=13)
         ))
     if data.get("company_phone"):
