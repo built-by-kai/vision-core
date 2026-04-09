@@ -188,35 +188,17 @@ def find_line_items_db(page_id, hdrs):
 
 def create_line_items_db(page_id, hdrs):
     """
-    Append a new Line Items inline database to the quotation page and
-    configure its schema to match the template:
-      Notes (title), Product (relation), Qty (number),
-      Unit Price (number), Subtotal (formula).
+    Create an inline Line Items database on the quotation page using
+    POST /v1/databases (the only reliable way to create an inline DB via API).
+    Schema: Notes (title), Product (relation), Qty, Unit Price, Subtotal (formula).
     Returns db_id (str, no dashes) or raises on failure.
     """
-    # 1. Append the child_database block
-    r = requests.patch(
-        f"https://api.notion.com/v1/blocks/{page_id}/children",
-        headers=hdrs,
-        json={"children": [{"type": "child_database",
-                             "child_database": {"title": "Line Items"}}]},
-        timeout=15,
-    )
-    if not r.ok:
-        raise ValueError(f"Append child_database failed {r.status_code}: {r.text[:300]}")
-
-    results = r.json().get("results", [])
-    db_block = next((b for b in results if b.get("type") == "child_database"), None)
-    if not db_block:
-        raise ValueError("child_database block missing from append response")
-
-    db_id = db_block["id"].replace("-", "")
-    print(f"[INFO] Created Line Items DB: {db_id}", file=sys.stderr)
-
-    # 2. Configure schema — rename Title→Notes, add Product/Qty/Unit Price/Subtotal
-    schema_patch = {
+    body = {
+        "parent":    {"type": "page_id", "page_id": page_id},
+        "is_inline": True,
+        "title": [{"type": "text", "text": {"content": "Line Items"}}],
         "properties": {
-            "Name": {"name": "Notes"},          # rename default title field
+            "Notes":      {"title": {}},
             "Product": {
                 "relation": {
                     "database_id": PRODUCTS_DB,
@@ -228,17 +210,17 @@ def create_line_items_db(page_id, hdrs):
             "Subtotal": {
                 "formula": {"expression": 'prop("Qty") * prop("Unit Price")'}
             },
-        }
+        },
     }
-    sr = requests.patch(
-        f"https://api.notion.com/v1/databases/{db_id}",
-        headers=hdrs, json=schema_patch, timeout=15,
+    r = requests.post(
+        "https://api.notion.com/v1/databases",
+        headers=hdrs, json=body, timeout=15,
     )
-    if sr.ok:
-        print(f"[INFO] Line Items DB schema configured", file=sys.stderr)
-    else:
-        print(f"[WARN] Schema patch {sr.status_code}: {sr.text[:200]}", file=sys.stderr)
+    if not r.ok:
+        raise ValueError(f"Create inline DB failed {r.status_code}: {r.text[:300]}")
 
+    db_id = r.json()["id"].replace("-", "")
+    print(f"[INFO] Created Line Items DB: {db_id}", file=sys.stderr)
     return db_id
 
 
