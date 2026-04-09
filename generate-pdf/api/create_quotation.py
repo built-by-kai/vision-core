@@ -822,6 +822,14 @@ def run_phases_setup(hdrs):
                 "single_property": {},
             }
         }
+    # Deals = two-way relation back to Leads CRM (the deal that spawned this project)
+    if "Deals" not in existing:
+        new_props["Deals"] = {
+            "relation": {
+                "database_id": LEADS_DB,
+                "single_property": {},
+            }
+        }
 
     added_fields = []
     if new_props:
@@ -832,6 +840,21 @@ def run_phases_setup(hdrs):
         if pr.ok:
             added_fields = list(new_props.keys())
             print(f"[INFO] Projects DB updated: {added_fields}", file=sys.stderr)
+        else:
+            # Try adding fields one at a time in case one causes a conflict
+            for fname, fdef in new_props.items():
+                try:
+                    single = requests.patch(
+                        f"https://api.notion.com/v1/databases/{PROJECTS_DB}",
+                        headers=hdrs, json={"properties": {fname: fdef}}, timeout=15
+                    )
+                    if single.ok:
+                        added_fields.append(fname)
+                        print(f"[INFO] Added '{fname}' to Projects DB", file=sys.stderr)
+                    else:
+                        print(f"[WARN] Could not add '{fname}': {single.text[:150]}", file=sys.stderr)
+                except Exception as fe:
+                    print(f"[WARN] Field '{fname}': {fe}", file=sys.stderr)
 
     return {
         "status":          "success",
