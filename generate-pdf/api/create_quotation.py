@@ -49,6 +49,11 @@ PRODUCTS_DB   = "33c8b289e31a80bebdf1ecd506e5ccc3"
 
 # Exact match: Package Type select value → Product slug in Products DB
 # These match the option names set on Leads CRM Package Type field exactly.
+# Slugs for which Base OS (RM 0, included) is auto-added as first line item
+OS_PACKAGE_SLUGS = frozenset({
+    "operations-os", "sales-os", "business-os", "business-os-phase", "starter-os"
+})
+
 PACKAGE_SLUG_MAP = {
     "operations os":              "operations-os",
     "sales os":                   "sales-os",
@@ -142,7 +147,7 @@ def fetch_product_info(slug, hdrs):
                 price = props.get("Price", {}).get("number")
                 pid   = p["id"].replace("-", "")
                 print(f"[INFO] Product found: '{name}' slug='{slug}' quote_type='{qt}'", file=sys.stderr)
-                return {"id": pid, "name": name, "price": price, "quote_type": qt}
+                return {"id": pid, "name": name, "price": price, "quote_type": qt, "slug": slug}
         print(f"[WARN] No product found for slug '{slug}'", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] fetch_product_info: {e}", file=sys.stderr)
@@ -188,91 +193,58 @@ def find_line_items_db(page_id, hdrs):
 
 def create_line_items_db(page_id, hdrs):
     """
-    1. Creates a callout (no emoji, default background) with a heading_2
-       'Products & Services' as a child block inside it.
-    2. Creates the Products & Services inline DB — tries inside the callout
-       (block_id parent), falls back to page-level if rejected by the API.
-    3. DB title is empty so it doesn't show a second 'Products & Services' header.
+    Appends two blocks to the quotation page:
+      1. A callout (no emoji, default background) with bold 'Products & Services'
+         as its text — acts as a visual section header.
+      2. An inline 'Products & Services' database directly on the page.
+         NOTE: Notion's REST API only allows page_id as DB parent, so the DB
+         cannot be nested inside the callout block programmatically.
     Returns db_id (str, no dashes) or raises on failure.
     """
-    import time
-
-    # ── Step 1: callout + heading_2 inside ───────────────────────────────
-    cr = requests.patch(
+    # ── 1. Callout header — no emoji, default background ─────────────────
+    requests.patch(
         f"https://api.notion.com/v1/blocks/{page_id}/children",
         headers=hdrs,
         json={"children": [{
             "type": "callout",
             "callout": {
-                "rich_text": [],              # blank — heading_2 inside is the label
-                "icon":      None,            # null → no emoji
-                "color":     "default_background",
-                "children": [{
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{
-                            "type": "text",
-                            "text": {"content": "Products & Services"},
-                        }],
-                        "is_toggleable": False,
-                        "color": "default",
-                    },
+                "rich_text": [{
+                    "type": "text",
+                    "text": {"content": "Products & Services"},
+                    "annotations": {"bold": True, "color": "default"},
                 }],
+                "icon":  None,
+                "color": "default_background",
             },
         }]},
         timeout=15,
     )
 
-    callout_id = None
-    if cr.ok:
-        cb = next((b for b in cr.json().get("results", [])
-                   if b.get("type") == "callout"), None)
-        if cb:
-            callout_id = cb["id"]
-            print(f"[INFO] Callout: {callout_id}", file=sys.stderr)
-    else:
-        print(f"[WARN] Callout {cr.status_code}: {cr.text[:200]}", file=sys.stderr)
-
-    # small pause so Notion indexes the block before using it as DB parent
-    time.sleep(0.75)
-
-    # ── Step 2: DB schema ────────────────────────────────────────────────
-    db_props = {
-        "Item":    {"title": {}},
-        "Product": {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
-        "Description": {
-            "rollup": {
-                "relation_property_name": "Product",
-                "rollup_property_name":   "Description",
-                "function":               "show_original",
-            }
+    # ── 2. Inline DB on the page ─────────────────────────────────────────
+    r = requests.post(
+        "https://api.notion.com/v1/databases",
+        headers=hdrs,
+        json={
+            "parent":    {"type": "page_id", "page_id": page_id},
+            "is_inline": True,
+            "title": [{"type": "text", "text": {"content": "Products & Services"}}],
+            "properties": {
+                "Item":    {"title": {}},
+                "Product": {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
+                "Description": {
+                    "rollup": {
+                        "relation_property_name": "Product",
+                        "rollup_property_name":   "Description",
+                        "function":               "show_original",
+                    }
+                },
+                "Qty":        {"number": {"format": "number"}},
+                "Unit Price": {"number": {"format": "ringgit"}},
+                "Subtotal":   {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
+            },
         },
-        "Qty":        {"number": {"format": "number"}},
-        "Unit Price": {"number": {"format": "ringgit"}},
-        "Subtotal":   {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
-    }
-
-    db_body = {
-        "is_inline":  True,
-        "title":      [],           # hidden — heading_2 in callout is the label
-        "properties": db_props,
-    }
-
-    # ── Step 3: create DB inside callout, fall back to page ──────────────
-    if callout_id:
-        db_body["parent"] = {"type": "block_id", "block_id": callout_id}
-        r = requests.post("https://api.notion.com/v1/databases",
-                          headers=hdrs, json=db_body, timeout=15)
-        if not r.ok:
-            print(f"[WARN] block_id parent rejected ({r.status_code}): {r.text[:300]}",
-                  file=sys.stderr)
-            db_body["parent"] = {"type": "page_id", "page_id": page_id}
-            r = requests.post("https://api.notion.com/v1/databases",
-                              headers=hdrs, json=db_body, timeout=15)
-    else:
-        db_body["parent"] = {"type": "page_id", "page_id": page_id}
-        r = requests.post("https://api.notion.com/v1/databases",
-                          headers=hdrs, json=db_body, timeout=15)
+        timeout=15,
+    )
 
     if not r.ok:
         raise ValueError(f"Create DB failed {r.status_code}: {r.text[:300]}")
@@ -481,13 +453,16 @@ def process(payload):
             if not li_db_id:
                 li_db_id = create_line_items_db(quot_id, hdrs)
 
-            create_line_item(
-                li_db_id,
-                product["id"],
-                product["name"],
-                product["price"],
-                hdrs,
-            )
+            # For OS packages, insert Base OS (RM 0, included) as first row
+            if product.get("slug") in OS_PACKAGE_SLUGS:
+                base = fetch_product_info("base-os", hdrs)
+                if base.get("id"):
+                    create_line_item(li_db_id, base["id"], base["name"],
+                                     base["price"], hdrs)
+
+            # Main product line item
+            create_line_item(li_db_id, product["id"], product["name"],
+                             product["price"], hdrs)
         except Exception as e:
             # Non-fatal — quotation still created, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
