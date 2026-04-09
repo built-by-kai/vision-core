@@ -157,7 +157,7 @@ def fetch_quotation(page_id, hdrs):
                     company_name = _plain(v.get("title", []))
                     break
 
-    # PIC / Client — PIC is a rollup so get name from it, then look up in Clients DB
+    # PIC / Client — PIC may be rollup (of Primary Contact relation) or direct relation
     CLIENTS_DB = "036622227fd244ad9a77633d5ae0a64b"
     pic_ids  = []
     pic_name = ""
@@ -165,11 +165,17 @@ def fetch_quotation(page_id, hdrs):
     if pic_prop.get("type") == "rollup":
         for item in pic_prop.get("rollup", {}).get("array", []):
             t = item.get("type", "")
+            if t == "relation":
+                # Rollup of a relation field — page IDs available directly
+                pic_ids = [r["id"] for r in item.get("relation", [])]
+                print(f"[INFO] PIC IDs from rollup-relation: {pic_ids}", file=sys.stderr)
+                break
             if t == "title":     pic_name = _plain(item.get("title", []));     break
             if t == "rich_text": pic_name = _plain(item.get("rich_text", [])); break
     elif pic_prop.get("type") == "relation":
         pic_ids = [rel["id"] for rel in pic_prop.get("relation", [])]
 
+    # Fallback: if we only got a name, search the Clients DB
     if pic_name and not pic_ids:
         try:
             sr = requests.post(
@@ -182,7 +188,7 @@ def fetch_quotation(page_id, hdrs):
                 results = sr.json().get("results", [])
                 if results:
                     pic_ids = [results[0]["id"]]
-                    print(f"[INFO] Found client '{pic_name}' in Clients DB", file=sys.stderr)
+                    print(f"[INFO] Found client '{pic_name}' in Clients DB via name search", file=sys.stderr)
         except Exception as e:
             print(f"[WARN] Client lookup: {e}", file=sys.stderr)
 
