@@ -188,43 +188,58 @@ def find_line_items_db(page_id, hdrs):
 
 def create_line_items_db(page_id, hdrs):
     """
-    Creates a callout block (no icon, default background) on the quotation page,
-    then creates the Products & Services inline DB inside it.
-    Falls back to creating directly on the page if block_id parent is unsupported.
+    1. Creates a callout (no emoji, default background) with a heading_2
+       'Products & Services' as a child block inside it.
+    2. Creates the Products & Services inline DB — tries inside the callout
+       (block_id parent), falls back to page-level if rejected by the API.
+    3. DB title is empty so it doesn't show a second 'Products & Services' header.
     Returns db_id (str, no dashes) or raises on failure.
     """
-    # 1. Append a callout block — label text, no icon, default background
+    import time
+
+    # ── Step 1: callout + heading_2 inside ───────────────────────────────
     cr = requests.patch(
         f"https://api.notion.com/v1/blocks/{page_id}/children",
         headers=hdrs,
         json={"children": [{
-            "type":    "callout",
+            "type": "callout",
             "callout": {
-                "rich_text": [{"type": "text", "text": {"content": "Products & Services"}, "annotations": {"bold": True}}],
+                "rich_text": [],              # blank — heading_2 inside is the label
+                "icon":      None,            # null → no emoji
                 "color":     "default_background",
+                "children": [{
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{
+                            "type": "text",
+                            "text": {"content": "Products & Services"},
+                        }],
+                        "is_toggleable": False,
+                        "color": "default",
+                    },
+                }],
             },
         }]},
         timeout=15,
     )
+
     callout_id = None
     if cr.ok:
-        results   = cr.json().get("results", [])
-        cb        = next((b for b in results if b.get("type") == "callout"), None)
+        cb = next((b for b in cr.json().get("results", [])
+                   if b.get("type") == "callout"), None)
         if cb:
             callout_id = cb["id"]
-            print(f"[INFO] Callout created: {callout_id}", file=sys.stderr)
+            print(f"[INFO] Callout: {callout_id}", file=sys.stderr)
     else:
-        print(f"[WARN] Callout create failed {cr.status_code}: {cr.text[:200]}", file=sys.stderr)
+        print(f"[WARN] Callout {cr.status_code}: {cr.text[:200]}", file=sys.stderr)
 
-    # 2. Create inline DB — try inside callout first, fall back to page
-    db_properties = {
+    # small pause so Notion indexes the block before using it as DB parent
+    time.sleep(0.75)
+
+    # ── Step 2: DB schema ────────────────────────────────────────────────
+    db_props = {
         "Item":    {"title": {}},
-        "Product": {
-            "relation": {
-                "database_id": PRODUCTS_DB,
-                "single_property": {},
-            }
-        },
+        "Product": {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
         "Description": {
             "rollup": {
                 "relation_property_name": "Product",
@@ -234,49 +249,36 @@ def create_line_items_db(page_id, hdrs):
         },
         "Qty":        {"number": {"format": "number"}},
         "Unit Price": {"number": {"format": "ringgit"}},
-        "Subtotal": {
-            "formula": {"expression": 'prop("Qty") * prop("Unit Price")'}
-        },
+        "Subtotal":   {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
     }
 
-    parent = (
-        {"type": "block_id", "block_id": callout_id}
-        if callout_id
-        else {"type": "page_id", "page_id": page_id}
-    )
+    db_body = {
+        "is_inline":  True,
+        "title":      [],           # hidden — heading_2 in callout is the label
+        "properties": db_props,
+    }
 
-    r = requests.post(
-        "https://api.notion.com/v1/databases",
-        headers=hdrs,
-        json={
-            "parent":    parent,
-            "is_inline": True,
-            "title":     [{"type": "text", "text": {"content": "Products & Services"}}],
-            "properties": db_properties,
-        },
-        timeout=15,
-    )
-
-    # If block_id parent is rejected, retry directly on the page
-    if not r.ok and callout_id:
-        print(f"[WARN] block_id parent unsupported ({r.status_code}), retrying on page", file=sys.stderr)
-        r = requests.post(
-            "https://api.notion.com/v1/databases",
-            headers=hdrs,
-            json={
-                "parent":    {"type": "page_id", "page_id": page_id},
-                "is_inline": True,
-                "title":     [{"type": "text", "text": {"content": "Products & Services"}}],
-                "properties": db_properties,
-            },
-            timeout=15,
-        )
+    # ── Step 3: create DB inside callout, fall back to page ──────────────
+    if callout_id:
+        db_body["parent"] = {"type": "block_id", "block_id": callout_id}
+        r = requests.post("https://api.notion.com/v1/databases",
+                          headers=hdrs, json=db_body, timeout=15)
+        if not r.ok:
+            print(f"[WARN] block_id parent rejected ({r.status_code}): {r.text[:300]}",
+                  file=sys.stderr)
+            db_body["parent"] = {"type": "page_id", "page_id": page_id}
+            r = requests.post("https://api.notion.com/v1/databases",
+                              headers=hdrs, json=db_body, timeout=15)
+    else:
+        db_body["parent"] = {"type": "page_id", "page_id": page_id}
+        r = requests.post("https://api.notion.com/v1/databases",
+                          headers=hdrs, json=db_body, timeout=15)
 
     if not r.ok:
-        raise ValueError(f"Create inline DB failed {r.status_code}: {r.text[:300]}")
+        raise ValueError(f"Create DB failed {r.status_code}: {r.text[:300]}")
 
     db_id = r.json()["id"].replace("-", "")
-    print(f"[INFO] Products & Services DB created: {db_id}", file=sys.stderr)
+    print(f"[INFO] Products & Services DB: {db_id}", file=sys.stderr)
     return db_id
 
 
