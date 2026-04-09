@@ -147,11 +147,14 @@ def fetch_product_info(slug, hdrs):
                 price = props.get("Price", {}).get("number")
                 pid   = p["id"].replace("-", "")
                 print(f"[INFO] Product found: '{name}' slug='{slug}' quote_type='{qt}'", file=sys.stderr)
-                return {"id": pid, "name": name, "price": price, "quote_type": qt, "slug": slug}
+                desc = _plain(props.get("Description", {}).get("rich_text", []))
+                return {"id": pid, "name": name, "price": price,
+                        "quote_type": qt, "slug": slug, "description": desc}
         print(f"[WARN] No product found for slug '{slug}'", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] fetch_product_info: {e}", file=sys.stderr)
-    return default
+    return {"id": None, "name": None, "price": None, "quote_type": "New Business",
+            "slug": None, "description": ""}
 
 
 def find_line_items_db(page_id, hdrs):
@@ -229,18 +232,12 @@ def create_line_items_db(page_id, hdrs):
             "is_inline": True,
             "title": [{"type": "text", "text": {"content": "Products & Services"}}],
             "properties": {
-                "Item":    {"title": {}},
-                "Product": {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
-                "Description": {
-                    "rollup": {
-                        "relation_property_name": "Product",
-                        "rollup_property_name":   "Description",
-                        "function":               "show_original",
-                    }
-                },
-                "Qty":        {"number": {"format": "number"}},
-                "Unit Price": {"number": {"format": "ringgit"}},
-                "Subtotal":   {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
+                "Notes":       {"title": {}},
+                "Product":     {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
+                "Description": {"rich_text": {}},
+                "Qty":         {"number": {"format": "number"}},
+                "Unit Price":  {"number": {"format": "ringgit"}},
+                "Subtotal":    {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
             },
         },
         timeout=15,
@@ -342,21 +339,25 @@ def append_template_blocks(page_id, hdrs):
         print(f"[WARN] Template blocks {r.status_code}: {r.text[:200]}", file=sys.stderr)
 
 
-def create_line_item(db_id, product_id, product_name, price, hdrs):
+def create_line_item(db_id, product_id, product_name, price, hdrs, description=""):
     """
-    Create the first line item in the Line Items DB.
-    Uses 'Notes' as the title field (matches template schema).
-    Sets Product relation, Qty=1, and Unit Price from the product catalog.
+    Create a line item in the Products & Services DB.
+    - Notes (title): left blank — the Product relation shows the name
+    - Description: rich_text populated from Products DB description
+    - Product: linked relation
+    - Qty: 1
+    - Unit Price: from catalog
     """
     props = {
-        # Template title field is "Notes" not "Name"
-        "Item": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
-        "Qty":  {"number": 1},
+        "Notes": {"title": []},    # blank — product name comes via relation
+        "Qty":   {"number": 1},
     }
     if product_id:
         props["Product"] = {"relation": [{"id": product_id}]}
     if price is not None:
         props["Unit Price"] = {"number": float(price)}
+    if description:
+        props["Description"] = {"rich_text": [{"text": {"content": description}}]}
 
     r = requests.post(
         "https://api.notion.com/v1/pages",
@@ -541,16 +542,18 @@ def process(payload):
             if not li_db_id:
                 li_db_id = create_line_items_db(quot_id, hdrs)
 
-            # For OS packages, insert Base OS (RM 0, included) as first row
+            # Insert main product first, then Base OS — Notion shows newest entry at
+            # top so creating Base OS last makes it appear as the first row.
+            create_line_item(li_db_id, product["id"], product["name"],
+                             product["price"], hdrs,
+                             description=product.get("description", ""))
+
             if product.get("slug") in OS_PACKAGE_SLUGS:
                 base = fetch_product_info("base-os", hdrs)
                 if base.get("id"):
                     create_line_item(li_db_id, base["id"], base["name"],
-                                     base["price"], hdrs)
-
-            # Main product line item
-            create_line_item(li_db_id, product["id"], product["name"],
-                             product["price"], hdrs)
+                                     base["price"], hdrs,
+                                     description=base.get("description", ""))
         except Exception as e:
             # Non-fatal — quotation still created, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
