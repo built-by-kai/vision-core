@@ -211,25 +211,36 @@ def fetch_quotation(page_id, hdrs):
     # Lead relation — "Deal Source" two-way relation on Quotation (renamed from "Lead")
     lead_ids = [rel["id"] for rel in props.get("Deal Source", {}).get("relation", [])]
 
+    # Existing project — if set, this is an add-on quotation; don't create a new project
+    existing_project_ids = [
+        rel["id"].replace("-", "")
+        for rel in props.get("Project", {}).get("relation", [])
+    ]
+
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
 
     # Fetch line items from the quotation's child inline DB
     line_items = fetch_line_items(page_id, hdrs)
 
+    # Package Type (rich_text on quotation — e.g. "Add-on")
+    package_type_text = _plain(props.get("Package Type", {}).get("rich_text", []))
+
     return {
-        "quotation_no":      quotation_no,
-        "amount":            amount,
-        "payment_terms":     payment_terms,
-        "issue_date":        issue_date,
-        "status":            status,
-        "quote_type":        quote_type,
-        "company_ids":       company_ids,
-        "company_name":      company_name,
-        "pic_ids":           pic_ids,
-        "lead_ids":          lead_ids,
-        "existing_invoices": existing_invoices,
-        "line_items":        line_items,
+        "quotation_no":        quotation_no,
+        "amount":              amount,
+        "payment_terms":       payment_terms,
+        "issue_date":          issue_date,
+        "status":              status,
+        "quote_type":          quote_type,
+        "company_ids":         company_ids,
+        "company_name":        company_name,
+        "pic_ids":             pic_ids,
+        "lead_ids":            lead_ids,
+        "existing_project_ids": existing_project_ids,
+        "existing_invoices":   existing_invoices,
+        "line_items":          line_items,
+        "package_type_text":   package_type_text,
     }
 
 
@@ -241,7 +252,18 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     quo_no = quotation_data.get("quotation_no", "")
 
     # Determine invoice type
-    if terms == "Full Upfront":
+    # Add-on quotations are detected by: Payment Terms=Full Upfront AND an
+    # existing project already linked (set by create_addon.py).
+    is_addon = (
+        terms == "Full Upfront"
+        and bool(quotation_data.get("existing_project_ids"))
+    )
+
+    if is_addon:
+        inv_type   = "Supplementary"
+        dep_amount = None
+        due_date   = (datetime.now() + timedelta(days=14)).date().isoformat()
+    elif terms == "Full Upfront":
         inv_type   = "Full Payment"
         dep_amount = None
         due_date   = (datetime.now() + timedelta(days=14)).date().isoformat()
@@ -582,20 +604,51 @@ class handler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"[WARN] Deal stage update: {e}", file=sys.stderr)
 
-            # 2. Create Project hub
-            project_id = create_project(
-                company_ids  = quotation["company_ids"],
-                company_name = quotation["company_name"],
-                quotation_id = page_id,
-                invoice_id   = inv_id,
-                quotation_no = quotation["quotation_no"],
-                amount       = quotation["amount"],
-                quote_type   = quotation["quote_type"],
-                line_items   = quotation["line_items"],
-                lead_ids     = quotation.get("lead_ids", []),
-                hdrs         = hdrs,
-            )
-            print(f"[INFO] Project created: {project_id}", file=sys.stderr)
+            # 2. Find or create Project hub
+            existing_project_ids = quotation.get("existing_project_ids", [])
+            is_addon = bool(existing_project_ids)
+
+            if is_addon:
+                # Add-on quotation — link invoice to the EXISTING project hub
+                project_id = existing_project_ids[0]
+                print(f"[INFO] Add-on detected — linking to existing Project: {project_id}", file=sys.stderr)
+
+                # Update Add-on Value on the project (increment by add-on amount)
+                try:
+                    # Fetch current add-on value
+                    pr = requests.get(
+                        f"https://api.notion.com/v1/pages/{project_id}",
+                        headers=hdrs, timeout=10
+                    )
+                    if pr.ok:
+                        curr_addon = pr.json().get("properties", {}).get(
+                            "Add-on Value", {}
+                        ).get("number") or 0
+                        new_addon = round(curr_addon + quotation["amount"], 2)
+                        requests.patch(
+                            f"https://api.notion.com/v1/pages/{project_id}",
+                            headers=hdrs,
+                            json={"properties": {"Add-on Value": {"number": new_addon}}},
+                            timeout=10,
+                        )
+                        print(f"[INFO] Project Add-on Value updated: RM {new_addon}", file=sys.stderr)
+                except Exception as e:
+                    print(f"[WARN] Add-on Value update: {e}", file=sys.stderr)
+            else:
+                # New project — standard flow
+                project_id = create_project(
+                    company_ids  = quotation["company_ids"],
+                    company_name = quotation["company_name"],
+                    quotation_id = page_id,
+                    invoice_id   = inv_id,
+                    quotation_no = quotation["quotation_no"],
+                    amount       = quotation["amount"],
+                    quote_type   = quotation["quote_type"],
+                    line_items   = quotation["line_items"],
+                    lead_ids     = quotation.get("lead_ids", []),
+                    hdrs         = hdrs,
+                )
+                print(f"[INFO] Project created: {project_id}", file=sys.stderr)
 
             # 3. Back-link Project onto Invoice and Quotation (non-fatal if field missing)
             inv_linked  = link_project_to_invoice(inv_id, project_id, hdrs)
