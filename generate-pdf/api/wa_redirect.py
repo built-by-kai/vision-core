@@ -78,9 +78,14 @@ def build_wa_url(page_id: str, hdrs: dict) -> tuple:
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # PIC name + phone — scan ALL properties and ALL types for any phone-like value
+    # PIC name + phone
+    # Supports both: relation type (→ Clients DB page) and people type (workspace member)
     pic_name = pic_phone = ""
-    pic_rels = props.get("PIC", {}).get("relation", [])
+    pic_prop = props.get("PIC", {})
+    debug["pic_type"] = pic_prop.get("type", "not found")
+
+    # --- Strategy 1: PIC is a relation to Clients/Contacts DB ---
+    pic_rels = pic_prop.get("relation", [])
     debug["pic_relations"] = [r["id"] for r in pic_rels]
 
     for rel in pic_rels[:1]:
@@ -95,7 +100,6 @@ def build_wa_url(page_id: str, hdrs: dict) -> tuple:
                 if pp.get(k, {}).get("type") == "title":
                     pic_name = _plain(pp[k]["title"]); break
 
-            # Try every property — check phone_number, rich_text, text types
             for k, prop in pp.items():
                 t = prop.get("type", "")
                 val = ""
@@ -103,16 +107,55 @@ def build_wa_url(page_id: str, hdrs: dict) -> tuple:
                     val = prop.get("phone_number") or ""
                 elif t == "rich_text":
                     val = _plain(prop.get("rich_text", []))
-                elif t == "title":
-                    pass  # skip — that's the name
-                if val and re.search(r"\d{6,}", val):   # looks like a phone number
+                if val and re.search(r"\d{6,}", val):
                     pic_phone = val
                     debug["pic_phone_raw"] = f"{k}: {val}"
-                    print(f"[INFO] Found phone in property '{k}': {val}", file=sys.stderr)
+                    print(f"[INFO] Found phone via relation '{k}': {val}", file=sys.stderr)
                     break
         except Exception as e:
-            print(f"[WARN] PIC: {e}", file=sys.stderr)
+            print(f"[WARN] PIC relation fetch: {e}", file=sys.stderr)
             debug["pic_error"] = str(e)
+
+    # --- Strategy 2: PIC is a people type (workspace member) — look up by name in Clients DB ---
+    if not pic_phone:
+        people = pic_prop.get("people", [])
+        debug["pic_people"] = [p.get("name", "") for p in people]
+        if people:
+            pic_name = people[0].get("name", "")
+            debug["pic_name_from_people"] = pic_name
+            print(f"[INFO] PIC is people type: {pic_name} — searching Clients DB", file=sys.stderr)
+            # Search the Clients DB for a matching name
+            CLIENTS_DB = "036622227fd244ad9a77633d5ae0a64b"
+            try:
+                sr = requests.post(
+                    f"https://api.notion.com/v1/databases/{CLIENTS_DB}/query",
+                    headers=hdrs,
+                    json={"filter": {"property": "Name", "title": {"equals": pic_name}}},
+                    timeout=10
+                )
+                sr.raise_for_status()
+                results = sr.json().get("results", [])
+                debug["clients_search_results"] = len(results)
+                for client_page in results[:1]:
+                    cp = client_page.get("properties", {})
+                    debug["client_props"] = {k: v.get("type") for k, v in cp.items()}
+                    for k, prop in cp.items():
+                        t = prop.get("type", "")
+                        val = ""
+                        if t == "phone_number":
+                            val = prop.get("phone_number") or ""
+                        elif t == "rich_text":
+                            val = _plain(prop.get("rich_text", []))
+                        if val and re.search(r"\d{6,}", val):
+                            pic_phone = val
+                            debug["pic_phone_raw"] = f"{k}: {val} (via Clients DB)"
+                            print(f"[INFO] Found phone in Clients DB '{k}': {val}", file=sys.stderr)
+                            break
+            except Exception as e:
+                print(f"[WARN] Clients DB search: {e}", file=sys.stderr)
+                debug["clients_search_error"] = str(e)
+
+    print(f"[DEBUG] {debug}", file=sys.stderr)
 
     print(f"[DEBUG] {debug}", file=sys.stderr)
 
