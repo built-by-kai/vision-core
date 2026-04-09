@@ -229,13 +229,10 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if dep_amount is not None:
         props["Deposit Amount"] = {"number": dep_amount}
 
-    if pay_balance is not None:
-        props["Payment Balance"] = {"number": pay_balance}
-
     if inv_type == "Deposit":
-        props["Deposit Due"] = {"date": {"start": due_date}}
+        props["Payment Deposit Date"] = {"date": {"start": due_date}}
     else:
-        props["Balance Due"] = {"date": {"start": due_date}}
+        props["Payment Balance Date"] = {"date": {"start": due_date}}
 
     body = {
         "parent":     {"database_id": INVOICE_DB},
