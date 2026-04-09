@@ -151,10 +151,11 @@ def fetch_product_info(slug, hdrs):
 
 def find_line_items_db(page_id, hdrs):
     """
-    Find the Line Items child_database already on the quotation page.
-    Template is the default, so it's auto-applied and the DB already exists.
-    Looks at top-level blocks AND one level inside callout blocks.
+    Look for an existing Line Items child_database on the page
+    (top-level and one level inside any callout blocks).
     Returns db_id (str, no dashes) or None.
+    NOTE: Notion does NOT auto-apply templates via REST API, so this will
+    usually return None for freshly created pages — use create_line_items_db() instead.
     """
     try:
         r = requests.get(f"https://api.notion.com/v1/blocks/{page_id}/children",
@@ -163,7 +164,6 @@ def find_line_items_db(page_id, hdrs):
             return None
         blocks = r.json().get("results", [])
 
-        # Expand callout children — template wraps Line Items inside a callout
         all_blocks = list(blocks)
         for block in blocks:
             if block.get("type") == "callout":
@@ -179,11 +179,67 @@ def find_line_items_db(page_id, hdrs):
         for block in all_blocks:
             if block.get("type") == "child_database":
                 db_id = block["id"].replace("-", "")
-                print(f"[INFO] Found Line Items DB: {db_id}", file=sys.stderr)
+                print(f"[INFO] Found existing Line Items DB: {db_id}", file=sys.stderr)
                 return db_id
     except Exception as e:
         print(f"[WARN] find_line_items_db: {e}", file=sys.stderr)
     return None
+
+
+def create_line_items_db(page_id, hdrs):
+    """
+    Append a new Line Items inline database to the quotation page and
+    configure its schema to match the template:
+      Notes (title), Product (relation), Qty (number),
+      Unit Price (number), Subtotal (formula).
+    Returns db_id (str, no dashes) or raises on failure.
+    """
+    # 1. Append the child_database block
+    r = requests.patch(
+        f"https://api.notion.com/v1/blocks/{page_id}/children",
+        headers=hdrs,
+        json={"children": [{"type": "child_database",
+                             "child_database": {"title": "Line Items"}}]},
+        timeout=15,
+    )
+    if not r.ok:
+        raise ValueError(f"Append child_database failed {r.status_code}: {r.text[:300]}")
+
+    results = r.json().get("results", [])
+    db_block = next((b for b in results if b.get("type") == "child_database"), None)
+    if not db_block:
+        raise ValueError("child_database block missing from append response")
+
+    db_id = db_block["id"].replace("-", "")
+    print(f"[INFO] Created Line Items DB: {db_id}", file=sys.stderr)
+
+    # 2. Configure schema — rename Title→Notes, add Product/Qty/Unit Price/Subtotal
+    schema_patch = {
+        "properties": {
+            "Name": {"name": "Notes"},          # rename default title field
+            "Product": {
+                "relation": {
+                    "database_id": PRODUCTS_DB,
+                    "single_property": {},
+                }
+            },
+            "Qty":        {"number": {"format": "number"}},
+            "Unit Price": {"number": {"format": "number"}},
+            "Subtotal": {
+                "formula": {"expression": 'prop("Qty") * prop("Unit Price")'}
+            },
+        }
+    }
+    sr = requests.patch(
+        f"https://api.notion.com/v1/databases/{db_id}",
+        headers=hdrs, json=schema_patch, timeout=15,
+    )
+    if sr.ok:
+        print(f"[INFO] Line Items DB schema configured", file=sys.stderr)
+    else:
+        print(f"[WARN] Schema patch {sr.status_code}: {sr.text[:200]}", file=sys.stderr)
+
+    return db_id
 
 
 def create_line_item(db_id, product_id, product_name, price, hdrs):
@@ -375,33 +431,23 @@ def process(payload):
     quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
     print(f"[INFO] Created Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
-    # ── Auto-populate first line item into template Line Items DB ──
-    # Only when triggered from a lead with a resolved product.
-    # The Quotation DB default template is applied async after page creation,
-    # so we retry find_line_items_db a few times with a short wait.
+    # ── Auto-populate first line item ──
+    # Notion does NOT apply default templates via REST API, so we create
+    # the Line Items DB ourselves.  We still call find_line_items_db() first
+    # in case a future Notion version does apply the template automatically.
     if source_type == "lead" and product.get("id"):
         try:
-            import time
-            li_db_id = None
-            for attempt in range(4):          # up to ~6 s total
-                li_db_id = find_line_items_db(quot_id, hdrs)
-                if li_db_id:
-                    break
-                wait = 1.5 * (attempt + 1)    # 1.5 s, 3 s, 4.5 s
-                print(f"[INFO] Template not ready yet, retrying in {wait}s…", file=sys.stderr)
-                time.sleep(wait)
+            li_db_id = find_line_items_db(quot_id, hdrs)
+            if not li_db_id:
+                li_db_id = create_line_items_db(quot_id, hdrs)
 
-            if li_db_id:
-                create_line_item(
-                    li_db_id,
-                    product["id"],
-                    product["name"],
-                    product["price"],
-                    hdrs,
-                )
-            else:
-                print("[WARN] Line Items DB not found after retries — user can add manually",
-                      file=sys.stderr)
+            create_line_item(
+                li_db_id,
+                product["id"],
+                product["name"],
+                product["price"],
+                hdrs,
+            )
         except Exception as e:
             # Non-fatal — quotation still created, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
