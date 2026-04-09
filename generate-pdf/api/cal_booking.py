@@ -8,11 +8,12 @@ import requests
 # ─────────────────────────────────────────────
 #  Notion Database IDs
 # ─────────────────────────────────────────────
-CLIENTS_DB   = "036622227fd244ad9a77633d5ae0a64b"  # Clients (People)
-COMPANIES_DB = "33c8b289e31a80fe82d2ccd18bcaec68"  # Companies
-LEADS_DB     = "8690d55c4d0449068c51ef49d92a26a2"  # Leads CRM
-MEETINGS_DB  = "e283b9d542a34865bf518c3a0e43f1fe"  # Meetings
-PIC_HIST_DB  = "3c870b0a06b647b3bc85c042d56cfb6f"  # PIC History
+CLIENTS_DB    = "036622227fd244ad9a77633d5ae0a64b"  # Clients (People)
+COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"  # Companies
+LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"  # Leads CRM
+MEETINGS_DB   = "e283b9d542a34865bf518c3a0e43f1fe"  # Meetings
+PIC_HIST_DB   = "3c870b0a06b647b3bc85c042d56cfb6f"  # PIC History
+EXPANSIONS_DB = "47a500ac8dd4464d96a8e4d799485421"  # Expansions (active client add-ons)
 
 # Valid Source options per database
 CLIENTS_SOURCES  = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal"}
@@ -216,23 +217,65 @@ def process_booking(payload):
     # Normalise referral to list
     referral_list = referral_raw if isinstance(referral_raw, list) else ([referral_raw] if referral_raw else [])
 
+    # ── Active client metadata (pre-bound company from Company page link) ──
+    metadata         = payload.get("metadata") or {}
+    bound_company_id = (metadata.get("company_id") or "").replace("-", "")
+    # What the active client is looking for — determines routing
+    request_type     = rv(responses, "requestType", "request_type", "lookingFor",
+                          "what_are_you_looking_for", default="").lower()
+    # Classify: "new system" → new Lead, "add-on"/"expansion" → Expansions DB
+    is_expansion = any(k in request_type for k in ("add", "expansion", "extra", "feature", "addon"))
+    is_new_system = any(k in request_type for k in ("new system", "new service", "new os", "rebuild"))
+    is_active_client = bool(bound_company_id)  # came via company-specific link
+
     # Debug: log all response keys + values to help trace missing fields
     print(f"[DEBUG] Response keys: {list(responses.keys())}", file=sys.stderr)
     for k, v in responses.items():
         print(f"[DEBUG]   {k!r} = {v!r}", file=sys.stderr)
     print(f"[INFO] Booking: name={name!r} email={email!r} company={company_name!r} phone={phone!r}", file=sys.stderr)
+    print(f"[INFO] Active client: {is_active_client}, bound_company_id: {bound_company_id!r}, request_type: {request_type!r}", file=sys.stderr)
 
     # ── 1. Find or create Company ──────────────
     company_id         = None
     company_is_new     = False
     company_has_people = False
 
-    if company_name:
+    # Active client link — company already known, skip find-or-create
+    if bound_company_id:
+        company_id = bound_company_id
+        try:
+            co_page = requests.get(f"https://api.notion.com/v1/pages/{company_id}",
+                                   headers=hdrs, timeout=10).json()
+            people_rel = co_page.get("properties", {}).get("People", {}).get("relation", [])
+            company_has_people = len(people_rel) > 0
+        except Exception:
+            pass
+        print(f"[INFO] Using bound company: {company_id}", file=sys.stderr)
+
+    elif company_name:
+        # Try match by company name first
         existing_co = search_db(
             COMPANIES_DB,
-            {"property": "Name", "title": {"equals": company_name}},
+            {"property": "Company", "title": {"equals": company_name}},
             hdrs,
         )
+        # Fallback: match by email domain (different person, same company)
+        if not existing_co and email and "@" in email:
+            domain = email.split("@")[1].lower()
+            # Skip generic providers
+            if domain not in {"gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"}:
+                r_all = requests.post(
+                    f"https://api.notion.com/v1/databases/{COMPANIES_DB}/query",
+                    headers=hdrs, json={"page_size": 100}, timeout=10,
+                )
+                if r_all.ok:
+                    for co in r_all.json().get("results", []):
+                        co_email = co.get("properties", {}).get("Email", {}).get("email", "") or ""
+                        if co_email and co_email.split("@")[-1].lower() == domain:
+                            existing_co = co
+                            print(f"[INFO] Matched company by domain @{domain}", file=sys.stderr)
+                            break
+
         if existing_co:
             company_id = existing_co["id"].replace("-", "")
             people_rel = existing_co.get("properties", {}).get("People", {}).get("relation", [])
@@ -309,29 +352,49 @@ def process_booking(payload):
     if notion_exp: notes_parts.append(f"Notion experience: {notion_exp}")
     notes_text = "\n".join(notes_parts)
 
-    # ── 4. Create Lead ─────────────────────────
+    # ── 4. Create Lead or Expansion ───────────────
     if company_name and name:
-        lead_name = f"{company_name} · {name}"
+        entry_name = f"{company_name} · {name}"
     elif company_name:
-        lead_name = company_name
+        entry_name = company_name
     else:
-        lead_name = name or "New Lead"
-    lead_props = {
-        "Lead Name": {"title": [{"text": {"content": lead_name}}]},
-        "Stage":     {"status": {"name": "Contacted"}},
-    }
-    if company_id:
-        lead_props["Company"] = {"relation": [{"id": company_id}]}
-    if notes_text:
-        lead_props["Notes"] = {"rich_text": [{"text": {"content": notes_text}}]}
+        entry_name = name or "New Lead"
 
-    lead_src = map_sources(referral_list, LEADS_SOURCES)
-    if lead_src:
-        lead_props["Source"] = {"multi_select": lead_src}
+    lead_id = None
 
-    new_lead = create_page(LEADS_DB, lead_props, hdrs)
-    lead_id  = new_lead["id"].replace("-", "")
-    print(f"[INFO] Created lead: {lead_id}", file=sys.stderr)
+    if is_active_client and is_expansion:
+        # Active client wants add-on → Expansions DB
+        exp_props = {
+            "Name":   {"title": [{"text": {"content": entry_name}}]},
+            "Status": {"select": {"name": "New Request"}},
+        }
+        if company_id:
+            exp_props["Client"] = {"relation": [{"id": company_id}]}
+        if notes_text:
+            exp_props["Notes"] = {"rich_text": [{"text": {"content": notes_text}}]}
+        new_entry = create_page(EXPANSIONS_DB, exp_props, hdrs, icon_emoji="🔧")
+        lead_id   = new_entry["id"].replace("-", "")
+        print(f"[INFO] Created expansion: {lead_id}", file=sys.stderr)
+    else:
+        # New lead or active client wanting new system → Leads CRM
+        # Active client skips "Lead" and starts at "Qualified"
+        stage = "Qualified" if is_active_client else "Lead"
+        lead_props = {
+            "Lead Name": {"title": [{"text": {"content": entry_name}}]},
+            "Stage":     {"status": {"name": stage}},
+        }
+        if company_id:
+            lead_props["Company"] = {"relation": [{"id": company_id}]}
+        if notes_text:
+            lead_props["Notes"] = {"rich_text": [{"text": {"content": notes_text}}]}
+
+        lead_src = map_sources(referral_list, LEADS_SOURCES)
+        if lead_src:
+            lead_props["Source"] = {"multi_select": lead_src}
+
+        new_entry = create_page(LEADS_DB, lead_props, hdrs)
+        lead_id   = new_entry["id"].replace("-", "")
+        print(f"[INFO] Created lead (stage={stage}): {lead_id}", file=sys.stderr)
 
     # Link lead → client via the Clients "Deals" property (synced relation)
     if client_id:
@@ -444,14 +507,16 @@ def process_booking(payload):
             print(f"[INFO] Linked guest lead {deal_id} to meeting", file=sys.stderr)
 
     return {
-        "status":         "success",
-        "lead_name":      lead_name,
-        "company_id":     company_id,
-        "client_id":      client_id,
-        "lead_id":        lead_id,
-        "meeting_id":     mtg_id,
-        "is_new_client":  is_new_client,
-        "company_is_new": company_is_new,
+        "status":          "success",
+        "entry_name":      entry_name,
+        "routed_to":       "expansions" if (is_active_client and is_expansion) else "leads_crm",
+        "stage":           "New Request" if (is_active_client and is_expansion) else ("Qualified" if is_active_client else "Lead"),
+        "company_id":      company_id,
+        "client_id":       client_id,
+        "lead_id":         lead_id,
+        "meeting_id":      mtg_id,
+        "is_new_client":   is_new_client,
+        "company_is_new":  company_is_new,
     }
 
 
