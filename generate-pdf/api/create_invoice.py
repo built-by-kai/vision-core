@@ -543,6 +543,28 @@ class handler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"[WARN] Auto PDF generation failed: {e}", file=sys.stderr)
 
+            # 1c. Advance the Deal stage to "Won – Pending Deposit"
+            DEALS_DB = "8690d55c4d0449068c51ef49d92a26a2"
+            try:
+                # Find Deals linked to this quotation
+                dr = requests.post(
+                    f"https://api.notion.com/v1/databases/{DEALS_DB}/query",
+                    headers=hdrs,
+                    json={"filter": {"property": "Quotation", "relation": {"contains": page_id}}},
+                    timeout=10,
+                )
+                if dr.ok:
+                    for deal in dr.json().get("results", []):
+                        requests.patch(
+                            f"https://api.notion.com/v1/pages/{deal['id']}",
+                            headers=hdrs,
+                            json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},
+                            timeout=10,
+                        )
+                        print(f"[INFO] Deal {deal['id'][:8]} advanced to Won – Pending Deposit", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Deal stage update: {e}", file=sys.stderr)
+
             # 2. Create Project hub
             project_id = create_project(
                 company_ids  = quotation["company_ids"],
