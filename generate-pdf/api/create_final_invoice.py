@@ -186,7 +186,7 @@ def create_final_invoice(deposit_data, hdrs):
     props = {
         "Invoice No.":      {"title":  [{"text": {"content": final_no}}]},
         "Invoice Type":     {"select": {"name": "Final Payment"}},
-        "Status":           {"select": {"name": "Draft"}},
+        "Status":           {"select": {"name": "Balance Pending"}},
         "Issue Date":       {"date":   {"start": today}},
         "Amount":           {"number": total_amount},
         "Deposit Due (50%)":{"number": deposit_amt},
