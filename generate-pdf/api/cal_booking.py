@@ -156,7 +156,8 @@ def process_booking(payload):
     name         = rv(responses, "name",   "fullName")   or attendee.get("name", "")
     email        = rv(responses, "email")                 or attendee.get("email", "")
     company_name = rv(responses, "company", "companyName", "Company Name")
-    phone        = rv(responses, "phone", "phoneNumber", "phone_number", "mobile", "contact_number", "contactNumber")
+    phone        = rv(responses, "phone", "phoneNumber", "phone_number", "attendeePhoneNumber",
+                      "mobile", "contact_number", "contactNumber")
     industry_raw = rv(responses, "industry", default=[])
     role_raw     = rv(responses, "role")
     team_size    = rv(responses, "team_size", "teamSize")
@@ -392,19 +393,30 @@ def process_booking(payload):
         if lead_src:
             lead_props["Source"] = {"multi_select": lead_src}
 
+        # Discovery Call date — stamp the booked meeting date on the lead
+        if start_time:
+            lead_props["Discovery Call"] = {"date": {"start": start_time, "end": end_time or None}}
+
         new_entry = create_page(LEADS_DB, lead_props, hdrs)
         lead_id   = new_entry["id"].replace("-", "")
         print(f"[INFO] Created lead (stage={stage}): {lead_id}", file=sys.stderr)
 
-    # Link lead → client via the Clients "Deals" property (synced relation)
+    # Link lead ↔ client:
+    #   Primary side: Clients.Deals → populates synced "Clients" on Leads
     if client_id:
         update_page(client_id, {"Deals": {"relation": [{"id": lead_id}]}}, hdrs)
 
     # ── 5. Create Meeting ──────────────────────
-    mtg_title = f"Discovery Call – {name}" if name else "Discovery Call"
+    if is_active_client:
+        mtg_label = "Active Client Session"
+        mtg_type  = "Client Session"
+    else:
+        mtg_label = "Discovery Call"
+        mtg_type  = "Discovery"
+    mtg_title = f"{mtg_label} – {name}" if name else mtg_label
     mtg_props = {
         "Meeting Title": {"title": [{"text": {"content": mtg_title}}]},
-        "Type":          {"select": {"name": "Discovery"}},
+        "Type":          {"select": {"name": mtg_type}},
     }
     if start_time:
         mtg_props["Date"] = {"date": {"start": start_time, "end": end_time or None}}
