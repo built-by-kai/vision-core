@@ -196,13 +196,20 @@ def create_line_items_db(page_id, hdrs):
     body = {
         "parent":    {"type": "page_id", "page_id": page_id},
         "is_inline": True,
-        "title": [{"type": "text", "text": {"content": "Line Items"}}],
+        "title": [{"type": "text", "text": {"content": "Products & Services"}}],
         "properties": {
-            "Notes":      {"title": {}},
+            "Item":       {"title": {}},
             "Product": {
                 "relation": {
                     "database_id": PRODUCTS_DB,
                     "single_property": {},
+                }
+            },
+            "Description": {
+                "rollup": {
+                    "relation_property_name": "Product",
+                    "rollup_property_name":   "Description",
+                    "function":               "show_original",
                 }
             },
             "Qty":        {"number": {"format": "number"}},
@@ -232,8 +239,8 @@ def create_line_item(db_id, product_id, product_name, price, hdrs):
     """
     props = {
         # Template title field is "Notes" not "Name"
-        "Notes": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
-        "Qty":   {"number": 1},
+        "Item": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
+        "Qty":  {"number": 1},
     }
     if product_id:
         props["Product"] = {"relation": [{"id": product_id}]}
