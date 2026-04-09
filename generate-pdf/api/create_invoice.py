@@ -434,7 +434,7 @@ class handler(BaseHTTPRequestHandler):
                 }); return
 
             # Guard: don't create duplicate if an invoice already exists
-            if quotation["existing_invoices"]:
+            if not force and quotation["existing_invoices"]:
                 self._respond(200, {
                     "status":      "skipped",
                     "reason":      "Invoice already exists for this quotation",
