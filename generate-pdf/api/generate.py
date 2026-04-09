@@ -330,8 +330,24 @@ def fetch_quotation_data(page_id):
                     if not item.get("name"):
                         item["name"] = notes
 
-                    item["qty"]        = rp.get("Qty", {}).get("number") or 1
-                    item["unit_price"] = rp.get("Unit Price", {}).get("number") or 0
+                    item["qty"] = rp.get("Qty", {}).get("number") or 1
+
+                    # Catalog Price — rollup from Products (the "list price")
+                    cp_prop = rp.get("Catalog Price", {})
+                    catalog_price = 0
+                    if cp_prop.get("type") == "rollup":
+                        rl = cp_prop.get("rollup", {})
+                        catalog_price = (rl.get("number") or
+                                         next((a.get("number", 0) for a in rl.get("array", [])
+                                               if a.get("type") == "number"), 0))
+                    elif cp_prop.get("type") == "number":
+                        catalog_price = cp_prop.get("number") or 0
+
+                    # Unit Price — manual discount override; fall back to Catalog Price
+                    manual_price = rp.get("Unit Price", {}).get("number") or 0
+                    item["catalog_price"] = catalog_price
+                    item["unit_price"]    = manual_price if manual_price > 0 else catalog_price
+                    item["is_discounted"] = (manual_price > 0 and manual_price != catalog_price)
 
                     if item.get("name"):
                         line_items.append(item)
@@ -524,10 +540,12 @@ def generate_pdf(data):
 
     total = 0.0
     for item in data.get("line_items", []):
-        qty   = float(item.get("qty", 1))
-        price = float(item.get("unit_price", 0))
-        amt   = qty * price
-        total += amt
+        qty            = float(item.get("qty", 1))
+        price          = float(item.get("unit_price", 0))
+        catalog_price  = float(item.get("catalog_price", 0))
+        is_discounted  = item.get("is_discounted", False)
+        amt            = qty * price
+        total         += amt
 
         # Description cell: product name bold on top, detail text below
         desc_inner = [
@@ -546,11 +564,22 @@ def generate_pdf(data):
             ])
         )
 
+        # Unit price cell — show strikethrough catalog price + discounted price if applicable
+        s_strike = st("stk", fontSize=8, textColor=C_D400, alignment=2)
+        if is_discounted and catalog_price > 0:
+            price_cell = Table([
+                [Paragraph(f"<strike>RM {catalog_price:,.2f}</strike>", s_strike)],
+                [Paragraph(f"RM {price:,.2f}", s_num)],
+            ], colWidths=[cw[2] - 16],
+               style=TableStyle([("PADDING",(0,0),(-1,-1),0),("VALIGN",(0,0),(-1,-1),"TOP")]))
+        else:
+            price_cell = Paragraph(f"RM {price:,.2f}", s_num)
+
         rows.append([
             desc_cell,
             Paragraph(f"{qty:g}", s_numc),
-            Paragraph(f"RM {price:,.2f}", s_num),
-            Paragraph(f"RM {amt:,.2f}",   s_num),
+            price_cell,
+            Paragraph(f"RM {amt:,.2f}", s_num),
         ])
 
     n_data = len(rows)
