@@ -157,40 +157,46 @@ def fetch_product_info(slug, hdrs):
             "slug": None, "description": ""}
 
 
-def find_line_items_db(page_id, hdrs):
+def find_line_items_db(page_id, hdrs, retries=4, wait_base=2):
     """
-    Look for an existing Line Items child_database on the page
-    (top-level and one level inside any callout blocks).
+    Look for an existing child_database on the page (top-level and one level
+    inside any callout blocks).  Retries up to `retries` times with exponential
+    back-off to handle the brief delay after Notion applies a template.
     Returns db_id (str, no dashes) or None.
-    NOTE: Notion does NOT auto-apply templates via REST API, so this will
-    usually return None for freshly created pages — use create_line_items_db() instead.
     """
-    try:
-        r = requests.get(f"https://api.notion.com/v1/blocks/{page_id}/children",
-                         headers=hdrs, timeout=15)
-        if not r.ok:
-            return None
-        blocks = r.json().get("results", [])
+    import time
+    for attempt in range(retries):
+        try:
+            r = requests.get(f"https://api.notion.com/v1/blocks/{page_id}/children",
+                             headers=hdrs, timeout=15)
+            if r.ok:
+                blocks = r.json().get("results", [])
+                all_blocks = list(blocks)
 
-        all_blocks = list(blocks)
-        for block in blocks:
-            if block.get("type") == "callout":
-                try:
-                    cr = requests.get(
-                        f"https://api.notion.com/v1/blocks/{block['id']}/children",
-                        headers=hdrs, timeout=10)
-                    if cr.ok:
-                        all_blocks.extend(cr.json().get("results", []))
-                except Exception:
-                    pass
+                for block in blocks:
+                    if block.get("type") == "callout":
+                        try:
+                            cr = requests.get(
+                                f"https://api.notion.com/v1/blocks/{block['id']}/children",
+                                headers=hdrs, timeout=10)
+                            if cr.ok:
+                                all_blocks.extend(cr.json().get("results", []))
+                        except Exception:
+                            pass
 
-        for block in all_blocks:
-            if block.get("type") == "child_database":
-                db_id = block["id"].replace("-", "")
-                print(f"[INFO] Found existing Line Items DB: {db_id}", file=sys.stderr)
-                return db_id
-    except Exception as e:
-        print(f"[WARN] find_line_items_db: {e}", file=sys.stderr)
+                for block in all_blocks:
+                    if block.get("type") == "child_database":
+                        db_id = block["id"].replace("-", "")
+                        print(f"[INFO] Found existing DB on attempt {attempt+1}: {db_id}", file=sys.stderr)
+                        return db_id
+
+                print(f"[INFO] No child_database found yet (attempt {attempt+1}/{retries})", file=sys.stderr)
+        except Exception as e:
+            print(f"[WARN] find_line_items_db attempt {attempt+1}: {e}", file=sys.stderr)
+
+        if attempt < retries - 1:
+            time.sleep(wait_base * (attempt + 1))
+
     return None
 
 
@@ -354,6 +360,9 @@ def create_line_item(db_id, product_id, product_name, price, hdrs, description="
     - Product: linked relation
     - Qty: 1
     - Unit Price: from catalog
+
+    If the first attempt fails with 400 (e.g. the template DB doesn't have a
+    Description column), retries once without the Description property.
     """
     props = {
         "Notes": {"title": []},    # blank — product name comes via relation
@@ -372,6 +381,18 @@ def create_line_item(db_id, product_id, product_name, price, hdrs, description="
         json={"parent": {"database_id": db_id}, "properties": props},
         timeout=15,
     )
+
+    # Retry without Description if the DB schema doesn't have that column
+    if not r.ok and r.status_code == 400 and description and "Description" in r.text:
+        print(f"[WARN] Description column not found in DB, retrying without it", file=sys.stderr)
+        props.pop("Description", None)
+        r = requests.post(
+            "https://api.notion.com/v1/pages",
+            headers=hdrs,
+            json={"parent": {"database_id": db_id}, "properties": props},
+            timeout=15,
+        )
+
     if not r.ok:
         print(f"[WARN] Line item create failed {r.status_code}: {r.text[:200]}", file=sys.stderr)
     else:
@@ -477,6 +498,96 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
 
 
 
+def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
+    """
+    Query the Quotations DB for the most recently created page whose
+    Deal Source relation includes `lead_id`, created within the last
+    `max_age_seconds` seconds (default 2 minutes).
+
+    Retries up to 4 times with increasing back-off to handle the brief
+    delay between the Notion button creating the page and the webhook
+    arriving.
+
+    Returns (page_id_no_dashes, notion_url) or (None, None).
+    """
+    import time
+    from datetime import datetime, timezone
+
+    for attempt in range(4):
+        try:
+            r = requests.post(
+                f"https://api.notion.com/v1/databases/{QUOTATIONS_DB}/query",
+                headers=hdrs,
+                json={
+                    "filter": {
+                        "property": "Deal Source",
+                        "relation": {"contains": lead_id},
+                    },
+                    "sorts": [{"timestamp": "created_time", "direction": "descending"}],
+                    "page_size": 1,
+                },
+                timeout=10,
+            )
+            if r.ok:
+                results = r.json().get("results", [])
+                if results:
+                    page = results[0]
+                    created_dt = datetime.fromisoformat(
+                        page["created_time"].replace("Z", "+00:00")
+                    )
+                    age = (datetime.now(timezone.utc) - created_dt).total_seconds()
+                    print(f"[INFO] Candidate quotation age: {age:.1f}s (limit {max_age_seconds}s)", file=sys.stderr)
+                    if age <= max_age_seconds:
+                        pid = page["id"].replace("-", "")
+                        url = page.get("url", f"https://notion.so/{pid}")
+                        print(f"[INFO] Found recent Notion-created quotation: {pid}", file=sys.stderr)
+                        return pid, url
+                    else:
+                        print(f"[INFO] Quotation too old ({age:.0f}s), will create new", file=sys.stderr)
+                        return None, None
+            else:
+                print(f"[WARN] find_recent_quotation query {r.status_code}: {r.text[:200]}", file=sys.stderr)
+        except Exception as e:
+            print(f"[WARN] find_recent_quotation attempt {attempt+1}: {e}", file=sys.stderr)
+
+        if attempt < 3:
+            time.sleep(2 * (attempt + 1))   # 2s, 4s, 6s
+
+    return None, None
+
+
+def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs):
+    """
+    Patch the properties of an existing (template-applied) quotation page.
+    Sets: Status=Draft, Issue Date=today, Payment Terms=50% Deposit,
+          Quote Type, Company relation, Deal Source relation.
+    """
+    today = date.today().isoformat()
+    props = {
+        "Status":        {"select": {"name": "Draft"}},
+        "Issue Date":    {"date": {"start": today}},
+        "Payment Terms": {"select": {"name": "50% Deposit"}},
+        "Quote Type":    {"select": {"name": quote_type}},
+    }
+    if company_ids:
+        props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
+    # Deal Source should already be set by the Notion button, but patch it to
+    # be safe (idempotent — Notion won't duplicate if it's already there).
+    if lead_id:
+        props["Deal Source"] = {"relation": [{"id": lead_id}]}
+
+    r = requests.patch(
+        f"https://api.notion.com/v1/pages/{page_id}",
+        headers=hdrs,
+        json={"properties": props},
+        timeout=15,
+    )
+    if r.ok:
+        print(f"[INFO] Patched quotation props on {page_id}", file=sys.stderr)
+    else:
+        print(f"[WARN] patch_quotation_props {r.status_code}: {r.text[:300]}", file=sys.stderr)
+
+
 def process(payload):
     hdrs = _hdrs()
 
@@ -535,22 +646,49 @@ def process(payload):
 
     quote_type = product["quote_type"]
 
-    # ── Create Quotation page ─────────────────
-    quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
-    print(f"[INFO] Created Quotation: {quot_id} → {quot_url}", file=sys.stderr)
+    # ── Find or Create Quotation page ────────────────────────────────────────
+    # NEW ARCHITECTURE:
+    #   When the Notion button fires it does two actions in sequence:
+    #     1. "Add page in Quotations DB" (template auto-applied, Deal Source pre-set)
+    #     2. "Send webhook" → this endpoint
+    #
+    #   We first try to find that Notion-created page (it will have our lead linked
+    #   and be very recent).  If found we patch its properties and populate line items
+    #   into the template's existing Products & Services DB (inside the callout).
+    #
+    #   If NOT found (e.g. webhook fired from a different trigger, or the button
+    #   action didn't create a page), we fall back to creating a new page ourselves
+    #   and building the DB from scratch — same as the old behaviour.
 
-    # ── Auto-populate first line item ──
-    # Notion does NOT apply default templates via REST API, so we create
-    # the Line Items DB ourselves.  We still call find_line_items_db() first
-    # in case a future Notion version does apply the template automatically.
+    found_via_notion = False
+
+    if source_type == "lead" and lead_id:
+        quot_id, quot_url = find_recent_quotation(lead_id, hdrs)
+        if quot_id:
+            found_via_notion = True
+            print(f"[INFO] Using Notion-created quotation: {quot_id}", file=sys.stderr)
+            patch_quotation_props(quot_id, company_ids, quote_type, lead_id, hdrs)
+
+    if not found_via_notion:
+        quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
+        print(f"[INFO] Created new Quotation: {quot_id} → {quot_url}", file=sys.stderr)
+
+    # ── Auto-populate line items ──────────────────────────────────────────────
     if source_type == "lead" and product.get("id"):
         try:
+            # find_line_items_db() now retries with back-off to handle template
+            # propagation delay when the page was created by the Notion button.
             li_db_id = find_line_items_db(quot_id, hdrs)
+
             if not li_db_id:
+                if found_via_notion:
+                    # Template should have supplied the DB — log a warning but
+                    # still try to create one so the quotation isn't empty.
+                    print(f"[WARN] Template DB not found after retries — creating fallback DB", file=sys.stderr)
                 li_db_id = create_line_items_db(quot_id, hdrs)
 
-            # Insert main product first, then Base OS — Notion shows newest entry at
-            # top so creating Base OS last makes it appear as the first row.
+            # Insert main product first, then Base OS — Notion shows newest entry
+            # at top, so creating Base OS last makes it appear as the first row.
             create_line_item(li_db_id, product["id"], product["name"],
                              product["price"], hdrs,
                              description=product.get("description", ""))
@@ -562,18 +700,19 @@ def process(payload):
                                      base["price"], hdrs,
                                      description=base.get("description", ""))
         except Exception as e:
-            # Non-fatal — quotation still created, user can add line items manually
+            # Non-fatal — quotation still exists, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
 
     return {
-        "status":        "success",
-        "source_type":   source_type,
-        "quotation_id":  quot_id,
-        "quotation_url": quot_url,
-        "quote_type":    quote_type,
-        "lead_id":       lead_id,
-        "company_ids":   company_ids,
-        "line_item":     product.get("name"),
+        "status":          "success",
+        "source_type":     source_type,
+        "quotation_id":    quot_id,
+        "quotation_url":   quot_url,
+        "quote_type":      quote_type,
+        "lead_id":         lead_id,
+        "company_ids":     company_ids,
+        "line_item":       product.get("name"),
+        "found_via_notion": found_via_notion,
     }
 
 
