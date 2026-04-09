@@ -181,8 +181,50 @@ def ensure_wa_link_property(page_id, hdrs):
         print(f"[WARN] ensure_wa_link_property: {e}", file=sys.stderr)
 
 
+def advance_lead_stage(page_id, hdrs):
+    """Find leads linked to this quotation and advance them to 'Quotation Issued'."""
+    LEADS_DB = "8690d55c4d0449068c51ef49d92a26a2"
+    try:
+        # The "Lead" property on the Quotation page holds the linked Lead(s)
+        pr = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
+                          headers=hdrs, timeout=10)
+        pr.raise_for_status()
+        lead_rels = pr.json().get("properties", {}).get("Lead", {}).get("relation", [])
+
+        if not lead_rels:
+            # Fallback: query Leads DB for leads whose "Quotation" synced relation contains this page
+            dr = requests.post(
+                f"https://api.notion.com/v1/databases/{LEADS_DB}/query",
+                headers=hdrs,
+                json={"filter": {"property": "Quotation", "relation": {"contains": page_id}}},
+                timeout=10,
+            )
+            if dr.ok:
+                lead_rels = [{"id": r["id"]} for r in dr.json().get("results", [])]
+
+        for rel in lead_rels:
+            lead_id = rel["id"].replace("-", "")
+            # Only advance if currently at Lead or Qualified (don't revert a won deal)
+            lp = requests.get(f"https://api.notion.com/v1/pages/{lead_id}",
+                              headers=hdrs, timeout=10).json()
+            current_stage = (lp.get("properties", {}).get("Stage", {})
+                               .get("status", {}) or {}).get("name", "")
+            if current_stage in ("Lead", "Qualified"):
+                requests.patch(
+                    f"https://api.notion.com/v1/pages/{lead_id}",
+                    headers=hdrs,
+                    json={"properties": {"Stage": {"status": {"name": "Quotation Issued"}}}},
+                    timeout=10,
+                )
+                print(f"[INFO] Lead {lead_id[:8]} advanced to Quotation Issued", file=sys.stderr)
+            else:
+                print(f"[INFO] Lead {lead_id[:8]} already at {current_stage!r} — no stage change", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] advance_lead_stage: {e}", file=sys.stderr)
+
+
 def mark_issued_and_write_wa_link(page_id, wa_url, hdrs):
-    """Update Quotation: Status → Issued, WA Link → wa_url."""
+    """Update Quotation: Status → Issued, WA Link → wa_url. Also advance linked Lead stage."""
     # Make sure the WA Link field exists in the DB before writing to it
     if wa_url:
         ensure_wa_link_property(page_id, hdrs)
@@ -201,6 +243,10 @@ def mark_issued_and_write_wa_link(page_id, wa_url, hdrs):
     )
     if not r.ok:
         print(f"[WARN] Notion PATCH {r.status_code}: {r.text[:200]}", file=sys.stderr)
+
+    # Advance linked Lead to "Quotation Issued"
+    advance_lead_stage(page_id, hdrs)
+
     return r.ok
 
 
