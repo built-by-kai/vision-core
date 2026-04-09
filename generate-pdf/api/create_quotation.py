@@ -568,41 +568,78 @@ def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
     return None, None
 
 
+def _patch_prop(page_id, label, prop_dict, hdrs):
+    """Patch a single property on a Notion page. Logs success/failure per field."""
+    try:
+        r = requests.patch(
+            f"https://api.notion.com/v1/pages/{page_id}",
+            headers=hdrs,
+            json={"properties": prop_dict},
+            timeout=10,
+        )
+        if r.ok:
+            print(f"[INFO] Patched '{label}' on {page_id[:8]}", file=sys.stderr)
+        else:
+            print(f"[WARN] Patch '{label}' failed {r.status_code}: {r.text[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Patch '{label}' error: {e}", file=sys.stderr)
+
+
 def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs,
                           package_name=None, pic_ids=None):
     """
-    Patch the properties of an existing (template-applied) quotation page.
-    Sets: Status=Draft, Issue Date=today, Payment Terms=50% Deposit,
-          Quote Type, Package Type, Company relation, PIC relation, Deal Source relation.
+    Patch properties of an existing quotation page one field at a time so a
+    single bad property name/type cannot block all the others.
     """
     today = date.today().isoformat()
-    props = {
-        "Status":        {"status": {"name": "Draft"}},
-        "Issue Date":    {"date": {"start": today}},
-        "Payment Terms": {"select": {"name": "50% Deposit"}},
-        "Quote Type":    {"select": {"name": quote_type}},
-    }
-    if package_name:
-        props["Package Type"] = {"rich_text": [{"text": {"content": package_name}}]}
-    if company_ids:
-        props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
-    if pic_ids:
-        props["PIC"] = {"relation": [{"id": pid} for pid in pic_ids[:1]]}
-    # Deal Source should already be set by the Notion button, but patch it to
-    # be safe (idempotent — Notion won't duplicate if it's already there).
-    if lead_id:
-        props["Deal Source"] = {"relation": [{"id": lead_id}]}
 
+    # Core date + payment fields
+    _patch_prop(page_id, "Issue Date",
+                {"Issue Date": {"date": {"start": today}}}, hdrs)
+    _patch_prop(page_id, "Payment Terms",
+                {"Payment Terms": {"select": {"name": "50% Deposit"}}}, hdrs)
+
+    # Status — try both status type and select type (DB may vary)
     r = requests.patch(
         f"https://api.notion.com/v1/pages/{page_id}",
         headers=hdrs,
-        json={"properties": props},
-        timeout=15,
+        json={"properties": {"Status": {"status": {"name": "Draft"}}}},
+        timeout=10,
     )
-    if r.ok:
-        print(f"[INFO] Patched quotation props on {page_id}", file=sys.stderr)
-    else:
-        print(f"[WARN] patch_quotation_props {r.status_code}: {r.text[:300]}", file=sys.stderr)
+    if not r.ok:
+        # fallback: some DBs use select for Status
+        requests.patch(
+            f"https://api.notion.com/v1/pages/{page_id}",
+            headers=hdrs,
+            json={"properties": {"Status": {"select": {"name": "Draft"}}}},
+            timeout=10,
+        )
+    print(f"[INFO] Status patch attempted on {page_id[:8]}", file=sys.stderr)
+
+    # Quote Type
+    if quote_type:
+        _patch_prop(page_id, "Quote Type",
+                    {"Quote Type": {"select": {"name": quote_type}}}, hdrs)
+
+    # Package Type (rich_text)
+    if package_name:
+        _patch_prop(page_id, "Package Type",
+                    {"Package Type": {"rich_text": [{"text": {"content": package_name}}]}}, hdrs)
+
+    # Company relation
+    if company_ids:
+        _patch_prop(page_id, "Company",
+                    {"Company": {"relation": [{"id": cid} for cid in company_ids[:1]]}}, hdrs)
+
+    # PIC relation
+    if pic_ids:
+        _patch_prop(page_id, "PIC",
+                    {"PIC": {"relation": [{"id": pid} for pid in pic_ids[:1]]}}, hdrs)
+
+    # Deal Source relation (idempotent — already set by Notion button but patch to be safe)
+    if lead_id:
+        _patch_prop(page_id, "Deal Source",
+                    {"Deal Source": {"relation": [{"id": lead_id}]}}, hdrs)
 
 
 def process(payload):
