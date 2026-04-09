@@ -878,24 +878,34 @@ class handler(BaseHTTPRequestHandler):
                 "Content-Type":   "application/json",
             }
 
-            # Fetch once to get amounts for activation
+            step = "fetch_invoice_data (pre)"
             _pre = fetch_invoice_data(page_id, hdrs)
+            print(f"[INFO] Step OK: {step}", file=sys.stderr)
+
+            step = "activate_invoice"
             activate_invoice(
                 page_id,
                 total_amount  = float(_pre.get("total_amount", 0) or 0),
                 deposit_paid  = float(_pre.get("deposit_paid", 0) or 0),
                 hdrs          = hdrs,
             )
+            print(f"[INFO] Step OK: {step}", file=sys.stderr)
 
-            # Re-fetch after activation so issue_date etc. are current
-            data        = fetch_invoice_data(page_id, hdrs)
+            step = "fetch_invoice_data (post-activate)"
+            data = fetch_invoice_data(page_id, hdrs)
+            print(f"[INFO] Step OK: {step} — invoice_no={data.get('invoice_no')}", file=sys.stderr)
+
+            step = "generate_pdf"
             pdf_buffer, amount_due = generate_pdf(data)
+            print(f"[INFO] Step OK: {step} — amount_due={amount_due}", file=sys.stderr)
 
             safe     = (data["invoice_no"]
                         .replace(" ", "-").replace("/", "-").replace("\\", "-"))
             filename = f"invoices/{safe}.pdf"
 
+            step = "upload_to_blob"
             pdf_url = upload_to_blob(pdf_buffer, filename)
+            print(f"[INFO] Step OK: {step} — url={pdf_url[:60]}", file=sys.stderr)
 
             # Generate intake form URL if deposit/full payment invoiced
             status       = data.get("status", "")
@@ -931,7 +941,7 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             import traceback
             traceback.print_exc(file=sys.stderr)
-            self._respond(500, {"error": str(e)})
+            self._respond(500, {"error": str(e), "failed_at_step": locals().get("step", "unknown")})
 
     def log_message(self, format, *args):
         print(f"[HTTP] {format % args}", file=sys.stderr)
