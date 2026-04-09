@@ -208,7 +208,7 @@ def fetch_invoice_data(page_id, hdrs):
     invoice_type  = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
     total_amount  = props.get("Amount", {}).get("number") or 0
-    deposit_paid     = props.get("Deposit Due (50%)", {}).get("number") or 0
+    deposit_paid     = props.get("Deposit (50%)", {}).get("number") or 0
     payment_balance  = props.get("Payment Balance", {}).get("number") or 0
 
     # Due date: use Deposit Due for Deposit invoices, else Balance Due
@@ -851,7 +851,7 @@ class handler(BaseHTTPRequestHandler):
 
                 # Step 2: parse key fields
                 total_amount = props.get("Amount", {}).get("number") or 0
-                deposit_paid = props.get("Deposit Due (50%)", {}).get("number") or 0
+                deposit_paid = props.get("Deposit (50%)", {}).get("number") or 0
                 invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
                 status       = (props.get("Status", {}).get("select") or {}).get("name", "")
                 quotation_rel = props.get("Quotation", {}).get("relation", [])
