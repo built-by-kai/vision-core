@@ -127,8 +127,8 @@ def next_quotation_number(year, hdrs):
     return f"QUO-{year}-{max_seq + 1:04d}"
 
 
-def assign_quotation_number(page_id, issue_date, current_no, title_prop_name, hdrs):
-    """If page title isn't already formatted, assign the next QUO-YYYY-XXXX."""
+def assign_quotation_number(issue_date, current_no, hdrs):
+    """Calculate next QUO-YYYY-XXXX. Does NOT patch Notion — caller handles that."""
     if QUO_PATTERN.match(current_no or ""):
         return current_no   # already formatted — nothing to do
 
@@ -139,30 +139,7 @@ def assign_quotation_number(page_id, issue_date, current_no, title_prop_name, hd
         except Exception:
             pass
 
-    new_no = next_quotation_number(year, hdrs)
-
-    # Patch Notion page title with retry
-    for attempt in range(3):
-        try:
-            resp = requests.patch(
-                f"https://api.notion.com/v1/pages/{page_id}",
-                headers=hdrs,
-                json={"properties": {
-                    title_prop_name: {"title": [{"text": {"content": new_no}}]}
-                }},
-                timeout=10
-            )
-            if not resp.ok:
-                print(f"[WARN] PATCH attempt {attempt+1} failed {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
-                resp.raise_for_status()
-            print(f"[INFO] Quotation numbered: {new_no} (property: '{title_prop_name}')", file=sys.stderr)
-            break
-        except Exception as e:
-            print(f"[WARN] Could not update quotation title (attempt {attempt+1}): {e}", file=sys.stderr)
-            if attempt == 2:
-                print(f"[WARN] All retries exhausted — PDF will still use {new_no}", file=sys.stderr)
-
-    return new_no
+    return next_quotation_number(year, hdrs)
 
 
 # ─────────────────────────────────────────────
@@ -198,8 +175,8 @@ def fetch_quotation_data(page_id):
     quote_type    = (props.get("Quote Type", {}).get("select") or {}).get("name", "")
     amount        = props.get("Amount", {}).get("number") or 0
 
-    # Auto-assign formatted quotation number if not already set
-    quotation_no = assign_quotation_number(page_id, issue_date, quotation_no, title_prop_name, hdrs)
+    # Calculate formatted quotation number if not already set (written back in update_notion_page)
+    quotation_no = assign_quotation_number(issue_date, quotation_no, hdrs)
 
     # Company
     company_name = company_address = ""
@@ -321,6 +298,7 @@ def fetch_quotation_data(page_id):
 
     return {
         "quotation_no":    quotation_no or "QUOTE",
+        "title_prop_name": title_prop_name,
         "issue_date":      issue_date,
         "payment_terms":   payment_terms,
         "quote_type":      quote_type,
@@ -644,7 +622,7 @@ def upload_to_blob(pdf_buffer, filename):
 # ─────────────────────────────────────────────
 #  4. Write back to Notion
 # ─────────────────────────────────────────────
-def update_notion_page(page_id, pdf_url, total_amount):
+def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_prop_name=None):
     api_key = os.environ.get("NOTION_API_KEY")
     if not api_key:
         raise ValueError("NOTION_API_KEY not set")
@@ -656,10 +634,19 @@ def update_notion_page(page_id, pdf_url, total_amount):
     payload = {"properties": {"PDF": {"url": pdf_url}}}
     if total_amount and total_amount > 0:
         payload["properties"]["Amount"] = {"number": total_amount}
-    requests.patch(
+    # Write quotation number to the title property in the same PATCH call
+    if quotation_no and title_prop_name and QUO_PATTERN.match(quotation_no):
+        payload["properties"][title_prop_name] = {
+            "title": [{"text": {"content": quotation_no}}]
+        }
+        print(f"[INFO] Writing quotation number {quotation_no} to '{title_prop_name}'", file=sys.stderr)
+    resp = requests.patch(
         f"https://api.notion.com/v1/pages/{page_id}",
         headers=hdrs, json=payload, timeout=10,
-    ).raise_for_status()
+    )
+    if not resp.ok:
+        print(f"[WARN] update_notion_page PATCH failed {resp.status_code}: {resp.text[:300]}", file=sys.stderr)
+    resp.raise_for_status()
 
 
 # ─────────────────────────────────────────────
@@ -725,7 +712,11 @@ class handler(BaseHTTPRequestHandler):
                 float(i.get("qty", 1)) * float(i.get("unit_price", 0))
                 for i in data.get("line_items", [])
             )
-            update_notion_page(page_id, pdf_url, total_amount)
+            update_notion_page(
+                page_id, pdf_url, total_amount,
+                quotation_no=data["quotation_no"],
+                title_prop_name=data.get("title_prop_name"),
+            )
 
             self._respond(200, {"status":       "success",
                                 "quotation_no": data["quotation_no"],
