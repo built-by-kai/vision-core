@@ -254,6 +254,94 @@ def create_line_items_db(page_id, hdrs):
     return db_id
 
 
+def append_template_blocks(page_id, hdrs):
+    """
+    Appends the full quotation template content beneath the Products & Services DB:
+      - spacer
+      - Terms and Conditions (heading_2 + 4 numbered items)
+      - divider
+      - Acceptance (heading_2 + table)
+      - divider
+      - footer italic text
+    Mirrors the existing 'New page' template in the Quotations DB exactly.
+    """
+    T = lambda content, **ann: {
+        "type": "text",
+        "text": {"content": content},
+        **({"annotations": ann} if ann else {}),
+    }
+
+    blocks = [
+        # spacer
+        {"type": "paragraph", "paragraph": {"rich_text": []}},
+
+        # Terms heading
+        {"type": "heading_2", "heading_2": {
+            "rich_text": [T("Terms and Conditions")],
+            "is_toggleable": False,
+        }},
+
+        # T&C items
+        {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [
+            T("This quotation is valid for "),
+            T("30 days", bold=True),
+            T(" from the issue date."),
+        ]}},
+        {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [
+            T("Payment terms as specified above. For 50-50 terms: 50% deposit before "
+              "project commencement, 50% balance upon completion."),
+        ]}},
+        {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [
+            T("Scope changes after approval may result in revised pricing."),
+        ]}},
+        {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [
+            T("All prices are in "),
+            T("MYR (RM)", bold=True),
+            T(" and exclusive of SST unless stated otherwise."),
+        ]}},
+
+        # divider
+        {"type": "divider", "divider": {}},
+
+        # Acceptance heading
+        {"type": "heading_2", "heading_2": {
+            "rich_text": [T("Acceptance")],
+            "is_toggleable": False,
+        }},
+
+        # Acceptance table — 2 cols, header row (empty), then 3 data rows
+        {"type": "table", "table": {
+            "table_width": 2,
+            "has_column_header": True,
+            "has_row_header":    False,
+            "children": [
+                # header row (empty labels)
+                {"type": "table_row", "table_row": {"cells": [[], []]}},
+                {"type": "table_row", "table_row": {"cells": [[T("Client Name", bold=True)], []]}},
+                {"type": "table_row", "table_row": {"cells": [[T("Signature",   bold=True)], []]}},
+                {"type": "table_row", "table_row": {"cells": [[T("Date",        bold=True)], []]}},
+            ],
+        }},
+
+        # divider
+        {"type": "divider", "divider": {}},
+
+        # footer
+        {"type": "paragraph", "paragraph": {
+            "rich_text": [T("builtbykai — Prepared with care.", italic=True)],
+        }},
+    ]
+
+    r = requests.patch(
+        f"https://api.notion.com/v1/blocks/{page_id}/children",
+        headers=hdrs, json={"children": blocks}, timeout=20,
+    )
+    if r.ok:
+        print(f"[INFO] Template blocks appended", file=sys.stderr)
+    else:
+        print(f"[WARN] Template blocks {r.status_code}: {r.text[:200]}", file=sys.stderr)
+
+
 def create_line_item(db_id, product_id, product_name, price, hdrs):
     """
     Create the first line item in the Line Items DB.
@@ -452,6 +540,8 @@ def process(payload):
             li_db_id = find_line_items_db(quot_id, hdrs)
             if not li_db_id:
                 li_db_id = create_line_items_db(quot_id, hdrs)
+                # Append Terms, Acceptance table, footer after DB creation
+                append_template_blocks(quot_id, hdrs)
 
             # For OS packages, insert Base OS (RM 0, included) as first row
             if product.get("slug") in OS_PACKAGE_SLUGS:
