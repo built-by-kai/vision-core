@@ -95,8 +95,11 @@ def fetch_company_details(headers):
 # ─────────────────────────────────────────────
 #  Auto-numbering
 # ─────────────────────────────────────────────
-def next_quotation_number(year, hdrs):
+def next_quotation_number(year, hdrs, db_id=None):
     """Scan all quotations, find highest QUO-YYYY-XXXX for this year, return next."""
+    # Use the provided db_id (from page parent) — fallback to hardcoded constant
+    target_db = db_id or QUOTATIONS_DB
+    print(f"[INFO] Scanning DB {target_db} for QUO-{year}-XXXX", file=sys.stderr)
     max_seq = 0
     try:
         has_more, cursor = True, None
@@ -105,7 +108,7 @@ def next_quotation_number(year, hdrs):
             if cursor:
                 body["start_cursor"] = cursor
             r = requests.post(
-                f"https://api.notion.com/v1/databases/{QUOTATIONS_DB}/query",
+                f"https://api.notion.com/v1/databases/{target_db}/query",
                 headers=hdrs, json=body, timeout=15
             )
             r.raise_for_status()
@@ -121,13 +124,15 @@ def next_quotation_number(year, hdrs):
                         m = QUO_PATTERN.match(title)
                         if m and int(m.group(1)) == year:
                             max_seq = max(max_seq, int(m.group(2)))
+                            print(f"[INFO] Found existing: {title}", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] auto-number quotation: {e}", file=sys.stderr)
-    # Always return a number — fallback to 0001 if DB query failed entirely
-    return f"QUO-{year}-{max_seq + 1:04d}"
+    result = f"QUO-{year}-{max_seq + 1:04d}"
+    print(f"[INFO] Next quotation number: {result} (max found: {max_seq})", file=sys.stderr)
+    return result
 
 
-def assign_quotation_number(issue_date, current_no, hdrs):
+def assign_quotation_number(issue_date, current_no, hdrs, db_id=None):
     """Calculate next QUO-YYYY-XXXX. Does NOT patch Notion — caller handles that."""
     if QUO_PATTERN.match(current_no or ""):
         return current_no   # already formatted — nothing to do
@@ -139,7 +144,7 @@ def assign_quotation_number(issue_date, current_no, hdrs):
         except Exception:
             pass
 
-    return next_quotation_number(year, hdrs)
+    return next_quotation_number(year, hdrs, db_id=db_id)
 
 
 # ─────────────────────────────────────────────
@@ -160,7 +165,12 @@ def fetch_quotation_data(page_id):
         f"https://api.notion.com/v1/pages/{page_id}", headers=hdrs, timeout=15
     )
     resp.raise_for_status()
-    props = resp.json().get("properties", {})
+    page_data = resp.json()
+    props     = page_data.get("properties", {})
+
+    # Get the ACTUAL parent database ID from the page itself — never rely on hardcoded ID
+    parent_db_id = (page_data.get("parent") or {}).get("database_id", "").replace("-", "")
+    print(f"[INFO] Parent DB ID: {parent_db_id}", file=sys.stderr)
 
     # Find title property name dynamically (robust if DB uses different name)
     title_prop_name = "Quotation No."
@@ -175,8 +185,8 @@ def fetch_quotation_data(page_id):
     quote_type    = (props.get("Quote Type", {}).get("select") or {}).get("name", "")
     amount        = props.get("Amount", {}).get("number") or 0
 
-    # Calculate formatted quotation number if not already set (written back in update_notion_page)
-    quotation_no = assign_quotation_number(issue_date, quotation_no, hdrs)
+    # Calculate formatted quotation number using the real DB ID from the page parent
+    quotation_no = assign_quotation_number(issue_date, quotation_no, hdrs, db_id=parent_db_id)
 
     # Company
     company_name = company_address = ""
