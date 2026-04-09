@@ -208,6 +208,9 @@ def fetch_quotation(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] Client lookup: {e}", file=sys.stderr)
 
+    # Lead relation — "Lead" two-way relation on Quotation (added during revamp)
+    lead_ids = [rel["id"] for rel in props.get("Lead", {}).get("relation", [])]
+
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
 
@@ -224,6 +227,7 @@ def fetch_quotation(page_id, hdrs):
         "company_ids":       company_ids,
         "company_name":      company_name,
         "pic_ids":           pic_ids,
+        "lead_ids":          lead_ids,
         "existing_invoices": existing_invoices,
         "line_items":        line_items,
     }
@@ -278,6 +282,10 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if quotation_data.get("pic_ids"):
         props["PIC"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
 
+    # Lead relation — links invoice directly to the deal
+    if quotation_data.get("lead_ids"):
+        props["Lead"] = {"relation": [{"id": quotation_data["lead_ids"][0]}]}
+
     if inv_type == "Deposit":
         if dep_amount is not None:
             props["Deposit (50%)"] = {"number": dep_amount}   # deposit amount
@@ -325,7 +333,7 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
 
 def create_project(company_ids, company_name, quotation_id, invoice_id,
-                   quotation_no, amount, quote_type, line_items, hdrs):
+                   quotation_no, amount, quote_type, line_items, hdrs, lead_ids=None):
     """
     Create a Project page as the central hub for this client system build.
     Links Company, Quotation, and Invoice. Writes line items as Notes blocks.
@@ -347,6 +355,10 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
 
     if quote_type:
         props["Package"] = {"select": {"name": quote_type}}
+
+    # Lead (Deal) relation — links project directly to the pipeline deal
+    if lead_ids:
+        props["PIC"] = {"relation": [{"id": lead_ids[0]}]}
 
     # Build line-item notes as rich_text blocks
     notes_blocks = []
@@ -544,24 +556,29 @@ class handler(BaseHTTPRequestHandler):
                 print(f"[WARN] Auto PDF generation failed: {e}", file=sys.stderr)
 
             # 1c. Advance the Deal stage to "Won – Pending Deposit"
+            # Use lead_ids directly from quotation (faster than DB query)
             DEALS_DB = "8690d55c4d0449068c51ef49d92a26a2"
             try:
-                # Find Deals linked to this quotation
-                dr = requests.post(
-                    f"https://api.notion.com/v1/databases/{DEALS_DB}/query",
-                    headers=hdrs,
-                    json={"filter": {"property": "Quotation", "relation": {"contains": page_id}}},
-                    timeout=10,
-                )
-                if dr.ok:
-                    for deal in dr.json().get("results", []):
-                        requests.patch(
-                            f"https://api.notion.com/v1/pages/{deal['id']}",
-                            headers=hdrs,
-                            json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},  # noqa
-                            timeout=10,
-                        )
-                        print(f"[INFO] Deal {deal['id'][:8]} advanced to Won – Pending Deposit", file=sys.stderr)
+                lead_ids_to_advance = quotation.get("lead_ids", [])
+                # Fallback: query by Quotation relation if lead not on quotation yet
+                if not lead_ids_to_advance:
+                    dr = requests.post(
+                        f"https://api.notion.com/v1/databases/{DEALS_DB}/query",
+                        headers=hdrs,
+                        json={"filter": {"property": "Quotation", "relation": {"contains": page_id}}},
+                        timeout=10,
+                    )
+                    if dr.ok:
+                        lead_ids_to_advance = [r["id"] for r in dr.json().get("results", [])]
+
+                for lead_id in lead_ids_to_advance:
+                    requests.patch(
+                        f"https://api.notion.com/v1/pages/{lead_id}",
+                        headers=hdrs,
+                        json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},
+                        timeout=10,
+                    )
+                    print(f"[INFO] Deal {lead_id[:8]} advanced to Won – Pending Deposit", file=sys.stderr)
             except Exception as e:
                 print(f"[WARN] Deal stage update: {e}", file=sys.stderr)
 
@@ -575,6 +592,7 @@ class handler(BaseHTTPRequestHandler):
                 amount       = quotation["amount"],
                 quote_type   = quotation["quote_type"],
                 line_items   = quotation["line_items"],
+                lead_ids     = quotation.get("lead_ids", []),
                 hdrs         = hdrs,
             )
             print(f"[INFO] Project created: {project_id}", file=sys.stderr)
