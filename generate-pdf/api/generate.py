@@ -19,7 +19,7 @@ from reportlab.platypus import (
 # Vision Core Details DB
 VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
 # Quotations DB (collection 2c4b070c-d8f3-4cc7-8fe4-67ef7f5241d3)
-QUOTATIONS_DB          = "2c4b070cd8f34cc78fe467ef7f5241d3"
+QUOTATIONS_DB          = "f8167f0bda054307b90b17ad6b9c5cf8"
 
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
 
@@ -741,6 +741,36 @@ def upload_to_blob(pdf_buffer, filename):
 # ─────────────────────────────────────────────
 #  4. Write back to Notion
 # ─────────────────────────────────────────────
+def void_linked_invoices(page_id, hdrs):
+    """
+    If the quotation already has invoices linked, void them.
+    Called before regenerating the PDF so stale invoices don't survive a re-draft.
+    """
+    try:
+        qr = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
+                          headers=hdrs, timeout=10)
+        qr.raise_for_status()
+        inv_rels = qr.json().get("properties", {}).get("Invoice", {}).get("relation", [])
+        for rel in inv_rels:
+            inv_id = rel["id"].replace("-", "")
+            # Only void Draft or Deposit Pending invoices — don't touch paid ones
+            ip = requests.get(f"https://api.notion.com/v1/pages/{inv_id}",
+                              headers=hdrs, timeout=10).json()
+            inv_status = (ip.get("properties", {}).get("Status", {}).get("select") or {}).get("name", "")
+            if inv_status in ("Draft", "Deposit Pending"):
+                requests.patch(
+                    f"https://api.notion.com/v1/pages/{inv_id}",
+                    headers=hdrs,
+                    json={"properties": {"Status": {"select": {"name": "Voided"}}}},
+                    timeout=10,
+                )
+                print(f"[INFO] Voided invoice {inv_id[:8]} (was {inv_status})", file=sys.stderr)
+            else:
+                print(f"[INFO] Skipped invoice {inv_id[:8]} — status {inv_status!r} (not voidable)", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] void_linked_invoices: {e}", file=sys.stderr)
+
+
 def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_prop_name=None):
     api_key = os.environ.get("NOTION_API_KEY")
     if not api_key:
@@ -750,7 +780,17 @@ def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_
         "Notion-Version": "2022-06-28",
         "Content-Type":   "application/json",
     }
-    payload = {"properties": {"PDF": {"url": pdf_url}}}
+    from datetime import date as _date
+    today = _date.today().isoformat()
+
+    # Reset to Draft + refresh Issue Date + write PDF URL + update Amount
+    payload = {
+        "properties": {
+            "PDF":        {"url": pdf_url},
+            "Status":     {"select": {"name": "Draft"}},
+            "Issue Date": {"date": {"start": today}},
+        }
+    }
     if total_amount and total_amount > 0:
         payload["properties"]["Amount"] = {"number": total_amount}
     # Write quotation number to the title property in the same PATCH call
@@ -766,6 +806,7 @@ def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_
     if not resp.ok:
         print(f"[WARN] update_notion_page PATCH failed {resp.status_code}: {resp.text[:300]}", file=sys.stderr)
     resp.raise_for_status()
+    print(f"[INFO] Quotation reset to Draft, Issue Date → {today}", file=sys.stderr)
 
 
 # ─────────────────────────────────────────────
@@ -817,6 +858,16 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(400, {"error": "No page_id found"}); return
 
             print(f"[INFO] Generating for: {page_id}", file=sys.stderr)
+
+            # Void any Draft/Deposit Pending invoices before regenerating
+            _api_key = os.environ.get("NOTION_API_KEY", "")
+            if _api_key:
+                _hdrs = {
+                    "Authorization":  f"Bearer {_api_key}",
+                    "Notion-Version": "2022-06-28",
+                    "Content-Type":   "application/json",
+                }
+                void_linked_invoices(page_id, _hdrs)
 
             data       = fetch_quotation_data(page_id)
             pdf_buffer = generate_pdf(data)

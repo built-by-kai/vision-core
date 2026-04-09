@@ -185,11 +185,11 @@ def advance_lead_stage(page_id, hdrs):
     """Find leads linked to this quotation and advance them to 'Quotation Issued'."""
     LEADS_DB = "8690d55c4d0449068c51ef49d92a26a2"
     try:
-        # The "Lead" property on the Quotation page holds the linked Lead(s)
+        # The "Deal Source" property on the Quotation page holds the linked Lead(s)
         pr = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
                           headers=hdrs, timeout=10)
         pr.raise_for_status()
-        lead_rels = pr.json().get("properties", {}).get("Lead", {}).get("relation", [])
+        lead_rels = pr.json().get("properties", {}).get("Deal Source", {}).get("relation", [])
 
         if not lead_rels:
             # Fallback: query Leads DB for leads whose "Quotation" synced relation contains this page

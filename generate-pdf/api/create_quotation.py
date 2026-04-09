@@ -135,17 +135,14 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
     """Create a new Quotation page and return its id + Notion URL."""
     today = date.today().isoformat()
 
+    # ── Step 1: create with safe core properties only ──
     props = {
         # Title left blank — Notion unique_id auto-generates Quotation No.
         "Quotation No.": {"title": [{"text": {"content": ""}}]},
         "Status":        {"select": {"name": "Draft"}},
-        "Quote Type":    {"select": {"name": quote_type}},
         "Issue Date":    {"date": {"start": today}},
         "Payment Terms": {"select": {"name": "50% Deposit"}},
     }
-
-    if lead_id:
-        props["Lead"] = {"relation": [{"id": lead_id}]}
 
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
@@ -163,6 +160,41 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
     page    = r.json()
     page_id = page["id"].replace("-", "")
     url     = page.get("url", f"https://notion.so/{page_id}")
+    print(f"[INFO] Quotation page created: {page_id}", file=sys.stderr)
+
+    # ── Step 2: patch Quote Type (select — may not exist yet) ──
+    try:
+        patch_props = {"Quote Type": {"select": {"name": quote_type}}}
+        pr = requests.patch(f"https://api.notion.com/v1/pages/{page_id}",
+                            headers=hdrs,
+                            json={"properties": patch_props}, timeout=10)
+        if not pr.ok:
+            print(f"[WARN] Quote Type patch failed: {pr.text[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Quote Type patch error: {e}", file=sys.stderr)
+
+    # ── Step 3: patch Deal Source relation (may be named differently) ──
+    if lead_id:
+        linked = False
+        for field_name in ("Deal Source", "Lead", "Deals", "Source"):
+            try:
+                pr = requests.patch(
+                    f"https://api.notion.com/v1/pages/{page_id}",
+                    headers=hdrs,
+                    json={"properties": {field_name: {"relation": [{"id": lead_id}]}}},
+                    timeout=10,
+                )
+                if pr.ok:
+                    print(f"[INFO] Lead linked via field '{field_name}'", file=sys.stderr)
+                    linked = True
+                    break
+                else:
+                    print(f"[WARN] Field '{field_name}' failed: {pr.status_code}", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Lead link error ({field_name}): {e}", file=sys.stderr)
+        if not linked:
+            print(f"[WARN] Could not link Lead — check property name on Quotations DB", file=sys.stderr)
+
     return page_id, url
 
 

@@ -140,7 +140,7 @@ def process(payload):
     if impl_id:
         inv_props["Implementation"] = {"relation": [{"id": impl_id}]}
     if lead_id:
-        inv_props["Lead"]           = {"relation": [{"id": lead_id}]}
+        inv_props["Deal Source"]    = {"relation": [{"id": lead_id}]}
 
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs,

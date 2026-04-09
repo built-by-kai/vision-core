@@ -190,14 +190,14 @@ def process(payload):
     quotation_ids = [r["id"].replace("-", "") for r in props.get("Quotation", {}).get("relation", [])]
     quotation_id  = quotation_ids[0] if quotation_ids else None
 
-    lead_ids = [r["id"].replace("-", "") for r in props.get("Lead", {}).get("relation", [])]
+    lead_ids = [r["id"].replace("-", "") for r in props.get("Deal Source", {}).get("relation", [])]
     lead_id  = lead_ids[0] if lead_ids else None
 
-    # Also try to find lead via Quotation → Lead relation if not directly on Invoice
+    # Also try to find lead via Quotation → Deal Source relation if not directly on Invoice
     if not lead_id and quotation_id:
         try:
             qp = get_page(quotation_id, hdrs).get("properties", {})
-            lead_ids = [r["id"].replace("-", "") for r in qp.get("Lead", {}).get("relation", [])]
+            lead_ids = [r["id"].replace("-", "") for r in qp.get("Deal Source", {}).get("relation", [])]
             lead_id  = lead_ids[0] if lead_ids else None
         except Exception as e:
             print(f"[WARN] Lead from Quotation: {e}", file=sys.stderr)

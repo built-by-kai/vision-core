@@ -160,7 +160,7 @@ def process(payload):
         inv_props["Deposit Invoice"] = {"relation": [{"id": deposit_inv_id}]}
         # Also set self as Final Invoice on deposit invoice
     if lead_id:
-        inv_props["Lead"] = {"relation": [{"id": lead_id}]}
+        inv_props["Deal Source"] = {"relation": [{"id": lead_id}]}
 
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs,

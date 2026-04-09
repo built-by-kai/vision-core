@@ -208,8 +208,8 @@ def fetch_quotation(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] Client lookup: {e}", file=sys.stderr)
 
-    # Lead relation — "Lead" two-way relation on Quotation (added during revamp)
-    lead_ids = [rel["id"] for rel in props.get("Lead", {}).get("relation", [])]
+    # Lead relation — "Deal Source" two-way relation on Quotation (renamed from "Lead")
+    lead_ids = [rel["id"] for rel in props.get("Deal Source", {}).get("relation", [])]
 
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
@@ -282,9 +282,9 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if quotation_data.get("pic_ids"):
         props["PIC"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
 
-    # Lead relation — links invoice directly to the deal
+    # Deal Source relation — links invoice directly to the deal
     if quotation_data.get("lead_ids"):
-        props["Lead"] = {"relation": [{"id": quotation_data["lead_ids"][0]}]}
+        props["Deal Source"] = {"relation": [{"id": quotation_data["lead_ids"][0]}]}
 
     if inv_type == "Deposit":
         if dep_amount is not None:
