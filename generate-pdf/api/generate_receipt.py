@@ -611,10 +611,10 @@ class handler(BaseHTTPRequestHandler):
                 timeout=10,
             ).raise_for_status()
 
-            # Write receipt URL back to Invoice page — Customer Receipt (B) for
-            # Final/Full Payment, Customer Receipt (D) for Deposit
             inv_type = data.get("invoice_type", "")
-            receipt_field = "Customer Receipt (D)" if inv_type == "Deposit" else "Full Payment Receipt"
+            if inv_type == "Deposit":
+                self._respond(400, {"error": "Receipts are only generated for Final Payment or Full Payment invoices."}); return
+            receipt_field = "Receipt"
             try:
                 wr = requests.patch(
                     f"https://api.notion.com/v1/pages/{page_id}",
@@ -630,11 +630,10 @@ class handler(BaseHTTPRequestHandler):
                 print(f"[WARN] Invoice receipt write-back: {e}", file=sys.stderr)
 
             self._respond(200, {
-                "status":         "success",
-                "receipt_no":     receipt_no,
-                "pdf_url":        pdf_url,
-                "invoice_no":     data["invoice_no"],
-                "receipt_field":  receipt_field,
+                "status":      "success",
+                "receipt_no":  receipt_no,
+                "pdf_url":     pdf_url,
+                "invoice_no":  data["invoice_no"],
             })
 
         except Exception as e:
