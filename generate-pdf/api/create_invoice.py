@@ -113,7 +113,7 @@ def fetch_line_items(quotation_page_id, hdrs):
                            props.get("Quantity", {}).get("number") or 1)
             unit_price  = (props.get("Unit Price", {}).get("number") or
                            props.get("Rate",       {}).get("number") or 0)
-            amount      = (props.get("Amount", {}).get("number") or
+            amount      = (props.get("Total Amount", {}).get("number") or
                            props.get("Total",  {}).get("formula", {}).get("number") or
                            (qty * unit_price))
 
@@ -136,7 +136,7 @@ def fetch_quotation(page_id, hdrs):
     props = r.json().get("properties", {})
 
     quotation_no  = _plain(props.get("Quotation No.", {}).get("title", []))
-    amount        = props.get("Amount", {}).get("number") or 0
+    amount        = props.get("Total Amount", {}).get("number") or 0
     payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
     issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
@@ -246,7 +246,7 @@ def create_invoice(quotation_id, quotation_data, hdrs):
         "Invoice Type":   {"select": {"name": inv_type}},
         "Status":         {"select": {"name": "Draft"}},
         "Issue Date":     {"date": {"start": today}},
-        "Amount":         {"number": amount},
+        "Total Amount": {"number": amount},
         "Quotation":      {"relation": [{"id": quotation_id}]},
         "Payment Method": {"select": {"name": "Bank Transfer"}},
     }
@@ -266,11 +266,11 @@ def create_invoice(quotation_id, quotation_data, hdrs):
         if dep_amount is not None:
             props["Deposit Due (50%)"] = {"number": dep_amount}   # deposit amount
         if pay_balance is not None:
-            props["Payment Balance"]   = {"number": pay_balance}  # balance amount
+            props["Final Payment"]   = {"number": pay_balance}  # balance amount
         props["Deposit Due"]           = {"date": {"start": due_date}}   # deposit due date
     else:
         # Full payment
-        props["Balance Due"] = {"date": {"start": due_date}}
+        props["Final Payment Due"] = {"date": {"start": due_date}}
 
     # Check that Company relation property exists in Invoice DB (log only — don't remove it)
     if quotation_data.get("company_ids"):
