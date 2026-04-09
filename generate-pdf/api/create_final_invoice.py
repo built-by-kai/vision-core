@@ -207,6 +207,10 @@ def create_final_invoice(deposit_data, hdrs):
     if deposit_data.get("pic_ids"):
         props["PIC"] = {"relation": [{"id": deposit_data["pic_ids"][0]}]}
 
+    # Link back to the Deposit invoice
+    if deposit_data.get("deposit_page_id"):
+        props["Deposit Invoice"] = {"relation": [{"id": deposit_data["deposit_page_id"]}]}
+
     body = {
         "parent":     {"database_id": INVOICE_DB},
         "icon":       {"type": "emoji", "emoji": "🧾"},
@@ -314,11 +318,27 @@ class handler(BaseHTTPRequestHandler):
             # 2. Ensure date fields exist in Invoice DB
             ensure_date_fields(hdrs)
 
-            # 3. Create Final Payment invoice
+            # 3. Create Final Payment invoice (pass deposit page ID for back-link)
+            deposit["deposit_page_id"] = page_id
             final_page = create_final_invoice(deposit, hdrs)
             final_id   = final_page["id"]
             final_no   = make_final_inv_no(deposit["invoice_no"])
             print(f"[INFO] Final invoice created: {final_id} ({final_no})", file=sys.stderr)
+
+            # 4. Write "Final Invoice" relation back onto the Deposit invoice row
+            try:
+                bl = requests.patch(
+                    f"https://api.notion.com/v1/pages/{page_id}",
+                    headers=hdrs,
+                    json={"properties": {"Final Invoice": {"relation": [{"id": final_id}]}}},
+                    timeout=10,
+                )
+                if bl.ok:
+                    print(f"[INFO] Back-linked Final Invoice onto Deposit row", file=sys.stderr)
+                else:
+                    print(f"[WARN] Back-link failed {bl.status_code}: {bl.text[:150]}", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Back-link error: {e}", file=sys.stderr)
 
             self._respond(200, {
                 "status":           "success",
