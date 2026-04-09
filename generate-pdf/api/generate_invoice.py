@@ -190,8 +190,8 @@ def fetch_invoice_data(page_id, hdrs):
     issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
     invoice_type  = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
-    total_amount  = props.get("Total Amount", {}).get("number") or 0
-    deposit_paid     = props.get("Deposit Amount", {}).get("number") or 0
+    total_amount  = props.get("Amount", {}).get("number") or 0
+    deposit_paid     = props.get("Deposit Due (50%)", {}).get("number") or 0
     payment_balance  = props.get("Payment Balance", {}).get("number") or 0
 
     # Due date: use Deposit Due for Deposit invoices, else Balance Due
@@ -217,9 +217,9 @@ def fetch_invoice_data(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # ── PIC (from Clients relation) ──
+    # ── PIC (from PIC relation) ──
     pic_name = pic_email = ""
-    for rel in props.get("Clients", {}).get("relation", [])[:1]:
+    for rel in props.get("PIC", {}).get("relation", [])[:1]:
         try:
             pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
                               headers=hdrs, timeout=10)
@@ -697,7 +697,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
     if pdf_url:
         payload["properties"]["PDF"] = {"url": pdf_url}
     if amount_due > 0:
-        payload["properties"]["Total Amount"] = {"number": amount_due}
+        payload["properties"]["Amount"] = {"number": amount_due}
     if intake_url:
         payload["properties"]["Intake Form URL"] = {"url": intake_url}
 
@@ -721,6 +721,49 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        from urllib.parse import parse_qs, urlparse
+        qs = parse_qs(urlparse(self.path).query)
+
+        # ?schema=true&page_id=<invoice_page_id>  → dump that page's property names/types
+        if "schema" in qs:
+            api_key = os.environ.get("NOTION_API_KEY", "")
+            hdrs = {
+                "Authorization":  f"Bearer {api_key}",
+                "Notion-Version": "2022-06-28",
+                "Content-Type":   "application/json",
+            }
+            page_id = (qs.get("page_id") or [None])[0]
+            if page_id:
+                page_id = page_id.replace("-", "")
+                try:
+                    r = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
+                                     headers=hdrs, timeout=15)
+                    r.raise_for_status()
+                    props = r.json().get("properties", {})
+                    schema = {k: v.get("type") for k, v in props.items()}
+                    # Also fetch parent DB schema
+                    db_id = (r.json().get("parent") or {}).get("database_id", "").replace("-", "")
+                    db_schema = {}
+                    if db_id:
+                        dr = requests.get(f"https://api.notion.com/v1/databases/{db_id}",
+                                          headers=hdrs, timeout=10)
+                        if dr.ok:
+                            db_schema = {k: v.get("type") for k, v in dr.json().get("properties", {}).items()}
+                    self._respond(200, {"page_properties": schema, "db_schema": db_schema})
+                    return
+                except Exception as e:
+                    self._respond(500, {"error": str(e)}); return
+            # No page_id — just return Invoice DB schema
+            INVOICE_DB = "9227dda9c4be42a1a4c6b1bce4862f8c"
+            try:
+                dr = requests.get(f"https://api.notion.com/v1/databases/{INVOICE_DB}",
+                                  headers=hdrs, timeout=10)
+                dr.raise_for_status()
+                schema = {k: v.get("type") for k, v in dr.json().get("properties", {}).items()}
+                self._respond(200, schema); return
+            except Exception as e:
+                self._respond(500, {"error": str(e)}); return
+
         self._respond(200, {"service": "Vision Core Invoice PDF Generator", "status": "ready"})
 
     def do_POST(self):
