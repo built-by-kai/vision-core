@@ -4,7 +4,7 @@ POST /api/create_final_invoice   { "page_id": "<deposit_invoice_page_id>" }
 
 Triggered by Notion automation when Deposit Invoice Status → "Deposit Received".
 1. Reads the Deposit invoice (amounts, company, PIC, quotation link)
-2. Auto-creates "Deposit Paid" + "Balance Paid" date fields in Invoice DB if missing
+2. Auto-creates "Deposit Paid" + "Final Payment Paid" date fields in Invoice DB if missing
 3. Creates a Final Payment invoice row pre-filled with all correct amounts
 4. Links it back to the same Quotation
 
@@ -38,7 +38,7 @@ def _hdrs():
 
 
 # ─────────────────────────────────────────────
-#  Ensure "Deposit Paid" + "Balance Paid" date
+#  Ensure "Deposit Paid" + "Final Payment Paid" date
 #  fields exist in the Invoice DB
 # ─────────────────────────────────────────────
 def ensure_date_fields(hdrs):
@@ -52,7 +52,7 @@ def ensure_date_fields(hdrs):
         print(f"[WARN] Could not fetch Invoice DB schema: {r.status_code}", file=sys.stderr)
         return
     existing = {k for k in r.json().get("properties", {})}
-    needed   = {"Deposit Paid", "Balance Paid"} - existing
+    needed   = {"Deposit Paid", "Final Payment Paid"} - existing
     if not needed:
         print(f"[INFO] Date fields already exist", file=sys.stderr)
         return
@@ -82,9 +82,9 @@ def fetch_deposit_invoice(page_id, hdrs):
     invoice_no   = _plain(props.get("Invoice No.", {}).get("title", []))
     invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status       = (props.get("Status",       {}).get("select") or {}).get("name", "")
-    total_amount = props.get("Amount", {}).get("number") or 0
+    total_amount = props.get("Total Amount", {}).get("number") or 0
     deposit_amt  = props.get("Deposit (50%)", {}).get("number") or 0
-    pay_balance  = props.get("Payment Balance", {}).get("number") or 0
+    pay_balance  = props.get("Final Payment", {}).get("number") or 0
     issue_date   = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
 
     # Relations
@@ -196,10 +196,10 @@ def create_final_invoice(deposit_data, hdrs):
         "Invoice Type":     {"select": {"name": "Final Payment"}},
         "Status":           {"select": {"name": "Balance Pending"}},
         "Issue Date":       {"date":   {"start": today}},
-        "Amount":           {"number": total_amount},
+        "Total Amount": {"number": total_amount},
         "Deposit (50%)":{"number": deposit_amt},
-        "Payment Balance":  {"number": balance},
-        "Balance Due":      {"date":   {"start": due_date}},
+        "Final Payment":  {"number": balance},
+        "Final Payment Due":      {"date":   {"start": due_date}},
         "Payment Method":   {"select": {"name": "Bank Transfer"}},
     }
 
