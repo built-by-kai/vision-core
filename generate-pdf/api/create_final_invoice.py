@@ -333,20 +333,8 @@ class handler(BaseHTTPRequestHandler):
             final_no   = make_final_inv_no(deposit["invoice_no"])
             print(f"[INFO] Final invoice created: {final_id} ({final_no})", file=sys.stderr)
 
-            # 4. Write "Final Invoice" relation back onto the Deposit invoice row
-            try:
-                bl = requests.patch(
-                    f"https://api.notion.com/v1/pages/{page_id}",
-                    headers=hdrs,
-                    json={"properties": {"Final Invoice": {"relation": [{"id": final_id}]}}},
-                    timeout=10,
-                )
-                if bl.ok:
-                    print(f"[INFO] Back-linked Final Invoice onto Deposit row", file=sys.stderr)
-                else:
-                    print(f"[WARN] Back-link failed {bl.status_code}: {bl.text[:150]}", file=sys.stderr)
-            except Exception as e:
-                print(f"[WARN] Back-link error: {e}", file=sys.stderr)
+            # No separate back-link needed — "Deposit Invoice" is a two-way relation,
+            # so Notion auto-populates "Final Invoice" on the Deposit invoice row.
 
             self._respond(200, {
                 "status":           "success",
