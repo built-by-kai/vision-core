@@ -335,7 +335,7 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
 
     props = {
         "Project Name": {"title": [{"text": {"content": project_name}}]},
-        "Status":       {"select": {"name": "Deposit Paid"}},
+        "Status":       {"select": {"name": "Deposit Pending"}},
         "Phase":        {"select": {"name": "Phase 1"}},
         "Total Value":  {"number": amount},
         "Quotation":    {"relation": [{"id": quotation_id}]},
@@ -558,7 +558,7 @@ class handler(BaseHTTPRequestHandler):
                         requests.patch(
                             f"https://api.notion.com/v1/pages/{deal['id']}",
                             headers=hdrs,
-                            json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},
+                            json={"properties": {"Stage": {"status": {"name": "Won – Pending Deposit"}}}},  # noqa
                             timeout=10,
                         )
                         print(f"[INFO] Deal {deal['id'][:8]} advanced to Won – Pending Deposit", file=sys.stderr)
