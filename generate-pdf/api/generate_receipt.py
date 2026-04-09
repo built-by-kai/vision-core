@@ -369,7 +369,7 @@ def generate_pdf(receipt_no, data):
     pay_str     = ", ".join(pay_methods) if pay_methods else "—"
     is_full_pay = inv_type in ("Final Payment", "Full Payment")
 
-    def _fmt_date(d):
+    def _fd(d):
         if not d: return "—"
         try: return datetime.fromisoformat(d).strftime("%d %B %Y")
         except: return d
@@ -385,8 +385,8 @@ def generate_pdf(receipt_no, data):
     if is_full_pay and data.get("deposit_amt"):
         dep_amt  = data["deposit_amt"]
         bal_amt  = data["balance_paid"]
-        dep_date = _fmt_date(data.get("dep_date", ""))
-        bal_date = _fmt_date(data.get("bal_date", ""))
+        dep_date = _fd(data.get("dep_date", ""))
+        bal_date = _fd(data.get("bal_date", ""))
         summary_rows += [
             [Paragraph(tracked("DEPOSIT PAID"),  st("dl", fontSize=7, textColor=C_D400)),
              Paragraph(f"RM {dep_amt:,.2f}  ·  {dep_date}",
