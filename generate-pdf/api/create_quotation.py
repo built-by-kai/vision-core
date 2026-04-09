@@ -231,12 +231,19 @@ def create_line_items_db(page_id, hdrs):
             "parent":    {"type": "page_id", "page_id": page_id},
             "is_inline": True,
             "title": [{"type": "text", "text": {"content": "Products & Services"}}],
+            # Properties in desired column order.
+            # Notes (title) is pinned first by Notion — user drags it to last once.
             "properties": {
-                "Notes":       {"title": {}},
-                "Product":     {"relation": {"database_id": PRODUCTS_DB, "single_property": {}}},
+                "Notes": {"title": {}},
+                "Product": {
+                    "relation": {
+                        "database_id": PRODUCTS_DB,
+                        "single_property": {},
+                    }
+                },
                 "Description": {"rich_text": {}},
-                "Qty":         {"number": {"format": "number"}},
                 "Unit Price":  {"number": {"format": "ringgit"}},
+                "Qty":         {"number": {"format": "number"}},
                 "Subtotal":    {"formula": {"expression": 'prop("Qty") * prop("Unit Price")'}},
             },
         },
