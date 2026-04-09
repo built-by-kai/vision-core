@@ -40,13 +40,19 @@ def clean_phone(phone: str) -> str:
     return digits
 
 
-def build_wa_url(page_id: str, hdrs: dict) -> str:
-    """Fetch quotation page and build wa.me redirect URL."""
+def build_wa_url(page_id: str, hdrs: dict) -> tuple:
+    """Fetch quotation page and build wa.me redirect URL.
+    Returns (wa_url, debug_info dict).
+    """
+    debug = {"page_id": page_id, "pic_relations": [], "pic_props": {}, "pic_phone_raw": ""}
+
     r = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
                      headers=hdrs, timeout=15)
     r.raise_for_status()
     page  = r.json()
     props = page.get("properties", {})
+
+    debug["quotation_props"] = list(props.keys())
 
     # Quotation number (title property)
     quotation_no = ""
@@ -72,29 +78,47 @@ def build_wa_url(page_id: str, hdrs: dict) -> str:
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # PIC name + phone
+    # PIC name + phone — scan ALL properties and ALL types for any phone-like value
     pic_name = pic_phone = ""
-    for rel in props.get("PIC", {}).get("relation", [])[:1]:
+    pic_rels = props.get("PIC", {}).get("relation", [])
+    debug["pic_relations"] = [r["id"] for r in pic_rels]
+
+    for rel in pic_rels[:1]:
         try:
             pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
                               headers=hdrs, timeout=10)
             pr.raise_for_status()
             pp = pr.json().get("properties", {})
+            debug["pic_props"] = {k: v.get("type") for k, v in pp.items()}
+
             for k in ["Name", "Full Name", "name"]:
                 if pp.get(k, {}).get("type") == "title":
                     pic_name = _plain(pp[k]["title"]); break
-            for k in ["Phone", "phone", "Phone Number", "Mobile", "WhatsApp"]:
-                prop = pp.get(k, {})
-                if prop.get("type") == "phone_number":
-                    pic_phone = prop.get("phone_number") or ""; break
-                if prop.get("type") == "rich_text":
-                    pic_phone = _plain(prop.get("rich_text", [])); break
+
+            # Try every property — check phone_number, rich_text, text types
+            for k, prop in pp.items():
+                t = prop.get("type", "")
+                val = ""
+                if t == "phone_number":
+                    val = prop.get("phone_number") or ""
+                elif t == "rich_text":
+                    val = _plain(prop.get("rich_text", []))
+                elif t == "title":
+                    pass  # skip — that's the name
+                if val and re.search(r"\d{6,}", val):   # looks like a phone number
+                    pic_phone = val
+                    debug["pic_phone_raw"] = f"{k}: {val}"
+                    print(f"[INFO] Found phone in property '{k}': {val}", file=sys.stderr)
+                    break
         except Exception as e:
             print(f"[WARN] PIC: {e}", file=sys.stderr)
+            debug["pic_error"] = str(e)
+
+    print(f"[DEBUG] {debug}", file=sys.stderr)
 
     phone = clean_phone(pic_phone)
     if not phone:
-        return ""
+        return "", debug
 
     greeting = f"Hi {pic_name}," if pic_name else "Hi,"
     subject  = f"Quotation {quotation_no}" if quotation_no else "our quotation"
@@ -116,7 +140,7 @@ def build_wa_url(page_id: str, hdrs: dict) -> str:
     ]
 
     message = "\n".join(lines)
-    return f"https://wa.me/{phone}?text={url_quote(message)}"
+    return f"https://wa.me/{phone}?text={url_quote(message)}", debug
 
 
 class handler(BaseHTTPRequestHandler):
@@ -144,13 +168,18 @@ class handler(BaseHTTPRequestHandler):
                 self._html(500, "<h2>NOTION_API_KEY not set</h2>")
                 return
 
-            hdrs   = _hdrs()
-            wa_url = build_wa_url(page_id, hdrs)
+            hdrs           = _hdrs()
+            wa_url, debug  = build_wa_url(page_id, hdrs)
 
             if not wa_url:
+                import json as _json
+                debug_html = _json.dumps(debug, indent=2)
                 self._html(400, (
                     "<h2>No phone number found</h2>"
-                    "<p>Make sure the PIC linked to this quotation has a Phone field.</p>"
+                    f"<p><b>PIC relations found:</b> {debug.get('pic_relations')}</p>"
+                    f"<p><b>PIC properties:</b> {debug.get('pic_props')}</p>"
+                    f"<p><b>Quotation properties:</b> {debug.get('quotation_props')}</p>"
+                    f"<pre>{debug_html}</pre>"
                 ))
                 return
 
