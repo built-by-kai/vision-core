@@ -145,23 +145,24 @@ def fetch_invoice_data(page_id, hdrs):
 
     invoice_no   = _plain(props.get("Invoice No.", {}).get("title", []))
     invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
-    status       = (props.get("Status", {}).get("select") or {}).get("name", "")
-    total_amount = props.get("Total Amount", {}).get("number") or 0
-    deposit_paid = props.get("Deposit Paid", {}).get("number") or 0
-    pay_methods  = [o.get("name", "") for o in
-                    props.get("Payment Method", {}).get("multi_select", [])]
+    status       = (props.get("Status",       {}).get("select") or {}).get("name", "")
+    total_amount = props.get("Amount",            {}).get("number") or 0
+    deposit_amt  = props.get("Deposit Due (50%)", {}).get("number") or 0
+    pay_balance  = props.get("Payment Balance",   {}).get("number") or 0
+    pay_method   = (props.get("Payment Method", {}).get("select") or {}).get("name", "")
+    pay_methods  = [pay_method] if pay_method else []
 
-    # Payment date: use Balance Date for final, Deposit Date for deposit
-    dep_date = (props.get("Payment Deposit Date", {}).get("date") or {}).get("start", "")
-    bal_date = (props.get("Payment Balance Date", {}).get("date") or {}).get("start", "")
+    # Payment date — Deposit Paid for deposit invoices, Balance Paid for final/full
+    dep_date = (props.get("Deposit Paid", {}).get("date") or {}).get("start", "")
+    bal_date = (props.get("Balance Paid",  {}).get("date") or {}).get("start", "")
     pay_date = bal_date if invoice_type in ("Final Payment", "Full Payment") else (dep_date or bal_date)
 
     # Amount actually paid on this invoice
     if invoice_type == "Deposit":
-        amount_paid = deposit_paid if deposit_paid > 0 else round(total_amount * 0.5, 2)
+        amount_paid = deposit_amt if deposit_amt > 0 else round(total_amount * 0.5, 2)
     elif invoice_type == "Final Payment":
-        amount_paid = total_amount - deposit_paid if deposit_paid > 0 else total_amount
-    else:
+        amount_paid = pay_balance if pay_balance > 0 else (total_amount - deposit_amt)
+    else:  # Full Payment
         amount_paid = total_amount
 
     # Company
@@ -179,11 +180,20 @@ def fetch_invoice_data(page_id, hdrs):
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # PIC
+    # PIC — rollup of Primary Contact relation or direct relation
     pic_name = pic_email = ""
-    for rel in props.get("Clients", {}).get("relation", [])[:1]:
+    pic_prop = props.get("PIC", {})
+    pic_page_ids = []
+    if pic_prop.get("type") == "rollup":
+        for item in pic_prop.get("rollup", {}).get("array", []):
+            t = item.get("type", "")
+            if t == "relation":
+                pic_page_ids = [r2["id"] for r2 in item.get("relation", [])]; break
+    elif pic_prop.get("type") == "relation":
+        pic_page_ids = [rel["id"] for rel in pic_prop.get("relation", [])]
+    for pid in pic_page_ids[:1]:
         try:
-            pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+            pr = requests.get(f"https://api.notion.com/v1/pages/{pid}",
                               headers=hdrs, timeout=10)
             pr.raise_for_status()
             pp = pr.json().get("properties", {})
@@ -201,7 +211,8 @@ def fetch_invoice_data(page_id, hdrs):
         "invoice_type": invoice_type,
         "status":       status,
         "total_amount": total_amount,
-        "deposit_paid": deposit_paid,
+        "deposit_amt":  deposit_amt,
+        "pay_balance":  pay_balance,
         "amount_paid":  amount_paid,
         "pay_methods":  pay_methods,
         "pay_date":     pay_date,
@@ -515,11 +526,30 @@ class handler(BaseHTTPRequestHandler):
                 timeout=10,
             ).raise_for_status()
 
+            # Write receipt URL back to Invoice page — Customer Receipt (B) for
+            # Final/Full Payment, Customer Receipt (D) for Deposit
+            inv_type = data.get("invoice_type", "")
+            receipt_field = "Customer Receipt (D)" if inv_type == "Deposit" else "Customer Receipt (B)"
+            try:
+                wr = requests.patch(
+                    f"https://api.notion.com/v1/pages/{page_id}",
+                    headers=hdrs,
+                    json={"properties": {receipt_field: {"url": pdf_url}}},
+                    timeout=10,
+                )
+                if wr.ok:
+                    print(f"[INFO] Wrote receipt URL to Invoice.{receipt_field!r}", file=sys.stderr)
+                else:
+                    print(f"[WARN] Could not write to {receipt_field!r}: {wr.status_code} {wr.text[:150]}", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Invoice receipt write-back: {e}", file=sys.stderr)
+
             self._respond(200, {
-                "status":     "success",
-                "receipt_no": receipt_no,
-                "pdf_url":    pdf_url,
-                "invoice_no": data["invoice_no"],
+                "status":         "success",
+                "receipt_no":     receipt_no,
+                "pdf_url":        pdf_url,
+                "invoice_no":     data["invoice_no"],
+                "receipt_field":  receipt_field,
             })
 
         except Exception as e:
