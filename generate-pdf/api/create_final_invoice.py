@@ -215,9 +215,8 @@ def create_final_invoice(deposit_data, hdrs):
     if deposit_data.get("deposit_paid_date"):
         props["Deposit Paid"] = {"date": {"start": deposit_data["deposit_paid_date"]}}
 
-    # Link back to the Deposit invoice
-    if deposit_data.get("deposit_page_id"):
-        props["Deposit Invoice"] = {"relation": [{"id": deposit_data["deposit_page_id"]}]}
+    # Note: "Final Invoice" is a two-way relation — back-link is set via PATCH
+    # on the Deposit invoice row after creation, which auto-populates the other side
 
     body = {
         "parent":     {"database_id": INVOICE_DB},
