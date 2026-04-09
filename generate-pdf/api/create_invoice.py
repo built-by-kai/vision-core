@@ -210,13 +210,13 @@ def create_invoice(quotation_id, quotation_data, hdrs):
 
     # Build properties
     props = {
-        "Invoice No.":      {"title": [{"text": {"content": inv_no}}]},
-        "Invoice Type":     {"select": {"name": inv_type}},
-        "Status":           {"select": {"name": "Draft"}},
-        "Issue Date":       {"date": {"start": today}},
-        "Total Amount":     {"number": amount},
-        "Quotation":        {"relation": [{"id": quotation_id}]},
-        "Payment Method":   {"select": {"name": "Bank Transfer"}},
+        "Invoice No.":    {"title": [{"text": {"content": inv_no}}]},
+        "Invoice Type":   {"select": {"name": inv_type}},
+        "Status":         {"select": {"name": "Draft"}},
+        "Issue Date":     {"date": {"start": today}},
+        "Total Amount":   {"number": amount},
+        "Quotation":      {"relation": [{"id": quotation_id}]},
+        "Payment Method": {"multi_select": [{"name": "Bank Transfer"}]},
     }
 
     if quotation_data.get("company_ids"):
@@ -226,16 +226,19 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if quotation_data.get("pic_ids"):
         props["Client"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
 
+    # Deposit amount — use number field
     if dep_amount is not None:
-        props["Deposit Amount"] = {"number": dep_amount}
+        props["Deposit Due"] = {"number": dep_amount}       # "Deposit Due" is the number field in this DB
 
+    # Payment balance
     if pay_balance is not None:
         props["Payment Balance"] = {"number": pay_balance}
 
+    # Due dates
     if inv_type == "Deposit":
-        props["Deposit Due"] = {"date": {"start": due_date}}
+        props["Payment Deposit Date"] = {"date": {"start": due_date}}
     else:
-        props["Balance Due"] = {"date": {"start": due_date}}
+        props["Payment Balance Date"] = {"date": {"start": due_date}}
 
     body = {
         "parent":     {"database_id": INVOICE_DB},
