@@ -720,7 +720,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
 
     # Only write the PDF URL — Amount is set at creation time and should not be overwritten
     if pdf_url:
-        payload["properties"]["PDF"] = {"url": pdf_url}
+        payload["properties"]["Invoice PDF"] = {"url": pdf_url}
 
     # Only write Intake Form URL if the property exists in the DB schema
     if intake_url:
