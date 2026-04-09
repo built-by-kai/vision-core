@@ -207,13 +207,13 @@ def fetch_invoice_data(page_id, hdrs):
     issue_date    = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
     invoice_type  = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status        = (props.get("Status", {}).get("select") or {}).get("name", "")
-    total_amount  = props.get("Amount", {}).get("number") or 0
+    total_amount  = props.get("Total Amount", {}).get("number") or 0
     deposit_paid     = props.get("Deposit (50%)", {}).get("number") or 0
-    payment_balance  = props.get("Payment Balance", {}).get("number") or 0
+    payment_balance  = props.get("Final Payment", {}).get("number") or 0
 
     # Due date: use Deposit Due for Deposit invoices, else Balance Due
     dep_date = (props.get("Deposit Due", {}).get("date") or {}).get("start", "")
-    bal_date = (props.get("Balance Due", {}).get("date") or {}).get("start", "")
+    bal_date = (props.get("Final Payment Due", {}).get("date") or {}).get("start", "")
     due_date = dep_date if invoice_type == "Deposit" else (bal_date or dep_date)
 
     # ── Company (billing client) ──
@@ -404,7 +404,7 @@ def activate_invoice(page_id, total_amount, deposit_paid, invoice_type, hdrs):
         "properties": {
             **status_prop,
             "Issue Date":       {"date":   {"start": today}},
-            "Payment Balance":  {"number": pay_balance},
+            "Final Payment":  {"number": pay_balance},
         }
     }
     r = requests.patch(
@@ -850,7 +850,7 @@ class handler(BaseHTTPRequestHandler):
                 prop_summary = {k: v.get("type") for k, v in props.items()}
 
                 # Step 2: parse key fields
-                total_amount = props.get("Amount", {}).get("number") or 0
+                total_amount = props.get("Total Amount", {}).get("number") or 0
                 deposit_paid = props.get("Deposit (50%)", {}).get("number") or 0
                 invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
                 status       = (props.get("Status", {}).get("select") or {}).get("name", "")
