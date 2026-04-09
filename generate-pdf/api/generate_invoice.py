@@ -183,7 +183,8 @@ def fetch_invoice_data(page_id, hdrs):
     resp = requests.get(
         f"https://api.notion.com/v1/pages/{page_id}", headers=hdrs, timeout=15
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise ValueError(f"Notion GET /pages/{page_id} returned {resp.status_code}: {resp.text[:300]}")
     props = resp.json().get("properties", {})
 
     invoice_no    = _plain(props.get("Invoice No.", {}).get("title", []))
@@ -763,6 +764,57 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(200, schema); return
             except Exception as e:
                 self._respond(500, {"error": str(e)}); return
+
+        # ?test=1&page_id=<invoice_page_id>  → run full flow and show detailed result/error
+        if "test" in qs:
+            page_id = (qs.get("page_id") or [None])[0]
+            if not page_id:
+                self._respond(400, {"error": "Missing page_id"}); return
+            page_id = page_id.replace("-", "")
+            api_key = os.environ.get("NOTION_API_KEY", "")
+            hdrs = {
+                "Authorization":  f"Bearer {api_key}",
+                "Notion-Version": "2022-06-28",
+                "Content-Type":   "application/json",
+            }
+            try:
+                # Step 1: fetch raw page
+                raw = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
+                                   headers=hdrs, timeout=15)
+                if not raw.ok:
+                    self._respond(500, {
+                        "step": "fetch_page",
+                        "status": raw.status_code,
+                        "body": raw.text[:500],
+                    }); return
+                props = raw.json().get("properties", {})
+                prop_summary = {k: v.get("type") for k, v in props.items()}
+
+                # Step 2: parse key fields
+                total_amount = props.get("Amount", {}).get("number") or 0
+                deposit_paid = props.get("Deposit Due (50%)", {}).get("number") or 0
+                invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
+                status       = (props.get("Status", {}).get("select") or {}).get("name", "")
+                quotation_rel = props.get("Quotation", {}).get("relation", [])
+                pic_rel       = props.get("PIC", {}).get("relation", [])
+                company_rel   = props.get("Company", {}).get("relation", [])
+
+                self._respond(200, {
+                    "page_id":       page_id,
+                    "properties":    prop_summary,
+                    "invoice_type":  invoice_type,
+                    "status":        status,
+                    "total_amount":  total_amount,
+                    "deposit_paid":  deposit_paid,
+                    "quotation_rel": quotation_rel,
+                    "pic_rel":       pic_rel,
+                    "company_rel":   company_rel,
+                    "note": "All fields parsed OK. Try POST to generate the PDF."
+                })
+            except Exception as e:
+                import traceback; tb = traceback.format_exc()
+                self._respond(500, {"error": str(e), "trace": tb[-800:]})
+            return
 
         self._respond(200, {"service": "Vision Core Invoice PDF Generator", "status": "ready"})
 
