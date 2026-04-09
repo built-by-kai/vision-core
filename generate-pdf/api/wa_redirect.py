@@ -79,81 +79,124 @@ def build_wa_url(page_id: str, hdrs: dict) -> tuple:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
     # PIC name + phone
-    # Supports both: relation type (→ Clients DB page) and people type (workspace member)
     pic_name = pic_phone = ""
     pic_prop = props.get("PIC", {})
-    debug["pic_type"] = pic_prop.get("type", "not found")
+    pic_type = pic_prop.get("type", "not found")
+    debug["pic_type"] = pic_type
 
-    # --- Strategy 1: PIC is a relation to Clients/Contacts DB ---
-    pic_rels = pic_prop.get("relation", [])
-    debug["pic_relations"] = [r["id"] for r in pic_rels]
+    CLIENTS_DB = "036622227fd244ad9a77633d5ae0a64b"
 
-    for rel in pic_rels[:1]:
+    def search_clients_db_by_name(name):
+        """Search Clients DB for a contact by name, return their phone."""
+        if not name:
+            return ""
         try:
-            pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
-                              headers=hdrs, timeout=10)
-            pr.raise_for_status()
-            pp = pr.json().get("properties", {})
-            debug["pic_props"] = {k: v.get("type") for k, v in pp.items()}
-
-            for k in ["Name", "Full Name", "name"]:
-                if pp.get(k, {}).get("type") == "title":
-                    pic_name = _plain(pp[k]["title"]); break
-
-            for k, prop in pp.items():
-                t = prop.get("type", "")
-                val = ""
-                if t == "phone_number":
-                    val = prop.get("phone_number") or ""
-                elif t == "rich_text":
-                    val = _plain(prop.get("rich_text", []))
-                if val and re.search(r"\d{6,}", val):
-                    pic_phone = val
-                    debug["pic_phone_raw"] = f"{k}: {val}"
-                    print(f"[INFO] Found phone via relation '{k}': {val}", file=sys.stderr)
-                    break
+            sr = requests.post(
+                f"https://api.notion.com/v1/databases/{CLIENTS_DB}/query",
+                headers=hdrs,
+                json={"filter": {"property": "Name", "title": {"equals": name}}},
+                timeout=10
+            )
+            sr.raise_for_status()
+            results = sr.json().get("results", [])
+            debug["clients_search_results"] = len(results)
+            for client_page in results[:1]:
+                cp = client_page.get("properties", {})
+                debug["client_props"] = {k: v.get("type") for k, v in cp.items()}
+                for k, prop in cp.items():
+                    t = prop.get("type", "")
+                    val = ""
+                    if t == "phone_number":
+                        val = prop.get("phone_number") or ""
+                    elif t == "rich_text":
+                        val = _plain(prop.get("rich_text", []))
+                    if val and re.search(r"\d{6,}", val):
+                        debug["pic_phone_raw"] = f"{k}: {val} (Clients DB)"
+                        print(f"[INFO] Found phone in Clients DB '{k}': {val}", file=sys.stderr)
+                        return val
         except Exception as e:
-            print(f"[WARN] PIC relation fetch: {e}", file=sys.stderr)
-            debug["pic_error"] = str(e)
+            print(f"[WARN] Clients DB search: {e}", file=sys.stderr)
+            debug["clients_search_error"] = str(e)
+        return ""
 
-    # --- Strategy 2: PIC is a people type (workspace member) — look up by name in Clients DB ---
-    if not pic_phone:
+    # --- Strategy 1: PIC is a relation ---
+    if pic_type == "relation":
+        pic_rels = pic_prop.get("relation", [])
+        debug["pic_relations"] = [r["id"] for r in pic_rels]
+        for rel in pic_rels[:1]:
+            try:
+                pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+                                  headers=hdrs, timeout=10)
+                pr.raise_for_status()
+                pp = pr.json().get("properties", {})
+                debug["pic_props"] = {k: v.get("type") for k, v in pp.items()}
+                for k in ["Name", "Full Name", "name"]:
+                    if pp.get(k, {}).get("type") == "title":
+                        pic_name = _plain(pp[k]["title"]); break
+                for k, prop in pp.items():
+                    t = prop.get("type", "")
+                    val = ""
+                    if t == "phone_number":
+                        val = prop.get("phone_number") or ""
+                    elif t == "rich_text":
+                        val = _plain(prop.get("rich_text", []))
+                    if val and re.search(r"\d{6,}", val):
+                        pic_phone = val; break
+            except Exception as e:
+                debug["pic_error"] = str(e)
+
+    # --- Strategy 2: PIC is a rollup (most common — name displayed from related DB) ---
+    elif pic_type == "rollup":
+        rollup_arr = pic_prop.get("rollup", {}).get("array", [])
+        debug["pic_rollup_array"] = rollup_arr
+        for item in rollup_arr:
+            t = item.get("type", "")
+            if t == "title":
+                pic_name = _plain(item.get("title", [])); break
+            elif t == "rich_text":
+                pic_name = _plain(item.get("rich_text", [])); break
+        debug["pic_name_from_rollup"] = pic_name
+        print(f"[INFO] PIC rollup name: '{pic_name}'", file=sys.stderr)
+        # Now look up that name in the Clients DB to get the phone
+        if pic_name:
+            pic_phone = search_clients_db_by_name(pic_name)
+
+    # --- Strategy 3: PIC is a people type (workspace member) ---
+    elif pic_type == "people":
         people = pic_prop.get("people", [])
         debug["pic_people"] = [p.get("name", "") for p in people]
         if people:
             pic_name = people[0].get("name", "")
-            debug["pic_name_from_people"] = pic_name
-            print(f"[INFO] PIC is people type: {pic_name} — searching Clients DB", file=sys.stderr)
-            # Search the Clients DB for a matching name
-            CLIENTS_DB = "036622227fd244ad9a77633d5ae0a64b"
+            pic_phone = search_clients_db_by_name(pic_name)
+
+    # --- Fallback: try Company → look up PIC from there ---
+    if not pic_phone and not pic_name:
+        debug["fallback"] = "trying company chain"
+        for rel in props.get("Company", {}).get("relation", [])[:1]:
             try:
-                sr = requests.post(
-                    f"https://api.notion.com/v1/databases/{CLIENTS_DB}/query",
-                    headers=hdrs,
-                    json={"filter": {"property": "Name", "title": {"equals": pic_name}}},
-                    timeout=10
-                )
-                sr.raise_for_status()
-                results = sr.json().get("results", [])
-                debug["clients_search_results"] = len(results)
-                for client_page in results[:1]:
-                    cp = client_page.get("properties", {})
-                    debug["client_props"] = {k: v.get("type") for k, v in cp.items()}
-                    for k, prop in cp.items():
-                        t = prop.get("type", "")
-                        val = ""
-                        if t == "phone_number":
-                            val = prop.get("phone_number") or ""
-                        elif t == "rich_text":
-                            val = _plain(prop.get("rich_text", []))
-                        if val and re.search(r"\d{6,}", val):
-                            pic_phone = val
-                            debug["pic_phone_raw"] = f"{k}: {val} (via Clients DB)"
-                            print(f"[INFO] Found phone in Clients DB '{k}': {val}", file=sys.stderr)
-                            break
+                cr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+                                  headers=hdrs, timeout=10)
+                cr.raise_for_status()
+                cp = cr.json().get("properties", {})
+                for k in ["Current PIC", "PIC", "Contact", "People"]:
+                    for subrel in cp.get(k, {}).get("relation", [])[:1]:
+                        pr = requests.get(f"https://api.notion.com/v1/pages/{subrel['id']}",
+                                          headers=hdrs, timeout=10)
+                        pr.raise_for_status()
+                        pp = pr.json().get("properties", {})
+                        for pk, prop in pp.items():
+                            t = prop.get("type", "")
+                            val = ""
+                            if t == "phone_number":
+                                val = prop.get("phone_number") or ""
+                            elif t == "rich_text":
+                                val = _plain(prop.get("rich_text", []))
+                            if val and re.search(r"\d{6,}", val):
+                                pic_phone = val
+                                debug["pic_phone_raw"] = f"{pk}: {val} (company chain)"
+                                break
             except Exception as e:
-                print(f"[WARN] Clients DB search: {e}", file=sys.stderr)
-                debug["clients_search_error"] = str(e)
+                debug["fallback_error"] = str(e)
 
     print(f"[DEBUG] {debug}", file=sys.stderr)
 
