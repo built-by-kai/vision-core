@@ -157,8 +157,34 @@ def fetch_quotation(page_id, hdrs):
                     company_name = _plain(v.get("title", []))
                     break
 
-    # PIC / Client relation IDs (to populate Client field on Invoice)
-    pic_ids = [rel["id"] for rel in props.get("PIC", {}).get("relation", [])]
+    # PIC / Client — PIC is a rollup so get name from it, then look up in Clients DB
+    CLIENTS_DB = "036622227fd244ad9a77633d5ae0a64b"
+    pic_ids  = []
+    pic_name = ""
+    pic_prop = props.get("PIC", {})
+    if pic_prop.get("type") == "rollup":
+        for item in pic_prop.get("rollup", {}).get("array", []):
+            t = item.get("type", "")
+            if t == "title":     pic_name = _plain(item.get("title", []));     break
+            if t == "rich_text": pic_name = _plain(item.get("rich_text", [])); break
+    elif pic_prop.get("type") == "relation":
+        pic_ids = [rel["id"] for rel in pic_prop.get("relation", [])]
+
+    if pic_name and not pic_ids:
+        try:
+            sr = requests.post(
+                f"https://api.notion.com/v1/databases/{CLIENTS_DB}/query",
+                headers=hdrs,
+                json={"filter": {"property": "Name", "title": {"equals": pic_name}}},
+                timeout=10
+            )
+            if sr.ok:
+                results = sr.json().get("results", [])
+                if results:
+                    pic_ids = [results[0]["id"]]
+                    print(f"[INFO] Found client '{pic_name}' in Clients DB", file=sys.stderr)
+        except Exception as e:
+            print(f"[WARN] Client lookup: {e}", file=sys.stderr)
 
     # Already-linked invoices (avoid creating duplicates)
     existing_invoices = [rel["id"] for rel in props.get("Invoice", {}).get("relation", [])]
@@ -219,9 +245,12 @@ def create_invoice(quotation_id, quotation_data, hdrs):
         "Payment Method": {"select": {"name": "Bank Transfer"}},
     }
 
-    # Client / PIC relation
+    if terms:
+        props["Payment Terms"] = {"select": {"name": terms}}
+
+    # PIC relation (renamed from Client in Invoice DB)
     if quotation_data.get("pic_ids"):
-        props["Client"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
+        props["PIC"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
 
     if inv_type == "Deposit":
         if dep_amount is not None:
