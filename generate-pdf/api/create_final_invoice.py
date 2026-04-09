@@ -108,18 +108,22 @@ def fetch_deposit_invoice(page_id, hdrs):
     # Payment Terms
     payment_terms = (props.get("Payment Terms", {}).get("select") or {}).get("name", "")
 
+    # Deposit Paid date (to copy onto Final invoice)
+    deposit_paid_date = (props.get("Deposit Paid", {}).get("date") or {}).get("start", "")
+
     return {
-        "invoice_no":    invoice_no,
-        "invoice_type":  invoice_type,
-        "status":        status,
-        "total_amount":  total_amount,
-        "deposit_amt":   deposit_amt,
-        "pay_balance":   pay_balance,
-        "issue_date":    issue_date,
-        "quotation_ids": quotation_ids,
-        "company_ids":   company_ids,
-        "pic_ids":       pic_ids,
-        "payment_terms": payment_terms,
+        "invoice_no":        invoice_no,
+        "invoice_type":      invoice_type,
+        "status":            status,
+        "total_amount":      total_amount,
+        "deposit_amt":       deposit_amt,
+        "pay_balance":       pay_balance,
+        "issue_date":        issue_date,
+        "quotation_ids":     quotation_ids,
+        "company_ids":       company_ids,
+        "pic_ids":           pic_ids,
+        "payment_terms":     payment_terms,
+        "deposit_paid_date": deposit_paid_date,
     }
 
 
@@ -206,6 +210,10 @@ def create_final_invoice(deposit_data, hdrs):
 
     if deposit_data.get("pic_ids"):
         props["PIC"] = {"relation": [{"id": deposit_data["pic_ids"][0]}]}
+
+    # Copy Deposit Paid date so Final invoice shows when deposit was received
+    if deposit_data.get("deposit_paid_date"):
+        props["Deposit Paid"] = {"date": {"start": deposit_data["deposit_paid_date"]}}
 
     # Link back to the Deposit invoice
     if deposit_data.get("deposit_page_id"):
