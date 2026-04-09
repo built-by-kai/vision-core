@@ -78,6 +78,22 @@ def _plain(arr):
     return "".join(t.get("plain_text", "") for t in (arr or []))
 
 
+def _fmt_address(addr):
+    """Format a long address string into 2-3 tidy lines for the PDF."""
+    if not addr:
+        return ""
+    import re
+    if "\n" in addr:
+        return addr.replace("\n", "<br/>")
+    addr = re.sub(r",\s*(\d{5}\b)", r"<br/>\1", addr, count=1)
+    if "<br/>" not in addr:
+        parts = [p.strip() for p in addr.split(",")]
+        if len(parts) >= 4:
+            mid = len(parts) // 2
+            addr = ", ".join(parts[:mid]) + "<br/>" + ", ".join(parts[mid:])
+    return addr
+
+
 # ─────────────────────────────────────────────
 #  Fetch our own company details
 # ─────────────────────────────────────────────
@@ -527,7 +543,7 @@ def generate_pdf(data):
         ))
     if data.get("company_address"):
         story.append(Paragraph(
-            data["company_address"].replace("\n", "<br/>"),
+            _fmt_address(data["company_address"]),
             st("adr", fontSize=9, textColor=C_D500, leading=13)
         ))
     if data.get("pic_email"):
@@ -632,11 +648,14 @@ def generate_pdf(data):
 
     tot_tbl = Table(tot_rows, colWidths=[usable*0.65, usable*0.35])
     tot_tbl.setStyle(TableStyle([
-        ("PADDING",   (0,0),(-1,-1),        [4, 5, 4, 5]),
-        ("VALIGN",    (0,0),(-1,-1),        "MIDDLE"),
-        ("BACKGROUND",(0,n_tot),(-1,n_tot), C_D50),
-        ("LINEABOVE", (0,n_tot),(-1,n_tot), 1, C_BLACK),
-        ("LINEBELOW", (0,n_tot),(-1,n_tot), 1, C_BLACK),
+        ("TOPPADDING",    (0,0),(-1,-1),        5),
+        ("BOTTOMPADDING", (0,0),(-1,-1),        5),
+        ("LEFTPADDING",   (0,0),(-1,-1),        4),
+        ("RIGHTPADDING",  (0,0),(-1,-1),        4),
+        ("VALIGN",        (0,0),(-1,-1),        "MIDDLE"),
+        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_D50),
+        ("LINEABOVE",     (0,n_tot),(-1,n_tot), 1, C_BLACK),
+        ("LINEBELOW",     (0,n_tot),(-1,n_tot), 1, C_BLACK),
     ]))
     story.append(tot_tbl)
     story.append(Spacer(1, 9*mm))
