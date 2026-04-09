@@ -47,26 +47,31 @@ LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"
 COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"
 PRODUCTS_DB   = "33c8b289e31a80bebdf1ecd506e5ccc3"
 
-# Map Lead Package Type / Interest keywords → Product slug in Products DB
-# Quote Type is then read from the product record — not hardcoded here.
+# Exact match: Package Type select value → Product slug in Products DB
+# These match the option names set on Leads CRM Package Type field exactly.
 PACKAGE_SLUG_MAP = {
-    "modular os":     "operations-os",
-    "revenue os":     "sales-os",
-    "full agency os": "business-os",
-    "workflow os":    "operations-os",
-    "sales crm":      "sales-os",
-    "complete os":    "business-os",
-    "custom os":      "business-os",
-    "business os":    "business-os",
-    "operations os":  "operations-os",
-    "starter os":     "starter-os",
-    "starter":        "starter-os",
-    "expansion":      "add-on-module-os",
-    "add-on":         "add-on-module-os",
-    "addon":          "add-on-module-os",
-    "renewal":        "add-on-module-os",
-    "service":        "workflow-integration",
-    "maintenance":    "workflow-integration",
+    "operations os":              "operations-os",
+    "sales os":                   "sales-os",
+    "business os":                "business-os",
+    "business os – phase by phase": "business-os-phase",
+    "starter os":                 "starter-os",
+}
+
+# Fallback keyword map for Interest multi-select and legacy/partial matches
+INTEREST_SLUG_MAP = {
+    "operations os":                  "operations-os",
+    "sales os":                       "sales-os",
+    "business os":                    "business-os",
+    "starter os":                     "starter-os",
+    "additional module":              "add-on-module-os",
+    "automation":                     "automation-within-db",
+    "advanced dashboard":             "advanced-dashboard",
+    "custom widget":                  "custom-widget",
+    "api / external integration":     "api-integration",
+    "automation & workflow integration": "workflow-integration",
+    "lead capture system":            "lead-capture",
+    "client portal view":             "client-portal",
+    "ai agent integration":           "ai-agent",
 }
 
 
@@ -144,26 +149,21 @@ def extract_lead_info(props, hdrs):
     company_ids = [r["id"].replace("-", "")
                    for r in props.get("Company", {}).get("relation", [])]
 
-    # Resolve product slug from Package Type select
-    pkg_raw = (props.get("Package Type", {}).get("select") or {}).get("name", "").lower()
-    slug = None
-    for key, val in PACKAGE_SLUG_MAP.items():
-        if key in pkg_raw:
-            slug = val
-            break
+    # 1. Exact match on Package Type (primary OS package select)
+    pkg_raw = (props.get("Package Type", {}).get("select") or {}).get("name", "").lower().strip()
+    slug = PACKAGE_SLUG_MAP.get(pkg_raw)
 
-    # Fall back to Interest multi-select if Package Type blank
+    # 2. Fall back to first Interest item that matches (multi-select)
     if not slug:
         for item in props.get("Interest", {}).get("multi_select", []):
-            key_lower = item.get("name", "").lower()
-            for key, val in PACKAGE_SLUG_MAP.items():
-                if key in key_lower:
-                    slug = val
-                    break
+            key_lower = item.get("name", "").lower().strip()
+            slug = INTEREST_SLUG_MAP.get(key_lower)
             if slug:
                 break
 
-    # Read Quote Type from Products DB — defaults to New Business if no match
+    print(f"[INFO] Package Type='{pkg_raw}' → slug='{slug}'", file=sys.stderr)
+
+    # 3. Read Quote Type from Products DB — defaults to New Business if no match
     quote_type = fetch_quote_type_for_slug(slug or "operations-os", hdrs)
 
     return company_ids, quote_type
