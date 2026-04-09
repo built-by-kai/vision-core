@@ -217,7 +217,7 @@ def fetch_invoice_data(page_id, hdrs):
     due_date = dep_date if invoice_type == "Deposit" else (bal_date or dep_date)
 
     # ── Company (billing client) ──
-    company_name = company_address = company_id = ""
+    company_name = company_address = company_id = company_phone = ""
     for rel in props.get("Company", {}).get("relation", [])[:1]:
         try:
             cr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
@@ -231,11 +231,17 @@ def fetch_invoice_data(page_id, hdrs):
             for k in ["Address", "address"]:
                 if cp.get(k, {}).get("type") == "rich_text":
                     company_address = _plain(cp[k]["rich_text"]); break
+            for k in ["Phone", "Phone Number", "Contact Number", "Tel", "Mobile"]:
+                prop = cp.get(k, {})
+                if prop.get("type") == "phone_number":
+                    company_phone = prop.get("phone_number") or ""; break
+                if prop.get("type") == "rich_text":
+                    company_phone = _plain(prop.get("rich_text", [])); break
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
     # ── PIC (rollup of Primary Contact relation, or direct relation) ──
-    pic_name = pic_email = ""
+    pic_name = pic_email = pic_phone = ""
     pic_prop = props.get("PIC", {})
     pic_page_ids = []
     if pic_prop.get("type") == "rollup":
@@ -263,6 +269,12 @@ def fetch_invoice_data(page_id, hdrs):
             for k in ["Email", "email"]:
                 if pp.get(k, {}).get("type") == "email":
                     pic_email = pp[k].get("email") or ""; break
+            for k in ["Phone", "Phone Number", "Mobile", "Tel"]:
+                prop = pp.get(k, {})
+                if prop.get("type") == "phone_number":
+                    pic_phone = prop.get("phone_number") or ""; break
+                if prop.get("type") == "rich_text":
+                    pic_phone = _plain(prop.get("rich_text", [])); break
         except Exception as e:
             print(f"[WARN] PIC fetch: {e}", file=sys.stderr)
 
@@ -370,9 +382,11 @@ def fetch_invoice_data(page_id, hdrs):
         "payment_balance":  payment_balance,
         "company_name":     company_name,
         "company_address":  company_address,
+        "company_phone":    company_phone,
         "company_id":       company_id,
         "pic_name":         pic_name,
         "pic_email":        pic_email,
+        "pic_phone":        pic_phone,
         "line_items":       line_items,
         "pkg_slug":         pkg_slug,
         "our_company":      fetch_company_details(hdrs),
@@ -536,20 +550,23 @@ def generate_pdf(data):
         f"<b>{data.get('company_name') or 'N/A'}</b>",
         st("co2", fontSize=11, fontName="Helvetica-Bold", textColor=C_BLACK, leading=15)
     ))
-    if data.get("pic_name"):
-        story.append(Paragraph(
-            f"Attn: {data['pic_name']}",
-            st("pic", fontSize=9, textColor=C_D500, leading=13)
-        ))
     if data.get("company_address"):
         story.append(Paragraph(
             _fmt_address(data["company_address"]),
             st("adr", fontSize=9, textColor=C_D500, leading=13)
         ))
-    if data.get("pic_email"):
+    if data.get("company_phone"):
         story.append(Paragraph(
-            data["pic_email"],
-            st("em", fontSize=9, textColor=C_D500, leading=13)
+            data["company_phone"],
+            st("cph", fontSize=9, textColor=C_D500, leading=13)
+        ))
+    if data.get("pic_name"):
+        attn = f"Attn: {data['pic_name']}"
+        if data.get("pic_email"):
+            attn += f"  ·  {data['pic_email']}"
+        story.append(Paragraph(
+            attn,
+            st("pic", fontSize=9, textColor=C_D600, leading=13)
         ))
     story.append(Spacer(1, 8*mm))
 
