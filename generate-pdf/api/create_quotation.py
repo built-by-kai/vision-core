@@ -188,46 +188,95 @@ def find_line_items_db(page_id, hdrs):
 
 def create_line_items_db(page_id, hdrs):
     """
-    Create an inline Line Items database on the quotation page using
-    POST /v1/databases (the only reliable way to create an inline DB via API).
-    Schema: Notes (title), Product (relation), Qty, Unit Price, Subtotal (formula).
+    Creates a callout block (no icon, default background) on the quotation page,
+    then creates the Products & Services inline DB inside it.
+    Falls back to creating directly on the page if block_id parent is unsupported.
     Returns db_id (str, no dashes) or raises on failure.
     """
-    body = {
-        "parent":    {"type": "page_id", "page_id": page_id},
-        "is_inline": True,
-        "title": [{"type": "text", "text": {"content": "Products & Services"}}],
-        "properties": {
-            "Item":       {"title": {}},
-            "Product": {
-                "relation": {
-                    "database_id": PRODUCTS_DB,
-                    "single_property": {},
-                }
+    # 1. Append a callout block — label text, no icon, default background
+    cr = requests.patch(
+        f"https://api.notion.com/v1/blocks/{page_id}/children",
+        headers=hdrs,
+        json={"children": [{
+            "type":    "callout",
+            "callout": {
+                "rich_text": [{"type": "text", "text": {"content": "Products & Services"}, "annotations": {"bold": True}}],
+                "color":     "default_background",
             },
-            "Description": {
-                "rollup": {
-                    "relation_property_name": "Product",
-                    "rollup_property_name":   "Description",
-                    "function":               "show_original",
-                }
-            },
-            "Qty":        {"number": {"format": "number"}},
-            "Unit Price": {"number": {"format": "number"}},
-            "Subtotal": {
-                "formula": {"expression": 'prop("Qty") * prop("Unit Price")'}
-            },
+        }]},
+        timeout=15,
+    )
+    callout_id = None
+    if cr.ok:
+        results   = cr.json().get("results", [])
+        cb        = next((b for b in results if b.get("type") == "callout"), None)
+        if cb:
+            callout_id = cb["id"]
+            print(f"[INFO] Callout created: {callout_id}", file=sys.stderr)
+    else:
+        print(f"[WARN] Callout create failed {cr.status_code}: {cr.text[:200]}", file=sys.stderr)
+
+    # 2. Create inline DB — try inside callout first, fall back to page
+    db_properties = {
+        "Item":    {"title": {}},
+        "Product": {
+            "relation": {
+                "database_id": PRODUCTS_DB,
+                "single_property": {},
+            }
+        },
+        "Description": {
+            "rollup": {
+                "relation_property_name": "Product",
+                "rollup_property_name":   "Description",
+                "function":               "show_original",
+            }
+        },
+        "Qty":        {"number": {"format": "number"}},
+        "Unit Price": {"number": {"format": "ringgit"}},
+        "Subtotal": {
+            "formula": {"expression": 'prop("Qty") * prop("Unit Price")'}
         },
     }
+
+    parent = (
+        {"type": "block_id", "block_id": callout_id}
+        if callout_id
+        else {"type": "page_id", "page_id": page_id}
+    )
+
     r = requests.post(
         "https://api.notion.com/v1/databases",
-        headers=hdrs, json=body, timeout=15,
+        headers=hdrs,
+        json={
+            "parent":    parent,
+            "is_inline": True,
+            "title":     [{"type": "text", "text": {"content": "Products & Services"}}],
+            "properties": db_properties,
+        },
+        timeout=15,
     )
+
+    # If block_id parent is rejected, retry directly on the page
+    if not r.ok and callout_id:
+        print(f"[WARN] block_id parent unsupported ({r.status_code}), retrying on page", file=sys.stderr)
+        r = requests.post(
+            "https://api.notion.com/v1/databases",
+            headers=hdrs,
+            json={
+                "parent":    {"type": "page_id", "page_id": page_id},
+                "is_inline": True,
+                "title":     [{"type": "text", "text": {"content": "Products & Services"}}],
+                "properties": db_properties,
+            },
+            timeout=15,
+        )
+
     if not r.ok:
         raise ValueError(f"Create inline DB failed {r.status_code}: {r.text[:300]}")
 
     db_id = r.json()["id"].replace("-", "")
-    print(f"[INFO] Created Line Items DB: {db_id}", file=sys.stderr)
+    print(f"[INFO] Products & Services DB created: {db_id}", file=sys.stderr)
     return db_id
 
 
