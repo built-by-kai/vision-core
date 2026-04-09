@@ -529,7 +529,7 @@ class handler(BaseHTTPRequestHandler):
             # Write receipt URL back to Invoice page — Customer Receipt (B) for
             # Final/Full Payment, Customer Receipt (D) for Deposit
             inv_type = data.get("invoice_type", "")
-            receipt_field = "Customer Receipt (D)" if inv_type == "Deposit" else "Customer Receipt (B)"
+            receipt_field = "Customer Receipt (D)" if inv_type == "Deposit" else "Full Payment Receipt"
             try:
                 wr = requests.patch(
                     f"https://api.notion.com/v1/pages/{page_id}",
