@@ -218,12 +218,12 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if terms == "Full Upfront":
         inv_type   = "Full Payment"
         dep_amount = None
-        due_date   = (datetime.now() + timedelta(days=7)).date().isoformat()
+        due_date   = (datetime.now() + timedelta(days=14)).date().isoformat()
     else:
         # 50% Deposit (default)
         inv_type   = "Deposit"
         dep_amount = round(amount * 0.5, 2) if amount else None
-        due_date   = (datetime.now() + timedelta(days=7)).date().isoformat()
+        due_date   = (datetime.now() + timedelta(days=14)).date().isoformat()
 
     # Format invoice number immediately
     inv_no = format_invoice_number(quo_no, inv_type)
@@ -248,7 +248,11 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     if terms:
         props["Payment Terms"] = {"select": {"name": terms}}
 
-    # PIC relation (renamed from Client in Invoice DB)
+    # Company relation
+    if quotation_data.get("company_ids"):
+        props["Company"] = {"relation": [{"id": quotation_data["company_ids"][0]}]}
+
+    # PIC relation
     if quotation_data.get("pic_ids"):
         props["PIC"] = {"relation": [{"id": quotation_data["pic_ids"][0]}]}
 
@@ -262,6 +266,24 @@ def create_invoice(quotation_id, quotation_data, hdrs):
         # Full payment
         props["Balance Due"] = {"date": {"start": due_date}}
 
+    # Ensure Company relation property exists in Invoice DB
+    if quotation_data.get("company_ids"):
+        try:
+            schema_r = requests.get(f"https://api.notion.com/v1/databases/{INVOICE_DB}",
+                                    headers=hdrs, timeout=10)
+            if schema_r.ok:
+                existing = schema_r.json().get("properties", {})
+                if "Company" not in existing:
+                    requests.patch(
+                        f"https://api.notion.com/v1/databases/{INVOICE_DB}",
+                        headers=hdrs,
+                        json={"properties": {"Company": {"relation": {"database_id": quotation_data["company_ids"][0][:8] + "-" + quotation_data["company_ids"][0][8:12] + "-" + quotation_data["company_ids"][0][12:16] + "-" + quotation_data["company_ids"][0][16:20] + "-" + quotation_data["company_ids"][0][20:]}}}},
+                        timeout=10
+                    )
+        except Exception as e:
+            print(f"[WARN] Company schema check: {e}", file=sys.stderr)
+            props.pop("Company", None)  # remove if we can't ensure it exists
+
     body = {
         "parent":     {"database_id": INVOICE_DB},
         "icon":       {"type": "emoji", "emoji": "🧾"},
@@ -272,7 +294,14 @@ def create_invoice(quotation_id, quotation_data, hdrs):
                       headers=hdrs, json=body, timeout=15)
     if not r.ok:
         print(f"[WARN] Create invoice {r.status_code}: {r.text}", file=sys.stderr)
-        raise ValueError(f"Notion rejected invoice creation ({r.status_code}): {r.text}")
+        # If Company caused the error, retry without it
+        if "Company" in r.text:
+            props.pop("Company", None)
+            body["properties"] = props
+            r = requests.post("https://api.notion.com/v1/pages",
+                              headers=hdrs, json=body, timeout=15)
+        if not r.ok:
+            raise ValueError(f"Notion rejected invoice creation ({r.status_code}): {r.text}")
     return r.json()
 
 
