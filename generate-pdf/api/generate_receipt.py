@@ -282,7 +282,8 @@ def generate_pdf(receipt_no, data):
         return ParagraphStyle(name, parent=styles["Normal"], **kw)
 
     def tracked(text):
-        return " ".join(c if c != " " else "  " for c in text)
+        # Use non-breaking spaces so ReportLab doesn't strip them
+        return "&#160;".join(c if c != " " else "&#160;&#160;" for c in text)
 
     story = []
 
@@ -336,19 +337,26 @@ def generate_pdf(receipt_no, data):
     story.append(Spacer(1, 10*mm))
 
     # ── Received From ─────────────────────────
-    story.append(Paragraph(tracked("RECEIVED FROM"),
-                           st("rf_lbl", fontSize=7, textColor=C_D400, leading=12)))
-    story.append(Spacer(1, 2*mm))
-    story.append(Paragraph(f"<b>{data.get('company_name') or 'N/A'}</b>",
-                           st("co2", fontSize=11, fontName="Helvetica-Bold",
-                              textColor=C_BLACK, leading=15)))
+    rf_rows = [
+        [Paragraph(tracked("RECEIVED FROM"),
+                   st("rf_lbl", fontSize=7, textColor=C_D400, leading=9))],
+        [Paragraph(f"<b>{data.get('company_name') or 'N/A'}</b>",
+                   st("co2", fontSize=11, fontName="Helvetica-Bold", textColor=C_BLACK, leading=15))],
+    ]
     if data.get("pic_name"):
-        story.append(Paragraph(f"Attn: {data['pic_name']}",
-                               st("pic", fontSize=9, textColor=C_D500, leading=13)))
+        rf_rows.append([Paragraph(f"Attn: {data['pic_name']}",
+                                  st("pic", fontSize=9, textColor=C_D500, leading=12))])
     if data.get("pic_email"):
-        story.append(Paragraph(data["pic_email"],
-                               st("em", fontSize=9, textColor=C_D500, leading=13)))
-    story.append(Spacer(1, 10*mm))
+        rf_rows.append([Paragraph(data["pic_email"],
+                                  st("em", fontSize=9, textColor=C_D500, leading=12))])
+    rf_tbl = Table(rf_rows, colWidths=[usable])
+    rf_tbl.setStyle(TableStyle([
+        ("PADDING",    (0,0),(-1,-1), 0),
+        ("TOPPADDING", (0,1),(0,1),   3),
+        ("VALIGN",     (0,0),(-1,-1), "TOP"),
+    ]))
+    story.append(rf_tbl)
+    story.append(Spacer(1, 8*mm))
 
     # ── Payment summary box ───────────────────
     inv_type    = data.get("invoice_type", "")
