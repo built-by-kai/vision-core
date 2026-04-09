@@ -146,15 +146,15 @@ def fetch_invoice_data(page_id, hdrs):
     invoice_no   = _plain(props.get("Invoice No.", {}).get("title", []))
     invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status       = (props.get("Status",       {}).get("select") or {}).get("name", "")
-    total_amount = props.get("Amount",            {}).get("number") or 0
+    total_amount = props.get("Total Amount",            {}).get("number") or 0
     deposit_amt  = props.get("Deposit (50%)", {}).get("number") or 0
-    pay_balance  = props.get("Payment Balance",   {}).get("number") or 0
+    pay_balance  = props.get("Final Payment",   {}).get("number") or 0
     pay_method   = (props.get("Payment Method", {}).get("select") or {}).get("name", "")
     pay_methods  = [pay_method] if pay_method else []
 
     # Payment date — Deposit Paid for deposit invoices, Balance Paid for final/full
     dep_date = (props.get("Deposit Paid", {}).get("date") or {}).get("start", "")
-    bal_date = (props.get("Balance Paid",  {}).get("date") or {}).get("start", "")
+    bal_date = (props.get("Final Payment Paid",  {}).get("date") or {}).get("start", "")
     pay_date = bal_date if invoice_type in ("Final Payment", "Full Payment") else (dep_date or bal_date)
 
     # Amount for receipt display
