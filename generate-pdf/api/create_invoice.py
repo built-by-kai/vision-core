@@ -382,8 +382,9 @@ class handler(BaseHTTPRequestHandler):
                   f"Status: {quotation['status']} | Terms: {quotation['payment_terms']}",
                   file=sys.stderr)
 
-            # Guard: only create if Approved
-            if quotation["status"] != "Approved":
+            # Guard: only create if Approved (bypass with force=true for testing)
+            force = body.get("force", False)
+            if not force and quotation["status"] != "Approved":
                 self._respond(200, {
                     "status": "skipped",
                     "reason": f"Quotation status is '{quotation['status']}', not Approved",
