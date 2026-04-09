@@ -166,6 +166,23 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
     return page_id, url
 
 
+def write_back_url(triggering_page_id, quotation_url, hdrs):
+    """Write the new quotation URL back to 'Open Quotation →' on the triggering page."""
+    try:
+        r = requests.patch(
+            f"https://api.notion.com/v1/pages/{triggering_page_id}",
+            headers=hdrs,
+            json={"properties": {"Open Quotation \u2192": {"url": quotation_url}}},
+            timeout=10,
+        )
+        if r.ok:
+            print(f"[INFO] Wrote quotation URL back to triggering page", file=sys.stderr)
+        else:
+            print(f"[WARN] Write-back failed {r.status_code}: {r.text[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] write_back_url: {e}", file=sys.stderr)
+
+
 def process(payload):
     hdrs = _hdrs()
 
@@ -225,6 +242,9 @@ def process(payload):
     # ── Create Quotation ──────────────────────
     quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
     print(f"[INFO] Created Quotation: {quot_id} → {quot_url}", file=sys.stderr)
+
+    # ── Write URL back to triggering page so user can click to open ──
+    write_back_url(page_id, quot_url, hdrs)
 
     return {
         "status":        "success",
