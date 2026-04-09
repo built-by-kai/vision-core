@@ -149,56 +149,53 @@ def fetch_product_info(slug, hdrs):
     return default
 
 
-def create_line_items_db(page_id, hdrs):
+def find_line_items_db(page_id, hdrs):
     """
-    Append a child_database block called 'Line Items' to the quotation page.
-    Then patch its schema to add Product relation, Qty, Unit Price.
-    Returns the new DB id (str, no dashes).
+    Find the Line Items child_database already on the quotation page.
+    Template is the default, so it's auto-applied and the DB already exists.
+    Looks at top-level blocks AND one level inside callout blocks.
+    Returns db_id (str, no dashes) or None.
     """
-    # 1. Append child_database block
-    r = requests.patch(
-        f"https://api.notion.com/v1/blocks/{page_id}/children",
-        headers=hdrs,
-        json={"children": [{"type": "child_database", "child_database": {"title": "Line Items"}}]},
-        timeout=15,
-    )
-    if not r.ok:
-        raise ValueError(f"child_database append failed {r.status_code}: {r.text[:200]}")
-    blocks = r.json().get("results", [])
-    if not blocks:
-        raise ValueError("No block returned after appending child_database")
-    db_id = blocks[0]["id"].replace("-", "")
-    print(f"[INFO] Line Items DB created: {db_id}", file=sys.stderr)
+    try:
+        r = requests.get(f"https://api.notion.com/v1/blocks/{page_id}/children",
+                         headers=hdrs, timeout=15)
+        if not r.ok:
+            return None
+        blocks = r.json().get("results", [])
 
-    # 2. Update schema — add Product relation, Qty, Unit Price
-    schema_r = requests.patch(
-        f"https://api.notion.com/v1/databases/{db_id}",
-        headers=hdrs,
-        json={"properties": {
-            "Product": {
-                "type": "relation",
-                "relation": {
-                    "database_id": PRODUCTS_DB,
-                    "type": "single_property",
-                    "single_property": {},
-                },
-            },
-            "Qty":        {"number": {"format": "number"}},
-            "Unit Price": {"number": {"format": "ringgit"}},
-        }},
-        timeout=15,
-    )
-    if not schema_r.ok:
-        print(f"[WARN] Line Items schema patch failed: {schema_r.text[:200]}", file=sys.stderr)
+        # Expand callout children — template wraps Line Items inside a callout
+        all_blocks = list(blocks)
+        for block in blocks:
+            if block.get("type") == "callout":
+                try:
+                    cr = requests.get(
+                        f"https://api.notion.com/v1/blocks/{block['id']}/children",
+                        headers=hdrs, timeout=10)
+                    if cr.ok:
+                        all_blocks.extend(cr.json().get("results", []))
+                except Exception:
+                    pass
 
-    return db_id
+        for block in all_blocks:
+            if block.get("type") == "child_database":
+                db_id = block["id"].replace("-", "")
+                print(f"[INFO] Found Line Items DB: {db_id}", file=sys.stderr)
+                return db_id
+    except Exception as e:
+        print(f"[WARN] find_line_items_db: {e}", file=sys.stderr)
+    return None
 
 
 def create_line_item(db_id, product_id, product_name, price, hdrs):
-    """Create the first line item row in the Line Items DB."""
+    """
+    Create the first line item in the Line Items DB.
+    Uses 'Notes' as the title field (matches template schema).
+    Sets Product relation, Qty=1, and Unit Price from the product catalog.
+    """
     props = {
-        "Name": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
-        "Qty":  {"number": 1},
+        # Template title field is "Notes" not "Name"
+        "Notes": {"title": [{"text": {"content": product_name or "Professional Services"}}]},
+        "Qty":   {"number": 1},
     }
     if product_id:
         props["Product"] = {"relation": [{"id": product_id}]}
@@ -378,18 +375,33 @@ def process(payload):
     quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
     print(f"[INFO] Created Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
-    # ── Auto-create Line Items DB + first line item ──
-    # Only when triggered from a lead with a resolved product
+    # ── Auto-populate first line item into template Line Items DB ──
+    # Only when triggered from a lead with a resolved product.
+    # The Quotation DB default template is applied async after page creation,
+    # so we retry find_line_items_db a few times with a short wait.
     if source_type == "lead" and product.get("id"):
         try:
-            li_db_id = create_line_items_db(quot_id, hdrs)
-            create_line_item(
-                li_db_id,
-                product["id"],
-                product["name"],
-                product["price"],
-                hdrs,
-            )
+            import time
+            li_db_id = None
+            for attempt in range(4):          # up to ~6 s total
+                li_db_id = find_line_items_db(quot_id, hdrs)
+                if li_db_id:
+                    break
+                wait = 1.5 * (attempt + 1)    # 1.5 s, 3 s, 4.5 s
+                print(f"[INFO] Template not ready yet, retrying in {wait}s…", file=sys.stderr)
+                time.sleep(wait)
+
+            if li_db_id:
+                create_line_item(
+                    li_db_id,
+                    product["id"],
+                    product["name"],
+                    product["price"],
+                    hdrs,
+                )
+            else:
+                print("[WARN] Line Items DB not found after retries — user can add manually",
+                      file=sys.stderr)
         except Exception as e:
             # Non-fatal — quotation still created, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
