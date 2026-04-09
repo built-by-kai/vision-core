@@ -645,7 +645,7 @@ def generate_pdf(data):
         ])
     n_tot = len(tot_rows)
     tot_rows.append([
-        Paragraph("<b>Total Due</b>",
+        Paragraph("<b>Total Quote</b>",
                   st("tdl", fontSize=11, fontName="Helvetica-Bold",
                      textColor=C_BLACK, alignment=2)),
         Paragraph(f"<b>RM {total:,.2f}</b>",

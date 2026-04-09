@@ -429,7 +429,7 @@ def extract_lead_info(props, hdrs):
     return company_ids, product
 
 
-def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
+def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=None):
     """Create a new Quotation page and return its id + Notion URL."""
     today = date.today().isoformat()
 
@@ -441,6 +441,8 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
         "Issue Date":    {"date": {"start": today}},
         "Payment Terms": {"select": {"name": "50% Deposit"}},
     }
+    if package_name:
+        props["Package Type"] = {"rich_text": [{"text": {"content": package_name}}]}
 
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
@@ -460,7 +462,7 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs):
     url     = page.get("url", f"https://notion.so/{page_id}")
     print(f"[INFO] Quotation page created: {page_id}", file=sys.stderr)
 
-    # ── Step 2: patch Quote Type (select — may not exist yet) ──
+    # ── Step 2: patch Quote Type + Package Type ──
     try:
         patch_props = {"Quote Type": {"select": {"name": quote_type}}}
         pr = requests.patch(f"https://api.notion.com/v1/pages/{page_id}",
@@ -556,11 +558,11 @@ def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
     return None, None
 
 
-def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs):
+def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs, package_name=None):
     """
     Patch the properties of an existing (template-applied) quotation page.
     Sets: Status=Draft, Issue Date=today, Payment Terms=50% Deposit,
-          Quote Type, Company relation, Deal Source relation.
+          Quote Type, Package Type, Company relation, Deal Source relation.
     """
     today = date.today().isoformat()
     props = {
@@ -569,6 +571,8 @@ def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs):
         "Payment Terms": {"select": {"name": "50% Deposit"}},
         "Quote Type":    {"select": {"name": quote_type}},
     }
+    if package_name:
+        props["Package Type"] = {"rich_text": [{"text": {"content": package_name}}]}
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
     # Deal Source should already be set by the Notion button, but patch it to
@@ -662,15 +666,19 @@ def process(payload):
 
     found_via_notion = False
 
+    package_name = product.get("name") if source_type == "lead" else None
+
     if source_type == "lead" and lead_id:
         quot_id, quot_url = find_recent_quotation(lead_id, hdrs)
         if quot_id:
             found_via_notion = True
             print(f"[INFO] Using Notion-created quotation: {quot_id}", file=sys.stderr)
-            patch_quotation_props(quot_id, company_ids, quote_type, lead_id, hdrs)
+            patch_quotation_props(quot_id, company_ids, quote_type, lead_id, hdrs,
+                                  package_name=package_name)
 
     if not found_via_notion:
-        quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs)
+        quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs,
+                                                   package_name=package_name)
         print(f"[INFO] Created new Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
     # ── Auto-populate line items ──────────────────────────────────────────────
@@ -687,18 +695,19 @@ def process(payload):
                     print(f"[WARN] Template DB not found after retries — creating fallback DB", file=sys.stderr)
                 li_db_id = create_line_items_db(quot_id, hdrs)
 
-            # Insert main product first, then Base OS — Notion shows newest entry
-            # at top, so creating Base OS last makes it appear as the first row.
-            create_line_item(li_db_id, product["id"], product["name"],
-                             product["price"], hdrs,
-                             description=product.get("description", ""))
-
+            # Create Base OS FIRST (gets No. 1) so it has the lowest row number.
+            # The template DB should be sorted ascending by No., making No. 1
+            # appear at the top.  Main product is created second (No. 2).
             if product.get("slug") in OS_PACKAGE_SLUGS:
                 base = fetch_product_info("base-os", hdrs)
                 if base.get("id"):
                     create_line_item(li_db_id, base["id"], base["name"],
                                      base["price"], hdrs,
                                      description=base.get("description", ""))
+
+            create_line_item(li_db_id, product["id"], product["name"],
+                             product["price"], hdrs,
+                             description=product.get("description", ""))
         except Exception as e:
             # Non-fatal — quotation still exists, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
