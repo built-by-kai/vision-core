@@ -149,11 +149,47 @@ def build_whatsapp_url(data: dict) -> str:
     return f"https://wa.me/{phone}?text={url_quote(message)}"
 
 
+def ensure_wa_link_property(page_id, hdrs):
+    """Create 'WA Link' URL property on the parent database if it doesn't exist yet."""
+    try:
+        # Get parent database ID from the page
+        pr = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
+                          headers=hdrs, timeout=10)
+        pr.raise_for_status()
+        db_id = (pr.json().get("parent") or {}).get("database_id", "").replace("-", "")
+        if not db_id:
+            return
+
+        # Fetch database schema
+        dbr = requests.get(f"https://api.notion.com/v1/databases/{db_id}",
+                           headers=hdrs, timeout=10)
+        dbr.raise_for_status()
+        existing_props = dbr.json().get("properties", {})
+
+        if "WA Link" not in existing_props:
+            print("[INFO] Creating 'WA Link' URL property in database", file=sys.stderr)
+            requests.patch(
+                f"https://api.notion.com/v1/databases/{db_id}",
+                headers=hdrs,
+                json={"properties": {"WA Link": {"url": {}}}},
+                timeout=10
+            ).raise_for_status()
+            print("[INFO] 'WA Link' property created", file=sys.stderr)
+        else:
+            print("[INFO] 'WA Link' property already exists", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] ensure_wa_link_property: {e}", file=sys.stderr)
+
+
 def mark_issued_and_write_wa_link(page_id, wa_url, hdrs):
     """Update Quotation: Status → Issued, WA Link → wa_url."""
+    # Make sure the WA Link field exists in the DB before writing to it
+    if wa_url:
+        ensure_wa_link_property(page_id, hdrs)
+
     payload = {
         "properties": {
-            "Status":  {"select": {"name": "Issued"}},
+            "Status": {"select": {"name": "Issued"}},
         }
     }
     if wa_url:
