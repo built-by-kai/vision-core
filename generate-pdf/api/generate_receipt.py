@@ -459,19 +459,24 @@ def generate_pdf(receipt_no, data):
     amount_paid = data.get("amount_paid", 0)
     amt_tbl = Table([[
         Paragraph("AMOUNT RECEIVED",
-                  st("al", fontSize=9, textColor=C_D400, alignment=0)),
-        Paragraph(f"<b>RM {amount_paid:,.2f}</b>",
-                  st("av", fontSize=18, fontName="Helvetica-Bold",
-                     textColor=C_BLACK, alignment=2)),
-    ]], colWidths=[usable * 0.5, usable * 0.5])
+                  st("al", fontSize=8, textColor=C_D400, alignment=0, leading=11)),
+        Paragraph(f"RM {amount_paid:,.2f}",
+                  ParagraphStyle("av", parent=styles["Normal"],
+                                 fontName="Helvetica-Bold", fontSize=20,
+                                 textColor=C_BLACK, alignment=2, leading=24)),
+    ]], colWidths=[usable * 0.40, usable * 0.60])
     amt_tbl.setStyle(TableStyle([
-        ("BACKGROUND",   (0,0),(-1,-1), C_D50),
-        ("LINEABOVE",    (0,0),(-1,0),  2, C_BLACK),
-        ("LINEBELOW",    (0,0),(-1,0),  2, C_BLACK),
-        ("PADDING",      (0,0),(-1,-1), 14),
-        ("RIGHTPADDING", (1,0),(1,0),   16),
-        ("VALIGN",       (0,0),(-1,-1), "MIDDLE"),
-        ("ALIGN",        (1,0),(1,0),   "RIGHT"),
+        ("BACKGROUND",    (0,0),(-1,-1), C_D50),
+        ("LINEABOVE",     (0,0),(-1,0),  2, C_BLACK),
+        ("LINEBELOW",     (0,0),(-1,0),  2, C_BLACK),
+        ("LEFTPADDING",   (0,0),(0,0),   14),
+        ("RIGHTPADDING",  (0,0),(0,0),   6),
+        ("LEFTPADDING",   (1,0),(1,0),   6),
+        ("RIGHTPADDING",  (1,0),(1,0),   14),
+        ("TOPPADDING",    (0,0),(-1,-1), 13),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 13),
+        ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+        ("ALIGN",         (1,0),(1,0),   "RIGHT"),
     ]))
     story.append(amt_tbl)
     story.append(Spacer(1, 12*mm))
