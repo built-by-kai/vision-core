@@ -189,27 +189,49 @@ def fetch_quotation_data(page_id):
     quotation_no = assign_quotation_number(issue_date, quotation_no, hdrs, db_id=parent_db_id)
 
     # Company
-    company_name = company_address = ""
+    company_name = company_address = company_phone = ""
     for rel in props.get("Company", {}).get("relation", [])[:1]:
         try:
             cr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
                               headers=hdrs, timeout=10)
             cr.raise_for_status()
             cp = cr.json().get("properties", {})
-            for k in ["Name", "Company Name", "name"]:
+            # Title field — try all known names including "Company"
+            for k in ["Company", "Name", "Company Name", "name"]:
                 if cp.get(k, {}).get("type") == "title":
                     company_name = _plain(cp[k]["title"]); break
-            for k in ["Address", "address"]:
-                if cp.get(k, {}).get("type") == "rich_text":
-                    company_address = _plain(cp[k]["rich_text"]); break
+            for k in ["Address", "Company Address", "Billing Address", "Mailing Address", "address"]:
+                prop = cp.get(k, {})
+                if prop.get("type") == "rich_text":
+                    v = _plain(prop.get("rich_text", []))
+                    if v: company_address = v; break
+                elif prop.get("type") == "title":
+                    v = _plain(prop.get("title", []))
+                    if v: company_address = v; break
+            for k in ["Phone", "Phone Number", "Contact Number", "Tel", "Mobile"]:
+                prop = cp.get(k, {})
+                if prop.get("type") == "phone_number":
+                    v = prop.get("phone_number") or ""
+                    if v: company_phone = v; break
+                elif prop.get("type") == "rich_text":
+                    v = _plain(prop.get("rich_text", []))
+                    if v: company_phone = v; break
         except Exception as e:
             print(f"[WARN] company: {e}", file=sys.stderr)
 
-    # PIC
+    # PIC — handles both direct relation and rollup-of-relation
     pic_name = pic_email = pic_phone = ""
-    for rel in props.get("PIC", {}).get("relation", [])[:1]:
+    pic_page_ids = []
+    pic_prop = props.get("PIC", {})
+    if pic_prop.get("type") == "rollup":
+        for item in pic_prop.get("rollup", {}).get("array", []):
+            if item.get("type") == "relation":
+                pic_page_ids = [r2["id"] for r2 in item.get("relation", [])]; break
+    elif pic_prop.get("type") == "relation":
+        pic_page_ids = [rel["id"] for rel in pic_prop.get("relation", [])]
+    for pid in pic_page_ids[:1]:
         try:
-            pr = requests.get(f"https://api.notion.com/v1/pages/{rel['id']}",
+            pr = requests.get(f"https://api.notion.com/v1/pages/{pid}",
                               headers=hdrs, timeout=10)
             pr.raise_for_status()
             pp = pr.json().get("properties", {})
@@ -315,6 +337,7 @@ def fetch_quotation_data(page_id):
         "amount":          amount,
         "company_name":    company_name,
         "company_address": company_address,
+        "company_phone":   company_phone,
         "pic_name":        pic_name,
         "pic_email":       pic_email,
         "pic_phone":       pic_phone,
@@ -439,20 +462,23 @@ def generate_pdf(data):
         f"<b>{data.get('company_name') or 'N/A'}</b>",
         st("co2", fontSize=11, fontName="Helvetica-Bold", textColor=C_BLACK, leading=15)
     ))
-    if data.get("pic_name"):
-        story.append(Paragraph(
-            f"Attn: {data['pic_name']}",
-            st("pic", fontSize=9, textColor=C_D500, leading=13)
-        ))
     if data.get("company_address"):
         story.append(Paragraph(
             data["company_address"].replace("\n", "<br/>"),
             st("adr", fontSize=9, textColor=C_D500, leading=13)
         ))
-    if data.get("pic_email"):
+    if data.get("company_phone"):
         story.append(Paragraph(
-            data["pic_email"],
-            st("em", fontSize=9, textColor=C_D500, leading=13)
+            data["company_phone"],
+            st("cph", fontSize=9, textColor=C_D500, leading=13)
+        ))
+    if data.get("pic_name"):
+        attn = f"Attn: {data['pic_name']}"
+        if data.get("pic_email"):
+            attn += f"  ·  {data['pic_email']}"
+        story.append(Paragraph(
+            attn,
+            st("pic", fontSize=9, textColor=C_D600, leading=13)
         ))
     story.append(Spacer(1, 8*mm))
 
