@@ -246,8 +246,8 @@ def create_invoice(quotation_id, quotation_data, hdrs):
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs, json=body, timeout=15)
     if not r.ok:
-        print(f"[WARN] Create invoice PATCH {r.status_code}: {r.text[:300]}", file=sys.stderr)
-    r.raise_for_status()
+        print(f"[WARN] Create invoice {r.status_code}: {r.text}", file=sys.stderr)
+        raise ValueError(f"Notion rejected invoice creation ({r.status_code}): {r.text}")
     return r.json()
 
 
@@ -312,7 +312,9 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
 
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs, json=body, timeout=15)
-    r.raise_for_status()
+    if not r.ok:
+        print(f"[WARN] Create project {r.status_code}: {r.text}", file=sys.stderr)
+        raise ValueError(f"Notion rejected project creation ({r.status_code}): {r.text}")
     return r.json()["id"]
 
 
