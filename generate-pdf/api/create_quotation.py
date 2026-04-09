@@ -402,12 +402,19 @@ def create_line_item(db_id, product_id, product_name, price, hdrs, description="
 
 def extract_lead_info(props, hdrs):
     """
-    Pull Company relation and full product info from a Lead page.
-    Returns (company_ids, product_dict) where product_dict has
-    {id, name, price, quote_type}.
+    Pull Company, PIC relations and full product info from a Lead page.
+    Returns (company_ids, pic_ids, product_dict).
     """
     company_ids = [r["id"].replace("-", "")
                    for r in props.get("Company", {}).get("relation", [])]
+
+    # PIC — may be called "PIC", "Contact", "Person in Charge"
+    pic_ids = []
+    for field in ("PIC", "Contact", "Person in Charge"):
+        pic_ids = [r["id"].replace("-", "")
+                   for r in props.get(field, {}).get("relation", [])]
+        if pic_ids:
+            break
 
     # 1. Exact match on Package Type (primary OS package select)
     pkg_raw = (props.get("Package Type", {}).get("select") or {}).get("name", "").lower().strip()
@@ -426,10 +433,10 @@ def extract_lead_info(props, hdrs):
     # 3. Fetch full product info from Products DB
     product = fetch_product_info(slug or "operations-os", hdrs)
 
-    return company_ids, product
+    return company_ids, pic_ids, product
 
 
-def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=None):
+def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=None, pic_ids=None):
     """Create a new Quotation page and return its id + Notion URL."""
     today = date.today().isoformat()
 
@@ -437,7 +444,7 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=N
     props = {
         # Title left blank — Notion unique_id auto-generates Quotation No.
         "Quotation No.": {"title": [{"text": {"content": ""}}]},
-        "Status":        {"select": {"name": "Draft"}},
+        "Status":        {"status": {"name": "Draft"}},
         "Issue Date":    {"date": {"start": today}},
         "Payment Terms": {"select": {"name": "50% Deposit"}},
     }
@@ -446,6 +453,9 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=N
 
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
+
+    if pic_ids:
+        props["PIC"] = {"relation": [{"id": pid} for pid in pic_ids[:1]]}
 
     body = {
         "parent":     {"database_id": QUOTATIONS_DB},
@@ -558,15 +568,16 @@ def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
     return None, None
 
 
-def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs, package_name=None):
+def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs,
+                          package_name=None, pic_ids=None):
     """
     Patch the properties of an existing (template-applied) quotation page.
     Sets: Status=Draft, Issue Date=today, Payment Terms=50% Deposit,
-          Quote Type, Package Type, Company relation, Deal Source relation.
+          Quote Type, Package Type, Company relation, PIC relation, Deal Source relation.
     """
     today = date.today().isoformat()
     props = {
-        "Status":        {"select": {"name": "Draft"}},
+        "Status":        {"status": {"name": "Draft"}},
         "Issue Date":    {"date": {"start": today}},
         "Payment Terms": {"select": {"name": "50% Deposit"}},
         "Quote Type":    {"select": {"name": quote_type}},
@@ -575,6 +586,8 @@ def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs, packa
         props["Package Type"] = {"rich_text": [{"text": {"content": package_name}}]}
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
+    if pic_ids:
+        props["PIC"] = {"relation": [{"id": pid} for pid in pic_ids[:1]]}
     # Deal Source should already be set by the Notion button, but patch it to
     # be safe (idempotent — Notion won't duplicate if it's already there).
     if lead_id:
@@ -637,12 +650,13 @@ def process(payload):
     # ── Build quotation fields ─────────────────
     lead_id     = None
     company_ids = []
+    pic_ids     = []
     product     = {"id": None, "name": None, "price": None, "quote_type": "New Business"}
 
     if source_type == "lead":
         lead_id = page_id
-        company_ids, product = extract_lead_info(props, hdrs)
-        print(f"[INFO] Lead → Companies: {company_ids}, Product: {product['name']}, Quote Type: {product['quote_type']}", file=sys.stderr)
+        company_ids, pic_ids, product = extract_lead_info(props, hdrs)
+        print(f"[INFO] Lead → Companies: {company_ids}, PIC: {pic_ids}, Product: {product['name']}, Quote Type: {product['quote_type']}", file=sys.stderr)
 
     elif source_type == "company":
         company_ids = [page_id]
@@ -674,11 +688,11 @@ def process(payload):
             found_via_notion = True
             print(f"[INFO] Using Notion-created quotation: {quot_id}", file=sys.stderr)
             patch_quotation_props(quot_id, company_ids, quote_type, lead_id, hdrs,
-                                  package_name=package_name)
+                                  package_name=package_name, pic_ids=pic_ids)
 
     if not found_via_notion:
         quot_id, quot_url = create_quotation_page(lead_id, company_ids, quote_type, hdrs,
-                                                   package_name=package_name)
+                                                   package_name=package_name, pic_ids=pic_ids)
         print(f"[INFO] Created new Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
     # ── Auto-populate line items ──────────────────────────────────────────────
