@@ -83,7 +83,7 @@ def fetch_deposit_invoice(page_id, hdrs):
     invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status       = (props.get("Status",       {}).get("select") or {}).get("name", "")
     total_amount = props.get("Amount", {}).get("number") or 0
-    deposit_amt  = props.get("Deposit Due (50%)", {}).get("number") or 0
+    deposit_amt  = props.get("Deposit (50%)", {}).get("number") or 0
     pay_balance  = props.get("Payment Balance", {}).get("number") or 0
     issue_date   = (props.get("Issue Date", {}).get("date") or {}).get("start", "")
 
@@ -197,7 +197,7 @@ def create_final_invoice(deposit_data, hdrs):
         "Status":           {"select": {"name": "Balance Pending"}},
         "Issue Date":       {"date":   {"start": today}},
         "Amount":           {"number": total_amount},
-        "Deposit Due (50%)":{"number": deposit_amt},
+        "Deposit (50%)":{"number": deposit_amt},
         "Payment Balance":  {"number": balance},
         "Balance Due":      {"date":   {"start": due_date}},
         "Payment Method":   {"select": {"name": "Bank Transfer"}},
