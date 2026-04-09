@@ -147,7 +147,7 @@ def fetch_invoice_data(page_id, hdrs):
     invoice_type = (props.get("Invoice Type", {}).get("select") or {}).get("name", "")
     status       = (props.get("Status",       {}).get("select") or {}).get("name", "")
     total_amount = props.get("Amount",            {}).get("number") or 0
-    deposit_amt  = props.get("Deposit Due (50%)", {}).get("number") or 0
+    deposit_amt  = props.get("Deposit (50%)", {}).get("number") or 0
     pay_balance  = props.get("Payment Balance",   {}).get("number") or 0
     pay_method   = (props.get("Payment Method", {}).get("select") or {}).get("name", "")
     pay_methods  = [pay_method] if pay_method else []
