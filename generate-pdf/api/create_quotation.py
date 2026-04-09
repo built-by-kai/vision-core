@@ -30,6 +30,7 @@ DBs
 Quotations  : f8167f0bda054307b90b17ad6b9c5cf8
 Leads CRM   : 8690d55c4d0449068c51ef49d92a26a2
 Companies   : 33c8b289e31a80fe82d2ccd18bcaec68
+Products    : 33c8b289e31a80bebdf1ecd506e5ccc3
 """
 
 import json
@@ -44,22 +45,28 @@ import requests
 QUOTATIONS_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"
 COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"
+PRODUCTS_DB   = "33c8b289e31a80bebdf1ecd506e5ccc3"
 
-# Map Lead Package Type / Interest → Quotation Quote Type
-PACKAGE_QUOTE_TYPE_MAP = {
-    "modular os":    "New Business",
-    "revenue os":    "New Business",
-    "full agency os":"New Business",
-    "workflow os":   "New Business",
-    "sales crm":     "New Business",
-    "complete os":   "New Business",
-    "custom os":     "New Business",
-    "expansion":     "Expansion",
-    "renewal":       "Renewal",
-    "service":       "Service/Maintenance",
-    "maintenance":   "Service/Maintenance",
-    "add-on":        "Expansion",
-    "addon":         "Expansion",
+# Map Lead Package Type / Interest keywords → Product slug in Products DB
+# Quote Type is then read from the product record — not hardcoded here.
+PACKAGE_SLUG_MAP = {
+    "modular os":     "operations-os",
+    "revenue os":     "sales-os",
+    "full agency os": "business-os",
+    "workflow os":    "operations-os",
+    "sales crm":      "sales-os",
+    "complete os":    "business-os",
+    "custom os":      "business-os",
+    "business os":    "business-os",
+    "operations os":  "operations-os",
+    "starter os":     "starter-os",
+    "starter":        "starter-os",
+    "expansion":      "add-on-module-os",
+    "add-on":         "add-on-module-os",
+    "addon":          "add-on-module-os",
+    "renewal":        "add-on-module-os",
+    "service":        "workflow-integration",
+    "maintenance":    "workflow-integration",
 }
 
 
@@ -106,27 +113,58 @@ def detect_source(page_id, hdrs):
     return "unknown", props
 
 
-def extract_lead_info(props):
-    """Pull Company relation, Package Type, and Quote Type hint from a Lead page."""
+def fetch_quote_type_for_slug(slug, hdrs):
+    """
+    Query Products DB for a product with the given slug and return its Quote Type.
+    Falls back to 'New Business' if not found or on any error.
+    """
+    try:
+        r = requests.post(
+            f"https://api.notion.com/v1/databases/{PRODUCTS_DB}/query",
+            headers=hdrs,
+            json={"filter": {"property": "Slug", "rich_text": {"equals": slug}}},
+            timeout=10,
+        )
+        if r.ok:
+            results = r.json().get("results", [])
+            if results:
+                qt = (results[0].get("properties", {})
+                      .get("Quote Type", {}).get("select") or {}).get("name", "")
+                if qt:
+                    print(f"[INFO] Quote Type '{qt}' from product slug '{slug}'", file=sys.stderr)
+                    return qt
+        print(f"[WARN] No product found for slug '{slug}', defaulting to New Business", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] fetch_quote_type_for_slug: {e}", file=sys.stderr)
+    return "New Business"
+
+
+def extract_lead_info(props, hdrs):
+    """Pull Company relation and Quote Type from a Lead page via Products DB lookup."""
     company_ids = [r["id"].replace("-", "")
                    for r in props.get("Company", {}).get("relation", [])]
 
-    # Derive quote type from Package Type select
+    # Resolve product slug from Package Type select
     pkg_raw = (props.get("Package Type", {}).get("select") or {}).get("name", "").lower()
-    quote_type = "New Business"
-    for key, val in PACKAGE_QUOTE_TYPE_MAP.items():
+    slug = None
+    for key, val in PACKAGE_SLUG_MAP.items():
         if key in pkg_raw:
-            quote_type = val
+            slug = val
             break
 
-    # Also check Interest multi_select if Package Type blank
-    if pkg_raw == "":
+    # Fall back to Interest multi-select if Package Type blank
+    if not slug:
         for item in props.get("Interest", {}).get("multi_select", []):
             key_lower = item.get("name", "").lower()
-            for key, val in PACKAGE_QUOTE_TYPE_MAP.items():
+            for key, val in PACKAGE_SLUG_MAP.items():
                 if key in key_lower:
-                    quote_type = val
+                    slug = val
                     break
+            if slug:
+                break
+
+    # Read Quote Type from Products DB — defaults to New Business if no match
+    quote_type = fetch_quote_type_for_slug(slug or "operations-os", hdrs)
 
     return company_ids, quote_type
 
@@ -249,7 +287,7 @@ def process(payload):
 
     if source_type == "lead":
         lead_id = page_id
-        company_ids, quote_type = extract_lead_info(props)
+        company_ids, quote_type = extract_lead_info(props, hdrs)
         print(f"[INFO] Lead → Companies: {company_ids}, Quote Type: {quote_type}", file=sys.stderr)
 
     elif source_type == "company":
