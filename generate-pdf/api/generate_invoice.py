@@ -711,17 +711,34 @@ def upload_to_blob(pdf_buffer, filename):
 def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
     payload = {"properties": {}}
 
+    # Only write the PDF URL — Amount is set at creation time and should not be overwritten
     if pdf_url:
         payload["properties"]["PDF"] = {"url": pdf_url}
-    if amount_due > 0:
-        payload["properties"]["Amount"] = {"number": amount_due}
-    if intake_url:
-        payload["properties"]["Intake Form URL"] = {"url": intake_url}
 
-    requests.patch(
+    # Only write Intake Form URL if the property exists in the DB schema
+    if intake_url:
+        try:
+            db_r = requests.get(
+                "https://api.notion.com/v1/databases/9227dda9c4be42a1a4c6b1bce4862f8c",
+                headers=hdrs, timeout=10
+            )
+            if db_r.ok and "Intake Form URL" in db_r.json().get("properties", {}):
+                payload["properties"]["Intake Form URL"] = {"url": intake_url}
+            else:
+                print(f"[INFO] Skipping 'Intake Form URL' — not in Invoice DB schema", file=sys.stderr)
+        except Exception as e:
+            print(f"[WARN] Could not check DB schema for Intake Form URL: {e}", file=sys.stderr)
+
+    if not payload["properties"]:
+        print(f"[WARN] Nothing to write back to Notion invoice page", file=sys.stderr)
+        return
+
+    r = requests.patch(
         f"https://api.notion.com/v1/pages/{page_id}",
         headers=hdrs, json=payload, timeout=10,
-    ).raise_for_status()
+    )
+    if not r.ok:
+        raise ValueError(f"Notion PATCH invoice page {r.status_code}: {r.text[:300]}")
 
 
 # ─────────────────────────────────────────────
@@ -926,6 +943,7 @@ class handler(BaseHTTPRequestHandler):
                 intake_url = f"{IMPL_FORM_BASE}?c={company_id}"
                 print(f"[WARN] No pkg_slug found — intake URL generated without package", file=sys.stderr)
 
+            step = "update_notion_invoice"
             update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs)
 
             result = {
