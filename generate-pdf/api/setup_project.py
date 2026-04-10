@@ -439,6 +439,15 @@ class handler(BaseHTTPRequestHandler):
                     "package": package,
                 }); return
 
+            # Set Project Phase to Phase 0 — Pre-Build
+            requests.patch(
+                "https://api.notion.com/v1/pages/" + page_id,
+                headers=hdrs,
+                json={"properties": {"Phase": {"select": {"name": "Phase 0 — Pre-Build"}}}},
+                timeout=10,
+            )
+            print("[INFO] Project Phase → Phase 0 — Pre-Build", file=sys.stderr)
+
             # Create phases + tasks
             total_phases = 0
             total_tasks  = 0
