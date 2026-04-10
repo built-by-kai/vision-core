@@ -8,30 +8,31 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#0C0C0C;color:#fff;overflow-y:auto;height:100%;transition:background 0.3s,color 0.3s;}
-body.light{background:#F5F5F5;color:#0C0C0C;}
+/* Notion dark bg = #191919 */
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background 0.3s,color 0.3s;}
+body.light{background:#fff;color:#0C0C0C;}
 
-/* ── Card ── */
-.card{background:#131313;border:1px solid rgba(255,255,255,0.05);border-radius:16px;transition:border-color 0.2s;}
-.card:hover{border-color:rgba(170,255,0,0.12);}
-body.light .card{background:#fff;border-color:rgba(0,0,0,0.06);}
+/* Cards match Notion card style */
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,0.06);border-radius:14px;transition:border-color 0.2s;}
+.card:hover{border-color:rgba(170,255,0,0.14);}
+body.light .card{background:#F7F8FA;border-color:rgba(0,0,0,0.06);}
 body.light .card:hover{border-color:rgba(100,180,0,0.2);}
 
-:root{--g:#AAFF00;--g-muted:rgba(170,255,0,0.12);--g-border:rgba(170,255,0,0.18);}
+:root{--g:#AAFF00;--g-muted:rgba(170,255,0,0.1);--g-border:rgba(170,255,0,0.16);}
 body.light{--g:#5C9900;--g-muted:rgba(92,153,0,0.1);--g-border:rgba(92,153,0,0.2);}
 
-/* ── Buttons / Selects ── */
-.btn{background:#1A1A1A;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:.2px;}
+/* Buttons / Selects */
+.btn{background:#252525;border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:.2px;}
 .btn:hover{border-color:var(--g-border);color:var(--g);}
-body.light .btn{background:#F0F0F0;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
 body.light .btn:hover{border-color:var(--g-border);color:var(--g);}
-.sel{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 22px 5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:#1A1A1A;color:rgba(255,255,255,0.5);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:all 0.2s;}
+.sel{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 22px 5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.09);background:#252525;color:rgba(255,255,255,0.5);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:all 0.2s;}
 .sel:hover,.sel:focus{border-color:var(--g-border);color:var(--g);}
-.sel option{background:#1A1A1A;color:#fff;}
-body.light .sel{background:#F0F0F0;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.5);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;}
+.sel option{background:#252525;color:#fff;}
+body.light .sel{background:#EFEFEF;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.5);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;}
 body.light .sel option{background:#fff;color:#111;}
 
-/* ── Top bar ── */
+/* Top bar */
 .top-bar{display:flex;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
 .top-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
 .page-eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:2px;}
@@ -41,27 +42,26 @@ body.light .page-title{color:#0C0C0C;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,0.18);}
 body.light .ts{color:rgba(0,0,0,0.22);}
 
-/* ── Stat row ── */
+/* Stat row */
 .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
 .stat-card{padding:18px 18px 16px;position:relative;overflow:hidden;}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity 0.25s;}
 .stat-card:hover::before{opacity:1;}
-.s-dot{position:absolute;top:15px;right:15px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:0.6;}
-/* White label text */
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;margin-bottom:10px;opacity:0.9;}
+.s-dot{position:absolute;top:15px;right:15px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:0.55;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:0.88;margin-bottom:10px;}
 body.light .s-lbl{color:#111;opacity:0.85;}
 .s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 .s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.22);margin-top:7px;}
 body.light .s-sub{color:rgba(0,0,0,0.3);}
 
-/* ── 2-col ── */
+/* 2-col */
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .panel{padding:22px 24px;}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;}
 body.light .panel-title{color:rgba(0,0,0,0.3);}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
 
-/* ── Funnel — single green ── */
+/* Funnel */
 .f-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .f-row:last-child{margin-bottom:0;}
 .f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.3);width:76px;flex-shrink:0;}
@@ -69,17 +69,17 @@ body.light .f-lbl{color:rgba(0,0,0,0.35);}
 .f-bg{flex:1;height:34px;border-radius:8px;background:rgba(255,255,255,0.04);overflow:hidden;}
 body.light .f-bg{background:rgba(0,0,0,0.05);}
 .f-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 12px;min-width:0;background:rgba(170,255,0,0.55);transition:width .6s cubic-bezier(.4,0,.2,1);}
-.f-fill.lost{background:rgba(255,255,255,0.07);}
+.f-fill.lost{background:rgba(255,255,255,0.06);}
 .f-fill-text{font-size:11.5px;font-weight:700;color:rgba(0,0,0,0.7);white-space:nowrap;}
-.f-fill.lost .f-fill-text{color:rgba(255,255,255,0.3);}
+.f-fill.lost .f-fill-text{color:rgba(255,255,255,0.28);}
 body.light .f-fill{background:rgba(92,153,0,0.45);}
 body.light .f-fill-text{color:rgba(255,255,255,0.85);}
-body.light .f-fill.lost{background:rgba(0,0,0,0.08);}
+body.light .f-fill.lost{background:rgba(0,0,0,0.07);}
 body.light .f-fill.lost .f-fill-text{color:rgba(0,0,0,0.3);}
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,0.4);width:22px;text-align:right;flex-shrink:0;}
 body.light .f-n{color:rgba(0,0,0,0.45);}
 
-/* ── Donut ── */
+/* Donut */
 .donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px;padding:6px 0;}
 .donut-svg{flex-shrink:0;}
 .d-val{font-weight:900;fill:#fff;}
@@ -94,25 +94,25 @@ body.light .l-name{color:rgba(0,0,0,0.5);}
 .l-val{font-size:14px;font-weight:900;color:rgba(255,255,255,0.8);}
 body.light .l-val{color:rgba(0,0,0,0.75);}
 
-/* ── Monthly Chart ── */
+/* Chart */
 .chart-card{padding:22px 24px;margin-top:10px;}
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);}
 body.light .chart-title{color:rgba(0,0,0,0.3);}
 .chart-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
-.chart-wrap{position:relative;width:100%;}
-.chart-svg{width:100%;overflow:visible;}
-.chart-tip{position:absolute;background:#1A1A1A;border:1px solid var(--g-border);border-radius:9px;padding:8px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.chart-wrap{position:relative;width:100%;height:160px;}
+/* SVG fills container exactly — no stretching */
+.chart-svg{position:absolute;top:0;left:0;width:100%;height:100%;}
+.chart-tip{position:absolute;background:#252525;border:1px solid var(--g-border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:10;}
 body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:var(--g);}
 
-/* ── Responsive ── */
+/* Responsive */
 @media(max-width:800px){.stat-row{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:58px;font-size:8px;}.donut-wrap{flex-direction:column;gap:14px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 14px;}.chart-card{padding:14px 16px;}}
+@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:58px;font-size:8px;}.donut-wrap{flex-direction:column;gap:14px;}.legend{flex-direction:row;flex-wrap:wrap;}.chart-card{padding:14px 16px;}}
 </style>
 </head>
 <body>
 
-<!-- Top bar -->
 <div class="top-bar">
   <div>
     <p class="page-eyebrow">Opxio · Sales</p>
@@ -136,47 +136,17 @@ body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:var(--g
   </div>
 </div>
 
-<!-- KPI stat cards -->
 <div class="stat-row">
-  <div class="card stat-card">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Active Leads</div>
-    <div class="s-val">18</div>
-    <div class="s-sub">Incoming + Proposed</div>
-  </div>
-  <div class="card stat-card">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Pipeline Value</div>
-    <div class="s-val">RM 94.7K</div>
-    <div class="s-sub">Excl. lost &amp; inactive</div>
-  </div>
-  <div class="card stat-card">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Deposit Due</div>
-    <div class="s-val">2</div>
-    <div class="s-sub">Awaiting payment</div>
-  </div>
-  <div class="card stat-card">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Active Build</div>
-    <div class="s-val">5</div>
-    <div class="s-sub">Currently in delivery</div>
-  </div>
-  <div class="card stat-card">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Win Rate</div>
-    <div class="s-val">71%</div>
-    <div class="s-sub">Closed won this month</div>
-  </div>
+  <div class="card stat-card"><div class="s-dot"></div><div class="s-lbl">Active Leads</div><div class="s-val">18</div><div class="s-sub">Incoming + Proposed</div></div>
+  <div class="card stat-card"><div class="s-dot"></div><div class="s-lbl">Pipeline Value</div><div class="s-val">RM 94.7K</div><div class="s-sub">Excl. lost &amp; inactive</div></div>
+  <div class="card stat-card"><div class="s-dot"></div><div class="s-lbl">Deposit Due</div><div class="s-val">2</div><div class="s-sub">Awaiting payment</div></div>
+  <div class="card stat-card"><div class="s-dot"></div><div class="s-lbl">Active Build</div><div class="s-val">5</div><div class="s-sub">Currently in delivery</div></div>
+  <div class="card stat-card"><div class="s-dot"></div><div class="s-lbl">Win Rate</div><div class="s-val">71%</div><div class="s-sub">Closed won this month</div></div>
 </div>
 
-<!-- Funnel + Donut -->
 <div class="grid-2">
   <div class="card panel">
-    <div class="panel-title">
-      Deal Pipeline Funnel
-      <span class="panel-badge" id="funnel-badge"></span>
-    </div>
+    <div class="panel-title">Deal Pipeline Funnel<span class="panel-badge" id="funnel-badge"></span></div>
     <div id="funnel"></div>
   </div>
   <div class="card panel">
@@ -188,47 +158,42 @@ body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:var(--g
   </div>
 </div>
 
-<!-- Monthly Leads Chart -->
 <div class="card chart-card">
   <div class="chart-header">
     <span class="chart-title">Leads Incoming by Month</span>
     <span class="chart-badge" id="chart-badge"></span>
   </div>
-  <div class="chart-wrap">
-    <svg class="chart-svg" id="leads-chart" height="150" viewBox="0 0 700 150" preserveAspectRatio="none"></svg>
+  <div class="chart-wrap" id="chart-wrap">
+    <svg class="chart-svg" id="leads-chart"></svg>
     <div class="chart-tip" id="chart-tip"></div>
   </div>
 </div>
 
 <script>
-// ── Init month ──
 (function(){ document.getElementById('sel-month').value = new Date().getMonth()+1; })();
 
-// ── Theme ──
 let light = false;
-function toggleMode() {
-  light = !light;
-  document.body.classList.toggle('light', light);
-  document.getElementById('mode-btn').textContent = light ? '🌙 Dark' : '☀ Light';
+function toggleMode(){
+  light=!light;
+  document.body.classList.toggle('light',light);
+  document.getElementById('mode-btn').textContent=light?'🌙 Dark':'☀ Light';
+  drawChart();
 }
-function onFilter(){ /* hook to Notion API */ }
+function onFilter(){}
 
-// ── Timestamp ──
 function setTs(){
   const n=new Date();
   document.getElementById('ts').textContent='Updated '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
-
-// ── Refresh ──
 function doRefresh(){
   const b=document.getElementById('refresh-btn');
-  b.textContent='↻'; b.style.opacity='.4';
-  setTimeout(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; setTs(); },900);
+  b.textContent='↻';b.style.opacity='.4';
+  setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},900);
 }
 setTs();
-setInterval(doRefresh, 5*60*1000);
+setInterval(doRefresh,5*60*1000);
 
-// ── Funnel ── single green, no color variance
+// Funnel
 const funnel=[
   {label:'Incoming',    value:'RM 14.4K', count:4, pct:57},
   {label:'Proposed',    value:'RM 44.8K', count:7, pct:100},
@@ -240,22 +205,16 @@ const total=funnel.reduce((s,f)=>s+f.count,0);
 document.getElementById('funnel-badge').textContent=total+' deals';
 const fe=document.getElementById('funnel');
 funnel.forEach(f=>{
-  fe.innerHTML+=`<div class="f-row">
-    <span class="f-lbl">${f.label}</span>
-    <div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;">
-      <span class="f-fill-text">${f.value}</span>
-    </div></div>
-    <span class="f-n">${f.count}</span>
-  </div>`;
+  fe.innerHTML+=`<div class="f-row"><span class="f-lbl">${f.label}</span><div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;"><span class="f-fill-text">${f.value}</span></div></div><span class="f-n">${f.count}</span></div>`;
 });
 
-// ── Donut — green tones ──
+// Donut
 const sources=[
-  {label:'Referral', value:8, color:'#AAFF00'},
-  {label:'Threads',  value:5, color:'rgba(170,255,0,0.65)'},
-  {label:'Website',  value:4, color:'rgba(170,255,0,0.42)'},
-  {label:'Walk-in',  value:2, color:'rgba(170,255,0,0.26)'},
-  {label:'TikTok',   value:2, color:'rgba(170,255,0,0.14)'},
+  {label:'Referral',value:8,color:'#AAFF00'},
+  {label:'Threads', value:5,color:'rgba(170,255,0,0.65)'},
+  {label:'Website', value:4,color:'rgba(170,255,0,0.42)'},
+  {label:'Walk-in', value:2,color:'rgba(170,255,0,0.26)'},
+  {label:'TikTok',  value:2,color:'rgba(170,255,0,0.14)'},
 ];
 const srcTotal=sources.reduce((s,x)=>s+x.value,0);
 const cx=80,cy=80,r=58,sw=20,circ=2*Math.PI*r;
@@ -263,10 +222,7 @@ let offset=0,paths='';
 paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${sw}"/>`;
 sources.forEach(s=>{
   const dash=(s.value/srcTotal)*circ,gap=circ-dash;
-  paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}"
-    stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
-    stroke-dashoffset="${(-offset).toFixed(2)}"
-    transform="rotate(-90 ${cx} ${cy})"/>`;
+  paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
   offset+=dash;
 });
 paths+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" dominant-baseline="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${srcTotal}</text>`;
@@ -274,82 +230,85 @@ paths+=`<text x="${cx}" y="${cy+14}" text-anchor="middle" dominant-baseline="mid
 document.getElementById('donut-svg').innerHTML=paths;
 const le=document.getElementById('donut-legend');
 sources.forEach(s=>{
-  le.innerHTML+=`<div class="l-row">
-    <span class="l-dot" style="background:${s.color}"></span>
-    <span class="l-name">${s.label}</span>
-    <span class="l-val">${s.value}</span>
-  </div>`;
+  le.innerHTML+=`<div class="l-row"><span class="l-dot" style="background:${s.color}"></span><span class="l-name">${s.label}</span><span class="l-val">${s.value}</span></div>`;
 });
 
-// ── Monthly Leads Chart ──
-(function(){
-  const W=700,H=150,PAD={t:10,r:16,b:32,l:32};
-  const cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
-  const curMonth=new Date().getMonth(); // 0-indexed
+// ── Monthly Chart — drawn at real pixel size to avoid stretch/blur ──
+const curMonth=new Date().getMonth();
+const allData=[
+  {m:'Jan',v:3},{m:'Feb',v:5},{m:'Mar',v:4},{m:'Apr',v:7},
+  {m:'May',v:6},{m:'Jun',v:9},{m:'Jul',v:5},{m:'Aug',v:8},
+  {m:'Sep',v:4},{m:'Oct',v:6},{m:'Nov',v:7},{m:'Dec',v:5},
+];
+const data=allData.slice(0,curMonth+1);
+const totalLeads=data.reduce((s,d)=>s+d.v,0);
+document.getElementById('chart-badge').textContent=totalLeads+' total this year';
 
-  // Monthly totals: sample data up to current month
-  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const allData=[
-    {m:'Jan',v:3},{m:'Feb',v:5},{m:'Mar',v:4},{m:'Apr',v:7},
-    {m:'May',v:6},{m:'Jun',v:9},{m:'Jul',v:5},{m:'Aug',v:8},
-    {m:'Sep',v:4},{m:'Oct',v:6},{m:'Nov',v:7},{m:'Dec',v:5},
-  ];
-  // Only show months up to current
-  const data=allData.slice(0,curMonth+1);
-  const totalLeads=data.reduce((s,d)=>s+d.v,0);
-  document.getElementById('chart-badge').textContent=totalLeads+' total this year';
-
-  const maxVal=Math.max(...data.map(d=>d.v),1);
+function drawChart(){
+  const wrap=document.getElementById('chart-wrap');
   const svg=document.getElementById('leads-chart');
+  // Use real pixel dimensions
+  const W=wrap.clientWidth||600;
+  const H=wrap.clientHeight||160;
+  const PAD={t:14,r:20,b:30,l:30};
+  const cW=W-PAD.l-PAD.r;
+  const cH=H-PAD.t-PAD.b;
+  const maxVal=Math.max(...data.map(d=>d.v),1);
+
+  // Set viewBox to real pixels — no distortion
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W);
+  svg.setAttribute('height',H);
+  svg.innerHTML='';
+
   const ns='http://www.w3.org/2000/svg';
+  const isDark=!document.body.classList.contains('light');
+  const textCol=isDark?'rgba(255,255,255,0.22)':'rgba(0,0,0,0.3)';
+  const gridCol=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)';
 
   function xP(i){return PAD.l+(i/(data.length-1||1))*cW;}
   function yP(v){return PAD.t+cH-(v/maxVal)*cH;}
 
-  // Grid lines
+  // Grid
   for(let i=0;i<=4;i++){
     const y=PAD.t+(i/4)*cH;
     const gl=document.createElementNS(ns,'line');
     gl.setAttribute('x1',PAD.l);gl.setAttribute('x2',W-PAD.r);
     gl.setAttribute('y1',y);gl.setAttribute('y2',y);
-    gl.setAttribute('stroke','rgba(255,255,255,0.04)');
-    gl.setAttribute('stroke-dasharray','3,5');
+    gl.setAttribute('stroke',gridCol);gl.setAttribute('stroke-dasharray','3,5');
     svg.appendChild(gl);
     if(i<4){
       const val=Math.round(maxVal-(i/4)*maxVal);
       const t=document.createElementNS(ns,'text');
-      t.setAttribute('x',PAD.l-5);t.setAttribute('y',y+4);
-      t.setAttribute('text-anchor','end');
-      t.setAttribute('fill','rgba(255,255,255,0.18)');
-      t.setAttribute('font-size','8');
-      t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
-      t.textContent=val;
-      svg.appendChild(t);
+      t.setAttribute('x',PAD.l-6);t.setAttribute('y',y+4);
+      t.setAttribute('text-anchor','end');t.setAttribute('fill',textCol);
+      t.setAttribute('font-size','10');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+      t.textContent=val;svg.appendChild(t);
     }
   }
 
-  // X-axis month labels
+  // X labels — real pixel font, no stretch
   data.forEach((d,i)=>{
+    const isCur=i===data.length-1;
     const t=document.createElementNS(ns,'text');
-    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+14);
+    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+16);
     t.setAttribute('text-anchor','middle');
-    t.setAttribute('fill', i===curMonth ? '#AAFF00' : 'rgba(255,255,255,0.2)');
-    t.setAttribute('font-size','9');
-    t.setAttribute('font-weight', i===curMonth ? '700' : '500');
+    t.setAttribute('fill',isCur?'#AAFF00':textCol);
+    t.setAttribute('font-size','10');
+    t.setAttribute('font-weight',isCur?'700':'500');
     t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
-    t.textContent=d.m;
-    svg.appendChild(t);
+    t.textContent=d.m;svg.appendChild(t);
   });
 
-  // Smooth path helper
+  // Smooth path
   function smoothPath(pts){
     if(pts.length<2)return `M ${pts[0][0]} ${pts[0][1]}`;
-    let d=`M ${pts[0][0]} ${pts[0][1]}`;
+    let p=`M ${pts[0][0]} ${pts[0][1]}`;
     for(let i=1;i<pts.length;i++){
       const[x1,y1]=pts[i-1],[x2,y2]=pts[i],cpx=(x1+x2)/2;
-      d+=` C ${cpx} ${y1} ${cpx} ${y2} ${x2} ${y2}`;
+      p+=` C ${cpx} ${y1} ${cpx} ${y2} ${x2} ${y2}`;
     }
-    return d;
+    return p;
   }
 
   const pts=data.map((d,i)=>[xP(i),yP(d.v)]);
@@ -359,67 +318,62 @@ sources.forEach(s=>{
   // Gradient fill
   const defs=document.createElementNS(ns,'defs');
   const grad=document.createElementNS(ns,'linearGradient');
-  grad.setAttribute('id','gFill');grad.setAttribute('x1','0');grad.setAttribute('y1','0');
-  grad.setAttribute('x2','0');grad.setAttribute('y2','1');
-  const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#AAFF00');s1.setAttribute('stop-opacity','0.18');
+  grad.setAttribute('id','gFill');grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#AAFF00');s1.setAttribute('stop-opacity','0.2');
   const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#AAFF00');s2.setAttribute('stop-opacity','0.01');
   grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);
   svg.insertBefore(defs,svg.firstChild);
 
   const area=document.createElementNS(ns,'path');
   area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
-  area.setAttribute('fill','url(#gFill)');
-  svg.appendChild(area);
+  area.setAttribute('fill','url(#gFill)');svg.appendChild(area);
 
   const line=document.createElementNS(ns,'path');
   line.setAttribute('d',pathD);line.setAttribute('fill','none');
   line.setAttribute('stroke','#AAFF00');line.setAttribute('stroke-width','2');
-  line.setAttribute('stroke-linecap','round');
-  svg.appendChild(line);
+  line.setAttribute('stroke-linecap','round');svg.appendChild(line);
 
   // Dots
-  const dotEls=[];
   data.forEach((d,i)=>{
+    const isCur=i===data.length-1;
     const dot=document.createElementNS(ns,'circle');
-    const isCurrent=i===data.length-1;
     dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d.v));
-    dot.setAttribute('r', isCurrent?'5':'4');
-    dot.setAttribute('fill', isCurrent?'#AAFF00':'#131313');
-    dot.setAttribute('stroke','#AAFF00');
-    dot.setAttribute('stroke-width', isCurrent?'0':'2');
-    if(isCurrent){
-      dot.setAttribute('filter','drop-shadow(0 0 6px rgba(170,255,0,0.7))');
-    }
-    dot.style.transition='opacity 0.12s';
+    dot.setAttribute('r',isCur?'5':'3.5');
+    dot.setAttribute('fill',isCur?'#AAFF00':'#1E1E1E');
+    dot.setAttribute('stroke','#AAFF00');dot.setAttribute('stroke-width','2');
+    if(isCur) dot.setAttribute('filter','drop-shadow(0 0 5px rgba(170,255,0,0.8))');
     svg.appendChild(dot);
-    dotEls.push({dot,d,i});
   });
 
-  // Hover
+  // Hover vertical line
   const hLine=document.createElementNS(ns,'line');
-  hLine.setAttribute('stroke','rgba(170,255,0,0.12)');hLine.setAttribute('stroke-width','1');
+  hLine.setAttribute('stroke','rgba(170,255,0,0.1)');hLine.setAttribute('stroke-width','1');
   hLine.setAttribute('y1',PAD.t);hLine.setAttribute('y2',H-PAD.b);hLine.style.opacity='0';
   svg.appendChild(hLine);
 
   const tip=document.getElementById('chart-tip');
-  const wrap=svg.closest('.chart-wrap');
-  wrap.addEventListener('mousemove',e=>{
-    const rect=svg.getBoundingClientRect();
-    const mx=(e.clientX-rect.left)*(W/rect.width);
+  const wrapEl=document.getElementById('chart-wrap');
+
+  wrapEl.onmousemove=function(e){
+    const rect=wrapEl.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
     let best=null,bd=Infinity;
     data.forEach((d,i)=>{const dist=Math.abs(xP(i)-mx);if(dist<bd){bd=dist;best=i;}});
     if(best===null||bd>50){hide();return;}
     const d=data[best],px=xP(best);
     hLine.setAttribute('x1',px);hLine.setAttribute('x2',px);hLine.style.opacity='1';
     tip.style.display='block';
-    const tipLeft=Math.min(e.clientX-rect.left+14, rect.width-100);
-    tip.style.left=tipLeft+'px';
-    tip.style.top=(e.clientY-rect.top-46)+'px';
-    tip.innerHTML=`<span style="color:rgba(255,255,255,0.4);font-size:9px;font-weight:500;">${d.m}</span>&nbsp; ${d.v} leads`;
-  });
-  wrap.addEventListener('mouseleave',hide);
+    const tipL=Math.min(e.clientX-rect.left+14,rect.width-110);
+    tip.style.left=tipL+'px';tip.style.top=(e.clientY-rect.top-46)+'px';
+    tip.innerHTML=`<span style="color:rgba(255,255,255,0.4);font-size:9px;font-weight:500;">${d.m}</span>&nbsp;&nbsp;${d.v} leads`;
+  };
+  wrapEl.onmouseleave=hide;
   function hide(){tip.style.display='none';hLine.style.opacity='0';}
-})();
+}
+
+// Draw on load and on resize
+window.addEventListener('load',()=>setTimeout(drawChart,50));
+window.addEventListener('resize',drawChart);
 </script>
 </body>
 </html>
