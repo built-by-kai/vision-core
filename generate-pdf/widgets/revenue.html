@@ -1,321 +1,163 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Opxio — Revenue OS</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;}
-html{height:100%;}
-body{font-family:'Inter',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;transition:background 0.3s;overflow-y:auto;height:100%;}
-body.light{background:#fff;color:#111;}
-
-.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s;}
-.card:hover{border-color:rgba(255,255,255,0.12);}
-body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
-body.light .card:hover{border-color:rgba(0,0,0,0.1);}
-
-/* buttons */
-.toggle-btn,.refresh-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:.3px;}
-.toggle-btn:hover,.refresh-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
-body.light .toggle-btn,body.light .refresh-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
-body.light .toggle-btn:hover,body.light .refresh-btn:hover{border-color:rgba(0,0,0,0.15);color:rgba(0,0,0,0.7);}
-
-/* header */
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.14);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
 .h-right{display:flex;align-items:center;gap:6px;}
-.eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
-body.light .eyebrow{color:rgba(0,0,0,0.3);}
-.h-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 body.light .h-title{color:#111;}
-.last-updated{font-size:9px;font-weight:500;color:rgba(255,255,255,0.2);}
-body.light .last-updated{color:rgba(0,0,0,0.25);}
-
-/* section label */
-.section-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);margin:14px 0 8px;}
-body.light .section-label{color:rgba(0,0,0,0.3);}
-
-/* grids */
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
-@media(max-width:500px){.grid-3,.grid-2{grid-template-columns:repeat(2,1fr);}}
-
-/* stat cards */
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+/* Section label — white */
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.7;margin:14px 0 8px;}
+body.light .sec-lbl{color:#111;opacity:.65;}
+/* Grids */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
+@media(max-width:500px){.g3,.g2{grid-template-columns:repeat(2,1fr);}}
+/* Stat cards */
 .stat{padding:16px 18px;position:relative;}
-.s-accent{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;}
-.s-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block;}
-.s-value{font-size:28px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
-.s-sub{font-size:10px;font-weight:500;color:#6B7280;margin-top:6px;}
-body.light .s-sub{color:#9CA3AF;}
-
-/* colours */
-.c-blue   .s-label{color:#93c5fd;} .c-blue   .s-value{color:#60A5FA;} .c-blue   .s-accent{background:#60A5FA;}
-.c-green  .s-label{color:#6ee7b7;} .c-green  .s-value{color:#34D399;} .c-green  .s-accent{background:#34D399;}
-.c-amber  .s-label{color:#fcd34d;} .c-amber  .s-value{color:#FBBF24;} .c-amber  .s-accent{background:#FBBF24;}
-.c-purple .s-label{color:#c4b5fd;} .c-purple .s-value{color:#A78BFA;} .c-purple .s-accent{background:#A78BFA;}
-.c-teal   .s-label{color:#5eead4;} .c-teal   .s-value{color:#2DD4BF;} .c-teal   .s-accent{background:#2DD4BF;}
-.c-red    .s-label{color:#fca5a5;} .c-red    .s-value{color:#F87171;} .c-red    .s-accent{background:#F87171;}
-
-body.light .c-blue   .s-label{color:#2563EB;} body.light .c-blue   .s-value{color:#1D4ED8;}
-body.light .c-green  .s-label{color:#059669;} body.light .c-green  .s-value{color:#047857;}
-body.light .c-amber  .s-label{color:#D97706;} body.light .c-amber  .s-value{color:#B45309;}
-body.light .c-purple .s-label{color:#7C3AED;} body.light .c-purple .s-value{color:#6D28D9;}
-body.light .c-teal   .s-label{color:#0D9488;} body.light .c-teal   .s-value{color:#0F766E;}
-body.light .c-red    .s-label{color:#DC2626;} body.light .c-red    .s-value{color:#B91C1C;}
-
-/* ── Revenue Goal Progress Card ── */
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat:hover::before{opacity:1;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.88;margin-bottom:10px;display:block;}
+body.light .s-lbl{color:#111;opacity:.85;}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+body.light .s-sub{color:rgba(0,0,0,.3);}
+/* Goal card */
 .goal-card{padding:22px 24px;}
 .goal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;}
-.goal-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,0.28);margin-bottom:6px;}
-body.light .goal-eyebrow{color:rgba(0,0,0,0.32);}
-.goal-amount{font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;color:#34D399;}
-body.light .goal-amount{color:#047857;}
-.goal-of{font-size:12px;font-weight:500;color:rgba(255,255,255,0.35);margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
-body.light .goal-of{color:rgba(0,0,0,0.35);}
-.goal-target-val{cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.2);padding-bottom:1px;transition:all 0.2s;}
-.goal-target-val:hover{border-color:rgba(255,255,255,0.5);color:rgba(255,255,255,0.6);}
-body.light .goal-target-val{border-bottom:1px dashed rgba(0,0,0,0.2);}
-body.light .goal-target-val:hover{border-color:rgba(0,0,0,0.5);}
-.edit-icon{font-size:10px;opacity:0.3;cursor:pointer;transition:opacity 0.2s;}
-.edit-icon:hover{opacity:0.8;}
-.target-wrap{display:none;align-items:center;gap:6px;margin-top:8px;}
-.target-wrap.show{display:flex;}
-.target-inp{background:#2A2A2A;border:1px solid rgba(255,255,255,0.15);color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:5px 10px;border-radius:7px;width:120px;outline:none;transition:border-color 0.2s;}
-.target-inp:focus{border-color:rgba(52,211,153,0.5);}
-body.light .target-inp{background:#F3F4F6;border:1px solid rgba(0,0,0,0.12);color:#111;}
-.set-btn{background:#34D399;color:#111;border:none;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;transition:opacity 0.2s;}
-.set-btn:hover{opacity:0.85;}
-
-.goal-right{text-align:right;flex-shrink:0;margin-left:20px;}
-.goal-pct{font-size:40px;font-weight:800;letter-spacing:-2px;line-height:1;color:rgba(255,255,255,0.9);}
+.goal-ey{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.28);margin-bottom:6px;}
+body.light .goal-ey{color:rgba(0,0,0,.32);}
+.goal-amt{font-size:38px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--g);}
+.goal-of{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+body.light .goal-of{color:rgba(0,0,0,.35);}
+.goal-tv{cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.2);padding-bottom:1px;transition:all .2s;}
+.goal-tv:hover{border-color:rgba(255,255,255,.5);}
+.edit-ic{font-size:10px;opacity:.3;cursor:pointer;transition:opacity .2s;}
+.edit-ic:hover{opacity:.8;}
+.tinput-wrap{display:none;align-items:center;gap:6px;margin-top:8px;}
+.tinput-wrap.show{display:flex;}
+.tinput{background:#252525;border:1px solid rgba(255,255,255,.15);color:#fff;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;padding:5px 10px;border-radius:7px;width:120px;outline:none;transition:border-color .2s;}
+.tinput:focus{border-color:rgba(170,255,0,.5);}
+body.light .tinput{background:#EFEFEF;border-color:rgba(0,0,0,.12);color:#111;}
+.set-btn{background:var(--g);color:#000;border:none;font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;transition:opacity .2s;}
+.set-btn:hover{opacity:.85;}
+.goal-pct{font-size:40px;font-weight:900;letter-spacing:-2px;line-height:1;color:#fff;}
 body.light .goal-pct{color:#111;}
-.goal-pct-sub{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);margin-top:4px;}
-body.light .goal-pct-sub{color:rgba(0,0,0,0.3);}
-
-/* track + fill */
-.bar-track{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,0.07);overflow:visible;position:relative;}
-body.light .bar-track{background:rgba(0,0,0,0.08);}
-.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#059669,#34D399,#86EFAC);position:relative;transition:width 1.1s cubic-bezier(0.4,0,0.2,1);min-width:0;}
-.bar-fill::after{content:'';position:absolute;right:-2px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#34D399;border:2px solid #191919;box-shadow:0 0 0 3px rgba(52,211,153,0.25),0 0 12px rgba(52,211,153,0.5);}
-body.light .bar-fill::after{border-color:#fff;}
+.goal-pct-sub{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-top:4px;}
+body.light .goal-pct-sub{color:rgba(0,0,0,.3);}
+.bar-track{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,.06);position:relative;}
+body.light .bar-track{background:rgba(0,0,0,.08);}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#059669,#AAFF00);position:relative;transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+.bar-fill::after{content:'';position:absolute;right:-2px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:var(--g);border:2px solid #191919;box-shadow:0 0 0 3px rgba(170,255,0,.2),0 0 12px rgba(170,255,0,.5);}
+body.light .bar-fill::after{border-color:#F5F5F5;}
 .bar-meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
-.bar-label{font-size:10px;font-weight:500;color:rgba(255,255,255,0.3);}
-body.light .bar-label{color:rgba(0,0,0,0.3);}
-.status-pill{font-size:9px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(52,211,153,0.1);color:#34D399;border:1px solid rgba(52,211,153,0.2);}
-.status-pill.warn{background:rgba(251,191,36,0.1);color:#FBBF24;border-color:rgba(251,191,36,0.2);}
-.status-pill.hit{background:rgba(52,211,153,0.15);color:#34D399;border-color:rgba(52,211,153,0.3);}
-body.light .status-pill{background:rgba(5,150,105,0.08);color:#047857;border-color:rgba(5,150,105,0.15);}
-</style>
-</head>
-<body>
-
+.bar-lbl{font-size:10px;font-weight:500;color:rgba(255,255,255,.35);}
+body.light .bar-lbl{color:rgba(0,0,0,.35);}
+.status-pill{font-size:9px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+</style></head><body>
 <div class="header">
-  <div>
-    <p class="eyebrow">Opxio · Finance</p>
-    <h1 class="h-title">Revenue OS</h1>
-  </div>
+  <div><p class="eyebrow">Opxio · Finance</p><h1 class="h-title">Revenue OS</h1></div>
   <div class="h-right">
-    <span class="last-updated" id="last-updated"></span>
-    <button class="refresh-btn" onclick="doRefresh()" id="refresh-btn">↻ Refresh</button>
-    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
   </div>
 </div>
 
-<!-- ── Revenue This Month Goal Card ── -->
-<div class="section-label">Revenue This Month</div>
+<!-- Revenue Goal -->
+<div class="sec-lbl">Revenue This Month</div>
 <div class="card goal-card">
   <div class="goal-top">
     <div>
-      <div class="goal-eyebrow">Collected · Won Deals</div>
-      <div class="goal-amount" id="goal-amount">RM 0</div>
-      <div class="goal-of">
-        of&nbsp;<span class="goal-target-val" id="goal-target-disp" onclick="toggleTargetEdit()">RM 10,000</span>&nbsp;target
-        <span class="edit-icon" onclick="toggleTargetEdit()" title="Edit target">✎</span>
-      </div>
-      <div class="target-wrap" id="target-wrap">
-        <input type="number" class="target-inp" id="target-inp" placeholder="e.g. 10000"/>
+      <div class="goal-ey">Collected · Won Deals</div>
+      <div class="goal-amt" id="gamt">RM 0</div>
+      <div class="goal-of">of&nbsp;<span class="goal-tv" id="gtv" onclick="toggleEdit()">RM 10,000</span>&nbsp;target<span class="edit-ic" onclick="toggleEdit()">✎</span></div>
+      <div class="tinput-wrap" id="twrap">
+        <input type="number" class="tinput" id="tinp" placeholder="e.g. 10000"/>
         <button class="set-btn" onclick="saveTarget()">Set</button>
       </div>
     </div>
-    <div class="goal-right">
-      <div class="goal-pct" id="goal-pct">0%</div>
+    <div style="text-align:right;flex-shrink:0;margin-left:20px;">
+      <div class="goal-pct" id="gpct">0%</div>
       <div class="goal-pct-sub">of target</div>
     </div>
   </div>
-  <div class="bar-track">
-    <div class="bar-fill" id="bar-fill" style="width:0%;"></div>
-  </div>
+  <div class="bar-track"><div class="bar-fill" id="bfill" style="width:0%;"></div></div>
   <div class="bar-meta">
-    <span class="bar-label" id="bar-label-left">RM 0 collected this month</span>
-    <span class="status-pill" id="status-pill">–</span>
+    <span class="bar-lbl" id="blbl">RM 0 collected</span>
+    <span class="status-pill" id="spill">–</span>
   </div>
 </div>
 
 <!-- Quotations -->
-<div class="section-label">Quotations</div>
-<div class="grid-3">
-  <div class="card stat c-blue">
-    <div class="s-accent"></div>
-    <span class="s-label">Issued</span>
-    <div class="s-value" id="q-issued">0</div>
-    <div class="s-sub">Sent, awaiting reply</div>
-  </div>
-  <div class="card stat c-green">
-    <div class="s-accent"></div>
-    <span class="s-label">Approved</span>
-    <div class="s-value" id="q-approved">0</div>
-    <div class="s-sub">Client confirmed</div>
-  </div>
-  <div class="card stat c-red">
-    <div class="s-accent"></div>
-    <span class="s-label">Rejected</span>
-    <div class="s-value" id="q-rejected">0</div>
-    <div class="s-sub">Declined or archived</div>
-  </div>
+<div class="sec-lbl">Quotations</div>
+<div class="g3">
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Issued</span><div class="s-val">0</div><div class="s-sub">Sent, awaiting reply</div></div>
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Approved</span><div class="s-val">0</div><div class="s-sub">Client confirmed</div></div>
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Rejected</span><div class="s-val">0</div><div class="s-sub">Declined or archived</div></div>
 </div>
 
 <!-- Invoices -->
-<div class="section-label">Invoices</div>
-<div class="grid-3">
-  <div class="card stat c-amber">
-    <div class="s-accent"></div>
-    <span class="s-label">Deposit Pending</span>
-    <div class="s-value" id="i-deposit">0</div>
-    <div class="s-sub">Awaiting deposit</div>
-  </div>
-  <div class="card stat c-purple">
-    <div class="s-accent"></div>
-    <span class="s-label">Balance Pending</span>
-    <div class="s-value" id="i-balance">0</div>
-    <div class="s-sub">Final payment due</div>
-  </div>
-  <div class="card stat c-teal">
-    <div class="s-accent"></div>
-    <span class="s-label">Fully Paid</span>
-    <div class="s-value" id="i-paid">0</div>
-    <div class="s-sub">Full payment received</div>
-  </div>
+<div class="sec-lbl">Invoices</div>
+<div class="g3">
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Deposit Pending</span><div class="s-val">0</div><div class="s-sub">Awaiting deposit</div></div>
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Balance Pending</span><div class="s-val">0</div><div class="s-sub">Final payment due</div></div>
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Fully Paid</span><div class="s-val">0</div><div class="s-sub">Full payment received</div></div>
 </div>
 
-<!-- Revenue totals -->
-<div class="grid-2">
-  <div class="card stat c-green">
-    <div class="s-accent"></div>
-    <span class="s-label">Total Collected</span>
-    <div class="s-value" id="r-collected">RM 0</div>
-    <div class="s-sub">Deposits + full payments</div>
-  </div>
-  <div class="card stat c-amber">
-    <div class="s-accent"></div>
-    <span class="s-label">Outstanding</span>
-    <div class="s-value" id="r-outstanding">RM 0</div>
-    <div class="s-sub">Balance still owed</div>
-  </div>
+<!-- Totals -->
+<div class="g2">
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Total Collected</span><div class="s-val">RM 0</div><div class="s-sub">Deposits + full payments</div></div>
+  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Outstanding</span><div class="s-val">RM 0</div><div class="s-sub">Balance still owed</div></div>
 </div>
 
 <script>
-// ── Theme ──
-let isLight = false;
-function toggleMode() {
-  isLight = !isLight;
-  document.body.classList.toggle('light', isLight);
-  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+let light=false,tgt=parseFloat(localStorage.getItem('opxio_rtgt')||'10000'),collected=0;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
+setTs();setInterval(doRefresh,5*60*1000);
+function fmt(n){return n>=1000?'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K':'RM '+Math.round(n).toLocaleString();}
+function fmtF(n){return 'RM '+Math.round(n).toLocaleString();}
+function toggleEdit(){
+  const w=document.getElementById('twrap');w.classList.toggle('show');
+  if(w.classList.contains('show')){document.getElementById('tinp').value=tgt;document.getElementById('tinp').focus();}
 }
-
-// ── Timestamp ──
-function updateTimestamp() {
-  const now = new Date();
-  document.getElementById('last-updated').textContent =
-    'Updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+function saveTarget(){
+  const v=parseFloat(document.getElementById('tinp').value);
+  if(!isNaN(v)&&v>0){tgt=v;localStorage.setItem('opxio_rtgt',v);document.getElementById('twrap').classList.remove('show');renderGoal(collected);}
 }
-
-// ── Monthly Target ──
-const TARGET_KEY = 'opxio_rev_target';
-let monthlyTarget = parseFloat(localStorage.getItem(TARGET_KEY) || '10000');
-
-function fmtRM(n) {
-  if (n >= 1000) return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/, '') + 'K';
-  return 'RM ' + Math.round(n).toLocaleString();
+function renderGoal(c){
+  collected=c;
+  const pct=tgt>0?Math.min((c/tgt)*100,100):0;
+  const day=new Date().getDate(),dim=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const expPct=(day/dim)*100;
+  document.getElementById('gamt').textContent=fmt(c);
+  document.getElementById('gtv').textContent=fmtF(tgt);
+  document.getElementById('gpct').textContent=Math.round(pct)+'%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{document.getElementById('bfill').style.width=pct+'%';}));
+  document.getElementById('blbl').textContent=fmtF(c)+' collected';
+  const pill=document.getElementById('spill');
+  if(c>=tgt){pill.textContent='🎯 Target Hit';}
+  else if(pct<expPct-10){pill.textContent=fmt(tgt-c)+' behind pace';}
+  else{pill.textContent=fmt(tgt-c)+' to go';}
 }
-function fmtRMFull(n) {
-  return 'RM ' + Math.round(n).toLocaleString('en-MY');
-}
-
-function toggleTargetEdit() {
-  const wrap = document.getElementById('target-wrap');
-  wrap.classList.toggle('show');
-  if (wrap.classList.contains('show')) {
-    document.getElementById('target-inp').value = monthlyTarget;
-    document.getElementById('target-inp').focus();
-  }
-}
-
-function saveTarget() {
-  const val = parseFloat(document.getElementById('target-inp').value);
-  if (!isNaN(val) && val > 0) {
-    monthlyTarget = val;
-    localStorage.setItem(TARGET_KEY, val);
-    document.getElementById('target-wrap').classList.remove('show');
-    renderGoal(currentCollected);
-  }
-}
-
-// ── Render Progress ──
-let currentCollected = 0;
-function renderGoal(collected) {
-  currentCollected = collected;
-  const pct = monthlyTarget > 0 ? Math.min((collected / monthlyTarget) * 100, 100) : 0;
-  const over = collected >= monthlyTarget;
-  const dayOfMonth = new Date().getDate();
-  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
-  const expectedPct = (dayOfMonth / daysInMonth) * 100;
-
-  document.getElementById('goal-amount').textContent = fmtRM(collected);
-  document.getElementById('goal-target-disp').textContent = fmtRMFull(monthlyTarget);
-  document.getElementById('goal-pct').textContent = Math.round(pct) + '%';
-
-  // Defer width so CSS transition fires
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.getElementById('bar-fill').style.width = pct + '%';
-    });
-  });
-
-  document.getElementById('bar-label-left').textContent = fmtRMFull(collected) + ' collected this month';
-
-  const pill = document.getElementById('status-pill');
-  pill.className = 'status-pill';
-  if (over) {
-    pill.textContent = '🎯 Target Hit';
-    pill.classList.add('hit');
-  } else if (pct < expectedPct - 10) {
-    const rem = monthlyTarget - collected;
-    pill.textContent = fmtRM(rem) + ' behind pace';
-    pill.classList.add('warn');
-  } else {
-    const rem = monthlyTarget - collected;
-    pill.textContent = fmtRM(rem) + ' to go';
-  }
-}
-
-// ── Refresh ──
-function doRefresh() {
-  const btn = document.getElementById('refresh-btn');
-  btn.textContent = '↻';
-  btn.style.opacity = '0.4';
-  // TODO: wire to Notion API — fetch invoices with "Full Payment Received" status
-  setTimeout(() => {
-    btn.textContent = '↻ Refresh';
-    btn.style.opacity = '1';
-    updateTimestamp();
-  }, 800);
-}
-
-// ── Init ──
-renderGoal(0);  // Replace 0 with live Notion fetch
-updateTimestamp();
-setInterval(doRefresh, 5 * 60 * 1000);
-</script>
-</body>
-</html>
+renderGoal(0);
+</script></body></html>
