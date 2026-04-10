@@ -17,17 +17,14 @@ body.light{background:#F5F5F5;color:#0C0C0C;}
 body.light .card{background:#fff;border-color:rgba(0,0,0,0.06);}
 body.light .card:hover{border-color:rgba(100,180,0,0.2);}
 
-/* ── Accent green ── */
-:root{--g:#AAFF00;--g-dim:rgba(170,255,0,0.6);--g-muted:rgba(170,255,0,0.15);--g-border:rgba(170,255,0,0.18);}
-body.light{--g:#5C9900;--g-dim:rgba(92,153,0,0.7);--g-muted:rgba(92,153,0,0.1);--g-border:rgba(92,153,0,0.2);}
+:root{--g:#AAFF00;--g-muted:rgba(170,255,0,0.12);--g-border:rgba(170,255,0,0.18);}
+body.light{--g:#5C9900;--g-muted:rgba(92,153,0,0.1);--g-border:rgba(92,153,0,0.2);}
 
-/* ── Buttons ── */
+/* ── Buttons / Selects ── */
 .btn{background:#1A1A1A;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:.2px;}
 .btn:hover{border-color:var(--g-border);color:var(--g);}
 body.light .btn{background:#F0F0F0;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
 body.light .btn:hover{border-color:var(--g-border);color:var(--g);}
-
-/* ── Selects ── */
 .sel{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 22px 5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:#1A1A1A;color:rgba(255,255,255,0.5);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:all 0.2s;}
 .sel:hover,.sel:focus{border-color:var(--g-border);color:var(--g);}
 .sel option{background:#1A1A1A;color:#fff;}
@@ -50,8 +47,9 @@ body.light .ts{color:rgba(0,0,0,0.22);}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity 0.25s;}
 .stat-card:hover::before{opacity:1;}
 .s-dot{position:absolute;top:15px;right:15px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:0.6;}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.28);margin-bottom:10px;}
-body.light .s-lbl{color:rgba(0,0,0,0.32);}
+/* White label text */
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;margin-bottom:10px;opacity:0.9;}
+body.light .s-lbl{color:#111;opacity:0.85;}
 .s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 .s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.22);margin-top:7px;}
 body.light .s-sub{color:rgba(0,0,0,0.3);}
@@ -63,17 +61,21 @@ body.light .s-sub{color:rgba(0,0,0,0.3);}
 body.light .panel-title{color:rgba(0,0,0,0.3);}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
 
-/* ── Funnel ── */
+/* ── Funnel — single green ── */
 .f-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .f-row:last-child{margin-bottom:0;}
 .f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.3);width:76px;flex-shrink:0;}
 body.light .f-lbl{color:rgba(0,0,0,0.35);}
 .f-bg{flex:1;height:34px;border-radius:8px;background:rgba(255,255,255,0.04);overflow:hidden;}
 body.light .f-bg{background:rgba(0,0,0,0.05);}
-.f-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 12px;min-width:0;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.f-fill-text{font-size:11.5px;font-weight:700;color:rgba(0,0,0,0.75);white-space:nowrap;}
-.f-fill.lost .f-fill-text{color:rgba(255,255,255,0.4);}
-body.light .f-fill-text{color:rgba(0,0,0,0.6);}
+.f-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 12px;min-width:0;background:rgba(170,255,0,0.55);transition:width .6s cubic-bezier(.4,0,.2,1);}
+.f-fill.lost{background:rgba(255,255,255,0.07);}
+.f-fill-text{font-size:11.5px;font-weight:700;color:rgba(0,0,0,0.7);white-space:nowrap;}
+.f-fill.lost .f-fill-text{color:rgba(255,255,255,0.3);}
+body.light .f-fill{background:rgba(92,153,0,0.45);}
+body.light .f-fill-text{color:rgba(255,255,255,0.85);}
+body.light .f-fill.lost{background:rgba(0,0,0,0.08);}
+body.light .f-fill.lost .f-fill-text{color:rgba(0,0,0,0.3);}
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,0.4);width:22px;text-align:right;flex-shrink:0;}
 body.light .f-n{color:rgba(0,0,0,0.45);}
 
@@ -92,7 +94,7 @@ body.light .l-name{color:rgba(0,0,0,0.5);}
 .l-val{font-size:14px;font-weight:900;color:rgba(255,255,255,0.8);}
 body.light .l-val{color:rgba(0,0,0,0.75);}
 
-/* ── Leads Chart ── */
+/* ── Monthly Chart ── */
 .chart-card{padding:22px 24px;margin-top:10px;}
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);}
@@ -100,16 +102,12 @@ body.light .chart-title{color:rgba(0,0,0,0.3);}
 .chart-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
 .chart-wrap{position:relative;width:100%;}
 .chart-svg{width:100%;overflow:visible;}
-.chart-tip{position:absolute;background:#1A1A1A;border:1px solid var(--g-border);border-radius:9px;padding:8px 12px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
-body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:#111;}
-.chart-legend{display:flex;gap:14px;margin-top:12px;}
-.cl{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);}
-body.light .cl{color:rgba(0,0,0,0.35);}
-.cl-dot{width:7px;height:7px;border-radius:50%;}
+.chart-tip{position:absolute;background:#1A1A1A;border:1px solid var(--g-border);border-radius:9px;padding:8px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:var(--g);}
 
 /* ── Responsive ── */
 @media(max-width:800px){.stat-row{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:58px;font-size:8px;}.donut-wrap{flex-direction:column;gap:14px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 14px;}.l-name{min-width:auto;}.chart-card{padding:14px 16px;}}
+@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:58px;font-size:8px;}.donut-wrap{flex-direction:column;gap:14px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 14px;}.chart-card{padding:14px 16px;}}
 </style>
 </head>
 <body>
@@ -124,7 +122,7 @@ body.light .cl{color:rgba(0,0,0,0.35);}
     <span class="ts" id="ts"></span>
     <select class="sel" id="sel-month" onchange="onFilter()">
       <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-      <option value="4" selected>Apr</option><option value="5">May</option><option value="6">Jun</option>
+      <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
       <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
       <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
     </select>
@@ -190,20 +188,15 @@ body.light .cl{color:rgba(0,0,0,0.35);}
   </div>
 </div>
 
-<!-- Leads Incoming Chart -->
+<!-- Monthly Leads Chart -->
 <div class="card chart-card">
   <div class="chart-header">
-    <span class="chart-title">Leads Incoming</span>
+    <span class="chart-title">Leads Incoming by Month</span>
     <span class="chart-badge" id="chart-badge"></span>
   </div>
   <div class="chart-wrap">
     <svg class="chart-svg" id="leads-chart" height="150" viewBox="0 0 700 150" preserveAspectRatio="none"></svg>
     <div class="chart-tip" id="chart-tip"></div>
-  </div>
-  <div class="chart-legend">
-    <div class="cl"><span class="cl-dot" style="background:#AAFF00;"></span>Incoming</div>
-    <div class="cl"><span class="cl-dot" style="background:rgba(170,255,0,0.5);"></span>Contacted</div>
-    <div class="cl"><span class="cl-dot" style="background:rgba(170,255,0,0.25);"></span>Proposed</div>
   </div>
 </div>
 
@@ -232,18 +225,16 @@ function doRefresh(){
   b.textContent='↻'; b.style.opacity='.4';
   setTimeout(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; setTs(); },900);
 }
-
 setTs();
 setInterval(doRefresh, 5*60*1000);
 
-// ── Funnel ──
-// Green palette: brightest → dimmest, lost = muted grey
+// ── Funnel ── single green, no color variance
 const funnel=[
-  {label:'Incoming',    value:'RM 14.4K', count:4, bg:'#AAFF00', pct:57},
-  {label:'Proposed',    value:'RM 44.8K', count:7, bg:'rgba(170,255,0,0.78)', pct:100},
-  {label:'Deposit Due', value:'RM 12.8K', count:2, bg:'rgba(170,255,0,0.55)', pct:29},
-  {label:'Active Build',value:'RM 22.7K', count:5, bg:'rgba(170,255,0,0.38)', pct:71},
-  {label:'Lost',        value:'RM 0',     count:3, bg:'rgba(255,255,255,0.07)', pct:43, lost:true},
+  {label:'Incoming',    value:'RM 14.4K', count:4, pct:57},
+  {label:'Proposed',    value:'RM 44.8K', count:7, pct:100},
+  {label:'Deposit Due', value:'RM 12.8K', count:2, pct:29},
+  {label:'Active Build',value:'RM 22.7K', count:5, pct:71},
+  {label:'Lost',        value:'RM 0',     count:3, pct:43, lost:true},
 ];
 const total=funnel.reduce((s,f)=>s+f.count,0);
 document.getElementById('funnel-badge').textContent=total+' deals';
@@ -251,15 +242,14 @@ const fe=document.getElementById('funnel');
 funnel.forEach(f=>{
   fe.innerHTML+=`<div class="f-row">
     <span class="f-lbl">${f.label}</span>
-    <div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;background:${f.bg};">
+    <div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;">
       <span class="f-fill-text">${f.value}</span>
     </div></div>
     <span class="f-n">${f.count}</span>
   </div>`;
 });
 
-// ── Donut ──
-// All green tones
+// ── Donut — green tones ──
 const sources=[
   {label:'Referral', value:8, color:'#AAFF00'},
   {label:'Threads',  value:5, color:'rgba(170,255,0,0.65)'},
@@ -291,63 +281,32 @@ sources.forEach(s=>{
   </div>`;
 });
 
-// ── Leads Chart ──
+// ── Monthly Leads Chart ──
 (function(){
-  const W=700,H=150,PAD={t:8,r:16,b:28,l:28};
+  const W=700,H=150,PAD={t:10,r:16,b:32,l:32};
   const cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
-  const today=new Date().getDate();
+  const curMonth=new Date().getMonth(); // 0-indexed
 
-  // Cumulative data
-  let sIn=0,sCo=0,sPr=0;
-  const data=[];
-  for(let d=1;d<=today;d++){
-    sIn+=Math.floor(Math.random()*3);
-    sCo+=Math.floor(Math.random()*2);
-    sPr+=Math.floor(Math.random()*2);
-    data.push({day:d,incoming:sIn,contacted:sCo,proposed:sPr});
-  }
-  const maxVal=Math.max(...data.map(d=>d.incoming),1);
-  document.getElementById('chart-badge').textContent=sIn+' total';
+  // Monthly totals: sample data up to current month
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const allData=[
+    {m:'Jan',v:3},{m:'Feb',v:5},{m:'Mar',v:4},{m:'Apr',v:7},
+    {m:'May',v:6},{m:'Jun',v:9},{m:'Jul',v:5},{m:'Aug',v:8},
+    {m:'Sep',v:4},{m:'Oct',v:6},{m:'Nov',v:7},{m:'Dec',v:5},
+  ];
+  // Only show months up to current
+  const data=allData.slice(0,curMonth+1);
+  const totalLeads=data.reduce((s,d)=>s+d.v,0);
+  document.getElementById('chart-badge').textContent=totalLeads+' total this year';
 
+  const maxVal=Math.max(...data.map(d=>d.v),1);
   const svg=document.getElementById('leads-chart');
   const ns='http://www.w3.org/2000/svg';
 
   function xP(i){return PAD.l+(i/(data.length-1||1))*cW;}
   function yP(v){return PAD.t+cH-(v/maxVal)*cH;}
 
-  function smoothPath(pts){
-    if(pts.length<2)return '';
-    let d=`M ${pts[0][0]} ${pts[0][1]}`;
-    for(let i=1;i<pts.length;i++){
-      const[x1,y1]=pts[i-1],[x2,y2]=pts[i],cx=(x1+x2)/2;
-      d+=` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
-    }
-    return d;
-  }
-
-  function makeSeries(pts,stroke,gradId,opacity){
-    const pathD=smoothPath(pts);
-    if(!pathD)return;
-    const last=pts[pts.length-1],first=pts[0];
-    const defs=document.createElementNS(ns,'defs');
-    const grad=document.createElementNS(ns,'linearGradient');
-    grad.setAttribute('id',gradId);grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
-    const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color',stroke);s1.setAttribute('stop-opacity',opacity+'');
-    const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color',stroke);s2.setAttribute('stop-opacity','0');
-    grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);
-    svg.insertBefore(defs,svg.firstChild);
-    const area=document.createElementNS(ns,'path');
-    area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
-    area.setAttribute('fill',`url(#${gradId})`);
-    svg.appendChild(area);
-    const line=document.createElementNS(ns,'path');
-    line.setAttribute('d',pathD);line.setAttribute('fill','none');
-    line.setAttribute('stroke',stroke);line.setAttribute('stroke-width','2');
-    line.setAttribute('stroke-linecap','round');
-    svg.appendChild(line);
-  }
-
-  // Grid
+  // Grid lines
   for(let i=0;i<=4;i++){
     const y=PAD.t+(i/4)*cH;
     const gl=document.createElementNS(ns,'line');
@@ -356,48 +315,91 @@ sources.forEach(s=>{
     gl.setAttribute('stroke','rgba(255,255,255,0.04)');
     gl.setAttribute('stroke-dasharray','3,5');
     svg.appendChild(gl);
+    if(i<4){
+      const val=Math.round(maxVal-(i/4)*maxVal);
+      const t=document.createElementNS(ns,'text');
+      t.setAttribute('x',PAD.l-5);t.setAttribute('y',y+4);
+      t.setAttribute('text-anchor','end');
+      t.setAttribute('fill','rgba(255,255,255,0.18)');
+      t.setAttribute('font-size','8');
+      t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+      t.textContent=val;
+      svg.appendChild(t);
+    }
   }
 
-  // X labels
-  const step=Math.max(1,Math.floor(data.length/6));
+  // X-axis month labels
   data.forEach((d,i)=>{
-    if(i%step!==0&&i!==data.length-1)return;
     const t=document.createElementNS(ns,'text');
-    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+12);
-    t.setAttribute('text-anchor','middle');t.setAttribute('fill','rgba(255,255,255,0.2)');
-    t.setAttribute('font-size','8');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
-    t.textContent=d.day;svg.appendChild(t);
+    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+14);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill', i===curMonth ? '#AAFF00' : 'rgba(255,255,255,0.2)');
+    t.setAttribute('font-size','9');
+    t.setAttribute('font-weight', i===curMonth ? '700' : '500');
+    t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+    t.textContent=d.m;
+    svg.appendChild(t);
   });
 
-  // Series (back-to-front so brightest on top)
-  makeSeries(data.map((d,i)=>[xP(i),yP(d.proposed)]),  '#AAFF00','gPr',0.08);
-  makeSeries(data.map((d,i)=>[xP(i),yP(d.contacted)]), '#AAFF00','gCo',0.14);
-  makeSeries(data.map((d,i)=>[xP(i),yP(d.incoming)]),  '#AAFF00','gIn',0.22);
+  // Smooth path helper
+  function smoothPath(pts){
+    if(pts.length<2)return `M ${pts[0][0]} ${pts[0][1]}`;
+    let d=`M ${pts[0][0]} ${pts[0][1]}`;
+    for(let i=1;i<pts.length;i++){
+      const[x1,y1]=pts[i-1],[x2,y2]=pts[i],cpx=(x1+x2)/2;
+      d+=` C ${cpx} ${y1} ${cpx} ${y2} ${x2} ${y2}`;
+    }
+    return d;
+  }
 
-  // Hover line
-  const hLine=document.createElementNS(ns,'line');
-  hLine.setAttribute('stroke','rgba(170,255,0,0.15)');hLine.setAttribute('stroke-width','1');
-  hLine.setAttribute('y1',PAD.t);hLine.setAttribute('y2',H-PAD.b);hLine.style.opacity='0';
-  svg.appendChild(hLine);
+  const pts=data.map((d,i)=>[xP(i),yP(d.v)]);
+  const pathD=smoothPath(pts);
+  const last=pts[pts.length-1],first=pts[0];
+
+  // Gradient fill
+  const defs=document.createElementNS(ns,'defs');
+  const grad=document.createElementNS(ns,'linearGradient');
+  grad.setAttribute('id','gFill');grad.setAttribute('x1','0');grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#AAFF00');s1.setAttribute('stop-opacity','0.18');
+  const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#AAFF00');s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);
+  svg.insertBefore(defs,svg.firstChild);
+
+  const area=document.createElementNS(ns,'path');
+  area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
+  area.setAttribute('fill','url(#gFill)');
+  svg.appendChild(area);
+
+  const line=document.createElementNS(ns,'path');
+  line.setAttribute('d',pathD);line.setAttribute('fill','none');
+  line.setAttribute('stroke','#AAFF00');line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-linecap','round');
+  svg.appendChild(line);
 
   // Dots
-  const seriesDots=[
-    {key:'incoming',color:'#AAFF00'},
-    {key:'contacted',color:'rgba(170,255,0,0.6)'},
-    {key:'proposed',color:'rgba(170,255,0,0.35)'},
-  ];
-  const allDots=[];
-  seriesDots.forEach(cfg=>{
-    data.forEach((d,i)=>{
-      const dot=document.createElementNS(ns,'circle');
-      dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d[cfg.key]));
-      dot.setAttribute('r','4');dot.setAttribute('fill',cfg.color);
-      dot.setAttribute('stroke','#0C0C0C');dot.setAttribute('stroke-width','2');
-      dot.style.opacity='0';dot.style.transition='opacity 0.12s';
-      svg.appendChild(dot);
-      allDots.push({dot,d,cfg});
-    });
+  const dotEls=[];
+  data.forEach((d,i)=>{
+    const dot=document.createElementNS(ns,'circle');
+    const isCurrent=i===data.length-1;
+    dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d.v));
+    dot.setAttribute('r', isCurrent?'5':'4');
+    dot.setAttribute('fill', isCurrent?'#AAFF00':'#131313');
+    dot.setAttribute('stroke','#AAFF00');
+    dot.setAttribute('stroke-width', isCurrent?'0':'2');
+    if(isCurrent){
+      dot.setAttribute('filter','drop-shadow(0 0 6px rgba(170,255,0,0.7))');
+    }
+    dot.style.transition='opacity 0.12s';
+    svg.appendChild(dot);
+    dotEls.push({dot,d,i});
   });
+
+  // Hover
+  const hLine=document.createElementNS(ns,'line');
+  hLine.setAttribute('stroke','rgba(170,255,0,0.12)');hLine.setAttribute('stroke-width','1');
+  hLine.setAttribute('y1',PAD.t);hLine.setAttribute('y2',H-PAD.b);hLine.style.opacity='0';
+  svg.appendChild(hLine);
 
   const tip=document.getElementById('chart-tip');
   const wrap=svg.closest('.chart-wrap');
@@ -406,20 +408,17 @@ sources.forEach(s=>{
     const mx=(e.clientX-rect.left)*(W/rect.width);
     let best=null,bd=Infinity;
     data.forEach((d,i)=>{const dist=Math.abs(xP(i)-mx);if(dist<bd){bd=dist;best=i;}});
-    if(best===null||bd>40){hide();return;}
-    const d=data[best],cx=xP(best);
-    hLine.setAttribute('x1',cx);hLine.setAttribute('x2',cx);hLine.style.opacity='1';
-    allDots.forEach(item=>item.dot.style.opacity=item.d.day===d.day?'1':'0');
+    if(best===null||bd>50){hide();return;}
+    const d=data[best],px=xP(best);
+    hLine.setAttribute('x1',px);hLine.setAttribute('x2',px);hLine.style.opacity='1';
     tip.style.display='block';
-    tip.style.left=(e.clientX-rect.left+14)+'px';
-    tip.style.top=(e.clientY-rect.top-50)+'px';
-    tip.innerHTML=`<span style="color:rgba(255,255,255,0.4);font-size:10px;">Day ${d.day}</span><br>`
-      +`<span style="color:#AAFF00">↑ ${d.incoming} Incoming</span><br>`
-      +`<span style="color:rgba(170,255,0,0.6)">↑ ${d.contacted} Contacted</span><br>`
-      +`<span style="color:rgba(170,255,0,0.4)">↑ ${d.proposed} Proposed</span>`;
+    const tipLeft=Math.min(e.clientX-rect.left+14, rect.width-100);
+    tip.style.left=tipLeft+'px';
+    tip.style.top=(e.clientY-rect.top-46)+'px';
+    tip.innerHTML=`<span style="color:rgba(255,255,255,0.4);font-size:9px;font-weight:500;">${d.m}</span>&nbsp; ${d.v} leads`;
   });
   wrap.addEventListener('mouseleave',hide);
-  function hide(){tip.style.display='none';hLine.style.opacity='0';allDots.forEach(i=>i.dot.style.opacity='0');}
+  function hide(){tip.style.display='none';hLine.style.opacity='0';}
 })();
 </script>
 </body>
