@@ -22,11 +22,11 @@ body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);colo
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,0.3);}
-.h-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.h-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
 body.light .h-title{color:#111;}
 
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-@media(max-width:400px){.grid{grid-template-columns:1fr;}}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr);}}
 
 .stat{padding:16px 18px;position:relative;}
 .s-accent{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;}
@@ -35,13 +35,15 @@ body.light .h-title{color:#111;}
 .s-sub{font-size:10px;font-weight:500;color:#6B7280;margin-top:6px;}
 body.light .s-sub{color:#9CA3AF;}
 
-.c-amber .s-label{color:#fcd34d;}.c-amber .s-value{color:#FBBF24;}.c-amber .s-accent{background:#FBBF24;}
-.c-green .s-label{color:#6ee7b7;}.c-green .s-value{color:#34D399;}.c-green .s-accent{background:#34D399;}
-.c-blue  .s-label{color:#93c5fd;}.c-blue  .s-value{color:#60A5FA;}.c-blue  .s-accent{background:#60A5FA;}
+.c-amber  .s-label{color:#fcd34d;} .c-amber  .s-value{color:#FBBF24;} .c-amber  .s-accent{background:#FBBF24;}
+.c-green  .s-label{color:#6ee7b7;} .c-green  .s-value{color:#34D399;} .c-green  .s-accent{background:#34D399;}
+.c-blue   .s-label{color:#93c5fd;} .c-blue   .s-value{color:#60A5FA;} .c-blue   .s-accent{background:#60A5FA;}
+.c-teal   .s-label{color:#5eead4;} .c-teal   .s-value{color:#2DD4BF;} .c-teal   .s-accent{background:#2DD4BF;}
 
-body.light .c-amber .s-label{color:#D97706;}.body.light .c-amber .s-value{color:#B45309;}
-body.light .c-green .s-label{color:#059669;}.body.light .c-green .s-value{color:#047857;}
-body.light .c-blue  .s-label{color:#2563EB;}.body.light .c-blue  .s-value{color:#1D4ED8;}
+body.light .c-amber .s-label{color:#D97706;} body.light .c-amber .s-value{color:#B45309;}
+body.light .c-green .s-label{color:#059669;} body.light .c-green .s-value{color:#047857;}
+body.light .c-blue  .s-label{color:#2563EB;} body.light .c-blue  .s-value{color:#1D4ED8;}
+body.light .c-teal  .s-label{color:#0D9488;} body.light .c-teal  .s-value{color:#0F766E;}
 </style>
 </head>
 <body>
@@ -72,6 +74,12 @@ body.light .c-blue  .s-label{color:#2563EB;}.body.light .c-blue  .s-value{color:
     <span class="s-label">Balance Due</span>
     <div class="s-value">0</div>
     <div class="s-sub">Final payment</div>
+  </div>
+  <div class="card stat c-teal">
+    <div class="s-accent"></div>
+    <span class="s-label">Completed</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Fully delivered</div>
   </div>
 </div>
 
