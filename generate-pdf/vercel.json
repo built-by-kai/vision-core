@@ -52,6 +52,10 @@
     {
       "src": "widgets/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "covers/**",
+      "use": "@vercel/static"
     }
   ],
   "headers": [
@@ -169,6 +173,10 @@
     {
       "src": "/widgets/projects",
       "dest": "/widgets/projects.html"
+    },
+    {
+      "src": "/covers/(.*)",
+      "dest": "/covers/$1"
     }
   ]
 }
