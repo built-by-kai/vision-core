@@ -618,14 +618,26 @@ def update_phase_task_checkboxes(phase_page_id, task_entries, hdrs):
     )
 
 
-def create_task(project_page_id, phase_page_id, task_no, task_name, priority, hdrs):
+PHASE_STAGE_LABELS = {
+    0: "Phase 0 — Pre-Build",
+    1: "Phase 1",
+    2: "Phase 2",
+    3: "Phase 3",
+    4: "Phase 4",
+    5: "Phase 5",
+}
+
+
+def create_task(project_page_id, phase_page_id, phase_no, task_no, task_name, priority, hdrs):
+    stage_label = PHASE_STAGE_LABELS.get(phase_no, f"Phase {phase_no}")
     props = {
-        "Task Name": {"title": [{"text": {"content": task_name}}]},
-        "Task No.":  {"number": task_no},
-        "Status":    {"select": {"name": "Not Started"}},
-        "Priority":  {"select": {"name": priority}},
-        "Phase":     {"relation": [{"id": phase_page_id}]},
-        "Project":   {"relation": [{"id": project_page_id}]},
+        "Task Name":   {"title": [{"text": {"content": task_name}}]},
+        "Task No.":    {"number": task_no},
+        "Status":      {"select": {"name": "Not Started"}},
+        "Priority":    {"select": {"name": priority}},
+        "Phase Stage": {"select": {"name": stage_label}},
+        "Phase":       {"relation": [{"id": phase_page_id}]},
+        "Project":     {"relation": [{"id": project_page_id}]},
     }
     body = {"parent": {"database_id": TASKS_DB}, "properties": props}
     r = requests.post("https://api.notion.com/v1/pages", headers=hdrs, json=body, timeout=15)
@@ -716,7 +728,7 @@ class handler(BaseHTTPRequestHandler):
                 # Collect (task_page_id, task_name, priority) for linked mention blocks
                 task_entries = []
                 for task_name, priority in phase_def["tasks"]:
-                    task_id = create_task(page_id, phase_id, task_counter, task_name, priority, hdrs)
+                    task_id = create_task(page_id, phase_id, phase_no, task_counter, task_name, priority, hdrs)
                     task_entries.append((task_id, task_name, priority))
                     task_counter += 1
                     total_tasks  += 1
