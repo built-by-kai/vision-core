@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Opxio — Revenue OS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html{height:100%;}
+body{font-family:'Inter',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;transition:background 0.3s;overflow-y:auto;height:100%;}
+body.light{background:#fff;color:#111;}
+
+.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s;}
+.card:hover{border-color:rgba(255,255,255,0.12);}
+body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
+body.light .card:hover{border-color:rgba(0,0,0,0.1);}
+
+/* buttons */
+.toggle-btn,.refresh-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:.3px;}
+.toggle-btn:hover,.refresh-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+body.light .toggle-btn,body.light .refresh-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+
+/* header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,0.3);}
+.h-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+body.light .h-title{color:#111;}
+.last-updated{font-size:9px;font-weight:500;color:rgba(255,255,255,0.2);}
+body.light .last-updated{color:rgba(0,0,0,0.25);}
+
+/* section label */
+.section-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);margin:14px 0 8px;}
+body.light .section-label{color:rgba(0,0,0,0.3);}
+
+/* grids */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
+@media(max-width:500px){.grid-3,.grid-2{grid-template-columns:repeat(2,1fr);}}
+
+/* stat cards */
+.stat{padding:16px 18px;position:relative;}
+.s-accent{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;}
+.s-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block;}
+.s-value{font-size:28px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
+.s-sub{font-size:10px;font-weight:500;color:#6B7280;margin-top:6px;}
+body.light .s-sub{color:#9CA3AF;}
+
+/* colours */
+.c-blue   .s-label{color:#93c5fd;} .c-blue   .s-value{color:#60A5FA;} .c-blue   .s-accent{background:#60A5FA;}
+.c-green  .s-label{color:#6ee7b7;} .c-green  .s-value{color:#34D399;} .c-green  .s-accent{background:#34D399;}
+.c-amber  .s-label{color:#fcd34d;} .c-amber  .s-value{color:#FBBF24;} .c-amber  .s-accent{background:#FBBF24;}
+.c-purple .s-label{color:#c4b5fd;} .c-purple .s-value{color:#A78BFA;} .c-purple .s-accent{background:#A78BFA;}
+.c-teal   .s-label{color:#5eead4;} .c-teal   .s-value{color:#2DD4BF;} .c-teal   .s-accent{background:#2DD4BF;}
+.c-red    .s-label{color:#fca5a5;} .c-red    .s-value{color:#F87171;} .c-red    .s-accent{background:#F87171;}
+
+body.light .c-blue   .s-label{color:#2563EB;} body.light .c-blue   .s-value{color:#1D4ED8;}
+body.light .c-green  .s-label{color:#059669;} body.light .c-green  .s-value{color:#047857;}
+body.light .c-amber  .s-label{color:#D97706;} body.light .c-amber  .s-value{color:#B45309;}
+body.light .c-purple .s-label{color:#7C3AED;} body.light .c-purple .s-value{color:#6D28D9;}
+body.light .c-teal   .s-label{color:#0D9488;} body.light .c-teal   .s-value{color:#0F766E;}
+body.light .c-red    .s-label{color:#DC2626;} body.light .c-red    .s-value{color:#B91C1C;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow">Opxio · Finance</p>
+    <h1 class="h-title">Revenue OS</h1>
+  </div>
+  <div class="h-right">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="refresh-btn" onclick="doRefresh()" id="refresh-btn">↻ Refresh</button>
+    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+  </div>
+</div>
+
+<!-- Quotations -->
+<div class="section-label">Quotations</div>
+<div class="grid-3">
+  <div class="card stat c-blue">
+    <div class="s-accent"></div>
+    <span class="s-label">Issued</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Sent, awaiting reply</div>
+  </div>
+  <div class="card stat c-green">
+    <div class="s-accent"></div>
+    <span class="s-label">Approved</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Client confirmed</div>
+  </div>
+  <div class="card stat c-red">
+    <div class="s-accent"></div>
+    <span class="s-label">Rejected</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Declined or archived</div>
+  </div>
+</div>
+
+<!-- Invoices -->
+<div class="section-label">Invoices</div>
+<div class="grid-3">
+  <div class="card stat c-amber">
+    <div class="s-accent"></div>
+    <span class="s-label">Deposit Pending</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Awaiting deposit</div>
+  </div>
+  <div class="card stat c-purple">
+    <div class="s-accent"></div>
+    <span class="s-label">Balance Pending</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Final payment due</div>
+  </div>
+  <div class="card stat c-teal">
+    <div class="s-accent"></div>
+    <span class="s-label">Fully Paid</span>
+    <div class="s-value">0</div>
+    <div class="s-sub">Full payment received</div>
+  </div>
+</div>
+
+<!-- Revenue totals -->
+<div class="grid-2">
+  <div class="card stat c-green">
+    <div class="s-accent"></div>
+    <span class="s-label">Total Collected</span>
+    <div class="s-value">RM 0</div>
+    <div class="s-sub">Deposits + full payments</div>
+  </div>
+  <div class="card stat c-amber">
+    <div class="s-accent"></div>
+    <span class="s-label">Outstanding</span>
+    <div class="s-value">RM 0</div>
+    <div class="s-sub">Balance still owed</div>
+  </div>
+</div>
+
+<script>
+let isLight = false;
+function toggleMode() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    'Updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+function doRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '↻';
+  btn.style.opacity = '0.4';
+  setTimeout(() => {
+    btn.textContent = '↻ Refresh';
+    btn.style.opacity = '1';
+    updateTimestamp();
+  }, 800);
+}
+
+updateTimestamp();
+setInterval(doRefresh, 5 * 60 * 1000);
+</script>
+</body>
+</html>
