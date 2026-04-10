@@ -367,7 +367,8 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
       Deals    → Lead/Deal CRM page relation
       PIC      → actual contact person relation (separate from Deals)
     """
-    project_name = f"{company_name} — {quotation_no}" if company_name else quotation_no
+    type_label = package_name or quote_type or quotation_no
+    project_name = f"{company_name} — {type_label}" if company_name else type_label
 
     props = {
         "Project Name": {"title": [{"text": {"content": project_name}}]},
