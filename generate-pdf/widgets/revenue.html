@@ -29,49 +29,32 @@ body.light .ts{color:rgba(0,0,0,.22);}
 /* section label */
 .sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
 body.light .sec-lbl{color:rgba(0,0,0,.28);}
-.sec-lbl:first-of-type{margin-top:0;}
 
-/* stat grids */
+/* grids */
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-@media(max-width:640px){.g4{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:500px){.g3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.g4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.g3{grid-template-columns:repeat(2,1fr);}}
 
 /* stat card */
 .stat{padding:16px 18px;position:relative;}
-.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);}
-.s-dot.amber{background:#FBBF24;}
-.s-dot.red{background:#F87171;}
-.s-dot.blue{background:#60A5FA;}
-.s-dot.teal{background:#2DD4BF;}
-.s-dot.purple{background:#A78BFA;}
-.s-dot.muted{background:rgba(255,255,255,.2);}
-
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.6;}
 .s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
 body.light .s-lbl{color:rgba(0,0,0,.4);}
-.s-val{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff;}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:#fff;}
 body.light .s-val{color:#111;}
-.s-val.green{color:var(--g);}
-.s-val.amber{color:#FBBF24;}
-.s-val.red{color:#F87171;}
-.s-val.blue{color:#60A5FA;}
-.s-val.teal{color:#2DD4BF;}
-.s-val.purple{color:#A78BFA;}
+.s-val.accent{color:var(--g);}
 .s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
 body.light .s-sub{color:rgba(0,0,0,.28);}
 
-/* ── TOTAL BAR ── */
-.total-bar{padding:14px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
-.tb-item{display:flex;flex-direction:column;gap:3px;}
-.tb-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.28);}
-body.light .tb-lbl{color:rgba(0,0,0,.3);}
-.tb-val{font-size:20px;font-weight:900;letter-spacing:-.8px;color:#fff;}
-body.light .tb-val{color:#111;}
-.tb-val.green{color:var(--g);}
-.tb-val.red{color:#F87171;}
-.tb-sep{width:1px;height:36px;background:rgba(255,255,255,.07);align-self:center;}
-body.light .tb-sep{background:rgba(0,0,0,.08);}
+/* invoice card — bigger RM amount */
+.inv-stat{padding:18px 20px;position:relative;}
+.inv-stat .s-dot{top:16px;right:16px;}
+.inv-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:12px;display:block;}
+body.light .inv-lbl{color:rgba(0,0,0,.4);}
+.inv-val{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;color:var(--g);}
+.inv-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);margin-top:6px;}
+body.light .inv-count{color:rgba(0,0,0,.3);}
 </style></head><body>
 
 <div class="header">
@@ -83,78 +66,55 @@ body.light .tb-sep{background:rgba(0,0,0,.08);}
   </div>
 </div>
 
-<!-- TOTALS BAR -->
-<div class="card total-bar" style="margin-bottom:10px;">
-  <div class="tb-item">
-    <span class="tb-lbl">Total Pipeline</span>
-    <span class="tb-val" id="t-pipeline">RM 0</span>
-  </div>
-  <div class="tb-sep"></div>
-  <div class="tb-item">
-    <span class="tb-lbl">Total Collected</span>
-    <span class="tb-val green" id="t-collected">RM 0</span>
-  </div>
-  <div class="tb-sep"></div>
-  <div class="tb-item">
-    <span class="tb-lbl">Outstanding</span>
-    <span class="tb-val red" id="t-outstanding">RM 0</span>
-  </div>
-  <div class="tb-sep"></div>
-  <div class="tb-item">
-    <span class="tb-lbl">Lost Revenue</span>
-    <span class="tb-val" style="color:rgba(255,255,255,.35);" id="t-lost">RM 0</span>
-  </div>
-</div>
-
-<!-- QUOTATIONS -->
+<!-- QUOTATIONS BY STATUS -->
 <div class="sec-lbl">Quotations</div>
 <div class="g4">
   <div class="card stat">
-    <div class="s-dot blue"></div>
-    <span class="s-lbl">Total Quoted</span>
-    <div class="s-val blue" id="q-total">RM 0</div>
-    <div class="s-sub">All quotes issued</div>
+    <div class="s-dot"></div>
+    <span class="s-lbl">Draft</span>
+    <div class="s-val" id="q-draft">0</div>
+    <div class="s-sub">Not yet sent</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <span class="s-lbl">Issued</span>
+    <div class="s-val" id="q-issued">0</div>
+    <div class="s-sub">Sent, awaiting reply</div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <span class="s-lbl">Approved</span>
-    <div class="s-val green" id="q-approved">RM 0</div>
+    <div class="s-val accent" id="q-approved">0</div>
     <div class="s-sub">Client confirmed</div>
   </div>
   <div class="card stat">
-    <div class="s-dot amber"></div>
-    <span class="s-lbl">Pending Reply</span>
-    <div class="s-val amber" id="q-pending">RM 0</div>
-    <div class="s-sub">Sent, awaiting response</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot red"></div>
+    <div class="s-dot" style="opacity:.25;"></div>
     <span class="s-lbl">Rejected</span>
-    <div class="s-val red" id="q-rejected">RM 0</div>
+    <div class="s-val" id="q-rejected">0</div>
     <div class="s-sub">Declined or expired</div>
   </div>
 </div>
 
-<!-- INVOICES -->
+<!-- INVOICES BY STATUS -->
 <div class="sec-lbl">Invoices</div>
 <div class="g3">
-  <div class="card stat">
-    <div class="s-dot amber"></div>
-    <span class="s-lbl">Deposit Pending</span>
-    <div class="s-val amber" id="i-deposit">RM 0</div>
-    <div class="s-sub">Awaiting first payment</div>
+  <div class="card inv-stat">
+    <div class="s-dot"></div>
+    <span class="inv-lbl">Deposit Pending</span>
+    <div class="inv-val" id="i-deposit">RM 0</div>
+    <div class="inv-count" id="i-deposit-count">0 invoices</div>
   </div>
-  <div class="card stat">
-    <div class="s-dot purple"></div>
-    <span class="s-lbl">Balance Pending</span>
-    <div class="s-val purple" id="i-balance">RM 0</div>
-    <div class="s-sub">Final payment due</div>
+  <div class="card inv-stat">
+    <div class="s-dot"></div>
+    <span class="inv-lbl">Balance Pending</span>
+    <div class="inv-val" id="i-balance">RM 0</div>
+    <div class="inv-count" id="i-balance-count">0 invoices</div>
   </div>
-  <div class="card stat">
-    <div class="s-dot teal"></div>
-    <span class="s-lbl">Fully Paid</span>
-    <div class="s-val teal" id="i-paid">RM 0</div>
-    <div class="s-sub">Cleared invoices</div>
+  <div class="card inv-stat">
+    <div class="s-dot"></div>
+    <span class="inv-lbl">Fully Paid</span>
+    <div class="inv-val" id="i-paid">RM 0</div>
+    <div class="inv-count" id="i-paid-count">0 invoices</div>
   </div>
 </div>
 
@@ -170,37 +130,26 @@ function fmtRM(n){
   return 'RM '+Math.round(n).toLocaleString();
 }
 
-// TODO: wire to Notion API — pull from Quotations DB and Invoice DB
-// Sample data below
+// TODO: wire to Notion API — Quotations DB + Invoice DB
 const data = {
-  qTotal:    0,
-  qApproved: 0,
-  qPending:  0,
-  qRejected: 0,
-  iDeposit:  0,
-  iBalance:  0,
-  iPaid:     0,
+  qDraft:0, qIssued:0, qApproved:0, qRejected:0,
+  iDepositAmt:0,  iDepositCount:0,
+  iBalanceAmt:0,  iBalanceCount:0,
+  iPaidAmt:0,     iPaidCount:0,
 };
 
 function render(d){
-  const pipeline = d.qApproved + d.qPending;
-  const collected = d.iPaid;
-  const outstanding = d.iDeposit + d.iBalance;
-  const lost = d.qRejected;
+  document.getElementById('q-draft').textContent    = d.qDraft;
+  document.getElementById('q-issued').textContent   = d.qIssued;
+  document.getElementById('q-approved').textContent = d.qApproved;
+  document.getElementById('q-rejected').textContent = d.qRejected;
 
-  document.getElementById('t-pipeline').textContent   = fmtRM(pipeline);
-  document.getElementById('t-collected').textContent  = fmtRM(collected);
-  document.getElementById('t-outstanding').textContent= fmtRM(outstanding);
-  document.getElementById('t-lost').textContent       = fmtRM(lost);
-
-  document.getElementById('q-total').textContent    = fmtRM(d.qTotal);
-  document.getElementById('q-approved').textContent = fmtRM(d.qApproved);
-  document.getElementById('q-pending').textContent  = fmtRM(d.qPending);
-  document.getElementById('q-rejected').textContent = fmtRM(d.qRejected);
-
-  document.getElementById('i-deposit').textContent  = fmtRM(d.iDeposit);
-  document.getElementById('i-balance').textContent  = fmtRM(d.iBalance);
-  document.getElementById('i-paid').textContent     = fmtRM(d.iPaid);
+  document.getElementById('i-deposit').textContent       = fmtRM(d.iDepositAmt);
+  document.getElementById('i-deposit-count').textContent = d.iDepositCount + ' invoice' + (d.iDepositCount!==1?'s':'');
+  document.getElementById('i-balance').textContent       = fmtRM(d.iBalanceAmt);
+  document.getElementById('i-balance-count').textContent = d.iBalanceCount + ' invoice' + (d.iBalanceCount!==1?'s':'');
+  document.getElementById('i-paid').textContent          = fmtRM(d.iPaidAmt);
+  document.getElementById('i-paid-count').textContent    = d.iPaidCount + ' invoice' + (d.iPaidCount!==1?'s':'');
 }
 
 render(data);
