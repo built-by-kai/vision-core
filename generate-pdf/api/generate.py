@@ -391,14 +391,17 @@ def fetch_quotation_data(page_id):
                     catalog_price = 0
                     if cp_prop.get("type") == "rollup":
                         rl = cp_prop.get("rollup", {})
-                        catalog_price = (rl.get("number") or
-                                         next((a.get("number", 0) for a in rl.get("array", [])
-                                               if a.get("type") == "number"), 0))
+                        raw_cp = (rl.get("number") or
+                                  next((a.get("number") for a in rl.get("array", [])
+                                        if a.get("type") == "number"), None))
+                        catalog_price = float(raw_cp) if raw_cp is not None else 0
                     elif cp_prop.get("type") == "number":
-                        catalog_price = cp_prop.get("number") or 0
+                        raw_cp = cp_prop.get("number")
+                        catalog_price = float(raw_cp) if raw_cp is not None else 0
 
                     # Unit Price — manual discount override; fall back to Catalog Price
-                    manual_price = rp.get("Unit Price", {}).get("number") or 0
+                    raw_up = rp.get("Unit Price", {}).get("number")
+                    manual_price = float(raw_up) if raw_up is not None else 0
                     item["catalog_price"] = catalog_price
                     item["unit_price"]    = manual_price if manual_price > 0 else catalog_price
                     item["is_discounted"] = (manual_price > 0 and manual_price != catalog_price)
@@ -594,9 +597,9 @@ def generate_pdf(data):
 
     total = 0.0
     for item in data.get("line_items", []):
-        qty            = float(item.get("qty", 1))
-        price          = float(item.get("unit_price", 0))
-        catalog_price  = float(item.get("catalog_price", 0))
+        qty            = float(item.get("qty") or 1)
+        price          = float(item.get("unit_price") or 0)
+        catalog_price  = float(item.get("catalog_price") or 0)
         is_discounted  = item.get("is_discounted", False)
         amt            = qty * price
         total         += amt
@@ -1358,8 +1361,8 @@ def generate_invoice_pdf(data):
 
     total = 0.0
     for item in data.get("line_items", []):
-        qty   = float(item.get("qty", 1))
-        price = float(item.get("unit_price", 0))
+        qty   = float(item.get("qty") or 1)
+        price = float(item.get("unit_price") or 0)
         amt   = qty * price
         total += amt
 
@@ -2055,3 +2058,4 @@ class handler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         print("[HTTP] " + (format % args), file=sys.stderr)
+
