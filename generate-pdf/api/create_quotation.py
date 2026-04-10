@@ -354,6 +354,35 @@ def append_template_blocks(page_id, hdrs):
         print(f"[WARN] Template blocks {r.status_code}: {r.text[:200]}", file=sys.stderr)
 
 
+def ensure_product_relation(db_id, hdrs):
+    """
+    Patch the 'Product' relation property on the Products & Services DB to point
+    to the current Catalogue DB. Needed because the Notion template's inline DB
+    still has the old relation target — this brings it up to date before any rows
+    are inserted, so the Product name column and Catalog Price rollup work correctly.
+    Non-fatal if it fails (rows are still created, just without the relation link).
+    """
+    r = requests.patch(
+        f"https://api.notion.com/v1/databases/{db_id}",
+        headers=hdrs,
+        json={
+            "properties": {
+                "Product": {
+                    "relation": {
+                        "database_id": PRODUCTS_DB,
+                        "single_property": {},
+                    }
+                }
+            }
+        },
+        timeout=15,
+    )
+    if r.ok:
+        print(f"[INFO] Product relation updated to Catalogue DB on {db_id[:8]}", file=sys.stderr)
+    else:
+        print(f"[WARN] Could not update Product relation: {r.status_code}: {r.text[:200]}", file=sys.stderr)
+
+
 def create_line_item(db_id, product_id, product_name, price, hdrs, description=""):
     """
     Create a line item in the Products & Services DB.
@@ -774,6 +803,10 @@ def process(payload):
                     # still try to create one so the quotation isn't empty.
                     print(f"[WARN] Template DB not found after retries — creating fallback DB", file=sys.stderr)
                 li_db_id = create_line_items_db(quot_id, hdrs)
+
+            # Ensure the Product relation points to the current Catalogue DB.
+            # The Notion template's inline DB may still reference the old DB.
+            ensure_product_relation(li_db_id, hdrs)
 
             # Create Base OS FIRST (gets No. 1) so it has the lowest row number.
             # The template DB should be sorted ascending by No., making No. 1
