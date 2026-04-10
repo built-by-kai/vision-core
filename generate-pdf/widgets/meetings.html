@@ -8,40 +8,46 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
-.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+/* Header */
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
-body.light .eyebrow{color:rgba(0,0,0,.28);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.3);}
 .h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 body.light .h-title{color:#111;}
 /* Panel */
 .panel{padding:14px 16px;}
-.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.panel-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
+.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.panel-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.82;}
 body.light .panel-lbl{color:#111;}
-.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
-/* Row */
-.m-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 9px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+/* Meeting row */
+.m-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
 .m-row:last-child{border-bottom:none;padding-bottom:0;}
 .m-row:first-child{padding-top:0;}
 body.light .m-row{border-bottom-color:rgba(0,0,0,.05);}
-.m-bar{width:2px;height:34px;border-radius:99px;flex-shrink:0;background:var(--g);}
-.m-time-col{display:flex;flex-direction:column;width:38px;flex-shrink:0;}
-.m-time{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);}
+/* Green left bar */
+.m-bar{width:3px;height:38px;border-radius:99px;flex-shrink:0;background:var(--g);opacity:.7;}
+/* Date + time column — DATE FIRST */
+.m-dt{display:flex;flex-direction:column;width:48px;flex-shrink:0;gap:1px;}
+.m-date{font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap;}
+body.light .m-date{color:#111;}
+.m-time{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.5);white-space:nowrap;}
 body.light .m-time{color:rgba(0,0,0,.45);}
-.m-date{font-size:8.5px;font-weight:500;color:rgba(255,255,255,.25);}
-body.light .m-date{color:rgba(0,0,0,.3);}
+/* Info */
 .m-info{flex:1;min-width:0;}
-.m-client{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.m-client{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;}
 body.light .m-client{color:#111;}
-.m-proj{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.35);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .m-proj{color:rgba(0,0,0,.35);}
-.m-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);white-space:nowrap;flex-shrink:0;}
-.m-today{font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--g);color:#000;margin-left:4px;vertical-align:middle;}
+.m-proj{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.45);margin-top:2px;}
+body.light .m-proj{color:rgba(0,0,0,.4);}
+/* Today tag */
+.today-tag{font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--g);color:#000;flex-shrink:0;}
+/* Type badge */
+.m-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--gm);color:var(--g);border:1px solid var(--gb);white-space:nowrap;flex-shrink:0;}
 </style></head><body>
 <div class="header">
   <div><p class="eyebrow">Opxio · Schedule</p><h1 class="h-title">Upcoming Meetings</h1></div>
@@ -50,7 +56,7 @@ body.light .m-proj{color:rgba(0,0,0,.35);}
 <div class="card panel">
   <div class="panel-top">
     <span class="panel-lbl">This Week</span>
-    <span class="panel-badge" id="badge">5 meetings</span>
+    <span class="panel-badge">5 meetings</span>
   </div>
   <div id="list"></div>
 </div>
@@ -58,19 +64,22 @@ body.light .m-proj{color:rgba(0,0,0,.35);}
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 const meetings=[
-  {time:'10:00 AM',date:'14 Apr',client:'Revvup Motorsport', proj:'Operations OS',type:'Kickoff',today:true},
-  {time:'2:30 PM', date:'14 Apr',client:'Pinnacle Advisory',proj:'Business OS',   type:'Discovery',today:true},
-  {time:'11:00 AM',date:'15 Apr',client:'Creaitors Studio', proj:'Marketing OS',  type:'Follow-up',today:false},
-  {time:'3:00 PM', date:'16 Apr',client:'Atlas Creative',   proj:'Sales OS',      type:'Proposal',today:false},
-  {time:'9:00 AM', date:'17 Apr',client:'Momentum Agency',  proj:'Starter OS',    type:'Discovery',today:false},
+  {date:'14 Apr',time:'10:00 AM',client:'Revvup Motorsport', proj:'Operations OS',type:'Kickoff',  today:true},
+  {date:'14 Apr',time:'2:30 PM', client:'Pinnacle Advisory',proj:'Business OS',   type:'Discovery',today:true},
+  {date:'15 Apr',time:'11:00 AM',client:'Creaitors Studio', proj:'Marketing OS',  type:'Follow-up',today:false},
+  {date:'16 Apr',time:'3:00 PM', client:'Atlas Creative',   proj:'Sales OS',      type:'Proposal', today:false},
+  {date:'17 Apr',time:'9:00 AM', client:'Momentum Agency',  proj:'Starter OS',    type:'Discovery',today:false},
 ];
 const el=document.getElementById('list');
 meetings.forEach(m=>{
   el.innerHTML+=`<div class="m-row">
     <div class="m-bar"></div>
-    <div class="m-time-col"><span class="m-time">${m.time}</span><span class="m-date">${m.date}</span></div>
+    <div class="m-dt">
+      <span class="m-date">${m.date}</span>
+      <span class="m-time">${m.time}</span>
+    </div>
     <div class="m-info">
-      <div class="m-client">${m.client}${m.today?'<span class="m-today">TODAY</span>':''}</div>
+      <div class="m-client">${m.client}${m.today?'<span class="today-tag">TODAY</span>':''}</div>
       <div class="m-proj">${m.proj}</div>
     </div>
     <span class="m-badge">${m.type}</span>
