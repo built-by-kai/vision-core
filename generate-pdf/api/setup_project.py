@@ -123,10 +123,19 @@ def fetch_templates(os_type, hdrs):
     """
     Query the Phase Templates DB filtered by OS Type, sorted by Phase No. ascending.
     Tasks are loaded from Phase Template Tasks DB (editable per phase).
+
+    Source OS support: if a phase row has Source OS + Source Phase Nos. set,
+    tasks are fetched from that OS for those phase numbers instead of the local rows.
+    This allows Business OS Phase 2 to pull directly from Operations OS Phase 2+3 tasks,
+    and Business OS Phase 3 to pull from Sales OS Phase 2+3 — single source of truth.
+
     Returns a list of phase defs: [{phase_no, phase, deliverables, tasks: [(name, priority), ...]}, ...]
     """
     # Load all tasks for this OS upfront in one query
     tasks_by_phase = fetch_tasks_for_os(os_type, hdrs)
+
+    # Cache for any source OS task lookups (avoid re-fetching for multiple phases)
+    source_os_cache = {}
 
     payload = {
         "filter": {
@@ -162,27 +171,60 @@ def fetch_templates(os_type, hdrs):
             for t in props.get("Deliverables", {}).get("rich_text", [])
         )
 
-        # Tasks come from Phase Template Tasks DB — fall back to text field if none found
-        tasks = tasks_by_phase.get(phase_no, [])
-        if not tasks:
-            tasks_raw = "".join(
-                t.get("plain_text", "")
-                for t in props.get("Tasks", {}).get("rich_text", [])
-            )
-            for line in tasks_raw.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                if "|" in line:
-                    parts = line.split("|", 1)
-                    task_name = parts[0].strip()
-                    priority  = parts[1].strip()
-                    if priority not in ("High", "Medium", "Low"):
-                        priority = "Medium"
-                else:
-                    task_name = line
-                    priority  = "Medium"
-                tasks.append((task_name, priority))
+        # ── Source OS cross-reference (e.g. Business OS → Operations OS) ──
+        source_os = (props.get("Source OS", {}).get("select") or {}).get("name", "")
+        source_phase_nos_raw = "".join(
+            t.get("plain_text", "")
+            for t in props.get("Source Phase Nos.", {}).get("rich_text", [])
+        ).strip()
+
+        if source_os and source_phase_nos_raw:
+            # Parse comma-separated phase numbers
+            source_phase_nos = [
+                int(n.strip())
+                for n in source_phase_nos_raw.split(",")
+                if n.strip().isdigit()
+            ]
+            # Fetch source OS tasks (cached per OS to avoid duplicate API calls)
+            if source_os not in source_os_cache:
+                print(
+                    "[INFO] Fetching source tasks: " + source_os +
+                    " phases " + source_phase_nos_raw,
+                    file=sys.stderr,
+                )
+                source_os_cache[source_os] = fetch_tasks_for_os(source_os, hdrs)
+            source_tasks = source_os_cache[source_os]
+
+            # Combine tasks from the specified source phase numbers, deduplicating by name
+            tasks = []
+            seen_names = set()
+            for spno in source_phase_nos:
+                for task_name, priority in source_tasks.get(spno, []):
+                    if task_name not in seen_names:
+                        seen_names.add(task_name)
+                        tasks.append((task_name, priority))
+        else:
+            # Tasks come from Phase Template Tasks DB — fall back to text field if none found
+            tasks = tasks_by_phase.get(phase_no, [])
+            if not tasks:
+                tasks_raw = "".join(
+                    t.get("plain_text", "")
+                    for t in props.get("Tasks", {}).get("rich_text", [])
+                )
+                for line in tasks_raw.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if "|" in line:
+                        parts = line.split("|", 1)
+                        task_name = parts[0].strip()
+                        priority  = parts[1].strip()
+                        if priority not in ("High", "Medium", "Low"):
+                            priority = "Medium"
+                    else:
+                        task_name = line
+                        priority  = "Medium"
+                    tasks.append((task_name, priority))
 
         phases.append({
             "phase_no":     phase_no,
@@ -343,8 +385,10 @@ def update_phase_task_checkboxes(phase_page_id, task_entries, hdrs):
     )
 
 
-def create_task(project_page_id, phase_page_id, phase_no, task_no, task_name, priority, hdrs):
-    stage_label = PHASE_STAGE_LABELS.get(phase_no, "Phase " + str(phase_no))
+def create_task(project_page_id, phase_page_id, phase_no, task_no, task_name, priority, hdrs,
+               stage_label=None):
+    if stage_label is None:
+        stage_label = PHASE_STAGE_LABELS.get(phase_no, "Phase " + str(phase_no))
     props = {
         "Task Name":   {"title": [{"text": {"content": task_name}}]},
         "Task No.":    {"number": task_no},
@@ -461,10 +505,12 @@ class handler(BaseHTTPRequestHandler):
 
                 # Collect (task_page_id, task_name, priority) for linked mention blocks
                 task_entries = []
+                phase_stage_label = phase_def["phase"]  # use actual phase name from template
                 for task_name, priority in phase_def["tasks"]:
                     task_id = create_task(
                         page_id, phase_id, phase_no,
-                        task_counter, task_name, priority, hdrs
+                        task_counter, task_name, priority, hdrs,
+                        stage_label=phase_stage_label,
                     )
                     task_entries.append((task_id, task_name, priority))
                     task_counter += 1
