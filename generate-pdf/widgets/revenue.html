@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Opxio — Revenue OS</title>
+<title>Opxio — Revenue</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
@@ -8,13 +8,16 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
-.card:hover{border-color:rgba(170,255,0,.14);}
+.card:hover{border-color:rgba(170,255,0,.1);}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .h-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
@@ -22,24 +25,8 @@ body.light .eyebrow{color:rgba(0,0,0,.28);}
 body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
-/* Section label */
-.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.7;margin:14px 0 8px;}
-body.light .sec-lbl{color:#111;opacity:.65;}
-/* Grids */
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
-@media(max-width:500px){.g3,.g2{grid-template-columns:repeat(2,1fr);}}
-/* Stat cards */
-.stat{padding:16px 18px;position:relative;}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
-.stat:hover::before{opacity:1;}
-.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.88;margin-bottom:10px;display:block;}
-body.light .s-lbl{color:#111;opacity:.85;}
-.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
-.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
-body.light .s-sub{color:rgba(0,0,0,.3);}
-/* Goal card */
+
+/* ── GOAL CARD ── */
 .goal-card{padding:22px 24px;}
 .goal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;}
 .goal-ey{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.28);margin-bottom:6px;}
@@ -48,43 +35,58 @@ body.light .goal-ey{color:rgba(0,0,0,.32);}
 .goal-of{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
 body.light .goal-of{color:rgba(0,0,0,.35);}
 .goal-tv{cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.18);padding-bottom:1px;transition:all .2s;}
-.goal-tv:hover{border-color:rgba(255,255,255,.45);color:rgba(255,255,255,.65);}
-body.light .goal-tv{border-bottom-color:rgba(0,0,0,.2);}
-/* Pencil icon — subtle, matches muted text */
-.edit-ic{font-size:11px;color:rgba(255,255,255,.22);cursor:pointer;transition:color .2s;line-height:1;}
+.goal-tv:hover{color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.4);}
+.edit-ic{font-size:11px;color:rgba(255,255,255,.22);cursor:pointer;transition:color .2s;}
 .edit-ic:hover{color:var(--g);}
-body.light .edit-ic{color:rgba(0,0,0,.25);}
-body.light .edit-ic:hover{color:var(--g);}
 .tinput-wrap{display:none;align-items:center;gap:6px;margin-top:8px;}
 .tinput-wrap.show{display:flex;}
 .tinput{background:#252525;border:1px solid rgba(255,255,255,.15);color:#fff;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;padding:5px 10px;border-radius:7px;width:120px;outline:none;transition:border-color .2s;}
-.tinput:focus{border-color:rgba(170,255,0,.5);}
+.tinput:focus{border-color:var(--gb);}
 body.light .tinput{background:#EFEFEF;border-color:rgba(0,0,0,.12);color:#111;}
 .set-btn{background:var(--g);color:#000;border:none;font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;}
-.set-btn:hover{opacity:.85;}
-/* Percentage — neon green */
 .goal-pct{font-size:40px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--g);}
 .goal-pct-sub{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.28);margin-top:4px;}
 body.light .goal-pct-sub{color:rgba(0,0,0,.3);}
-/* Progress bar */
 .bar-track{width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.06);position:relative;}
 body.light .bar-track{background:rgba(0,0,0,.08);}
 .bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#059669,#AAFF00);position:relative;transition:width 1.1s cubic-bezier(.4,0,.2,1);min-width:0;}
-/* Dot: no border, smaller (10px), simple glow */
-.bar-fill::after{
-  content:'';position:absolute;right:-5px;top:50%;
-  transform:translateY(-50%);
-  width:10px;height:10px;border-radius:50%;
-  background:var(--g);
-  box-shadow:0 0 8px rgba(170,255,0,.7);
-}
+.bar-fill::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--g);box-shadow:0 0 8px rgba(170,255,0,.7);}
 .bar-meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
 .bar-lbl{font-size:10px;font-weight:500;color:rgba(255,255,255,.35);}
 body.light .bar-lbl{color:rgba(0,0,0,.35);}
 .status-pill{font-size:9px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+
+/* ── BOTTOM ROW: 2 stat cards + 1 summary card ── */
+.bottom-row{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;margin-top:10px;}
+@media(max-width:560px){.bottom-row{grid-template-columns:1fr 1fr;}}
+
+.stat{padding:16px 18px;position:relative;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:10px;display:block;}
+body.light .s-lbl{color:rgba(0,0,0,.45);}
+.s-val{font-size:24px;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff;}
+body.light .s-val{color:#111;}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+body.light .s-sub{color:rgba(0,0,0,.3);}
+
+/* ── SUMMARY CARD (compact inline breakdown) ── */
+.summary-card{padding:16px 18px;}
+.sum-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:12px;display:block;}
+body.light .sum-title{color:rgba(0,0,0,.45);}
+.sum-cols{display:flex;gap:18px;}
+.sum-col{flex:1;}
+.sum-col-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-bottom:8px;}
+body.light .sum-col-lbl{color:rgba(0,0,0,.28);}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.sum-row:last-child{border-bottom:none;}
+body.light .sum-row{border-bottom-color:rgba(0,0,0,.05);}
+.sum-key{font-size:10px;font-weight:600;color:rgba(255,255,255,.55);}
+body.light .sum-key{color:rgba(0,0,0,.45);}
+.sum-num{font-size:13px;font-weight:900;color:var(--g);}
 </style></head><body>
+
 <div class="header">
-  <div><p class="eyebrow">Opxio · Finance</p><h1 class="h-title">Revenue OS</h1></div>
+  <div><p class="eyebrow">Opxio · Finance</p><h1 class="h-title">Revenue</h1></div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -92,11 +94,11 @@ body.light .bar-lbl{color:rgba(0,0,0,.35);}
   </div>
 </div>
 
-<div class="sec-lbl">Revenue This Month</div>
+<!-- GOAL PROGRESS CARD -->
 <div class="card goal-card">
   <div class="goal-top">
     <div>
-      <div class="goal-ey">Collected · Won Deals</div>
+      <div class="goal-ey">This Month · Collected</div>
       <div class="goal-amt" id="gamt">RM 0</div>
       <div class="goal-of">
         of&nbsp;<span class="goal-tv" id="gtv" onclick="toggleEdit()">RM 10,000</span>&nbsp;target
@@ -119,23 +121,37 @@ body.light .bar-lbl{color:rgba(0,0,0,.35);}
   </div>
 </div>
 
-<div class="sec-lbl">Quotations</div>
-<div class="g3">
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Issued</span><div class="s-val">0</div><div class="s-sub">Sent, awaiting reply</div></div>
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Approved</span><div class="s-val">0</div><div class="s-sub">Client confirmed</div></div>
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Rejected</span><div class="s-val">0</div><div class="s-sub">Declined or archived</div></div>
-</div>
-
-<div class="sec-lbl">Invoices</div>
-<div class="g3">
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Deposit Pending</span><div class="s-val">0</div><div class="s-sub">Awaiting deposit</div></div>
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Balance Pending</span><div class="s-val">0</div><div class="s-sub">Final payment due</div></div>
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Fully Paid</span><div class="s-val">0</div><div class="s-sub">Full payment received</div></div>
-</div>
-
-<div class="g2">
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Total Collected</span><div class="s-val">RM 0</div><div class="s-sub">Deposits + full payments</div></div>
-  <div class="card stat"><div class="s-dot"></div><span class="s-lbl">Outstanding</span><div class="s-val">RM 0</div><div class="s-sub">Balance still owed</div></div>
+<!-- BOTTOM ROW -->
+<div class="bottom-row">
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <span class="s-lbl">Collected</span>
+    <div class="s-val" id="r-collected">RM 0</div>
+    <div class="s-sub">Deposits + full payments</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="opacity:.35;background:#FF6B6B;"></div>
+    <span class="s-lbl">Outstanding</span>
+    <div class="s-val" id="r-outstanding">RM 0</div>
+    <div class="s-sub">Balance still owed</div>
+  </div>
+  <div class="card summary-card">
+    <span class="sum-title">Breakdown</span>
+    <div class="sum-cols">
+      <div class="sum-col">
+        <div class="sum-col-lbl">Quotes</div>
+        <div class="sum-row"><span class="sum-key">Issued</span><span class="sum-num" id="q-issued">0</span></div>
+        <div class="sum-row"><span class="sum-key">Approved</span><span class="sum-num" id="q-approved">0</span></div>
+        <div class="sum-row"><span class="sum-key">Rejected</span><span class="sum-num" id="q-rejected">0</span></div>
+      </div>
+      <div class="sum-col">
+        <div class="sum-col-lbl">Invoices</div>
+        <div class="sum-row"><span class="sum-key">Deposit Due</span><span class="sum-num" id="i-deposit">0</span></div>
+        <div class="sum-row"><span class="sum-key">Balance Due</span><span class="sum-num" id="i-balance">0</span></div>
+        <div class="sum-row"><span class="sum-key">Fully Paid</span><span class="sum-num" id="i-paid">0</span></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
