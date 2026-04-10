@@ -48,18 +48,6 @@
     {
       "src": "api/wa_redirect.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "deal-stats.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "meetings.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "deals-board.html",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -112,28 +100,12 @@
       "dest": "api/wa_redirect.py"
     },
     {
-      "src": "/deal-stats",
-      "dest": "/deal-stats.html"
+      "src": "/widgets/(.*)",
+      "dest": "/widgets/$1.html"
     },
     {
-      "src": "/deal-stats.html",
-      "dest": "/deal-stats.html"
-    },
-    {
-      "src": "/meetings",
-      "dest": "/meetings.html"
-    },
-    {
-      "src": "/meetings.html",
-      "dest": "/meetings.html"
-    },
-    {
-      "src": "/deals-board",
-      "dest": "/deals-board.html"
-    },
-    {
-      "src": "/deals-board.html",
-      "dest": "/deals-board.html"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
