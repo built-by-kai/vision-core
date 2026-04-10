@@ -29,6 +29,12 @@ body.light .s-sub{color:rgba(0,0,0,.3);}
 .stat{padding:16px 18px;position:relative;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
 .stat:hover::before{opacity:1;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </style>
 <style>
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
