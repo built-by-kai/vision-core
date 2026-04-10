@@ -796,28 +796,6 @@ def process(payload):
                                                    package_name=package_name, pic_ids=pic_ids)
         print(f"[INFO] Created new Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
-    # ── Set Quotation No. (QUO-YYYY-XXXX) ────────────────────────────────────
-    # Notion's unique_id field (ID) auto-increments with prefix QUO but generates
-    # QUO-7 style. We read that number and write QUO-{year}-{number:04d} into the
-    # Quotation No. title field so create_invoice.py can derive INV numbers correctly.
-    try:
-        from datetime import date as _date
-        qpage = requests.get(f"https://api.notion.com/v1/pages/{quot_id}",
-                             headers=hdrs, timeout=10).json()
-        uid_no = qpage.get("properties", {}).get("ID", {}).get("unique_id", {}).get("number")
-        if uid_no:
-            year   = _date.today().year
-            quo_no = f"QUO-{year}-{uid_no:04d}"
-            requests.patch(
-                f"https://api.notion.com/v1/pages/{quot_id}",
-                headers=hdrs,
-                json={"properties": {"Quotation No.": {"title": [{"text": {"content": quo_no}}]}}},
-                timeout=10,
-            )
-            print(f"[INFO] Quotation No. set: {quo_no}", file=sys.stderr)
-    except Exception as e:
-        print(f"[WARN] Could not set Quotation No.: {e}", file=sys.stderr)
-
     # ── Auto-populate line items ──────────────────────────────────────────────
     if source_type == "lead" and product.get("id"):
         try:
