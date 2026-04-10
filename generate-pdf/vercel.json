@@ -165,6 +165,10 @@
     {
       "src": "/widgets/revenue-overview",
       "dest": "/widgets/combined.html"
+    },
+    {
+      "src": "/widgets/projects",
+      "dest": "/widgets/projects.html"
     }
   ]
 }
