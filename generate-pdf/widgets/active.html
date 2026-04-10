@@ -1,126 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Opxio — Active Deals</title>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Active Deals</title><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Inter',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;transition:background 0.3s;overflow-y:auto;height:100%;}
-body.light{background:#fff;color:#111;}
-
-.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s;}
-.card:hover{border-color:rgba(255,255,255,0.12);}
-body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
-body.light .card:hover{border-color:rgba(0,0,0,0.1);}
-
-.toggle-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-.toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
-body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
-
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.h-right{display:flex;align-items:center;gap:6px;}
-.eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
-body.light .eyebrow{color:rgba(0,0,0,0.3);}
-.h-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,0.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.14);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:.2px;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+body.light .btn:hover{border-color:var(--gb);color:var(--g);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 body.light .h-title{color:#111;}
-.refresh-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-.refresh-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
-body.light .refresh-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
-.last-updated{font-size:9px;font-weight:500;color:rgba(255,255,255,0.2);}
-body.light .last-updated{color:rgba(0,0,0,0.25);}
-
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-@media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr);}}
-
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+.s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.88;margin-bottom:10px;}
+body.light .s-lbl{color:#111;opacity:.85;}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+body.light .s-sub{color:rgba(0,0,0,.3);}
 .stat{padding:16px 18px;position:relative;}
-.s-accent{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;}
-.s-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block;}
-.s-value{font-size:28px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
-.s-sub{font-size:10px;font-weight:500;color:#6B7280;margin-top:6px;}
-body.light .s-sub{color:#9CA3AF;}
-
-.c-amber  .s-label{color:#fcd34d;} .c-amber  .s-value{color:#FBBF24;} .c-amber  .s-accent{background:#FBBF24;}
-.c-green  .s-label{color:#6ee7b7;} .c-green  .s-value{color:#34D399;} .c-green  .s-accent{background:#34D399;}
-.c-blue   .s-label{color:#93c5fd;} .c-blue   .s-value{color:#60A5FA;} .c-blue   .s-accent{background:#60A5FA;}
-.c-teal   .s-label{color:#5eead4;} .c-teal   .s-value{color:#2DD4BF;} .c-teal   .s-accent{background:#2DD4BF;}
-
-body.light .c-amber .s-label{color:#D97706;} body.light .c-amber .s-value{color:#B45309;}
-body.light .c-green .s-label{color:#059669;} body.light .c-green .s-value{color:#047857;}
-body.light .c-blue  .s-label{color:#2563EB;} body.light .c-blue  .s-value{color:#1D4ED8;}
-body.light .c-teal  .s-label{color:#0D9488;} body.light .c-teal  .s-value{color:#0F766E;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat:hover::before{opacity:1;}
 </style>
-</head>
-<body>
-
-<div class="header">
-  <div>
-    <p class="eyebrow">Opxio · Pipeline</p>
-    <h1 class="h-title">Active Deals</h1>
-  </div>
-  <div class="h-right">
-    <span class="last-updated" id="last-updated"></span>
-    <button class="refresh-btn" onclick="doRefresh()" id="refresh-btn">↻ Refresh</button>
-    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+<style>
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:480px){.grid{grid-template-columns:repeat(2,1fr);}}
+</style></head><body>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  <div><p class="eyebrow">Opxio · Sales</p><h1 class="h-title">Active Deals</h1></div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
   </div>
 </div>
-
 <div class="grid">
-  <div class="card stat c-amber">
-    <div class="s-accent"></div>
-    <span class="s-label">Deposit Due</span>
-    <div class="s-value">2</div>
-    <div class="s-sub">Awaiting deposit</div>
-  </div>
-  <div class="card stat c-green">
-    <div class="s-accent"></div>
-    <span class="s-label">Building</span>
-    <div class="s-value">2</div>
-    <div class="s-sub">In delivery</div>
-  </div>
-  <div class="card stat c-blue">
-    <div class="s-accent"></div>
-    <span class="s-label">Balance Due</span>
-    <div class="s-value">0</div>
-    <div class="s-sub">Final payment</div>
-  </div>
-  <div class="card stat c-teal">
-    <div class="s-accent"></div>
-    <span class="s-label">Completed</span>
-    <div class="s-value">0</div>
-    <div class="s-sub">Fully delivered</div>
-  </div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Deposit Due</div><div class="s-val">2</div><div class="s-sub">Awaiting deposit</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Building</div><div class="s-val">5</div><div class="s-sub">In active delivery</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Balance Due</div><div class="s-val">3</div><div class="s-sub">Final payment pending</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Completed</div><div class="s-val">8</div><div class="s-sub">Fully delivered</div></div>
 </div>
-
 <script>
-let isLight = false;
-function toggleMode() {
-  isLight = !isLight;
-  document.body.classList.toggle('light', isLight);
-  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
-}
-
-function updateTimestamp() {
-  const now = new Date();
-  document.getElementById('last-updated').textContent =
-    'Updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-}
-
-function doRefresh() {
-  const btn = document.getElementById('refresh-btn');
-  btn.textContent = '↻';
-  btn.style.opacity = '0.4';
-  setTimeout(() => {
-    btn.textContent = '↻ Refresh';
-    btn.style.opacity = '1';
-    updateTimestamp();
-  }, 800);
-}
-
-// Auto-refresh every 5 minutes
-updateTimestamp();
-setInterval(doRefresh, 5 * 60 * 1000);
-</script>
-</body>
-</html>
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
+setTs();setInterval(doRefresh,5*60*1000);
+</script></body></html>
