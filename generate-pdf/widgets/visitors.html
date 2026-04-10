@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Visitor Insights</title><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.14);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.topbar-right{display:flex;align-items:center;gap:6px;}
+</style>
+<style>
+.panel{padding:22px 24px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
+body.light .panel-title{color:#111;}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+/* Peak callout */
+.peak-dot{fill:var(--g);filter:drop-shadow(0 0 6px rgba(170,255,0,.9));}
+/* Tooltip */
+.ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
+body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
+.chart-wrap{position:relative;width:100%;height:180px;}
+#vis-chart{display:block;overflow:visible;}
+/* Legend */
+.legend-row{display:flex;align-items:center;gap:8px;margin-top:14px;}
+.leg-dot{width:8px;height:8px;border-radius:50%;background:var(--g);}
+.leg-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.5);}
+body.light .leg-lbl{color:rgba(0,0,0,.4);}
+</style></head><body>
+<div class="topbar">
+  <div><p class="eyebrow">Opxio · Leads</p><h1 class="h-title">Visitor Insights</h1></div>
+  <div class="topbar-right">
+    <span class="ts" id="ts"></span>
+    <select class="sel" id="sel-m">
+      <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+      <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+      <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+    </select>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="card panel">
+  <div class="panel-hdr">
+    <span class="panel-title">New Incoming Leads</span>
+    <span class="panel-badge" id="badge"></span>
+  </div>
+  <div class="chart-wrap" id="cwrap">
+    <svg id="vis-chart"></svg>
+    <div class="ctip" id="ctip"></div>
+  </div>
+  <div class="legend-row">
+    <div class="leg-dot"></div>
+    <span class="leg-lbl" id="leg-lbl">New Leads</span>
+  </div>
+</div>
+
+<script>
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';drawChart();}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
+(function(){document.getElementById('sel-m').value=new Date().getMonth()+1;})();
+setTs();setInterval(doRefresh,5*60*1000);
+
+// Build daily lead data for current month — spiky pattern like the dashboard pic
+const today=new Date().getDate();
+// Realistic-looking spiky data (0-3 leads per day with occasional spikes)
+const rawLeads=[0,1,0,2,1,3,0,1,2,1,0,2,3,1,0,1,2,1,3,2,1,0,2,1,3,2,1,0,2,1];
+const data=rawLeads.slice(0,today).map((v,i)=>({day:i+1,v}));
+const totalLeads=data.reduce((s,d)=>s+d.v,0);
+const peakIdx=data.reduce((bi,d,i)=>d.v>data[bi].v?i:bi,0);
+document.getElementById('badge').textContent=totalLeads+' leads this month';
+document.getElementById('leg-lbl').textContent=`New Leads — ${totalLeads} total`;
+
+function drawChart(){
+  const wrap=document.getElementById('cwrap');
+  const svg=document.getElementById('vis-chart');
+  const ns='http://www.w3.org/2000/svg';
+  const W=wrap.offsetWidth||600;
+  const H=wrap.offsetHeight||180;
+  svg.setAttribute('width',W);
+  svg.setAttribute('height',H);
+  svg.innerHTML='';
+
+  const PAD={t:14,r:20,b:28,l:28};
+  const cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
+  const maxV=Math.max(...data.map(d=>d.v),1);
+  const isDark=!document.body.classList.contains('light');
+  const dimCol=isDark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.4)';
+  const gridCol=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)';
+
+  function xP(i){return PAD.l+(i/(data.length-1||1))*cW;}
+  function yP(v){return PAD.t+cH-(v/maxV)*cH;}
+
+  // Grid lines + Y axis
+  for(let i=0;i<=maxV;i++){
+    const y=yP(i);
+    const gl=document.createElementNS(ns,'line');
+    gl.setAttribute('x1',PAD.l);gl.setAttribute('x2',W-PAD.r);gl.setAttribute('y1',y);gl.setAttribute('y2',y);
+    gl.setAttribute('stroke',gridCol);gl.setAttribute('stroke-dasharray','3,5');
+    svg.appendChild(gl);
+    if(i>0){
+      const t=document.createElementNS(ns,'text');
+      t.setAttribute('x',PAD.l-5);t.setAttribute('y',y+4);
+      t.setAttribute('text-anchor','end');t.setAttribute('fill',dimCol);
+      t.setAttribute('font-size','10');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+      t.textContent=i;svg.appendChild(t);
+    }
+  }
+
+  // X axis labels — every 5 days
+  data.forEach((d,i)=>{
+    if(d.day%5!==0&&d.day!==1&&i!==data.length-1)return;
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+14);
+    t.setAttribute('text-anchor','middle');t.setAttribute('fill',dimCol);
+    t.setAttribute('font-size','10');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+    t.textContent=d.day;svg.appendChild(t);
+  });
+
+  // Sharp spiky path (no bezier — matches the ref image's sharp peaks)
+  const pts=data.map((d,i)=>[xP(i),yP(d.v)]);
+  let pathD='M '+pts.map(p=>p[0]+' '+p[1]).join(' L ');
+  const last=pts[pts.length-1],first=pts[0];
+
+  // Gradient fill
+  const defs=document.createElementNS(ns,'defs');
+  const grad=document.createElementNS(ns,'linearGradient');
+  grad.setAttribute('id','gVis');grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#AAFF00');s1.setAttribute('stop-opacity','0.25');
+  const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#AAFF00');s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svg.insertBefore(defs,svg.firstChild);
+
+  const area=document.createElementNS(ns,'path');
+  area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
+  area.setAttribute('fill','url(#gVis)');svg.appendChild(area);
+
+  const line=document.createElementNS(ns,'path');
+  line.setAttribute('d',pathD);line.setAttribute('fill','none');
+  line.setAttribute('stroke','#AAFF00');line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-linejoin','round');line.setAttribute('stroke-linecap','round');
+  svg.appendChild(line);
+
+  // Peak highlight dot + callout label
+  const px=xP(peakIdx),py=yP(data[peakIdx].v);
+  // Glow ring
+  const ring=document.createElementNS(ns,'circle');
+  ring.setAttribute('cx',px);ring.setAttribute('cy',py);ring.setAttribute('r','8');
+  ring.setAttribute('fill','rgba(170,255,0,0.15)');ring.setAttribute('stroke','rgba(170,255,0,0.3)');ring.setAttribute('stroke-width','1');
+  svg.appendChild(ring);
+  const peakDot=document.createElementNS(ns,'circle');
+  peakDot.setAttribute('cx',px);peakDot.setAttribute('cy',py);peakDot.setAttribute('r','4');
+  peakDot.setAttribute('fill','#AAFF00');peakDot.setAttribute('stroke','#191919');peakDot.setAttribute('stroke-width','2');
+  peakDot.setAttribute('class','peak-dot');
+  svg.appendChild(peakDot);
+  // Callout label
+  const isRight=peakIdx>data.length/2;
+  const lx=px+(isRight?-10:10),ly=py-14,anchor=isRight?'end':'start';
+  const tPeak=document.createElementNS(ns,'text');
+  tPeak.setAttribute('x',lx);tPeak.setAttribute('y',ly);
+  tPeak.setAttribute('text-anchor',anchor);tPeak.setAttribute('fill','#AAFF00');
+  tPeak.setAttribute('font-size','9.5');tPeak.setAttribute('font-weight','700');
+  tPeak.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+  tPeak.textContent='Peak · '+data[peakIdx].v+' leads';
+  svg.appendChild(tPeak);
+
+  // All dots (small)
+  data.forEach((d,i)=>{
+    if(d.v===0)return;
+    const dot=document.createElementNS(ns,'circle');
+    dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d.v));
+    dot.setAttribute('r','3');dot.setAttribute('fill',isDark?'#1E1E1E':'#fff');
+    dot.setAttribute('stroke','#AAFF00');dot.setAttribute('stroke-width','1.5');
+    dot.style.opacity='0';dot.style.transition='opacity .12s';
+    svg.appendChild(dot);
+  });
+
+  // Hover
+  const hL=document.createElementNS(ns,'line');
+  hL.setAttribute('stroke','rgba(170,255,0,0.1)');hL.setAttribute('stroke-width','1');
+  hL.setAttribute('y1',PAD.t);hL.setAttribute('y2',H-PAD.b);hL.style.opacity='0';
+  svg.appendChild(hL);
+
+  const allDots=[...svg.querySelectorAll('circle')].filter(c=>c.style.opacity==='0'||c.style.opacity===0);
+  const tip=document.getElementById('ctip');
+
+  wrap.onmousemove=function(e){
+    const rect=wrap.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    let bi=null,bd=Infinity;
+    data.forEach((d,i)=>{const dist=Math.abs(xP(i)-mx);if(dist<bd){bd=dist;bi=i;}});
+    if(bi===null||bd>40){hide();return;}
+    const d=data[bi],px2=xP(bi);
+    hL.setAttribute('x1',px2);hL.setAttribute('x2',px2);hL.style.opacity='1';
+    svg.querySelectorAll('circle[stroke="' + '#AAFF00' + '"]').forEach(c=>{
+      c.style.opacity=parseFloat(c.getAttribute('cx'))===xP(bi)?'1':'0';
+    });
+    tip.style.display='block';
+    const tl=Math.min(e.clientX-rect.left+14,rect.width-120);
+    tip.style.left=tl+'px';tip.style.top=(e.clientY-rect.top-46)+'px';
+    tip.innerHTML=`<span style="color:rgba(255,255,255,.4);font-size:9px;font-weight:500;">Day ${d.day}</span>&nbsp;&nbsp;${d.v} lead${d.v!==1?'s':''}`;
+  };
+  wrap.onmouseleave=hide;
+  function hide(){tip.style.display='none';hL.style.opacity='0';}
+}
+
+window.addEventListener('load',()=>setTimeout(drawChart,80));
+window.addEventListener('resize',drawChart);
+</script></body></html>
