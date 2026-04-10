@@ -32,9 +32,30 @@ TASKS_DB    = "b87d0a44df344b178f14c7e94ce520b0"
 #  Tasks: (task_name, priority)  — "High" | "Medium" | "Low"
 # ─────────────────────────────────────────────────────────────────
 
+PRE_BUILD = {
+    "phase": "Phase 0 — Pre-Build",
+    "deliverables": "Scope locked, contract signed, deposit received, client intake completed",
+    "tasks": [
+        ("Send contract / service agreement to client",       "High"),
+        ("Confirm deposit payment received",                  "High"),
+        ("Schedule kickoff meeting with client",              "High"),
+        ("Send pre-kickoff questionnaire to client",          "Medium"),
+        ("Conduct kickoff meeting — document requirements",   "High"),
+        ("Review client's existing tools and workflows",      "High"),
+        ("Document pain points and must-solve problems",      "High"),
+        ("Confirm final scope and deliverables with client",  "High"),
+        ("Send client implementation intake form",            "High"),
+        ("Review completed intake form",                      "High"),
+        ("Set up shared communication channel (WhatsApp/email)","Medium"),
+        ("Brief client on Notion basics if unfamiliar",       "Low"),
+        ("Create project timeline and share with client",     "Medium"),
+    ],
+}
+
 OS_BLUEPRINT = {
 
     "Starter OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS installed: Client DB, Team Directory, Company Profile, Settings, Activity Log",
@@ -78,6 +99,7 @@ OS_BLUEPRINT = {
     ],
 
     "Operations OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS + workspace structure ready",
@@ -136,6 +158,7 @@ OS_BLUEPRINT = {
     ],
 
     "Sales OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS + workspace structure ready",
@@ -193,6 +216,7 @@ OS_BLUEPRINT = {
     ],
 
     "Business OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS + workspace structure ready",
@@ -255,6 +279,7 @@ OS_BLUEPRINT = {
     ],
 
     "Marketing OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS + workspace structure ready",
@@ -311,6 +336,7 @@ OS_BLUEPRINT = {
     ],
 
     "Intelligence OS": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Foundation",
             "deliverables": "Base OS + workspace structure ready",
@@ -378,6 +404,7 @@ OS_BLUEPRINT = {
     ],
 
     "Expansion": [
+        PRE_BUILD,
         {
             "phase": "Phase 1 — Scope & Design",
             "deliverables": "Add-on scope confirmed, design approved",
