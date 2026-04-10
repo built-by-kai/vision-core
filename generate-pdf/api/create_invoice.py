@@ -28,6 +28,19 @@ QUOTATION_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 INVOICE_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
 PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
 
+BASE_URL = "https://opxio.vercel.app"
+
+# Cover image URLs per Package type
+COVER_MAP = {
+    "Starter OS":      f"{BASE_URL}/covers/starter-os.png",
+    "Operations OS":   f"{BASE_URL}/covers/operations-os.png",
+    "Sales OS":        f"{BASE_URL}/covers/sales-os.png",
+    "Business OS":     f"{BASE_URL}/covers/business-os.png",
+    "Marketing OS":    f"{BASE_URL}/covers/marketing-os.png",
+    "Intelligence OS": f"{BASE_URL}/covers/intelligence-os.png",
+    "Expansion":       f"{BASE_URL}/covers/expansion.png",
+}
+
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
 INV_SUFFIX  = {
     "Deposit":       "-D",
@@ -430,12 +443,18 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
                 }
             })
 
+    # Set cover image based on package type
+    pkg_label = package_name or quote_type or ""
+    cover_url = COVER_MAP.get(pkg_label)
+
     body = {
         "parent":     {"database_id": PROJECTS_DB},
         "icon":       {"type": "emoji", "emoji": "🏗️"},
         "properties": props,
         "children":   notes_blocks,
     }
+    if cover_url:
+        body["cover"] = {"type": "external", "external": {"url": cover_url}}
 
     r = requests.post("https://api.notion.com/v1/pages",
                       headers=hdrs, json=body, timeout=15)
