@@ -52,6 +52,10 @@
     {
       "src": "deal-stats.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "meetings.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -110,6 +114,14 @@
     {
       "src": "/deal-stats.html",
       "dest": "/deal-stats.html"
+    },
+    {
+      "src": "/meetings",
+      "dest": "/meetings.html"
+    },
+    {
+      "src": "/meetings.html",
+      "dest": "/meetings.html"
     }
   ]
 }
