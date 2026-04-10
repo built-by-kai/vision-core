@@ -439,7 +439,7 @@ def create_project(company_ids, company_name, quotation_id, invoice_id,
 
     props = {
         "Project Name": {"title": [{"text": {"content": project_name}}]},
-        "Status":       {"select": {"name": "Deposit Pending"}},
+        "Status":       {"select": {"name": "Awaiting Deposit"}},
         "Phase":        {"select": {"name": "Phase 1"}},
         "Total Value":  {"number": amount},
         "Quotation":    {"relation": [{"id": quotation_id}]},
