@@ -49,6 +49,61 @@ INV_SUFFIX  = {
     "Full Payment":  "",
 }
 
+# ── Layer 2 add-on product name → slug mapping ──────────────────────────────
+# Keys are lowercase substrings that uniquely identify each add-on as it would
+# appear in a quotation line item. Order matters — more specific first.
+ADDON_SLUG_MAP = {
+    "ai agent":           "ai-agent",
+    "lead capture":       "lead-capture",
+    "client portal":      "client-portal",
+    "advanced dashboard": "advanced-dashboard",
+    "custom widget":      "custom-widget",
+    "api / external":     "api-integration",
+    "api/external":       "api-integration",
+    "api integration":    "api-integration",
+    "make/n8n":           "make-n8n-integration",
+    "n8n":                "make-n8n-integration",
+    "make.com":           "make-n8n-integration",
+    "automation & workflow": "make-n8n-integration",
+    "cross-database":     "automation-cross",
+    "cross database":     "automation-cross",
+    "automation (cross":  "automation-cross",
+    "within database":    "automation-within",
+    "within-database":    "automation-within",
+    "automation (within": "automation-within",
+    "additional system module": "additional-module",
+    "additional module":  "additional-module",
+}
+
+# Layer 1 OS names — excluded from add-on detection
+LAYER_1_OS_NAMES = {
+    "base os", "starter os", "operations os", "sales os",
+    "business os", "marketing os", "intelligence os", "full platform os",
+}
+
+
+def extract_addon_slugs(line_items):
+    """
+    Given a list of quotation line item dicts (each with a 'name' key),
+    return a deduplicated list of Layer 2 add-on product slugs to write
+    to the project's 'Add-on Products' multi-select field.
+    """
+    slugs = []
+    seen  = set()
+    for item in line_items:
+        name_lower = (item.get("name") or "").lower().strip()
+        # Skip if it's a Layer 1 OS package
+        if any(os_name in name_lower for os_name in LAYER_1_OS_NAMES):
+            continue
+        # Match against slug map
+        for keyword, slug in ADDON_SLUG_MAP.items():
+            if keyword in name_lower and slug not in seen:
+                seen.add(slug)
+                slugs.append(slug)
+                break
+    return slugs
+
+
 def format_invoice_number(quotation_no, invoice_type):
     """Derive INV number from the linked quotation's QUO number."""
     suffix = INV_SUFFIX.get(invoice_type, "-D")
@@ -690,6 +745,27 @@ class handler(BaseHTTPRequestHandler):
                 )
                 print(f"[INFO] Project created: {project_id}", file=sys.stderr)
 
+                # Auto-populate Add-on Products from quotation line items
+                addon_slugs = extract_addon_slugs(quotation["line_items"])
+                if addon_slugs:
+                    try:
+                        requests.patch(
+                            f"https://api.notion.com/v1/pages/{project_id}",
+                            headers=hdrs,
+                            json={"properties": {
+                                "Add-on Products": {
+                                    "multi_select": [{"name": s} for s in addon_slugs]
+                                }
+                            }},
+                            timeout=10,
+                        )
+                        print(
+                            f"[INFO] Add-on Products set on project: {addon_slugs}",
+                            file=sys.stderr,
+                        )
+                    except Exception as e:
+                        print(f"[WARN] Could not set Add-on Products: {e}", file=sys.stderr)
+
             # 3. Back-link Project onto Invoice and Quotation (non-fatal if field missing)
             inv_linked  = link_project_to_invoice(inv_id, project_id, hdrs)
             quo_linked  = link_project_to_quotation(page_id, project_id, hdrs)
@@ -714,3 +790,4 @@ class handler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         print(f"[HTTP] {format % args}", file=sys.stderr)
+
