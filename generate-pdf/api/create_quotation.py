@@ -360,8 +360,12 @@ def ensure_product_relation(db_id, hdrs):
     to the current Catalogue DB. Needed because the Notion template's inline DB
     still has the old relation target — this brings it up to date before any rows
     are inserted, so the Product name column and Catalog Price rollup work correctly.
-    Non-fatal if it fails (rows are still created, just without the relation link).
+
+    Sleeps 1.5 s after patching to let Notion propagate the schema change before
+    any rows are created — without this, the first row (Base OS) races the schema
+    update and fails, consuming auto-increment No. 1 and leaving the slot blank.
     """
+    import time
     r = requests.patch(
         f"https://api.notion.com/v1/databases/{db_id}",
         headers=hdrs,
@@ -381,6 +385,8 @@ def ensure_product_relation(db_id, hdrs):
         print(f"[INFO] Product relation updated to Catalogue DB on {db_id[:8]}", file=sys.stderr)
     else:
         print(f"[WARN] Could not update Product relation: {r.status_code}: {r.text[:200]}", file=sys.stderr)
+    # Always wait — even on failure the schema may be mid-update
+    time.sleep(1.5)
 
 
 def create_line_item(db_id, product_id, product_name, price, hdrs, description=""):
@@ -790,6 +796,28 @@ def process(payload):
                                                    package_name=package_name, pic_ids=pic_ids)
         print(f"[INFO] Created new Quotation: {quot_id} → {quot_url}", file=sys.stderr)
 
+    # ── Set Quotation No. (QUO-YYYY-XXXX) ────────────────────────────────────
+    # Notion's unique_id field (ID) auto-increments with prefix QUO but generates
+    # QUO-7 style. We read that number and write QUO-{year}-{number:04d} into the
+    # Quotation No. title field so create_invoice.py can derive INV numbers correctly.
+    try:
+        from datetime import date as _date
+        qpage = requests.get(f"https://api.notion.com/v1/pages/{quot_id}",
+                             headers=hdrs, timeout=10).json()
+        uid_no = qpage.get("properties", {}).get("ID", {}).get("unique_id", {}).get("number")
+        if uid_no:
+            year   = _date.today().year
+            quo_no = f"QUO-{year}-{uid_no:04d}"
+            requests.patch(
+                f"https://api.notion.com/v1/pages/{quot_id}",
+                headers=hdrs,
+                json={"properties": {"Quotation No.": {"title": [{"text": {"content": quo_no}}]}}},
+                timeout=10,
+            )
+            print(f"[INFO] Quotation No. set: {quo_no}", file=sys.stderr)
+    except Exception as e:
+        print(f"[WARN] Could not set Quotation No.: {e}", file=sys.stderr)
+
     # ── Auto-populate line items ──────────────────────────────────────────────
     if source_type == "lead" and product.get("id"):
         try:
@@ -812,11 +840,19 @@ def process(payload):
             # The template DB should be sorted ascending by No., making No. 1
             # appear at the top.  Main product is created second (No. 2).
             if product.get("slug") in OS_PACKAGE_SLUGS:
+                import time
                 base = fetch_product_info("base-os", hdrs)
                 if base.get("id"):
-                    create_line_item(li_db_id, base["id"], base["name"],
-                                     base["price"], hdrs,
-                                     description=base.get("description", ""))
+                    ok = create_line_item(li_db_id, base["id"], base["name"],
+                                         base["price"], hdrs,
+                                         description=base.get("description", ""))
+                    if not ok:
+                        # Retry once — schema propagation may still be in progress
+                        print("[INFO] Base OS retry after 1s delay", file=sys.stderr)
+                        time.sleep(1)
+                        create_line_item(li_db_id, base["id"], base["name"],
+                                         base["price"], hdrs,
+                                         description=base.get("description", ""))
 
             create_line_item(li_db_id, product["id"], product["name"],
                              product["price"], hdrs,
