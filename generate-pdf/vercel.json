@@ -161,6 +161,10 @@
     {
       "src": "/widgets/visitors",
       "dest": "/widgets/visitors.html"
+    },
+    {
+      "src": "/widgets/combined",
+      "dest": "/widgets/combined.html"
     }
   ]
 }
