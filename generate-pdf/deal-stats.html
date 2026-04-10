@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Opxio — Deal Pipeline Widget</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Theme tokens — exact creaitors values ── */
+    :root[data-theme="dark"] {
+      --bg:           #191919;
+      --card-bg:      linear-gradient(145deg, #1E1E1E, #252525);
+      --card-border:  rgba(255,255,255,0.06);
+      --card-shadow:  0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.15);
+      --text-primary: #f1f5f9;
+      --text-muted:   #6b7280;
+      --text-label:   #4b5563;
+      --btn-bg:       #2A2A2A;
+      --btn-border:   rgba(255,255,255,0.12);
+      --divider:      rgba(255,255,255,0.05);
+    }
+    :root[data-theme="light"] {
+      --bg:           #ffffff;
+      --card-bg:      linear-gradient(145deg, #ffffff, #F7F8FA);
+      --card-border:  rgba(0,0,0,0.06);
+      --card-shadow:  0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+      --text-primary: #111827;
+      --text-muted:   #6b7280;
+      --text-label:   #9ca3af;
+      --btn-bg:       #f3f4f6;
+      --btn-border:   rgba(0,0,0,0.10);
+      --divider:      rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      transition: background 0.3s;
+    }
+
+    .widget { width: 100%; max-width: 780px; }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-label);
+      margin-bottom: 4px;
+    }
+
+    .title-row { display: flex; align-items: center; gap: 8px; }
+
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      transition: color 0.3s;
+    }
+
+    .pill {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    /* ── Toggle button — exact creaitors style ── */
+    .toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      outline: none;
+    }
+    .toggle-btn:hover { color: var(--text-primary); }
+
+    /* ── Cards grid ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 360px) { .cards { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: var(--card-shadow);
+      padding: 18px 20px;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+
+    /* Accent dot — top right, no glow */
+    .dot {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .card-label {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+
+    .card-count {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    .card-desc {
+      font-size: 9.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Card accent colors — creaitors palette ── */
+    .c-incoming .card-label { color: #a5b4fc; }
+    .c-incoming .card-count { color: #818cf8; }
+    .c-incoming .dot        { background: #818cf8; }
+
+    .c-proposed .card-label { color: #93c5fd; }
+    .c-proposed .card-count { color: #60a5fa; }
+    .c-proposed .dot        { background: #60a5fa; }
+
+    .c-deposit .card-label  { color: #fcd34d; }
+    .c-deposit .card-count  { color: #fbbf24; }
+    .c-deposit .dot         { background: #fbbf24; }
+
+    .c-active .card-label   { color: #6ee7b7; }
+    .c-active .card-count   { color: #34d399; }
+    .c-active .dot          { background: #34d399; }
+
+    .c-lost .card-label     { color: #94a3b8; }
+    .c-lost .card-count     { color: #64748b; }
+    .c-lost .dot            { background: #64748b; }
+
+    /* ── Summary row ── */
+    .summary {
+      display: flex;
+      margin-top: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .sum-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider);
+    }
+    .sum-item:last-child { border-right: none; }
+
+    .sum-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      margin-bottom: 5px;
+    }
+    .sum-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      transition: color 0.3s;
+    }
+    .sum-lbl {
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-label);
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="widget">
+
+  <!-- Header -->
+  <div class="topbar">
+    <div>
+      <p class="eyebrow">Opxio · Deals</p>
+      <div class="title-row">
+        <h2 class="title">Pipeline Status</h2>
+        <span class="pill" id="total-pill">21 deals</span>
+      </div>
+    </div>
+    <button class="toggle-btn" onclick="toggleMode()">
+      <span id="mode-icon">☀️</span>
+      <span id="mode-label">Light mode</span>
+    </button>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="cards">
+
+    <div class="card c-incoming">
+      <div class="dot"></div>
+      <span class="card-label">Incoming</span>
+      <div class="card-count">4</div>
+      <p class="card-desc">New leads in pipeline</p>
+    </div>
+
+    <div class="card c-proposed">
+      <div class="dot"></div>
+      <span class="card-label">Proposed</span>
+      <div class="card-count">7</div>
+      <p class="card-desc">Quotations sent</p>
+    </div>
+
+    <div class="card c-deposit">
+      <div class="dot"></div>
+      <span class="card-label">Deposit Due</span>
+      <div class="card-count">2</div>
+      <p class="card-desc">Pending deposit</p>
+    </div>
+
+    <div class="card c-active">
+      <div class="dot"></div>
+      <span class="card-label">Active Build</span>
+      <div class="card-count">5</div>
+      <p class="card-desc">In delivery · balance due</p>
+    </div>
+
+    <div class="card c-lost">
+      <div class="dot"></div>
+      <span class="card-label">Lost / Inactive</span>
+      <div class="card-count">3</div>
+      <p class="card-desc">Closed or cold</p>
+    </div>
+
+  </div>
+
+  <!-- Summary row -->
+  <div class="summary">
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#818cf8"></div>
+      <span class="sum-val">4</span>
+      <span class="sum-lbl">Incoming</span>
+    </div>
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#60a5fa"></div>
+      <span class="sum-val">7</span>
+      <span class="sum-lbl">Proposed</span>
+    </div>
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#fbbf24"></div>
+      <span class="sum-val">2</span>
+      <span class="sum-lbl">Deposit</span>
+    </div>
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#34d399"></div>
+      <span class="sum-val">5</span>
+      <span class="sum-lbl">Active</span>
+    </div>
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#64748b"></div>
+      <span class="sum-val">3</span>
+      <span class="sum-lbl">Lost</span>
+    </div>
+    <div class="sum-item">
+      <div class="sum-dot" style="background:#4b5563"></div>
+      <span class="sum-val" id="total-sum">21</span>
+      <span class="sum-lbl">Total</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let isDark = true;
+  function toggleMode() {
+    isDark = !isDark;
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+    document.getElementById("mode-icon").textContent  = isDark ? "☀️" : "🌙";
+    document.getElementById("mode-label").textContent = isDark ? "Light mode" : "Dark mode";
+  }
+</script>
+
+</body>
+</html>
