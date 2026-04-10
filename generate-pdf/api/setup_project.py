@@ -12,7 +12,8 @@ Databases:
   Projects DB       : 5719b2672d3442a29a22637a35398260
   Phases   DB       : 33d8b289e31a81d896bfdb314521dc7b
   Tasks    DB       : b87d0a44df344b178f14c7e94ce520b0
-  Phase Templates DB: 704727fe90644f0d91b9a35a3ef6eb5f
+  Phase Templates DB      : 704727fe90644f0d91b9a35a3ef6eb5f
+  Phase Template Tasks DB : 46e7a39983b94a57860f8765c1a50168
 """
 import json
 import os
@@ -21,10 +22,11 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-PROJECTS_DB   = "5719b2672d3442a29a22637a35398260"
-PHASES_DB     = "33d8b289e31a81d896bfdb314521dc7b"
-TASKS_DB      = "b87d0a44df344b178f14c7e94ce520b0"
-TEMPLATES_DB  = "704727fe90644f0d91b9a35a3ef6eb5f"
+PROJECTS_DB       = "5719b2672d3442a29a22637a35398260"
+PHASES_DB         = "33d8b289e31a81d896bfdb314521dc7b"
+TASKS_DB          = "b87d0a44df344b178f14c7e94ce520b0"
+TEMPLATES_DB      = "704727fe90644f0d91b9a35a3ef6eb5f"
+TASK_TEMPLATES_DB = "46e7a39983b94a57860f8765c1a50168"
 
 PRIORITY_EMOJI = {"High": "🔴", "Medium": "🟡", "Low": "🔵"}
 
@@ -67,11 +69,65 @@ def fetch_project(page_id, hdrs):
     return {"name": name, "package": package, "company_ids": company_ids}
 
 
+def fetch_tasks_for_os(os_type, hdrs):
+    """
+    Fetch all tasks from Phase Template Tasks DB for an OS type.
+    Returns a dict: { phase_no (int): [(task_name, priority), ...] }
+    Tasks are sorted by Task Order within each phase.
+    Deduplicates on task name per phase to guard against double entries.
+    """
+    payload = {
+        "filter": {
+            "property": "OS Type",
+            "select":   {"equals": os_type},
+        },
+        "sorts": [
+            {"property": "Phase No.",   "direction": "ascending"},
+            {"property": "Task Order",  "direction": "ascending"},
+        ],
+        "page_size": 100,
+    }
+    r = requests.post(
+        "https://api.notion.com/v1/databases/" + TASK_TEMPLATES_DB + "/query",
+        headers=hdrs, json=payload, timeout=15,
+    )
+    r.raise_for_status()
+
+    tasks_by_phase = {}
+    seen = {}  # (phase_no, task_name) -> True — dedup guard
+
+    for page in r.json().get("results", []):
+        props    = page.get("properties", {})
+        phase_no = int(props.get("Phase No.", {}).get("number") or 0)
+        priority = (props.get("Priority", {}).get("select") or {}).get("name", "Medium")
+        task_name = "".join(
+            t.get("plain_text", "")
+            for t in props.get("Task Name", {}).get("title", [])
+        ).strip()
+
+        if not task_name:
+            continue
+        key = (phase_no, task_name)
+        if key in seen:
+            continue
+        seen[key] = True
+
+        if phase_no not in tasks_by_phase:
+            tasks_by_phase[phase_no] = []
+        tasks_by_phase[phase_no].append((task_name, priority))
+
+    return tasks_by_phase
+
+
 def fetch_templates(os_type, hdrs):
     """
     Query the Phase Templates DB filtered by OS Type, sorted by Phase No. ascending.
-    Returns a list of phase defs: [{phase, deliverables, tasks: [(name, priority), ...]}, ...]
+    Tasks are loaded from Phase Template Tasks DB (editable per phase).
+    Returns a list of phase defs: [{phase_no, phase, deliverables, tasks: [(name, priority), ...]}, ...]
     """
+    # Load all tasks for this OS upfront in one query
+    tasks_by_phase = fetch_tasks_for_os(os_type, hdrs)
+
     payload = {
         "filter": {
             "property": "OS Type",
@@ -106,32 +162,33 @@ def fetch_templates(os_type, hdrs):
             for t in props.get("Deliverables", {}).get("rich_text", [])
         )
 
-        tasks_raw = "".join(
-            t.get("plain_text", "")
-            for t in props.get("Tasks", {}).get("rich_text", [])
-        )
-
-        tasks = []
-        for line in tasks_raw.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if "|" in line:
-                parts = line.split("|", 1)
-                task_name = parts[0].strip()
-                priority  = parts[1].strip()
-                if priority not in ("High", "Medium", "Low"):
-                    priority = "Medium"
-            else:
-                task_name = line
-                priority  = "Medium"
-            tasks.append((task_name, priority))
+        # Tasks come from Phase Template Tasks DB — fall back to text field if none found
+        tasks = tasks_by_phase.get(phase_no, [])
+        if not tasks:
+            tasks_raw = "".join(
+                t.get("plain_text", "")
+                for t in props.get("Tasks", {}).get("rich_text", [])
+            )
+            for line in tasks_raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if "|" in line:
+                    parts = line.split("|", 1)
+                    task_name = parts[0].strip()
+                    priority  = parts[1].strip()
+                    if priority not in ("High", "Medium", "Low"):
+                        priority = "Medium"
+                else:
+                    task_name = line
+                    priority  = "Medium"
+                tasks.append((task_name, priority))
 
         phases.append({
-            "phase_no":    phase_no,
-            "phase":       phase_name,
+            "phase_no":     phase_no,
+            "phase":        phase_name,
             "deliverables": deliverables,
-            "tasks":       tasks,
+            "tasks":        tasks,
         })
 
     return phases
