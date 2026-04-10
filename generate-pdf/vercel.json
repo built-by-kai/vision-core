@@ -141,6 +141,10 @@
     {
       "src": "/widgets/active",
       "dest": "/widgets/active.html"
+    },
+    {
+      "src": "/widgets/revenue",
+      "dest": "/widgets/revenue.html"
     }
   ]
 }
