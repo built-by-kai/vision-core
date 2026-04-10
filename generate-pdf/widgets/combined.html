@@ -63,23 +63,27 @@ body.light .s-delta-lbl{color:rgba(0,0,0,.3);}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
 body.light .panel-title{color:#111;opacity:1;}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
-.prod-table{width:100%;border-collapse:collapse;}
+.prod-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.prod-table col.col-num{width:22px;}
+.prod-table col.col-name{width:auto;}
+.prod-table col.col-bar{width:130px;}
+.prod-table col.col-pct{width:42px;}
 .prod-table th{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);padding-bottom:10px;text-align:left;}
 body.light .prod-table th{color:rgba(0,0,0,.28);}
-.prod-table th:last-child{text-align:right;}
-.prod-table td{padding:6px 0;border-top:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.prod-table th.th-pct{text-align:right;}
+.prod-table td{padding:7px 0;border-top:1px solid rgba(255,255,255,.04);vertical-align:middle;}
 body.light .prod-table td{border-top-color:rgba(0,0,0,.06);}
-.prod-num{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.2);width:18px;}
+.prod-num{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.2);}
 body.light .prod-num{color:rgba(0,0,0,.2);}
 .prod-name{font-size:12px;font-weight:700;color:#fff;display:block;margin-bottom:1px;}
 body.light .prod-name{color:#111;}
 .prod-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.3);}
 body.light .prod-sub{color:rgba(0,0,0,.35);}
-.prod-bar-wrap{width:90px;padding:0 8px;}
+.prod-bar-wrap{padding:0 16px 0 0;}
 .prod-bar-track{width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
 body.light .prod-bar-track{background:rgba(0,0,0,.08);}
 .prod-bar-fill{height:5px;border-radius:999px;background:var(--g);}
-.prod-pct{font-size:11px;font-weight:700;color:var(--g);text-align:right;width:36px;}
+.prod-pct{font-size:11px;font-weight:700;color:var(--g);text-align:right;display:block;}
 
 /* ── EARNINGS ── */
 .earn-inner{display:flex;flex-direction:column;height:100%;}
@@ -213,68 +217,46 @@ body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);color:#111;}
       <span class="panel-badge">Apr 2026</span>
     </div>
     <table class="prod-table">
+      <colgroup>
+        <col class="col-num"/><col class="col-name"/><col class="col-bar"/><col class="col-pct"/>
+      </colgroup>
       <thead>
         <tr>
-          <th style="width:18px">#</th>
+          <th>#</th>
           <th>Product</th>
-          <th style="width:106px">Popularity</th>
-          <th>Sales</th>
+          <th>Popularity</th>
+          <th class="th-pct">Sales</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><span class="prod-num">1</span></td>
-          <td>
-            <span class="prod-name">Business OS</span>
-            <span class="prod-sub">Full system · Ops + Sales</span>
-          </td>
-          <td class="prod-bar-wrap">
-            <div class="prod-bar-track"><div class="prod-bar-fill" style="width:46%"></div></div>
-          </td>
+          <td><span class="prod-name">Business OS</span><span class="prod-sub">Full system · Ops + Sales</span></td>
+          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:46%"></div></div></div></td>
           <td><span class="prod-pct">46%</span></td>
         </tr>
         <tr>
           <td><span class="prod-num">2</span></td>
-          <td>
-            <span class="prod-name">Operations OS</span>
-            <span class="prod-sub">Workflow & delivery</span>
-          </td>
-          <td class="prod-bar-wrap">
-            <div class="prod-bar-track"><div class="prod-bar-fill" style="width:27%"></div></div>
-          </td>
+          <td><span class="prod-name">Operations OS</span><span class="prod-sub">Workflow & delivery</span></td>
+          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:27%"></div></div></div></td>
           <td><span class="prod-pct">27%</span></td>
         </tr>
         <tr>
           <td><span class="prod-num">3</span></td>
-          <td>
-            <span class="prod-name">Sales OS</span>
-            <span class="prod-sub">Pipeline & revenue</span>
-          </td>
-          <td class="prod-bar-wrap">
-            <div class="prod-bar-track"><div class="prod-bar-fill" style="width:15%"></div></div>
-          </td>
+          <td><span class="prod-name">Sales OS</span><span class="prod-sub">Pipeline & revenue</span></td>
+          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:15%"></div></div></div></td>
           <td><span class="prod-pct">15%</span></td>
         </tr>
         <tr>
           <td><span class="prod-num">4</span></td>
-          <td>
-            <span class="prod-name">Starter OS</span>
-            <span class="prod-sub">Entry system</span>
-          </td>
-          <td class="prod-bar-wrap">
-            <div class="prod-bar-track"><div class="prod-bar-fill" style="width:8%"></div></div>
-          </td>
+          <td><span class="prod-name">Starter OS</span><span class="prod-sub">Entry system</span></td>
+          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:8%"></div></div></div></td>
           <td><span class="prod-pct">8%</span></td>
         </tr>
         <tr>
           <td><span class="prod-num">5</span></td>
-          <td>
-            <span class="prod-name">Marketing OS</span>
-            <span class="prod-sub">Campaigns & content</span>
-          </td>
-          <td class="prod-bar-wrap">
-            <div class="prod-bar-track"><div class="prod-bar-fill" style="width:4%"></div></div>
-          </td>
+          <td><span class="prod-name">Marketing OS</span><span class="prod-sub">Campaigns & content</span></td>
+          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:4%"></div></div></div></td>
           <td><span class="prod-pct">4%</span></td>
         </tr>
       </tbody>
