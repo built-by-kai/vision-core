@@ -145,6 +145,22 @@
     {
       "src": "/widgets/revenue",
       "dest": "/widgets/revenue.html"
+    },
+    {
+      "src": "/widgets/monthly",
+      "dest": "/widgets/monthly.html"
+    },
+    {
+      "src": "/widgets/topproducts",
+      "dest": "/widgets/topproducts.html"
+    },
+    {
+      "src": "/widgets/earnings",
+      "dest": "/widgets/earnings.html"
+    },
+    {
+      "src": "/widgets/visitors",
+      "dest": "/widgets/visitors.html"
     }
   ]
 }
