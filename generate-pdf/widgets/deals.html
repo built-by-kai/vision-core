@@ -98,6 +98,22 @@ body.light .f-count{color:rgba(0,0,0,0.7);}
 .legend-name{font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);flex:1;min-width:60px;}
 .legend-count{font-size:15px;font-weight:800;color:rgba(255,255,255,0.85);}
 
+
+/* ── Leads Chart ── */
+.chart-card{padding:24px 26px;margin-top:12px;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.chart-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);}
+body.light .chart-title{color:rgba(0,0,0,0.35);}
+.chart-badge{font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:2px 8px;}
+body.light .chart-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.08);}
+.chart-wrap{position:relative;width:100%;}
+.chart-svg{width:100%;overflow:visible;}
+.chart-tooltip{position:absolute;background:#1E1E1E;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;color:#fff;pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+body.light .chart-tooltip{background:#fff;border-color:rgba(0,0,0,0.1);color:#111;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+.chart-legend{display:flex;gap:14px;margin-top:14px;}
+.cl-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;color:rgba(255,255,255,0.4);}
+body.light .cl-item{color:rgba(0,0,0,0.4);}
+.cl-dot{width:8px;height:8px;border-radius:50%;}
 /* ── Responsive ── */
 @media(max-width:800px){.stat-row{grid-template-columns:repeat(3,1fr);}@media(max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}}.grid-2{grid-template-columns:1fr;}}
 @media(max-width:768px){body{padding:10px;}.stat-row{grid-template-columns:repeat(2,1fr);gap:8px;}.stat-card{padding:14px 16px;}.s-value{font-size:22px;}.grid-2{grid-template-columns:1fr;}.container-card{padding:16px;}.f-row{gap:6px;margin-bottom:10px;}.f-label{width:60px;font-size:8px;}.f-bar-bg{height:28px;}.f-bar-fill{padding:0 8px;}.f-val-text{font-size:10px;}.f-count{font-size:11px;width:20px;}.donut-container{flex-direction:column;gap:16px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 16px;justify-content:center;}.legend-name{font-size:12px;min-width:auto;}.legend-count{font-size:13px;}.legend-dot{width:8px;height:8px;}}
@@ -186,6 +202,23 @@ body.light .f-count{color:rgba(0,0,0,0.7);}
     </div>
   </div>
 
+</div>
+
+<!-- Leads Incoming Chart -->
+<div class="card chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Leads Incoming</span>
+    <span class="chart-badge" id="chart-badge"></span>
+  </div>
+  <div class="chart-wrap">
+    <svg class="chart-svg" id="leads-chart" height="160" viewBox="0 0 700 160" preserveAspectRatio="none"></svg>
+    <div class="chart-tooltip" id="chart-tip"></div>
+  </div>
+  <div class="chart-legend">
+    <div class="cl-item"><span class="cl-dot" style="background:#A78BFA;"></span>Incoming</div>
+    <div class="cl-item"><span class="cl-dot" style="background:#60A5FA;"></span>Contacted</div>
+    <div class="cl-item"><span class="cl-dot" style="background:#34D399;"></span>Proposed</div>
+  </div>
 </div>
 
 <script>
@@ -291,6 +324,198 @@ sources.forEach(s => {
       <span class="legend-count">${s.value}</span>
     </div>`;
 });
+// ── Leads Chart ──
+(function() {
+  const W = 700, H = 160, PAD = { t:10, r:16, b:32, l:32 };
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b;
+
+  // Sample data: [day, incoming, contacted, proposed]
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const today = now.getDate();
+
+  const rawData = [];
+  for (let d = 1; d <= today; d++) {
+    rawData.push({
+      day: d,
+      incoming:  Math.floor(Math.random()*3),
+      contacted: Math.floor(Math.random()*2),
+      proposed:  Math.floor(Math.random()*2),
+    });
+  }
+  // Accumulate
+  let sumIn=0, sumCo=0, sumPr=0;
+  const data = rawData.map(r => {
+    sumIn += r.incoming; sumCo += r.contacted; sumPr += r.proposed;
+    return { day: r.day, incoming: sumIn, contacted: sumCo, proposed: sumPr };
+  });
+
+  const maxVal = Math.max(...data.map(d => d.incoming), 1);
+  document.getElementById('chart-badge').textContent = sumIn + ' leads';
+
+  const svg = document.getElementById('leads-chart');
+  const ns = 'http://www.w3.org/2000/svg';
+
+  function xPos(i) { return PAD.l + (i / (data.length - 1 || 1)) * cW; }
+  function yPos(v) { return PAD.t + cH - (v / maxVal) * cH; }
+
+  function smoothPath(points) {
+    if (points.length < 2) return '';
+    let d = `M ${points[0][0]} ${points[0][1]}`;
+    for (let i = 1; i < points.length; i++) {
+      const [x1,y1] = points[i-1], [x2,y2] = points[i];
+      const cx = (x1+x2)/2;
+      d += ` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
+    }
+    return d;
+  }
+
+  function makeArea(points, color, gradId) {
+    const path = smoothPath(points);
+    if (!path) return;
+    const last = points[points.length-1], first = points[0];
+
+    // gradient
+    const defs = document.createElementNS(ns,'defs');
+    const grad = document.createElementNS(ns,'linearGradient');
+    grad.setAttribute('id', gradId);
+    grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
+    grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+    const s1 = document.createElementNS(ns,'stop');
+    s1.setAttribute('offset','0%'); s1.setAttribute('stop-color',color); s1.setAttribute('stop-opacity','0.2');
+    const s2 = document.createElementNS(ns,'stop');
+    s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',color); s2.setAttribute('stop-opacity','0.01');
+    grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+    svg.insertBefore(defs, svg.firstChild);
+
+    // fill area
+    const area = document.createElementNS(ns,'path');
+    area.setAttribute('d', path + ` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
+    area.setAttribute('fill', `url(#${gradId})`);
+    svg.appendChild(area);
+
+    // stroke line
+    const line = document.createElementNS(ns,'path');
+    line.setAttribute('d', path);
+    line.setAttribute('fill','none');
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width','2');
+    line.setAttribute('stroke-linecap','round');
+    svg.appendChild(line);
+
+    return line;
+  }
+
+  // Grid lines
+  const gridCount = 4;
+  for (let i = 0; i <= gridCount; i++) {
+    const y = PAD.t + (i/gridCount)*cH;
+    const gl = document.createElementNS(ns,'line');
+    gl.setAttribute('x1', PAD.l); gl.setAttribute('x2', W-PAD.r);
+    gl.setAttribute('y1', y); gl.setAttribute('y2', y);
+    gl.setAttribute('stroke','rgba(255,255,255,0.04)');
+    gl.setAttribute('stroke-dasharray','3,4');
+    svg.appendChild(gl);
+    if (i < gridCount) {
+      const val = Math.round(maxVal - (i/gridCount)*maxVal);
+      const t = document.createElementNS(ns,'text');
+      t.setAttribute('x', PAD.l-5); t.setAttribute('y', y+4);
+      t.setAttribute('text-anchor','end');
+      t.setAttribute('fill','rgba(255,255,255,0.2)');
+      t.setAttribute('font-size','8');
+      t.setAttribute('font-family','Inter,-apple-system,sans-serif');
+      t.textContent = val;
+      svg.appendChild(t);
+    }
+  }
+
+  // X-axis labels — show every ~5 days
+  const step = Math.max(1, Math.floor(data.length / 6));
+  data.forEach((d, i) => {
+    if (i % step !== 0 && i !== data.length-1) return;
+    const x = xPos(i), y = H - PAD.b + 14;
+    const t = document.createElementNS(ns,'text');
+    t.setAttribute('x', x); t.setAttribute('y', y);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','rgba(255,255,255,0.2)');
+    t.setAttribute('font-size','8');
+    t.setAttribute('font-family','Inter,-apple-system,sans-serif');
+    t.textContent = d.day;
+    svg.appendChild(t);
+  });
+
+  const seriesCfg = [
+    { key:'incoming',  color:'#A78BFA', gradId:'g-in'  },
+    { key:'contacted', color:'#60A5FA', gradId:'g-co'  },
+    { key:'proposed',  color:'#34D399', gradId:'g-pr'  },
+  ];
+
+  seriesCfg.forEach(cfg => {
+    const pts = data.map((d,i) => [xPos(i), yPos(d[cfg.key])]);
+    makeArea(pts, cfg.color, cfg.gradId);
+  });
+
+  // Dots + hover
+  const tip = document.getElementById('chart-tip');
+  const dotLayers = [];
+  seriesCfg.forEach(cfg => {
+    data.forEach((d, i) => {
+      const cx = xPos(i), cy = yPos(d[cfg.key]);
+      const dot = document.createElementNS(ns,'circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+      dot.setAttribute('r','4');
+      dot.setAttribute('fill', cfg.color);
+      dot.setAttribute('stroke','#191919');
+      dot.setAttribute('stroke-width','2');
+      dot.style.opacity = '0';
+      dot.style.transition = 'opacity 0.15s';
+      svg.appendChild(dot);
+      dotLayers.push({ dot, d, cfg, cx, cy });
+    });
+  });
+
+  // Vertical hover line
+  const hLine = document.createElementNS(ns,'line');
+  hLine.setAttribute('stroke','rgba(255,255,255,0.1)');
+  hLine.setAttribute('stroke-width','1');
+  hLine.setAttribute('y1', PAD.t); hLine.setAttribute('y2', H-PAD.b);
+  hLine.style.opacity='0';
+  svg.appendChild(hLine);
+
+  const wrap = svg.closest('.chart-wrap');
+  wrap.addEventListener('mousemove', e => {
+    const rect = svg.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    let closest = null, minDist = Infinity;
+    data.forEach((d,i) => {
+      const dist = Math.abs(xPos(i) - mx);
+      if (dist < minDist) { minDist = dist; closest = i; }
+    });
+    if (closest === null || minDist > 30) { hideTooltip(); return; }
+    const d = data[closest];
+    const cx = xPos(closest);
+    hLine.setAttribute('x1',cx); hLine.setAttribute('x2',cx);
+    hLine.style.opacity = '1';
+    dotLayers.forEach(item => {
+      item.dot.style.opacity = item.d.day === d.day ? '1' : '0';
+    });
+    tip.style.display = 'block';
+    const tipX = e.clientX - rect.left + 14;
+    const tipY = e.clientY - rect.top - 36;
+    tip.style.left = tipX + 'px'; tip.style.top = tipY + 'px';
+    tip.innerHTML = `<span style="color:rgba(255,255,255,0.5);font-weight:500;font-size:10px;">Day ${d.day}</span><br>`
+      + `<span style="color:#A78BFA;">▲ ${d.incoming} Incoming</span><br>`
+      + `<span style="color:#60A5FA;">▲ ${d.contacted} Contacted</span><br>`
+      + `<span style="color:#34D399;">▲ ${d.proposed} Proposed</span>`;
+  });
+  wrap.addEventListener('mouseleave', hideTooltip);
+  function hideTooltip() {
+    tip.style.display='none'; hLine.style.opacity='0';
+    dotLayers.forEach(item => item.dot.style.opacity='0');
+  }
+})();
+
 </script>
 </body>
 </html>
