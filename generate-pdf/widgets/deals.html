@@ -4,204 +4,190 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Opxio — Deals CRM</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Inter',-apple-system,sans-serif;padding:16px;transition:background 0.3s;background:#191919;color:#fff;overflow-y:auto;height:100%;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#0C0C0C;color:#fff;overflow-y:auto;height:100%;transition:background 0.3s,color 0.3s;}
+body.light{background:#F5F5F5;color:#0C0C0C;}
 
-/* ── Cards — exact creaitors ── */
-.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s ease;}
-.card:hover{border-color:rgba(255,255,255,0.12);}
+/* ── Card ── */
+.card{background:#131313;border:1px solid rgba(255,255,255,0.05);border-radius:16px;transition:border-color 0.2s;}
+.card:hover{border-color:rgba(170,255,0,0.12);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,0.06);}
+body.light .card:hover{border-color:rgba(100,180,0,0.2);}
 
-/* ── Stat card colours ── */
-.card-green .s-label{color:#6EE7B7;}.card-green .s-value{color:#34D399;}.card-green .s-accent{background:#34D399;}
-.card-blue  .s-label{color:#93C5FD;}.card-blue  .s-value{color:#60A5FA;}.card-blue  .s-accent{background:#60A5FA;}
-.card-amber .s-label{color:#FCD34D;}.card-amber .s-value{color:#FBBF24;}.card-amber .s-accent{background:#FBBF24;}
-.card-teal  .s-label{color:#5EEAD4;}.card-teal  .s-value{color:#2DD4BF;}.card-teal  .s-accent{background:#2DD4BF;}
-
-/* ── Light mode — exact creaitors ── */
-body.light{background:#fff;color:#111;}
-body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
-body.light .card:hover{border-color:rgba(0,0,0,0.1);}
-body.light .card-green .s-label{color:#059669;}body.light .card-green .s-value{color:#047857;}body.light .card-green .s-accent{background:#059669;}
-body.light .card-blue  .s-label{color:#2563EB;}body.light .card-blue  .s-value{color:#1D4ED8;}body.light .card-blue  .s-accent{background:#2563EB;}
-body.light .card-amber .s-label{color:#D97706;}body.light .card-amber .s-value{color:#B45309;}body.light .card-amber .s-accent{background:#D97706;}
-body.light .card-teal  .s-label{color:#0D9488;}body.light .card-teal  .s-value{color:#0F766E;}body.light .card-teal  .s-accent{background:#0D9488;}
-body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
-body.light .toggle-btn:hover{border-color:rgba(0,0,0,0.15);color:rgba(0,0,0,0.6);}
-body.light .sub-text{color:#9CA3AF;}
-body.light .container-title{color:rgba(0,0,0,0.35);}
-body.light .f-label{color:rgba(0,0,0,0.5);}
-body.light .f-bar-bg{background:rgba(0,0,0,0.06);}
-body.light .f-val-text{color:rgba(255,255,255,0.9);}
-body.light .f-count{color:rgba(0,0,0,0.7);}
-body.light .donut-center-val{fill:#111;}
-body.light .donut-center-label{fill:rgba(0,0,0,0.3);}
-body.light .legend-name{color:rgba(0,0,0,0.6);}
-body.light .legend-count{color:rgba(0,0,0,0.8);}
-body.light .date-select{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.7);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
-body.light .date-select option{background:#fff;color:rgba(0,0,0,0.8);}
+/* ── Accent green ── */
+:root{--g:#AAFF00;--g-dim:rgba(170,255,0,0.6);--g-muted:rgba(170,255,0,0.15);--g-border:rgba(170,255,0,0.18);}
+body.light{--g:#5C9900;--g-dim:rgba(92,153,0,0.7);--g-muted:rgba(92,153,0,0.1);--g-border:rgba(92,153,0,0.2);}
 
 /* ── Buttons ── */
-.toggle-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;line-height:1;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;}
-.toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+.btn{background:#1A1A1A;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.2s;letter-spacing:.2px;}
+.btn:hover{border-color:var(--g-border);color:var(--g);}
+body.light .btn{background:#F0F0F0;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+body.light .btn:hover{border-color:var(--g-border);color:var(--g);}
 
-/* ── Date selects — exact creaitors ── */
-.date-filter{display:flex;align-items:center;gap:6px;}
-.date-select{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:#2A2A2A;color:rgba(255,255,255,0.7);outline:none;transition:all 0.2s;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.4)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
-.date-select:focus{border-color:rgba(255,255,255,0.3);}
-.date-select:hover{border-color:rgba(255,255,255,0.25);}
-.date-select option{background:#2A2A2A;color:rgba(255,255,255,0.8);}
+/* ── Selects ── */
+.sel{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 22px 5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:#1A1A1A;color:rgba(255,255,255,0.5);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:all 0.2s;}
+.sel:hover,.sel:focus{border-color:var(--g-border);color:var(--g);}
+.sel option{background:#1A1A1A;color:#fff;}
+body.light .sel{background:#F0F0F0;border-color:rgba(0,0,0,0.08);color:rgba(0,0,0,0.5);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;}
+body.light .sel option{background:#fff;color:#111;}
 
 /* ── Top bar ── */
-.top-bar{display:flex;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
-.top-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.page-label{font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:3px;}
-.page-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
-body.light .page-label{color:rgba(0,0,0,0.3);}
-body.light .page-title{color:#111;}
+.top-bar{display:flex;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
+.top-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.page-eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:2px;}
+body.light .page-eyebrow{color:rgba(0,0,0,0.28);}
+.page-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .page-title{color:#0C0C0C;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,0.18);}
+body.light .ts{color:rgba(0,0,0,0.22);}
 
 /* ── Stat row ── */
-.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px;}
-.stat-card{padding:18px 20px;position:relative;overflow:hidden;}
-.s-accent{position:absolute;top:16px;right:16px;width:7px;height:7px;border-radius:50%;opacity:0.8;}
-.s-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
-.s-value{font-size:30px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
-.sub-text{font-size:11px;margin-top:8px;font-weight:500;color:#6B7280;}
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat-card{padding:18px 18px 16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity 0.25s;}
+.stat-card:hover::before{opacity:1;}
+.s-dot{position:absolute;top:15px;right:15px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:0.6;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.28);margin-bottom:10px;}
+body.light .s-lbl{color:rgba(0,0,0,0.32);}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.22);margin-top:7px;}
+body.light .s-sub{color:rgba(0,0,0,0.3);}
 
-/* ── 2-col grid ── */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.container-card{padding:24px 26px;}
-.container-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
-.container-badge{font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:2px 8px;}
-body.light .container-title{color:rgba(0,0,0,0.35);}
-body.light .container-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.08);}
+/* ── 2-col ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel{padding:22px 24px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;}
+body.light .panel-title{color:rgba(0,0,0,0.3);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
 
-/* ── FUNNEL — exact creaitors ── */
-.f-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+/* ── Funnel ── */
+.f-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .f-row:last-child{margin-bottom:0;}
-.f-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:rgba(255,255,255,0.4);width:80px;flex-shrink:0;}
-.f-bar-bg{flex:1;height:36px;border-radius:8px;background:rgba(255,255,255,0.06);overflow:hidden;position:relative;}
-.f-bar-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 14px;transition:width 0.5s ease;min-width:0;}
-.f-val-text{font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);white-space:nowrap;}
-.f-count{font-size:13px;font-weight:800;color:rgba(255,255,255,0.6);width:24px;text-align:right;flex-shrink:0;}
-body.light .f-count{color:rgba(0,0,0,0.7);}
+.f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.3);width:76px;flex-shrink:0;}
+body.light .f-lbl{color:rgba(0,0,0,0.35);}
+.f-bg{flex:1;height:34px;border-radius:8px;background:rgba(255,255,255,0.04);overflow:hidden;}
+body.light .f-bg{background:rgba(0,0,0,0.05);}
+.f-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 12px;min-width:0;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.f-fill-text{font-size:11.5px;font-weight:700;color:rgba(0,0,0,0.75);white-space:nowrap;}
+.f-fill.lost .f-fill-text{color:rgba(255,255,255,0.4);}
+body.light .f-fill-text{color:rgba(0,0,0,0.6);}
+.f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,0.4);width:22px;text-align:right;flex-shrink:0;}
+body.light .f-n{color:rgba(0,0,0,0.45);}
 
-/* ── DONUT — exact creaitors ── */
-.donut-container{display:flex;align-items:center;justify-content:center;gap:24px;padding:10px 0;}
+/* ── Donut ── */
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px;padding:6px 0;}
 .donut-svg{flex-shrink:0;}
-.donut-center-val{font-weight:800;fill:#fff;}
-.donut-center-label{font-weight:600;fill:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.5px;}
-.legend{display:flex;flex-direction:column;gap:12px;}
-.legend-item{display:flex;align-items:center;gap:10px;}
-.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.legend-name{font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);flex:1;min-width:60px;}
-.legend-count{font-size:15px;font-weight:800;color:rgba(255,255,255,0.85);}
-
+.d-val{font-weight:900;fill:#fff;}
+body.light .d-val{fill:#0C0C0C;}
+.d-lbl{font-weight:700;fill:rgba(255,255,255,0.22);text-transform:uppercase;letter-spacing:1px;}
+body.light .d-lbl{fill:rgba(0,0,0,0.3);}
+.legend{display:flex;flex-direction:column;gap:10px;}
+.l-row{display:flex;align-items:center;gap:9px;}
+.l-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.l-name{font-size:12px;font-weight:500;color:rgba(255,255,255,0.45);flex:1;}
+body.light .l-name{color:rgba(0,0,0,0.5);}
+.l-val{font-size:14px;font-weight:900;color:rgba(255,255,255,0.8);}
+body.light .l-val{color:rgba(0,0,0,0.75);}
 
 /* ── Leads Chart ── */
-.chart-card{padding:24px 26px;margin-top:12px;}
-.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-.chart-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);}
-body.light .chart-title{color:rgba(0,0,0,0.35);}
-.chart-badge{font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:2px 8px;}
-body.light .chart-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.08);}
+.chart-card{padding:22px 24px;margin-top:10px;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.25);}
+body.light .chart-title{color:rgba(0,0,0,0.3);}
+.chart-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--g-muted);color:var(--g);border:1px solid var(--g-border);}
 .chart-wrap{position:relative;width:100%;}
 .chart-svg{width:100%;overflow:visible;}
-.chart-tooltip{position:absolute;background:#1E1E1E;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;color:#fff;pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
-body.light .chart-tooltip{background:#fff;border-color:rgba(0,0,0,0.1);color:#111;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
-.chart-legend{display:flex;gap:14px;margin-top:14px;}
-.cl-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;color:rgba(255,255,255,0.4);}
-body.light .cl-item{color:rgba(0,0,0,0.4);}
-.cl-dot{width:8px;height:8px;border-radius:50%;}
+.chart-tip{position:absolute;background:#1A1A1A;border:1px solid var(--g-border);border-radius:9px;padding:8px 12px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+body.light .chart-tip{background:#fff;border-color:rgba(0,0,0,0.1);color:#111;}
+.chart-legend{display:flex;gap:14px;margin-top:12px;}
+.cl{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);}
+body.light .cl{color:rgba(0,0,0,0.35);}
+.cl-dot{width:7px;height:7px;border-radius:50%;}
+
 /* ── Responsive ── */
-@media(max-width:800px){.stat-row{grid-template-columns:repeat(3,1fr);}@media(max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}}.grid-2{grid-template-columns:1fr;}}
-@media(max-width:768px){body{padding:10px;}.stat-row{grid-template-columns:repeat(2,1fr);gap:8px;}.stat-card{padding:14px 16px;}.s-value{font-size:22px;}.grid-2{grid-template-columns:1fr;}.container-card{padding:16px;}.f-row{gap:6px;margin-bottom:10px;}.f-label{width:60px;font-size:8px;}.f-bar-bg{height:28px;}.f-bar-fill{padding:0 8px;}.f-val-text{font-size:10px;}.f-count{font-size:11px;width:20px;}.donut-container{flex-direction:column;gap:16px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 16px;justify-content:center;}.legend-name{font-size:12px;min-width:auto;}.legend-count{font-size:13px;}.legend-dot{width:8px;height:8px;}}
+@media(max-width:800px){.stat-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:58px;font-size:8px;}.donut-wrap{flex-direction:column;gap:14px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 14px;}.l-name{min-width:auto;}.chart-card{padding:14px 16px;}}
 </style>
-<!-- v2 -->
 </head>
 <body>
 
 <!-- Top bar -->
 <div class="top-bar">
   <div>
-    <p class="page-label">Opxio · Sales</p>
+    <p class="page-eyebrow">Opxio · Sales</p>
     <h1 class="page-title">Deals CRM</h1>
   </div>
   <div class="top-right">
-    <div class="date-filter">
-      <select class="date-select" id="sel-month" onchange="onFilterChange()">
-        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-      </select>
-      <select class="date-select" id="sel-year" onchange="onFilterChange()">
-        <option value="2024">2024</option>
-        <option value="2025">2025</option>
-        <option value="2026" selected>2026</option>
-      </select>
-    </div>
-    <button class="toggle-btn" onclick="handleRefresh()" id="refresh-btn">↻ Refresh</button>
-    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+    <span class="ts" id="ts"></span>
+    <select class="sel" id="sel-month" onchange="onFilter()">
+      <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+      <option value="4" selected>Apr</option><option value="5">May</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+      <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+    </select>
+    <select class="sel" id="sel-year">
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+      <option value="2026" selected>2026</option>
+    </select>
+    <button class="btn" onclick="doRefresh()" id="refresh-btn">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mode-btn">☀ Light</button>
   </div>
 </div>
 
 <!-- KPI stat cards -->
 <div class="stat-row">
-  <div class="card stat-card card-blue">
-    <div class="s-accent"></div>
-    <div class="s-label">Active Leads</div>
-    <div class="s-value">18</div>
-    <div class="sub-text">Incoming + Proposed</div>
+  <div class="card stat-card">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Active Leads</div>
+    <div class="s-val">18</div>
+    <div class="s-sub">Incoming + Proposed</div>
   </div>
-  <div class="card stat-card card-green">
-    <div class="s-accent"></div>
-    <div class="s-label">Pipeline Value</div>
-    <div class="s-value">RM 94.7K</div>
-    <div class="sub-text">Excl. lost &amp; inactive</div>
+  <div class="card stat-card">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Pipeline Value</div>
+    <div class="s-val">RM 94.7K</div>
+    <div class="s-sub">Excl. lost &amp; inactive</div>
   </div>
-  <div class="card stat-card card-amber">
-    <div class="s-accent"></div>
-    <div class="s-label">Deposit Due</div>
-    <div class="s-value">2</div>
-    <div class="sub-text">Awaiting payment</div>
+  <div class="card stat-card">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Deposit Due</div>
+    <div class="s-val">2</div>
+    <div class="s-sub">Awaiting payment</div>
   </div>
-  <div class="card stat-card card-green">
-    <div class="s-accent"></div>
-    <div class="s-label">Active Build</div>
-    <div class="s-value">2</div>
-    <div class="sub-text">Currently in delivery</div>
+  <div class="card stat-card">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Active Build</div>
+    <div class="s-val">5</div>
+    <div class="s-sub">Currently in delivery</div>
   </div>
-  <div class="card stat-card card-teal">
-    <div class="s-accent"></div>
-    <div class="s-label">Win Rate</div>
-    <div class="s-value">71%</div>
-    <div class="sub-text">Closed won this month</div>
+  <div class="card stat-card">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Win Rate</div>
+    <div class="s-val">71%</div>
+    <div class="s-sub">Closed won this month</div>
   </div>
 </div>
 
-<!-- Bottom 2-col panels -->
+<!-- Funnel + Donut -->
 <div class="grid-2">
-
-  <!-- Deal Pipeline Funnel -->
-  <div class="card container-card">
-    <div class="container-title">
+  <div class="card panel">
+    <div class="panel-title">
       Deal Pipeline Funnel
-      <span class="container-badge" id="funnel-badge"></span>
+      <span class="panel-badge" id="funnel-badge"></span>
     </div>
     <div id="funnel"></div>
   </div>
-
-  <!-- Lead Sources -->
-  <div class="card container-card">
-    <div class="container-title">Lead Sources</div>
-    <div class="donut-container">
-      <svg class="donut-svg" width="180" height="180" viewBox="0 0 180 180" id="donut-svg"></svg>
+  <div class="card panel">
+    <div class="panel-title">Lead Sources</div>
+    <div class="donut-wrap">
+      <svg class="donut-svg" width="160" height="160" viewBox="0 0 160 160" id="donut-svg"></svg>
       <div class="legend" id="donut-legend"></div>
     </div>
   </div>
-
 </div>
 
 <!-- Leads Incoming Chart -->
@@ -211,311 +197,230 @@ body.light .cl-item{color:rgba(0,0,0,0.4);}
     <span class="chart-badge" id="chart-badge"></span>
   </div>
   <div class="chart-wrap">
-    <svg class="chart-svg" id="leads-chart" height="160" viewBox="0 0 700 160" preserveAspectRatio="none"></svg>
-    <div class="chart-tooltip" id="chart-tip"></div>
+    <svg class="chart-svg" id="leads-chart" height="150" viewBox="0 0 700 150" preserveAspectRatio="none"></svg>
+    <div class="chart-tip" id="chart-tip"></div>
   </div>
   <div class="chart-legend">
-    <div class="cl-item"><span class="cl-dot" style="background:#A78BFA;"></span>Incoming</div>
-    <div class="cl-item"><span class="cl-dot" style="background:#60A5FA;"></span>Contacted</div>
-    <div class="cl-item"><span class="cl-dot" style="background:#34D399;"></span>Proposed</div>
+    <div class="cl"><span class="cl-dot" style="background:#AAFF00;"></span>Incoming</div>
+    <div class="cl"><span class="cl-dot" style="background:rgba(170,255,0,0.5);"></span>Contacted</div>
+    <div class="cl"><span class="cl-dot" style="background:rgba(170,255,0,0.25);"></span>Proposed</div>
   </div>
 </div>
 
 <script>
-// ── Set current month on load ──
-(function(){
-  const now = new Date();
-  document.getElementById('sel-month').value = now.getMonth() + 1;
-})();
+// ── Init month ──
+(function(){ document.getElementById('sel-month').value = new Date().getMonth()+1; })();
 
-// ── Theme toggle ──
-let isLight = false;
+// ── Theme ──
+let light = false;
 function toggleMode() {
-  isLight = !isLight;
-  document.body.classList.toggle('light', isLight);
-  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+  light = !light;
+  document.body.classList.toggle('light', light);
+  document.getElementById('mode-btn').textContent = light ? '🌙 Dark' : '☀ Light';
 }
+function onFilter(){ /* hook to Notion API */ }
 
-// ── Filter change ──
-function onFilterChange() {
-  const m = document.getElementById('sel-month').value;
-  const y = document.getElementById('sel-year').value;
-  // Hook this up to your Notion API when ready
-  console.log('Filter:', m, y);
+// ── Timestamp ──
+function setTs(){
+  const n=new Date();
+  document.getElementById('ts').textContent='Updated '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 
 // ── Refresh ──
-function handleRefresh() {
-  const btn = document.getElementById('refresh-btn');
-  btn.textContent = '↻ Refreshing…';
-  btn.style.opacity = '0.5';
-  setTimeout(() => {
-    btn.textContent = '↻ Refresh';
-    btn.style.opacity = '1';
-  }, 1200);
+function doRefresh(){
+  const b=document.getElementById('refresh-btn');
+  b.textContent='↻'; b.style.opacity='.4';
+  setTimeout(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; setTs(); },900);
 }
 
+setTs();
+setInterval(doRefresh, 5*60*1000);
+
 // ── Funnel ──
-const funnel = [
-  { label:'Incoming',     value:'RM 14.4K', count:4, color:'#6366F1', pct:57  },
-  { label:'Proposed',     value:'RM 44.8K', count:7, color:'#8B5CF6', pct:100 },
-  { label:'Deposit Due',  value:'RM 12.8K', count:2, color:'#F59E0B', pct:29  },
-  { label:'Active Build', value:'RM 22.7K', count:5, color:'#3B82F6', pct:71  },
-  { label:'Lost',         value:'RM 0',     count:3, color:'#6B7280', pct:43  },
+// Green palette: brightest → dimmest, lost = muted grey
+const funnel=[
+  {label:'Incoming',    value:'RM 14.4K', count:4, bg:'#AAFF00', pct:57},
+  {label:'Proposed',    value:'RM 44.8K', count:7, bg:'rgba(170,255,0,0.78)', pct:100},
+  {label:'Deposit Due', value:'RM 12.8K', count:2, bg:'rgba(170,255,0,0.55)', pct:29},
+  {label:'Active Build',value:'RM 22.7K', count:5, bg:'rgba(170,255,0,0.38)', pct:71},
+  {label:'Lost',        value:'RM 0',     count:3, bg:'rgba(255,255,255,0.07)', pct:43, lost:true},
 ];
-
-const funnelTotal = funnel.reduce((s,f) => s + f.count, 0);
-document.getElementById('funnel-badge').textContent = funnelTotal + ' deals';
-
-const funnelEl = document.getElementById('funnel');
-funnel.forEach(f => {
-  funnelEl.innerHTML += `
-    <div class="f-row">
-      <span class="f-label">${f.label}</span>
-      <div class="f-bar-bg">
-        <div class="f-bar-fill" style="width:${f.pct}%;background:${f.color};">
-          <span class="f-val-text">${f.value}</span>
-        </div>
-      </div>
-      <span class="f-count">${f.count}</span>
-    </div>`;
+const total=funnel.reduce((s,f)=>s+f.count,0);
+document.getElementById('funnel-badge').textContent=total+' deals';
+const fe=document.getElementById('funnel');
+funnel.forEach(f=>{
+  fe.innerHTML+=`<div class="f-row">
+    <span class="f-lbl">${f.label}</span>
+    <div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;background:${f.bg};">
+      <span class="f-fill-text">${f.value}</span>
+    </div></div>
+    <span class="f-n">${f.count}</span>
+  </div>`;
 });
 
 // ── Donut ──
-const sources = [
-  { label:'Referral', value:8, color:'#06B6D4' },
-  { label:'Threads',  value:5, color:'#F59E0B' },
-  { label:'Website',  value:4, color:'#F87171' },
-  { label:'Walk-in',  value:2, color:'#F472B6' },
-  { label:'TikTok',   value:2, color:'#A78BFA' },
+// All green tones
+const sources=[
+  {label:'Referral', value:8, color:'#AAFF00'},
+  {label:'Threads',  value:5, color:'rgba(170,255,0,0.65)'},
+  {label:'Website',  value:4, color:'rgba(170,255,0,0.42)'},
+  {label:'Walk-in',  value:2, color:'rgba(170,255,0,0.26)'},
+  {label:'TikTok',   value:2, color:'rgba(170,255,0,0.14)'},
 ];
-const srcTotal = sources.reduce((s,x) => s + x.value, 0);
-
-const cx=90, cy=90, r=66, sw=24;
-const circ = 2*Math.PI*r;
-let offset = 0, paths = '';
-
-// Background track circle
-paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(128,128,128,0.08)" stroke-width="${sw}"/>`;
-
-sources.forEach(s => {
-  const dash = (s.value / srcTotal) * circ;
-  const gap  = circ - dash;
-  paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
-    stroke="${s.color}" stroke-width="${sw}"
+const srcTotal=sources.reduce((s,x)=>s+x.value,0);
+const cx=80,cy=80,r=58,sw=20,circ=2*Math.PI*r;
+let offset=0,paths='';
+paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${sw}"/>`;
+sources.forEach(s=>{
+  const dash=(s.value/srcTotal)*circ,gap=circ-dash;
+  paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}"
     stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
     stroke-dashoffset="${(-offset).toFixed(2)}"
     transform="rotate(-90 ${cx} ${cy})"/>`;
-  offset += dash;
+  offset+=dash;
+});
+paths+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" dominant-baseline="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${srcTotal}</text>`;
+paths+=`<text x="${cx}" y="${cy+14}" text-anchor="middle" dominant-baseline="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
+document.getElementById('donut-svg').innerHTML=paths;
+const le=document.getElementById('donut-legend');
+sources.forEach(s=>{
+  le.innerHTML+=`<div class="l-row">
+    <span class="l-dot" style="background:${s.color}"></span>
+    <span class="l-name">${s.label}</span>
+    <span class="l-val">${s.value}</span>
+  </div>`;
 });
 
-// Center text
-paths += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" dominant-baseline="middle" font-family="Inter,-apple-system,sans-serif" font-size="28" class="donut-center-val">${srcTotal}</text>`;
-paths += `<text x="${cx}" y="${cy + 16}" text-anchor="middle" dominant-baseline="middle" font-family="Inter,-apple-system,sans-serif" font-size="9" class="donut-center-label">LEADS</text>`;
-
-document.getElementById('donut-svg').innerHTML = paths;
-
-const legendEl = document.getElementById('donut-legend');
-sources.forEach(s => {
-  legendEl.innerHTML += `
-    <div class="legend-item">
-      <span class="legend-dot" style="background:${s.color}"></span>
-      <span class="legend-name">${s.label}</span>
-      <span class="legend-count">${s.value}</span>
-    </div>`;
-});
 // ── Leads Chart ──
-(function() {
-  const W = 700, H = 160, PAD = { t:10, r:16, b:32, l:32 };
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b;
+(function(){
+  const W=700,H=150,PAD={t:8,r:16,b:28,l:28};
+  const cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
+  const today=new Date().getDate();
 
-  // Sample data: [day, incoming, contacted, proposed]
-  const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const today = now.getDate();
-
-  const rawData = [];
-  for (let d = 1; d <= today; d++) {
-    rawData.push({
-      day: d,
-      incoming:  Math.floor(Math.random()*3),
-      contacted: Math.floor(Math.random()*2),
-      proposed:  Math.floor(Math.random()*2),
-    });
+  // Cumulative data
+  let sIn=0,sCo=0,sPr=0;
+  const data=[];
+  for(let d=1;d<=today;d++){
+    sIn+=Math.floor(Math.random()*3);
+    sCo+=Math.floor(Math.random()*2);
+    sPr+=Math.floor(Math.random()*2);
+    data.push({day:d,incoming:sIn,contacted:sCo,proposed:sPr});
   }
-  // Accumulate
-  let sumIn=0, sumCo=0, sumPr=0;
-  const data = rawData.map(r => {
-    sumIn += r.incoming; sumCo += r.contacted; sumPr += r.proposed;
-    return { day: r.day, incoming: sumIn, contacted: sumCo, proposed: sumPr };
-  });
+  const maxVal=Math.max(...data.map(d=>d.incoming),1);
+  document.getElementById('chart-badge').textContent=sIn+' total';
 
-  const maxVal = Math.max(...data.map(d => d.incoming), 1);
-  document.getElementById('chart-badge').textContent = sumIn + ' leads';
+  const svg=document.getElementById('leads-chart');
+  const ns='http://www.w3.org/2000/svg';
 
-  const svg = document.getElementById('leads-chart');
-  const ns = 'http://www.w3.org/2000/svg';
+  function xP(i){return PAD.l+(i/(data.length-1||1))*cW;}
+  function yP(v){return PAD.t+cH-(v/maxVal)*cH;}
 
-  function xPos(i) { return PAD.l + (i / (data.length - 1 || 1)) * cW; }
-  function yPos(v) { return PAD.t + cH - (v / maxVal) * cH; }
-
-  function smoothPath(points) {
-    if (points.length < 2) return '';
-    let d = `M ${points[0][0]} ${points[0][1]}`;
-    for (let i = 1; i < points.length; i++) {
-      const [x1,y1] = points[i-1], [x2,y2] = points[i];
-      const cx = (x1+x2)/2;
-      d += ` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
+  function smoothPath(pts){
+    if(pts.length<2)return '';
+    let d=`M ${pts[0][0]} ${pts[0][1]}`;
+    for(let i=1;i<pts.length;i++){
+      const[x1,y1]=pts[i-1],[x2,y2]=pts[i],cx=(x1+x2)/2;
+      d+=` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
     }
     return d;
   }
 
-  function makeArea(points, color, gradId) {
-    const path = smoothPath(points);
-    if (!path) return;
-    const last = points[points.length-1], first = points[0];
-
-    // gradient
-    const defs = document.createElementNS(ns,'defs');
-    const grad = document.createElementNS(ns,'linearGradient');
-    grad.setAttribute('id', gradId);
-    grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
-    grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
-    const s1 = document.createElementNS(ns,'stop');
-    s1.setAttribute('offset','0%'); s1.setAttribute('stop-color',color); s1.setAttribute('stop-opacity','0.2');
-    const s2 = document.createElementNS(ns,'stop');
-    s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',color); s2.setAttribute('stop-opacity','0.01');
-    grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
-    svg.insertBefore(defs, svg.firstChild);
-
-    // fill area
-    const area = document.createElementNS(ns,'path');
-    area.setAttribute('d', path + ` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
-    area.setAttribute('fill', `url(#${gradId})`);
+  function makeSeries(pts,stroke,gradId,opacity){
+    const pathD=smoothPath(pts);
+    if(!pathD)return;
+    const last=pts[pts.length-1],first=pts[0];
+    const defs=document.createElementNS(ns,'defs');
+    const grad=document.createElementNS(ns,'linearGradient');
+    grad.setAttribute('id',gradId);grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+    const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color',stroke);s1.setAttribute('stop-opacity',opacity+'');
+    const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color',stroke);s2.setAttribute('stop-opacity','0');
+    grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);
+    svg.insertBefore(defs,svg.firstChild);
+    const area=document.createElementNS(ns,'path');
+    area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
+    area.setAttribute('fill',`url(#${gradId})`);
     svg.appendChild(area);
-
-    // stroke line
-    const line = document.createElementNS(ns,'path');
-    line.setAttribute('d', path);
-    line.setAttribute('fill','none');
-    line.setAttribute('stroke', color);
-    line.setAttribute('stroke-width','2');
+    const line=document.createElementNS(ns,'path');
+    line.setAttribute('d',pathD);line.setAttribute('fill','none');
+    line.setAttribute('stroke',stroke);line.setAttribute('stroke-width','2');
     line.setAttribute('stroke-linecap','round');
     svg.appendChild(line);
-
-    return line;
   }
 
-  // Grid lines
-  const gridCount = 4;
-  for (let i = 0; i <= gridCount; i++) {
-    const y = PAD.t + (i/gridCount)*cH;
-    const gl = document.createElementNS(ns,'line');
-    gl.setAttribute('x1', PAD.l); gl.setAttribute('x2', W-PAD.r);
-    gl.setAttribute('y1', y); gl.setAttribute('y2', y);
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=PAD.t+(i/4)*cH;
+    const gl=document.createElementNS(ns,'line');
+    gl.setAttribute('x1',PAD.l);gl.setAttribute('x2',W-PAD.r);
+    gl.setAttribute('y1',y);gl.setAttribute('y2',y);
     gl.setAttribute('stroke','rgba(255,255,255,0.04)');
-    gl.setAttribute('stroke-dasharray','3,4');
+    gl.setAttribute('stroke-dasharray','3,5');
     svg.appendChild(gl);
-    if (i < gridCount) {
-      const val = Math.round(maxVal - (i/gridCount)*maxVal);
-      const t = document.createElementNS(ns,'text');
-      t.setAttribute('x', PAD.l-5); t.setAttribute('y', y+4);
-      t.setAttribute('text-anchor','end');
-      t.setAttribute('fill','rgba(255,255,255,0.2)');
-      t.setAttribute('font-size','8');
-      t.setAttribute('font-family','Inter,-apple-system,sans-serif');
-      t.textContent = val;
-      svg.appendChild(t);
-    }
   }
 
-  // X-axis labels — show every ~5 days
-  const step = Math.max(1, Math.floor(data.length / 6));
-  data.forEach((d, i) => {
-    if (i % step !== 0 && i !== data.length-1) return;
-    const x = xPos(i), y = H - PAD.b + 14;
-    const t = document.createElementNS(ns,'text');
-    t.setAttribute('x', x); t.setAttribute('y', y);
-    t.setAttribute('text-anchor','middle');
-    t.setAttribute('fill','rgba(255,255,255,0.2)');
-    t.setAttribute('font-size','8');
-    t.setAttribute('font-family','Inter,-apple-system,sans-serif');
-    t.textContent = d.day;
-    svg.appendChild(t);
+  // X labels
+  const step=Math.max(1,Math.floor(data.length/6));
+  data.forEach((d,i)=>{
+    if(i%step!==0&&i!==data.length-1)return;
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+12);
+    t.setAttribute('text-anchor','middle');t.setAttribute('fill','rgba(255,255,255,0.2)');
+    t.setAttribute('font-size','8');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');
+    t.textContent=d.day;svg.appendChild(t);
   });
 
-  const seriesCfg = [
-    { key:'incoming',  color:'#A78BFA', gradId:'g-in'  },
-    { key:'contacted', color:'#60A5FA', gradId:'g-co'  },
-    { key:'proposed',  color:'#34D399', gradId:'g-pr'  },
-  ];
+  // Series (back-to-front so brightest on top)
+  makeSeries(data.map((d,i)=>[xP(i),yP(d.proposed)]),  '#AAFF00','gPr',0.08);
+  makeSeries(data.map((d,i)=>[xP(i),yP(d.contacted)]), '#AAFF00','gCo',0.14);
+  makeSeries(data.map((d,i)=>[xP(i),yP(d.incoming)]),  '#AAFF00','gIn',0.22);
 
-  seriesCfg.forEach(cfg => {
-    const pts = data.map((d,i) => [xPos(i), yPos(d[cfg.key])]);
-    makeArea(pts, cfg.color, cfg.gradId);
-  });
-
-  // Dots + hover
-  const tip = document.getElementById('chart-tip');
-  const dotLayers = [];
-  seriesCfg.forEach(cfg => {
-    data.forEach((d, i) => {
-      const cx = xPos(i), cy = yPos(d[cfg.key]);
-      const dot = document.createElementNS(ns,'circle');
-      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
-      dot.setAttribute('r','4');
-      dot.setAttribute('fill', cfg.color);
-      dot.setAttribute('stroke','#191919');
-      dot.setAttribute('stroke-width','2');
-      dot.style.opacity = '0';
-      dot.style.transition = 'opacity 0.15s';
-      svg.appendChild(dot);
-      dotLayers.push({ dot, d, cfg, cx, cy });
-    });
-  });
-
-  // Vertical hover line
-  const hLine = document.createElementNS(ns,'line');
-  hLine.setAttribute('stroke','rgba(255,255,255,0.1)');
-  hLine.setAttribute('stroke-width','1');
-  hLine.setAttribute('y1', PAD.t); hLine.setAttribute('y2', H-PAD.b);
-  hLine.style.opacity='0';
+  // Hover line
+  const hLine=document.createElementNS(ns,'line');
+  hLine.setAttribute('stroke','rgba(170,255,0,0.15)');hLine.setAttribute('stroke-width','1');
+  hLine.setAttribute('y1',PAD.t);hLine.setAttribute('y2',H-PAD.b);hLine.style.opacity='0';
   svg.appendChild(hLine);
 
-  const wrap = svg.closest('.chart-wrap');
-  wrap.addEventListener('mousemove', e => {
-    const rect = svg.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W / rect.width);
-    let closest = null, minDist = Infinity;
-    data.forEach((d,i) => {
-      const dist = Math.abs(xPos(i) - mx);
-      if (dist < minDist) { minDist = dist; closest = i; }
+  // Dots
+  const seriesDots=[
+    {key:'incoming',color:'#AAFF00'},
+    {key:'contacted',color:'rgba(170,255,0,0.6)'},
+    {key:'proposed',color:'rgba(170,255,0,0.35)'},
+  ];
+  const allDots=[];
+  seriesDots.forEach(cfg=>{
+    data.forEach((d,i)=>{
+      const dot=document.createElementNS(ns,'circle');
+      dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d[cfg.key]));
+      dot.setAttribute('r','4');dot.setAttribute('fill',cfg.color);
+      dot.setAttribute('stroke','#0C0C0C');dot.setAttribute('stroke-width','2');
+      dot.style.opacity='0';dot.style.transition='opacity 0.12s';
+      svg.appendChild(dot);
+      allDots.push({dot,d,cfg});
     });
-    if (closest === null || minDist > 30) { hideTooltip(); return; }
-    const d = data[closest];
-    const cx = xPos(closest);
-    hLine.setAttribute('x1',cx); hLine.setAttribute('x2',cx);
-    hLine.style.opacity = '1';
-    dotLayers.forEach(item => {
-      item.dot.style.opacity = item.d.day === d.day ? '1' : '0';
-    });
-    tip.style.display = 'block';
-    const tipX = e.clientX - rect.left + 14;
-    const tipY = e.clientY - rect.top - 36;
-    tip.style.left = tipX + 'px'; tip.style.top = tipY + 'px';
-    tip.innerHTML = `<span style="color:rgba(255,255,255,0.5);font-weight:500;font-size:10px;">Day ${d.day}</span><br>`
-      + `<span style="color:#A78BFA;">▲ ${d.incoming} Incoming</span><br>`
-      + `<span style="color:#60A5FA;">▲ ${d.contacted} Contacted</span><br>`
-      + `<span style="color:#34D399;">▲ ${d.proposed} Proposed</span>`;
   });
-  wrap.addEventListener('mouseleave', hideTooltip);
-  function hideTooltip() {
-    tip.style.display='none'; hLine.style.opacity='0';
-    dotLayers.forEach(item => item.dot.style.opacity='0');
-  }
-})();
 
+  const tip=document.getElementById('chart-tip');
+  const wrap=svg.closest('.chart-wrap');
+  wrap.addEventListener('mousemove',e=>{
+    const rect=svg.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(W/rect.width);
+    let best=null,bd=Infinity;
+    data.forEach((d,i)=>{const dist=Math.abs(xP(i)-mx);if(dist<bd){bd=dist;best=i;}});
+    if(best===null||bd>40){hide();return;}
+    const d=data[best],cx=xP(best);
+    hLine.setAttribute('x1',cx);hLine.setAttribute('x2',cx);hLine.style.opacity='1';
+    allDots.forEach(item=>item.dot.style.opacity=item.d.day===d.day?'1':'0');
+    tip.style.display='block';
+    tip.style.left=(e.clientX-rect.left+14)+'px';
+    tip.style.top=(e.clientY-rect.top-50)+'px';
+    tip.innerHTML=`<span style="color:rgba(255,255,255,0.4);font-size:10px;">Day ${d.day}</span><br>`
+      +`<span style="color:#AAFF00">↑ ${d.incoming} Incoming</span><br>`
+      +`<span style="color:rgba(170,255,0,0.6)">↑ ${d.contacted} Contacted</span><br>`
+      +`<span style="color:rgba(170,255,0,0.4)">↑ ${d.proposed} Proposed</span>`;
+  });
+  wrap.addEventListener('mouseleave',hide);
+  function hide(){tip.style.display='none';hLine.style.opacity='0';allDots.forEach(i=>i.dot.style.opacity='0');}
+})();
 </script>
 </body>
 </html>
