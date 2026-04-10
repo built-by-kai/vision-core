@@ -28,17 +28,16 @@ QUOTATION_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 INVOICE_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
 PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
 
-BASE_URL = "https://opxio.vercel.app"
-
-# Cover image URLs per Package type
+# Cover image URLs per Package type (GitHub raw CDN — always available)
+COVER_BASE = "https://raw.githubusercontent.com/opxio-io/opxio/main/generate-pdf/covers"
 COVER_MAP = {
-    "Starter OS":      f"{BASE_URL}/covers/starter-os.png",
-    "Operations OS":   f"{BASE_URL}/covers/operations-os.png",
-    "Sales OS":        f"{BASE_URL}/covers/sales-os.png",
-    "Business OS":     f"{BASE_URL}/covers/business-os.png",
-    "Marketing OS":    f"{BASE_URL}/covers/marketing-os.png",
-    "Intelligence OS": f"{BASE_URL}/covers/intelligence-os.png",
-    "Expansion":       f"{BASE_URL}/covers/expansion.png",
+    "Starter OS":      f"{COVER_BASE}/starter-os.png",
+    "Operations OS":   f"{COVER_BASE}/operations-os.png",
+    "Sales OS":        f"{COVER_BASE}/sales-os.png",
+    "Business OS":     f"{COVER_BASE}/business-os.png",
+    "Marketing OS":    f"{COVER_BASE}/marketing-os.png",
+    "Intelligence OS": f"{COVER_BASE}/intelligence-os.png",
+    "Expansion":       f"{COVER_BASE}/expansion.png",
 }
 
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
