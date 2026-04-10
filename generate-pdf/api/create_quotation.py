@@ -402,8 +402,10 @@ def create_line_item(db_id, product_id, product_name, price, hdrs, description="
 
 def extract_lead_info(props, hdrs):
     """
-    Pull Company, PIC relations and full product info from a Lead page.
-    Returns (company_ids, pic_ids, product_dict).
+    Pull Company, PIC relations, main product info, and confirmed add-on products
+    from a Lead page.
+    Returns (company_ids, pic_ids, product_dict, addon_products_list).
+    addon_products_list is a list of product dicts fetched from Products DB.
     """
     company_ids = [r["id"].replace("-", "")
                    for r in props.get("Company", {}).get("relation", [])]
@@ -433,7 +435,31 @@ def extract_lead_info(props, hdrs):
     # 3. Fetch full product info from Products DB
     product = fetch_product_info(slug or "operations-os", hdrs)
 
-    return company_ids, pic_ids, product
+    # 4. Read confirmed Add-ons multi-select → fetch product info for each
+    addon_name_to_slug = {
+        "additional system module":          "additional-module",
+        "automation (within database)":      "automation-within",
+        "automation (cross-database)":       "automation-cross",
+        "advanced dashboard":                "advanced-dashboard",
+        "custom widget":                     "custom-widget",
+        "api / external integration":        "api-integration",
+        "automation & workflow (make/n8n)":  "make-n8n-integration",
+        "lead capture system":               "lead-capture",
+        "client portal view":                "client-portal",
+        "ai agent integration":              "ai-agent",
+    }
+
+    addon_products = []
+    for item in props.get("Add-ons", {}).get("multi_select", []):
+        addon_name_lower = item.get("name", "").lower().strip()
+        addon_slug = addon_name_to_slug.get(addon_name_lower)
+        if addon_slug:
+            addon_info = fetch_product_info(addon_slug, hdrs)
+            if addon_info.get("id"):
+                addon_products.append(addon_info)
+                print(f"[INFO] Add-on: '{addon_info['name']}' slug='{addon_slug}'", file=sys.stderr)
+
+    return company_ids, pic_ids, product, addon_products
 
 
 def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=None, pic_ids=None):
@@ -692,11 +718,12 @@ def process(payload):
 
     if source_type == "lead":
         lead_id = page_id
-        company_ids, pic_ids, product = extract_lead_info(props, hdrs)
-        print(f"[INFO] Lead → Companies: {company_ids}, PIC: {pic_ids}, Product: {product['name']}, Quote Type: {product['quote_type']}", file=sys.stderr)
+        company_ids, pic_ids, product, addon_products = extract_lead_info(props, hdrs)
+        print(f"[INFO] Lead → Companies: {company_ids}, PIC: {pic_ids}, Product: {product['name']}, Quote Type: {product['quote_type']}, Add-ons: {[a['name'] for a in addon_products]}", file=sys.stderr)
 
     elif source_type == "company":
-        company_ids = [page_id]
+        company_ids  = [page_id]
+        addon_products = []
         print(f"[INFO] Company: {page_id}", file=sys.stderr)
 
     quote_type = product["quote_type"]
@@ -759,6 +786,14 @@ def process(payload):
             create_line_item(li_db_id, product["id"], product["name"],
                              product["price"], hdrs,
                              description=product.get("description", ""))
+
+            # Add confirmed add-on line items (No. 3, 4, 5…)
+            for addon in addon_products:
+                create_line_item(li_db_id, addon["id"], addon["name"],
+                                 addon["price"], hdrs,
+                                 description=addon.get("description", ""))
+                print(f"[INFO] Add-on line item added: {addon['name']}", file=sys.stderr)
+
         except Exception as e:
             # Non-fatal — quotation still exists, user can add line items manually
             print(f"[WARN] Auto line item failed: {e}", file=sys.stderr)
@@ -785,6 +820,7 @@ def process(payload):
         "lead_id":         lead_id,
         "company_ids":     company_ids,
         "line_item":       product.get("name"),
+        "addons":          [a["name"] for a in addon_products],
         "found_via_notion": found_via_notion,
     }
 
@@ -1104,3 +1140,4 @@ class handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         print(f"[HTTP] {fmt % args}", file=sys.stderr)
+
