@@ -39,10 +39,19 @@ body.light .donut-center-val{fill:#111;}
 body.light .donut-center-label{fill:rgba(0,0,0,0.3);}
 body.light .legend-name{color:rgba(0,0,0,0.6);}
 body.light .legend-count{color:rgba(0,0,0,0.8);}
+body.light .date-select{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.7);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+body.light .date-select option{background:#fff;color:rgba(0,0,0,0.8);}
 
-/* ── Toggle button ── */
+/* ── Buttons ── */
 .toggle-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;line-height:1;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;}
 .toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+
+/* ── Date selects — exact creaitors ── */
+.date-filter{display:flex;align-items:center;gap:6px;}
+.date-select{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:#2A2A2A;color:rgba(255,255,255,0.7);outline:none;transition:all 0.2s;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.4)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
+.date-select:focus{border-color:rgba(255,255,255,0.3);}
+.date-select:hover{border-color:rgba(255,255,255,0.25);}
+.date-select option{background:#2A2A2A;color:rgba(255,255,255,0.8);}
 
 /* ── Top bar ── */
 .top-bar{display:flex;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
@@ -103,7 +112,21 @@ body.light .f-count{color:rgba(0,0,0,0.7);}
     <h1 class="page-title">Deals CRM</h1>
   </div>
   <div class="top-right">
-    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light mode</button>
+    <div class="date-filter">
+      <select class="date-select" id="sel-month" onchange="onFilterChange()">
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <select class="date-select" id="sel-year" onchange="onFilterChange()">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+    </div>
+    <button class="toggle-btn" onclick="handleRefresh()" id="refresh-btn">↻ Refresh</button>
+    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
   </div>
 </div>
 
@@ -159,12 +182,37 @@ body.light .f-count{color:rgba(0,0,0,0.7);}
 </div>
 
 <script>
+// ── Set current month on load ──
+(function(){
+  const now = new Date();
+  document.getElementById('sel-month').value = now.getMonth() + 1;
+})();
+
 // ── Theme toggle ──
 let isLight = false;
 function toggleMode() {
   isLight = !isLight;
   document.body.classList.toggle('light', isLight);
-  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark mode' : '☀️ Light mode';
+  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+
+// ── Filter change ──
+function onFilterChange() {
+  const m = document.getElementById('sel-month').value;
+  const y = document.getElementById('sel-year').value;
+  // Hook this up to your Notion API when ready
+  console.log('Filter:', m, y);
+}
+
+// ── Refresh ──
+function handleRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '↻ Refreshing…';
+  btn.style.opacity = '0.5';
+  setTimeout(() => {
+    btn.textContent = '↻ Refresh';
+    btn.style.opacity = '1';
+  }, 1200);
 }
 
 // ── Funnel ──
