@@ -21,6 +21,12 @@ body.light .h-title{color:#111;}
 body.light .ts{color:rgba(0,0,0,.22);}
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </style>
 <style>
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
