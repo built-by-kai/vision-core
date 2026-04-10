@@ -20,10 +20,16 @@ body.light .card:hover{border-color:rgba(0,0,0,0.1);}
 body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
 
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.h-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,0.3);}
 .h-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;}
 body.light .h-title{color:#111;}
+.refresh-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.refresh-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+body.light .refresh-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+.last-updated{font-size:9px;font-weight:500;color:rgba(255,255,255,0.2);}
+body.light .last-updated{color:rgba(0,0,0,0.25);}
 
 /* stat grid */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
@@ -55,7 +61,11 @@ body.light .c4 .s-label{color:#059669;}.body.light .c4 .s-value{color:#047857;}
     <p class="eyebrow">Opxio · Pipeline</p>
     <h1 class="h-title">Potential Deals</h1>
   </div>
-  <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+  <div class="h-right">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="refresh-btn" onclick="doRefresh()" id="refresh-btn">↻ Refresh</button>
+    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+  </div>
 </div>
 
 <div class="grid">
@@ -92,6 +102,27 @@ function toggleMode() {
   document.body.classList.toggle('light', isLight);
   document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
 }
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    'Updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+function doRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '↻';
+  btn.style.opacity = '0.4';
+  setTimeout(() => {
+    btn.textContent = '↻ Refresh';
+    btn.style.opacity = '1';
+    updateTimestamp();
+  }, 800);
+}
+
+// Auto-refresh every 5 minutes
+updateTimestamp();
+setInterval(doRefresh, 5 * 60 * 1000);
 </script>
 </body>
 </html>
