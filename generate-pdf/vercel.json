@@ -42,6 +42,10 @@
       "use": "@vercel/python"
     },
     {
+      "src": "api/setup_project.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "widgets/**",
       "use": "@vercel/static"
     },
@@ -66,6 +70,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/setup_project",
+      "dest": "api/setup_project.py"
+    },
     {
       "src": "/api/generate",
       "dest": "api/generate.py"
