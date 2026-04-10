@@ -48,6 +48,10 @@
     {
       "src": "api/wa_redirect.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "widgets/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -100,12 +104,28 @@
       "dest": "api/wa_redirect.py"
     },
     {
-      "src": "/widgets/(.*)",
-      "dest": "/widgets/$1.html"
+      "src": "/widgets/deals",
+      "dest": "/widgets/deals.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "src": "/widgets/meetings",
+      "dest": "/widgets/meetings.html"
+    },
+    {
+      "src": "/widgets/schedule",
+      "dest": "/widgets/schedule.html"
+    },
+    {
+      "src": "/widgets/board",
+      "dest": "/widgets/board.html"
+    },
+    {
+      "src": "/widgets/potential",
+      "dest": "/widgets/potential.html"
+    },
+    {
+      "src": "/widgets/active",
+      "dest": "/widgets/active.html"
     }
   ]
 }
