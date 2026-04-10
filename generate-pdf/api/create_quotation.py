@@ -45,7 +45,7 @@ import requests
 QUOTATIONS_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
 LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"
 COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"
-PRODUCTS_DB   = "33c8b289e31a80bebdf1ecd506e5ccc3"
+PRODUCTS_DB   = "9d61639072364fb09eeccece94d082a7"  # Catalogue DB (rebuilt Apr 2026)
 
 # Exact match: Package Type select value → Product slug in Products DB
 # These match the option names set on Leads CRM Package Type field exactly.
@@ -64,19 +64,21 @@ PACKAGE_SLUG_MAP = {
 
 # Fallback keyword map for Interest multi-select and legacy/partial matches
 INTEREST_SLUG_MAP = {
-    "operations os":                  "operations-os",
-    "sales os":                       "sales-os",
-    "business os":                    "business-os",
-    "starter os":                     "starter-os",
-    "additional module":              "add-on-module-os",
-    "automation":                     "automation-within-db",
-    "advanced dashboard":             "advanced-dashboard",
-    "custom widget":                  "custom-widget",
-    "api / external integration":     "api-integration",
-    "automation & workflow integration": "workflow-integration",
-    "lead capture system":            "lead-capture",
-    "client portal view":             "client-portal",
-    "ai agent integration":           "ai-agent",
+    "operations os":                     "operations-os",
+    "sales os":                          "sales-os",
+    "business os":                       "business-os",
+    "starter os":                        "starter-os",
+    "additional module":                 "addon-system-module",
+    "additional system module":          "addon-system-module",
+    "automation (within":                "addon-automation-within",
+    "automation (cross":                 "addon-automation-cross",
+    "advanced dashboard":                "addon-dashboard",
+    "custom widget":                     "addon-widget",
+    "api / external integration":        "addon-api-integration",
+    "automation & workflow integration": "addon-workflow-integration",
+    "lead capture system":               "addon-lead-capture",
+    "client portal view":                "addon-client-portal",
+    "ai agent integration":              "addon-ai-agent",
 }
 
 
@@ -437,16 +439,16 @@ def extract_lead_info(props, hdrs):
 
     # 4. Read confirmed Add-ons multi-select → fetch product info for each
     addon_name_to_slug = {
-        "additional system module":          "additional-module",
-        "automation (within database)":      "automation-within",
-        "automation (cross-database)":       "automation-cross",
-        "advanced dashboard":                "advanced-dashboard",
-        "custom widget":                     "custom-widget",
-        "api / external integration":        "api-integration",
-        "automation & workflow (make/n8n)":  "make-n8n-integration",
-        "lead capture system":               "lead-capture",
-        "client portal view":                "client-portal",
-        "ai agent integration":              "ai-agent",
+        "additional system module":          "addon-system-module",
+        "automation (within database)":      "addon-automation-within",
+        "automation (cross-database)":       "addon-automation-cross",
+        "advanced dashboard":                "addon-dashboard",
+        "custom widget":                     "addon-widget",
+        "api / external integration":        "addon-api-integration",
+        "automation & workflow (make/n8n)":  "addon-workflow-integration",
+        "lead capture system":               "addon-lead-capture",
+        "client portal view":                "addon-client-portal",
+        "ai agent integration":              "addon-ai-agent",
     }
 
     addon_products = []
