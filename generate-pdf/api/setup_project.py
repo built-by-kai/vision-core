@@ -66,7 +66,13 @@ def fetch_project(page_id, hdrs):
 
     company_ids = [rel["id"] for rel in props.get("Company", {}).get("relation", [])]
 
-    return {"name": name, "package": package, "company_ids": company_ids}
+    addon_products = [
+        opt.get("name", "")
+        for opt in props.get("Add-on Products", {}).get("multi_select", [])
+        if opt.get("name", "")
+    ]
+
+    return {"name": name, "package": package, "company_ids": company_ids, "addon_products": addon_products}
 
 
 def fetch_tasks_for_os(os_type, hdrs):
@@ -117,6 +123,40 @@ def fetch_tasks_for_os(os_type, hdrs):
         tasks_by_phase[phase_no].append((task_name, priority))
 
     return tasks_by_phase
+
+
+def fetch_addon_tasks(slug, hdrs):
+    """
+    Fetch tasks for a specific Layer 2 add-on product by its slug.
+    Returns a list of (task_name, priority) tuples sorted by Task Order.
+    """
+    payload = {
+        "filter": {
+            "property": "Product Slug",
+            "rich_text": {"equals": slug},
+        },
+        "sorts": [{"property": "Task Order", "direction": "ascending"}],
+        "page_size": 50,
+    }
+    r = requests.post(
+        "https://api.notion.com/v1/databases/" + TASK_TEMPLATES_DB + "/query",
+        headers=hdrs, json=payload, timeout=15,
+    )
+    if not r.ok:
+        print("[WARN] fetch_addon_tasks failed for " + slug, file=sys.stderr)
+        return []
+
+    tasks = []
+    for page in r.json().get("results", []):
+        props = page.get("properties", {})
+        task_name = "".join(
+            t.get("plain_text", "")
+            for t in props.get("Task Name", {}).get("title", [])
+        ).strip()
+        priority = (props.get("Priority", {}).get("select") or {}).get("name", "Medium")
+        if task_name:
+            tasks.append((task_name, priority))
+    return tasks
 
 
 def fetch_templates(os_type, hdrs):
@@ -524,12 +564,79 @@ class handler(BaseHTTPRequestHandler):
                     file=sys.stderr,
                 )
 
+            # ── Add-ons & Integrations phase (if any add-on products are on the project) ──
+            addon_products = project.get("addon_products", [])
+            if addon_products:
+                print("[INFO] Add-ons found: " + ", ".join(addon_products), file=sys.stderr)
+
+                # Gather all tasks across slugs, deduplicating by name
+                all_addon_tasks = []
+                seen_addon = set()
+                for slug in addon_products:
+                    slug_tasks = fetch_addon_tasks(slug, hdrs)
+                    for task_name, priority in slug_tasks:
+                        if task_name not in seen_addon:
+                            seen_addon.add(task_name)
+                            all_addon_tasks.append((task_name, priority))
+                    print(
+                        "[INFO] Fetched " + str(len(slug_tasks)) +
+                        " tasks for slug: " + slug,
+                        file=sys.stderr,
+                    )
+
+                if all_addon_tasks:
+                    # Find a sensible phase number — insert before the last two phases
+                    # (typically Client Review + QA & Handover) by using the second-to-last
+                    # blueprint phase_no minus 0.5, so it sorts between them naturally.
+                    # Fall back to 98 if the blueprint is very short.
+                    if len(blueprint) >= 2:
+                        second_last_no = blueprint[-2]["phase_no"]
+                        addon_phase_no = second_last_no  # same slot, won't conflict on Notion
+                        # Use the last main build phase + 1 as the number to keep ordering clear
+                        last_build_no  = blueprint[-3]["phase_no"] if len(blueprint) >= 3 else second_last_no
+                        addon_phase_no = last_build_no + 1
+                    else:
+                        addon_phase_no = 98
+
+                    addon_phase_def = {
+                        "phase_no":     addon_phase_no,
+                        "phase":        "Add-ons & Integrations",
+                        "deliverables": (
+                            "Implementation of all add-on products included in the quotation: "
+                            + ", ".join(addon_products) + "."
+                        ),
+                        "tasks": all_addon_tasks,
+                    }
+                    addon_phase_id = create_phase(page_id, addon_phase_def, hdrs)
+                    total_phases += 1
+                    print(
+                        "[INFO] Created Add-ons & Integrations phase with " +
+                        str(len(all_addon_tasks)) + " tasks",
+                        file=sys.stderr,
+                    )
+
+                    # Create task records in Tasks DB for the add-on phase
+                    addon_task_entries = []
+                    for task_name, priority in all_addon_tasks:
+                        task_id = create_task(
+                            page_id, addon_phase_id, addon_phase_no,
+                            task_counter, task_name, priority, hdrs,
+                            stage_label="Add-ons & Integrations",
+                        )
+                        addon_task_entries.append((task_id, task_name, priority))
+                        task_counter += 1
+                        total_tasks  += 1
+
+                    # Append linked mention blocks
+                    update_phase_task_checkboxes(addon_phase_id, addon_task_entries, hdrs)
+
             self._respond(200, {
                 "status":         "success",
                 "project":        project["name"],
                 "package":        package,
                 "phases_created": total_phases,
                 "tasks_created":  total_tasks,
+                "addons":         addon_products,
             })
 
         except Exception as e:
