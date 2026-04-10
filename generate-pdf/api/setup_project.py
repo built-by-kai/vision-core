@@ -487,6 +487,9 @@ def existing_phase_numbers(project_page_id, hdrs):
     return nums
 
 
+PRIORITY_EMOJI = {"High": "🔴", "Medium": "🟡", "Low": "🔵"}
+
+
 def create_phase(project_page_id, phase_no, phase_def, hdrs):
     props = {
         "Phase Name": {"title": [{"text": {"content": phase_def["phase"]}}]},
@@ -497,14 +500,122 @@ def create_phase(project_page_id, phase_no, phase_def, hdrs):
     if phase_def.get("deliverables"):
         props["Deliverables"] = {"rich_text": [{"text": {"content": phase_def["deliverables"]}}]}
 
+    # Build initial page content: deliverables callout + tasks heading + task rows
+    tasks = phase_def.get("tasks", [])
+
+    children = []
+
+    # Deliverables callout
+    if phase_def.get("deliverables"):
+        children.append({
+            "object": "block",
+            "type": "callout",
+            "callout": {
+                "rich_text": [{"type": "text", "text": {"content": phase_def["deliverables"]}}],
+                "icon": {"type": "emoji", "emoji": "🎯"},
+                "color": "gray_background",
+            }
+        })
+
+    # Divider
+    children.append({"object": "block", "type": "divider", "divider": {}})
+
+    # Tasks heading
+    children.append({
+        "object": "block",
+        "type": "heading_2",
+        "heading_2": {
+            "rich_text": [{"type": "text", "text": {"content": "📋 Tasks"}}],
+            "color": "default",
+        }
+    })
+
+    # Hint callout
+    children.append({
+        "object": "block",
+        "type": "callout",
+        "callout": {
+            "rich_text": [{"type": "text", "text": {
+                "content": "Tasks below are synced from the Tasks database. Open any task to update status, due date, or assignee. Use the Tasks relation property above to see live progress."
+            }}],
+            "icon": {"type": "emoji", "emoji": "💡"},
+            "color": "blue_background",
+        }
+    })
+
+    # Task rows as to-do blocks (one per task)
+    for task_name, priority in tasks:
+        emoji = PRIORITY_EMOJI.get(priority, "⚪")
+        children.append({
+            "object": "block",
+            "type": "to_do",
+            "to_do": {
+                "rich_text": [
+                    {"type": "text", "text": {"content": f"{emoji}  {task_name}"},
+                     "annotations": {"bold": priority == "High"}},
+                    {"type": "text", "text": {"content": f"  [{priority}]"},
+                     "annotations": {"color": "gray", "italic": True}},
+                ],
+                "checked": False,
+            }
+        })
+
     body = {
         "parent":     {"database_id": PHASES_DB},
         "icon":       {"type": "emoji", "emoji": "📋"},
         "properties": props,
+        "children":   children,
     }
     r = requests.post("https://api.notion.com/v1/pages", headers=hdrs, json=body, timeout=15)
     r.raise_for_status()
     return r.json()["id"]
+
+
+def update_phase_task_checkboxes(phase_page_id, task_entries, hdrs):
+    """
+    After tasks are created in the Tasks DB (with their page IDs),
+    append a linked mention block for each task so clicking opens the real task page.
+    This replaces the static to_do blocks with live @mentions.
+    Called after all tasks for a phase are created.
+    """
+    mention_blocks = []
+    for task_page_id, task_name, priority in task_entries:
+        emoji = PRIORITY_EMOJI.get(priority, "⚪")
+        mention_blocks.append({
+            "object": "block",
+            "type": "bulleted_list_item",
+            "bulleted_list_item": {
+                "rich_text": [
+                    {"type": "text", "text": {"content": f"{emoji}  "},
+                     "annotations": {}},
+                    {"type": "mention", "mention": {"type": "page", "page": {"id": task_page_id}}},
+                    {"type": "text", "text": {"content": f"  [{priority}]"},
+                     "annotations": {"color": "gray", "italic": True}},
+                ],
+            }
+        })
+
+    if not mention_blocks:
+        return
+
+    # Add a divider + "Linked Tasks" heading + mention list
+    blocks = [
+        {"object": "block", "type": "divider", "divider": {}},
+        {
+            "object": "block",
+            "type": "heading_3",
+            "heading_3": {
+                "rich_text": [{"type": "text", "text": {"content": "🔗 Linked Task Pages"}}],
+            }
+        },
+    ] + mention_blocks
+
+    requests.patch(
+        f"https://api.notion.com/v1/blocks/{phase_page_id}/children",
+        headers=hdrs,
+        json={"children": blocks},
+        timeout=20,
+    )
 
 
 def create_task(project_page_id, phase_page_id, task_no, task_name, priority, hdrs):
@@ -597,15 +708,22 @@ class handler(BaseHTTPRequestHandler):
             total_tasks  = 0
             task_counter = 1
 
-            for phase_no, phase_def in enumerate(blueprint, start=1):
+            for phase_no, phase_def in enumerate(blueprint, start=0):
                 phase_id = create_phase(page_id, phase_no, phase_def, hdrs)
                 total_phases += 1
                 print(f"[INFO] Created phase {phase_no}: {phase_def['phase']}", file=sys.stderr)
 
+                # Collect (task_page_id, task_name, priority) for linked mention blocks
+                task_entries = []
                 for task_name, priority in phase_def["tasks"]:
-                    create_task(page_id, phase_id, task_counter, task_name, priority, hdrs)
+                    task_id = create_task(page_id, phase_id, task_counter, task_name, priority, hdrs)
+                    task_entries.append((task_id, task_name, priority))
                     task_counter += 1
                     total_tasks  += 1
+
+                # Append linked @mention blocks to the phase page
+                update_phase_task_checkboxes(phase_id, task_entries, hdrs)
+                print(f"[INFO] Appended {len(task_entries)} linked task mentions to phase {phase_no}", file=sys.stderr)
 
             self._respond(200, {
                 "status":       "success",
