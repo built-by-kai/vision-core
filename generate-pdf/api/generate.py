@@ -96,9 +96,9 @@ HEX_WHITE  = "#FFFFFF"
 # ═══════════════════════════════════
 
 # Vision Core Details DB
-VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
+VISION_CORE_DETAILS_DB = "757fe60097f68222857f0146e495ffa0"
 # Quotations DB
-QUOTATIONS_DB          = "f8167f0bda054307b90b17ad6b9c5cf8"
+QUOTATIONS_DB          = "b54fe60097f683e1930d012d635b14d5"
 
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
 
@@ -1583,7 +1583,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
     if intake_url:
         try:
             db_r = requests.get(
-                "https://api.notion.com/v1/databases/9227dda9c4be42a1a4c6b1bce4862f8c",
+                "https://api.notion.com/v1/databases/b02fe60097f6823b901e81d600093692",
                 headers=hdrs, timeout=10
             )
             if db_r.ok and "Intake Form URL" in db_r.json().get("properties", {}):
@@ -1606,7 +1606,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
 #  RECEIPT  — config & data
 # ═══════════════════════════════════
 
-RECEIPT_DB  = "3b99088af86c48c598a6422d764b24ac"
+RECEIPT_DB  = "1b2fe60097f682ba85e8016fba51d654"
 REC_PATTERN = re.compile(r"^REC-(\d{4})-(\d{4})$")
 
 
@@ -1946,7 +1946,7 @@ class handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs, urlparse
             qs = parse_qs(urlparse(self.path).query)
             api_key = os.environ.get("NOTION_API_KEY", "")
-            INVOICE_DB = "9227dda9c4be42a1a4c6b1bce4862f8c"
+            INVOICE_DB = "b02fe60097f6823b901e81d600093692"
             hdrs = {"Authorization": "Bearer " + api_key, "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
             if "schema" in qs:
                 pid = (qs.get("page_id") or [None])[0]
