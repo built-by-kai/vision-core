@@ -20,9 +20,9 @@ When the add-on quotation is Approved:
   → create_invoice webhook fires → detects existing Project → creates a
     Supplementary invoice linked to the same project hub (no new project).
 
-Projects DB : 5719b2672d3442a29a22637a35398260
-Quotations DB: f8167f0bda054307b90b17ad6b9c5cf8
-Products DB  : 33c8b289e31a80bebdf1ecd506e5ccc3
+Projects DB : 842fe60097f68303b34e01a5432d24cc
+Quotations DB: b54fe60097f683e1930d012d635b14d5
+Products DB  : 0acfe60097f682568935013f42a876f9
 """
 
 import json
@@ -33,9 +33,9 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-PROJECTS_DB   = "5719b2672d3442a29a22637a35398260"
-QUOTATIONS_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
-PRODUCTS_DB   = "33c8b289e31a80bebdf1ecd506e5ccc3"
+PROJECTS_DB   = "842fe60097f68303b34e01a5432d24cc"
+QUOTATIONS_DB = "b54fe60097f683e1930d012d635b14d5"
+PRODUCTS_DB   = "0acfe60097f682568935013f42a876f9"
 
 
 def _hdrs():
