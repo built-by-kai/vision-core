@@ -9,11 +9,11 @@ import requests
 #  Notion Database IDs
 # ─────────────────────────────────────────────
 CLIENTS_DB    = "036622227fd244ad9a77633d5ae0a64b"  # Clients (People)
-COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"  # Companies
-LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"  # Leads CRM
+COMPANIES_DB  = "725fe60097f682c09be901fe6ebb6b41"  # Companies
+LEADS_DB      = "caafe60097f683398df40197eeedbffe"  # Leads CRM
 MEETINGS_DB   = "e283b9d542a34865bf518c3a0e43f1fe"  # Meetings
 PIC_HIST_DB   = "3c870b0a06b647b3bc85c042d56cfb6f"  # PIC History
-EXPANSIONS_DB = "47a500ac8dd4464d96a8e4d799485421"  # Expansions (active client add-ons)
+EXPANSIONS_DB = "7c6fe60097f682fbbe9b81f828f6d3f8"  # Expansions (active client add-ons)
 
 # Valid Source options per database
 CLIENTS_SOURCES  = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal"}
