@@ -5,7 +5,6 @@
 
 import { getPage, queryDB, patchPage, plain, DB } from "../../lib/notion"
 
-const TOKEN = process.env.NOTION_API_KEY
 
 function cleanPhone(phone = "") {
   const digits = phone.replace(/\D/g, "")
@@ -111,7 +110,7 @@ export default async function handler(req, res) {
 
     const pageId = rawId.replace(/-/g, "")
     const { quotationNo, pdfUrl, companyName, picName, picPhone } =
-      await fetchQuotationData(pageId, TOKEN)
+      await fetchQuotationData(pageId, process.env.NOTION_API_KEY)
 
     const phone = cleanPhone(picPhone)
     let waUrl   = null
@@ -139,12 +138,12 @@ export default async function handler(req, res) {
       await patchPage(pageId, {
         "WA Link": { url: waUrl },
         "Status":  { select: { name: "Issued" } },
-      }, TOKEN)
+      }, process.env.NOTION_API_KEY)
     } else {
       // Still update status even without phone
       await patchPage(pageId, {
         "Status": { select: { name: "Issued" } },
-      }, TOKEN)
+      }, process.env.NOTION_API_KEY)
     }
 
     return res.json({
