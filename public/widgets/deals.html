@@ -155,28 +155,36 @@ let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';drawChart();}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
-// Donut — lead sources (static illustrative breakdown — no source data in API)
-const src=[
-  {l:'Referral',v:8,c:'#AAFF00'},
-  {l:'Threads', v:5,c:'rgba(170,255,0,.65)'},
-  {l:'Website', v:4,c:'rgba(170,255,0,.42)'},
-  {l:'Walk-in', v:2,c:'rgba(170,255,0,.26)'},
-  {l:'TikTok',  v:2,c:'rgba(170,255,0,.14)'},
+// Donut — lead sources (live from pipeline API)
+const DONUT_COLORS = [
+  '#AAFF00','rgba(170,255,0,.7)','rgba(170,255,0,.45)',
+  'rgba(170,255,0,.28)','rgba(170,255,0,.16)','rgba(170,255,0,.08)',
 ];
-const tot=src.reduce((s,x)=>s+x.v,0),R=58,SW=20,C=2*Math.PI*R;
-let off=0,p='';
-p+=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${SW}"/>`;
-src.forEach(s=>{
-  const d=(s.v/tot)*C,g=C-d;
-  p+=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${d.toFixed(2)} ${g.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
-  off+=d;
-});
-p+=`<text x="80" y="74" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${tot}</text>`;
-p+=`<text x="80" y="94" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
-document.getElementById('donut').innerHTML=p;
-src.forEach(s=>{
-  document.getElementById('legend').innerHTML+=`<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${s.l}</span><span class="l-val">${s.v}</span></div>`;
-});
+function renderDonut(sources) {
+  const src = (sources || []).slice(0, 6);
+  if (!src.length) {
+    document.getElementById('donut').innerHTML =
+      `<text x="80" y="80" text-anchor="middle" font-size="11" class="d-lbl">No data</text>`;
+    document.getElementById('legend').innerHTML = '';
+    return;
+  }
+  const colored = src.map((s, i) => ({ ...s, c: DONUT_COLORS[i] || DONUT_COLORS[DONUT_COLORS.length-1] }));
+  const tot = colored.reduce((s,x)=>s+x.count,0);
+  const R=58,SW=20,C=2*Math.PI*R;
+  let off=0,p='';
+  p+=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${SW}"/>`;
+  colored.forEach(s=>{
+    const d=(s.count/tot)*C,g=C-d;
+    p+=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${d.toFixed(2)} ${g.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
+    off+=d;
+  });
+  p+=`<text x="80" y="74" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${tot}</text>`;
+  p+=`<text x="80" y="94" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
+  document.getElementById('donut').innerHTML=p;
+  document.getElementById('legend').innerHTML = colored.map(s=>
+    `<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${s.label}</span><span class="l-val">${s.count}</span></div>`
+  ).join('');
+}
 
 // Live chart data — drawn at real offsetWidth
 let data = [];
@@ -224,6 +232,7 @@ async function loadData() {
     if(el('d-winrate')) el('d-winrate').textContent = jp.winRate != null ? jp.winRate+'%' : '—';
 
     renderFunnel(stages);
+    renderDonut(jp.sources);
 
     data = monthly;
     document.getElementById('cbadge').textContent = monthly.reduce((s,d)=>s+d.v,0)+' total this year';

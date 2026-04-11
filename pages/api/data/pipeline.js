@@ -43,6 +43,7 @@ export default async function handler(req, res) {
     let pipelineValue   = 0  // sum of Estimated Value for active pre-sale leads
     let thisMonthWon    = 0
     let thisMonthLost   = 0
+    const sourceCounts  = {}
 
     for (const lead of leads) {
       const p     = lead.properties
@@ -69,6 +70,14 @@ export default async function handler(req, res) {
       const mKey  = created.toLocaleString("default", { month: "short" })
       const mDate = new Date(year, month - 5, 1)
       if (created >= mDate && mKey in monthly) monthly[mKey]++
+
+      // Source aggregation (multi_select)
+      const srcs = p.Source?.multi_select || []
+      if (srcs.length) {
+        for (const s of srcs) sourceCounts[s.name] = (sourceCounts[s.name] || 0) + 1
+      } else {
+        sourceCounts["Other"] = (sourceCounts["Other"] || 0) + 1
+      }
     }
 
     const stageOrder = FUNNEL_STAGES
@@ -96,6 +105,9 @@ export default async function handler(req, res) {
       thisMonthWon,
       thisMonthLost,
       thisMonthLeads,
+      sources: Object.entries(sourceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => ({ label, count })),
     })
   } catch (err) {
     console.error("pipeline:", err)
