@@ -15,7 +15,9 @@
     "pdfkit": "^0.15.1",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@sparticuz/chromium": "^123.0.1",
+    "puppeteer-core": "^22.6.5"
   },
   "devDependencies": {
     "eslint": "^9",
