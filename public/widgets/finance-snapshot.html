@@ -42,13 +42,15 @@ body.light .sec-lbl{color:rgba(0,0,0,.28);}
 @media(max-width:580px){.grid-3{grid-template-columns:1fr 1fr;}}
 .stat{padding:16px 18px;position:relative;}
 .s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);}
-.s-dot.red{background:#FF6B6B;}
+.s-dot.red{background:#FF6B6B;}.s-dot.orange{background:var(--lost);}
 .s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.45);margin-bottom:10px;display:block;}
 body.light .s-lbl{color:rgba(0,0,0,.4);}
 .s-val{font-size:26px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 body.light .s-val{color:#5C9900;}
 .s-val.negative{color:#FF6B6B;}
 body.light .s-val.negative{color:#B91C1C;}
+.s-val.expense{color:var(--lost);}
+body.light .s-val.expense{color:#C2410C;}
 .s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:8px;}
 body.light .s-sub{color:rgba(0,0,0,.3);}
 
@@ -110,9 +112,9 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-sub">Cleared this month</div>
   </div>
   <div class="card stat">
-    <div class="s-dot" id="dot-expenses"></div>
+    <div class="s-dot orange" id="dot-expenses"></div>
     <span class="s-lbl">Expenses</span>
-    <div class="s-val" id="kpi-expenses">—</div>
+    <div class="s-val expense" id="kpi-expenses">—</div>
     <div class="s-sub">Cleared this month</div>
   </div>
   <div class="card stat">
