@@ -27,10 +27,10 @@ The endpoint:
 
 DBs
 ───
-Quotations  : f8167f0bda054307b90b17ad6b9c5cf8
-Leads CRM   : 8690d55c4d0449068c51ef49d92a26a2
-Companies   : 33c8b289e31a80fe82d2ccd18bcaec68
-Products    : 33c8b289e31a80bebdf1ecd506e5ccc3
+Quotations  : b54fe60097f683e1930d012d635b14d5
+Leads CRM   : caafe60097f683398df40197eeedbffe
+Companies   : 725fe60097f682c09be901fe6ebb6b41
+Products    : 0acfe60097f682568935013f42a876f9
 """
 
 import json
@@ -42,9 +42,9 @@ from http.server import BaseHTTPRequestHandler
 import requests
 
 # ── DB IDs ────────────────────────────────────
-QUOTATIONS_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
-LEADS_DB      = "8690d55c4d0449068c51ef49d92a26a2"
-COMPANIES_DB  = "33c8b289e31a80fe82d2ccd18bcaec68"
+QUOTATIONS_DB = "b54fe60097f683e1930d012d635b14d5"
+LEADS_DB      = "caafe60097f683398df40197eeedbffe"
+COMPANIES_DB  = "725fe60097f682c09be901fe6ebb6b41"
 PRODUCTS_DB   = "9d61639072364fb09eeccece94d082a7"  # Catalogue DB (rebuilt Apr 2026)
 
 # Exact match: Package Type select value → Product slug in Products DB
@@ -876,7 +876,7 @@ def process(payload):
 
 # ── Phases DB one-time setup ──────────────────────────────────────────────────
 
-PROJECTS_DB = "5719b2672d3442a29a22637a35398260"
+PROJECTS_DB = "842fe60097f68303b34e01a5432d24cc"
 
 def run_phases_setup(hdrs):
     """
