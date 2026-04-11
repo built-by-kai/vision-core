@@ -12,11 +12,10 @@
 
 import { getPage, patchPage, createPage, queryDB, plain, DB } from "../../lib/notion"
 
-const TOKEN = process.env.NOTION_API_KEY
 
 function hdrs() {
   return {
-    Authorization:    `Bearer ${TOKEN}`,
+    Authorization:    `Bearer ${process.env.NOTION_API_KEY}`,
     "Notion-Version": "2022-06-28",
     "Content-Type":   "application/json",
   }
@@ -55,7 +54,7 @@ const OS_PACKAGE_SLUGS = new Set([
 
 // ── Detect source type ─────────────────────────────────────────────────────
 async function detectSource(pageId) {
-  const page  = await getPage(pageId, TOKEN)
+  const page  = await getPage(pageId, process.env.NOTION_API_KEY)
   const props = page.properties
   if (props.Stage?.type === "status") return { type: "lead", props }
   return { type: "company", props }
@@ -67,7 +66,7 @@ async function fetchProductInfo(slug) {
   try {
     const rows = await queryDB(DB.CATALOGUE, {
       property: "Slug", rich_text: { equals: slug }
-    }, TOKEN)
+    }, process.env.NOTION_API_KEY)
     if (!rows.length) return null
     const p     = rows[0]
     const props = p.properties
@@ -139,7 +138,7 @@ async function findRecentQuotation(leadId, maxAgeSeconds = 120) {
     try {
       const rows = await queryDB(DB.QUOTATIONS, {
         property: "Deal Source", relation: { contains: leadId }
-      }, TOKEN)
+      }, process.env.NOTION_API_KEY)
 
       // Sort by created_time descending
       rows.sort((a, b) => new Date(b.created_time) - new Date(a.created_time))
@@ -174,14 +173,14 @@ async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, lead
   ]
 
   for (const props of patches) {
-    try { await patchPage(quotId, props, TOKEN) } catch {}
+    try { await patchPage(quotId, props, process.env.NOTION_API_KEY) } catch {}
   }
 
   // Link lead (try multiple field names)
   if (leadId) {
     for (const field of ["Deal Source", "Lead", "Deals", "Source"]) {
       try {
-        await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, TOKEN)
+        await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, process.env.NOTION_API_KEY)
         break
       } catch {}
     }
@@ -349,14 +348,14 @@ export default async function handler(req, res) {
         ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
         ...(picIds.length ? { "PIC": { relation: [{ id: picIds[0] }] } } : {}),
       }
-      const page = await createPage({ parent: { database_id: DB.QUOTATIONS }, properties: cprops }, TOKEN)
+      const page = await createPage({ parent: { database_id: DB.QUOTATIONS }, properties: cprops }, process.env.NOTION_API_KEY)
       quotId  = page.id.replace(/-/g, "")
       quotUrl = page.url || `https://notion.so/${quotId}`
 
       // Link lead
       if (leadId) {
         for (const field of ["Deal Source", "Lead", "Deals", "Source"]) {
-          try { await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, TOKEN); break } catch {}
+          try { await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, process.env.NOTION_API_KEY); break } catch {}
         }
       }
     }
@@ -393,7 +392,7 @@ export default async function handler(req, res) {
 
     // ── Advance Lead stage → Proposed ─────────────────────────────────────
     if (leadId) {
-      try { await patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, TOKEN) } catch {}
+      try { await patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, process.env.NOTION_API_KEY) } catch {}
     }
 
     return res.json({
