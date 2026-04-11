@@ -17,10 +17,10 @@ What it does:
 
 DBs
 ───
-Invoices     : 9227dda9c4be42a1a4c6b1bce4862f8c
-Projects     : 5719b2672d3442a29a22637a35398260
-Leads CRM    : 8690d55c4d0449068c51ef49d92a26a2
-Companies    : 33c8b289e31a80fe82d2ccd18bcaec68
+Invoices     : b02fe60097f6823b901e81d600093692
+Projects     : 842fe60097f68303b34e01a5432d24cc
+Leads CRM    : caafe60097f683398df40197eeedbffe
+Companies    : 725fe60097f682c09be901fe6ebb6b41
 """
 import json
 import os
@@ -32,12 +32,12 @@ from urllib.parse import quote as url_quote
 
 import requests
 
-INVOICES_DB  = "9227dda9c4be42a1a4c6b1bce4862f8c"
-PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
-LEADS_DB     = "8690d55c4d0449068c51ef49d92a26a2"
-COMPANIES_DB = "33c8b289e31a80fe82d2ccd18bcaec68"
+INVOICES_DB  = "b02fe60097f6823b901e81d600093692"
+PROJECTS_DB  = "842fe60097f68303b34e01a5432d24cc"
+LEADS_DB     = "caafe60097f683398df40197eeedbffe"
+COMPANIES_DB = "725fe60097f682c09be901fe6ebb6b41"
 
-PHASES_DB    = "33d8b289e31a81d896bfdb314521dc7b"
+PHASES_DB    = "39ffe60097f682b4bf11814aadaf233f"
 TASKS_DB     = "b87d0a44df344b178f14c7e94ce520b0"
 
 IMPL_FORM_BASE = "https://opxio.vercel.app/api/implementation_form"
