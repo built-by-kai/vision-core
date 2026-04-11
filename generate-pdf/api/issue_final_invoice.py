@@ -186,7 +186,7 @@ def process(payload):
         if ws:
             gen_hdrs["Authorization"] = f"Bearer {ws}"
         gr = requests.post(
-            "https://vision-core-delta.vercel.app/api/generate_invoice",
+            "https://opxio.vercel.app/api/generate_invoice",
             headers=gen_hdrs, json={"page_id": inv_id}, timeout=55,
         )
         if gr.ok:
@@ -233,7 +233,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._respond(200, {
-            "service": "Vision Core — Issue Final Invoice",
+            "service": "Opxio — Issue Final Invoice",
             "status":  "ready",
             "usage":   "POST with {page_id} from a Projects page",
         })
