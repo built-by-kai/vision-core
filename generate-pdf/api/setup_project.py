@@ -9,8 +9,8 @@ Phase Templates DB in Notion — fully editable without code changes.
 Prevents duplicates — safe to call multiple times.
 
 Databases:
-  Projects DB       : 5719b2672d3442a29a22637a35398260
-  Phases   DB       : 33d8b289e31a81d896bfdb314521dc7b
+  Projects DB       : 842fe60097f68303b34e01a5432d24cc
+  Phases   DB       : 39ffe60097f682b4bf11814aadaf233f
   Tasks    DB       : b87d0a44df344b178f14c7e94ce520b0
   Phase Templates DB      : 704727fe90644f0d91b9a35a3ef6eb5f
   Phase Template Tasks DB : 46e7a39983b94a57860f8765c1a50168
@@ -22,8 +22,8 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-PROJECTS_DB       = "5719b2672d3442a29a22637a35398260"
-PHASES_DB         = "33d8b289e31a81d896bfdb314521dc7b"
+PROJECTS_DB       = "842fe60097f68303b34e01a5432d24cc"
+PHASES_DB         = "39ffe60097f682b4bf11814aadaf233f"
 TASKS_DB          = "b87d0a44df344b178f14c7e94ce520b0"
 TEMPLATES_DB      = "704727fe90644f0d91b9a35a3ef6eb5f"
 TASK_TEMPLATES_DB = "46e7a39983b94a57860f8765c1a50168"
