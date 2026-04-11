@@ -11,17 +11,13 @@
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
-const TOKEN   = process.env.NOTION_API_KEY
-const API_URL = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "https://api.opxio.io"
 
 async function process(payload) {
   const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
   if (!rawId) throw new Error("No page_id in payload")
   const projectId = rawId.replace(/-/g, "")
 
-  const proj  = await getPage(projectId, TOKEN)
+  const proj  = await getPage(projectId, process.env.NOTION_API_KEY)
   const props = proj.properties
 
   const status = props.Status?.select?.name || ""
@@ -43,7 +39,7 @@ async function process(payload) {
   let totalAmount = 0, paymentTerms = "50% Deposit"
   if (quotationId) {
     try {
-      const qpage = await getPage(quotationId, TOKEN)
+      const qpage = await getPage(quotationId, process.env.NOTION_API_KEY)
       totalAmount  = qpage.properties.Amount?.number || 0
       paymentTerms = qpage.properties["Payment Terms"]?.select?.name || "50% Deposit"
     } catch (e) {
@@ -59,7 +55,7 @@ async function process(payload) {
   let depositAmt = 0
   if (depositInvId) {
     try {
-      const dp = await getPage(depositInvId, TOKEN)
+      const dp = await getPage(depositInvId, process.env.NOTION_API_KEY)
       depositAmt = dp.properties["Deposit (50%)"]?.number || 0
     } catch {}
   }
@@ -83,13 +79,13 @@ async function process(payload) {
     ...(leadId       ? { "Deal Source":    { relation: [{ id: leadId      }] } } : {}),
   }
 
-  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, TOKEN)
+  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, process.env.NOTION_API_KEY)
   const invId   = invPage.id.replace(/-/g, "")
   console.log("[issue_final_invoice] Final invoice created:", invId)
 
   // Link deposit invoice → this final invoice
   if (depositInvId) {
-    try { await patchPage(depositInvId, { "Final Invoice": { relation: [{ id: invId }] } }, TOKEN) } catch {}
+    try { await patchPage(depositInvId, { "Final Invoice": { relation: [{ id: invId }] } }, process.env.NOTION_API_KEY) } catch {}
   }
 
   // ── Auto-generate Final Invoice PDF ───────────────────────────────────
@@ -114,7 +110,7 @@ async function process(payload) {
     await patchPage(projectId, {
       "Status":            { select: { name: "In Review" } },
       "Final Invoice":     { relation: [{ id: invId }] },
-    }, TOKEN)
+    }, process.env.NOTION_API_KEY)
   } catch (e) {
     console.warn("[issue_final_invoice] project update:", e.message)
   }
@@ -122,7 +118,7 @@ async function process(payload) {
   // ── Advance Lead stage ─────────────────────────────────────────────────
   if (leadId) {
     try {
-      await patchPage(leadId, { "Stage": { status: { name: "Pending Final Payment" } } }, TOKEN)
+      await patchPage(leadId, { "Stage": { status: { name: "Pending Final Payment" } } }, process.env.NOTION_API_KEY)
     } catch {}
   }
 
