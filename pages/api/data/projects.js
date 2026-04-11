@@ -1,6 +1,26 @@
 // /api/data/projects — token-authenticated
-import { queryDB, plain, DB } from "../../../lib/notion"
+import { queryDB, getPage, plain, DB, hdrs } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+
+// Fetch a single page title from Notion (for company name lookup)
+async function fetchPageTitle(pageId, token) {
+  try {
+    const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: hdrs(token) })
+    if (!res.ok) return ""
+    const data = await res.json()
+    const p    = data.properties || {}
+    // Try common title property names
+    for (const key of ["Name", "Company Name", "Title"]) {
+      const prop = p[key]
+      if (prop?.type === "title" && prop.title?.length) return plain(prop.title)
+    }
+    // Fallback: find whichever property is title type
+    for (const prop of Object.values(p)) {
+      if (prop?.type === "title" && prop.title?.length) return plain(prop.title)
+    }
+    return ""
+  } catch { return "" }
+}
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
@@ -29,24 +49,37 @@ export default async function handler(req, res) {
       const p       = ph.properties
       const projRel = p.Project?.relation?.[0]?.id?.replace(/-/g, "")
       if (!projRel) continue
-      const phaseName = plain(p.Name || p.Title) || ""
-      const pct       = p["Task Progress"]?.number ?? p["Progress"]?.number ?? 0
+      const phaseName = plain(p["Phase Name"]?.title || p.Name?.title || p.Title?.title || []) || ""
+      const rollup    = p["Task Progress"]?.rollup
+      const pct       = rollup?.type === "number" ? (rollup.number ?? 0) : (p["Progress"]?.number ?? 0)
       const status    = p.Status?.select?.name || p.Status?.status?.name || ""
       if (!phaseMap[projRel] || status === "In Progress") {
         phaseMap[projRel] = { name: phaseName, pct: Math.round(pct * 100) || pct }
       }
     }
 
+    // Collect unique company page IDs for batch lookup
+    const companyIds = new Set()
+    for (const proj of projects) {
+      const rel = proj.properties.Company?.relation?.[0]?.id
+      if (rel) companyIds.add(rel)
+    }
+    const companyNames = {}
+    await Promise.all([...companyIds].map(async id => {
+      companyNames[id.replace(/-/g, "")] = await fetchPageTitle(id, notionToken)
+    }))
+
     const counts = { active: 0, review: 0, done: 0, hold: 0 }
     const builds = []
 
     for (const proj of projects) {
-      const p      = proj.properties
-      const status = p.Status?.select?.name || ""
-      const name   = plain(p.Name || p.Title) || "Untitled"
-      const progress = p["Overall Progress"]?.number ?? 0
-      const company  = plain(p.Company) || ""
-      const pkg      = plain(p["Package Type"] || p.Type) || ""
+      const p        = proj.properties
+      const status   = p.Status?.select?.name || ""
+      const name     = plain(p["Project Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
+      const progress = p["Overall Progress"]?.rollup?.number ?? 0
+      const compRel  = p.Company?.relation?.[0]?.id?.replace(/-/g, "")
+      const company  = compRel ? (companyNames[compRel] || "") : ""
+      const pkg      = p["Package"]?.select?.name || p["Package Type"]?.select?.name || ""
       const projId   = proj.id.replace(/-/g, "")
       const phase    = phaseMap[projId] || { name: "—", pct: Math.round(progress * 100) || progress }
 
