@@ -11,17 +11,13 @@
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
-const TOKEN   = process.env.NOTION_API_KEY
-const API_URL = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "https://api.opxio.io"
 
 async function process(payload) {
   const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
   if (!rawId) throw new Error("No page_id in payload")
   const expansionId = rawId.replace(/-/g, "")
 
-  const exp   = await getPage(expansionId, TOKEN)
+  const exp   = await getPage(expansionId, process.env.NOTION_API_KEY)
   const props = exp.properties
 
   const expName   = plain(props.Name?.title || [])
@@ -62,7 +58,7 @@ async function process(payload) {
     ...(leadId    ? { "Deal Source":     { relation: [{ id: leadId    }] } } : {}),
   }
 
-  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, TOKEN)
+  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, process.env.NOTION_API_KEY)
   const invId   = invPage.id.replace(/-/g, "")
   console.log("[expansion_invoice] Invoice created:", invId)
 
@@ -71,7 +67,7 @@ async function process(payload) {
     await patchPage(expansionId, {
       "Invoice": { relation: [{ id: invId }] },
       "Status":  { select: { name: "Proposal Sent" } },
-    }, TOKEN)
+    }, process.env.NOTION_API_KEY)
   } catch (e) {
     console.warn("[expansion_invoice] expansion update:", e.message)
   }
