@@ -40,7 +40,7 @@ COMPANIES_DB = "33c8b289e31a80fe82d2ccd18bcaec68"
 PHASES_DB    = "33d8b289e31a81d896bfdb314521dc7b"
 TASKS_DB     = "b87d0a44df344b178f14c7e94ce520b0"
 
-IMPL_FORM_BASE = "https://vision-core-delta.vercel.app/api/implementation_form"
+IMPL_FORM_BASE = "https://opxio.vercel.app/api/implementation_form"
 
 # Map Quotation Quote Type / Package → implementation form pkg slug
 QUOTE_TYPE_TO_SLUG = {
@@ -141,7 +141,7 @@ def build_wa_url(phone, company_name, form_url):
         "This should take about 10–15 minutes. The more detail you provide, the faster we can build.",
         "",
         "Looking forward to building with you!",
-        "— Vision Core",
+        "— Opxio",
     ]
     return f"https://wa.me/{phone_clean}?text={url_quote(chr(10).join(lines))}"
 
@@ -358,7 +358,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._respond(200, {
-            "service": "Vision Core — Deposit Paid",
+            "service": "Opxio — Deposit Paid",
             "status":  "ready",
             "usage":   "POST with {page_id} from a Deposit Invoice page",
         })
