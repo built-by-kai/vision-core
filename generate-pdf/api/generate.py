@@ -69,26 +69,24 @@ F_BIT  = "Satoshi-BoldItalic" if _SATOSHI else "Helvetica-BoldOblique"
 
 
 # ═══════════════════════════════════
-#  DESIGN TOKENS  — Opxio dark widget theme
+#  DESIGN TOKENS  — Opxio B&W
 # ═══════════════════════════════════
 
-# Core palette
-C_INK    = colors.HexColor("#0D0D0D")   # near-black: header bg, table header
-C_LIME   = colors.HexColor("#AAFF00")   # lime green accent: accent lines, total row
+# Core palette — black & white only
+C_INK    = colors.HexColor("#0D0D0D")   # near-black: header bg, table header, total row
 C_BODY   = colors.HexColor("#1A1A1A")   # main body text
 C_MUTED  = colors.HexColor("#6B7280")   # secondary / address text
 C_SUBTLE = colors.HexColor("#9CA3AF")   # labels, captions
-C_RULE   = colors.HexColor("#E5E7EB")   # thin dividers
+C_RULE   = colors.HexColor("#D1D5DB")   # thin dividers
 C_ALT    = colors.HexColor("#F7F8FA")   # alternate rows, meta bg
 C_WHITE  = colors.white
 
 # Hex strings (for inline HTML color attrs in Paragraph markup)
 HEX_INK    = "#0D0D0D"
-HEX_LIME   = "#AAFF00"
 HEX_BODY   = "#1A1A1A"
 HEX_MUTED  = "#6B7280"
 HEX_SUBTLE = "#9CA3AF"
-HEX_RULE   = "#E5E7EB"
+HEX_RULE   = "#D1D5DB"
 HEX_ALT    = "#F7F8FA"
 HEX_WHITE  = "#FFFFFF"
 
@@ -98,9 +96,9 @@ HEX_WHITE  = "#FFFFFF"
 # ═══════════════════════════════════
 
 # Vision Core Details DB
-VISION_CORE_DETAILS_DB = "33c8b289e31a80b1aa85fc1921cc0adc"
+VISION_CORE_DETAILS_DB = "757fe60097f68222857f0146e495ffa0"
 # Quotations DB
-QUOTATIONS_DB          = "f8167f0bda054307b90b17ad6b9c5cf8"
+QUOTATIONS_DB          = "b54fe60097f683e1930d012d635b14d5"
 
 QUO_PATTERN = re.compile(r"^QUO-(\d{4})-(\d{4})$")
 
@@ -166,6 +164,7 @@ def fetch_company_details(headers):
             if t == "email":        return prop.get("email") or ""
             if t == "phone_number": return prop.get("phone_number") or ""
             if t == "select":       return (prop.get("select") or {}).get("name", "")
+            if t == "url":          return prop.get("url") or ""
             return ""
 
         # ── Logo: try page icon first, then any files property named Logo/Brand Logo
@@ -201,6 +200,7 @@ def fetch_company_details(headers):
             "bank_number":         _v("Bank Number"),
             "payment_method":      _v("Payment Method"),
             "logo_url":            logo_url,
+            "terms_url":           _v("Terms URL"),
         }
     except Exception as e:
         print(f"[WARN] company details: {e}", file=sys.stderr)
@@ -234,6 +234,38 @@ def _fetch_logo(logo_url, max_w_mm=38, max_h_mm=14):
         return img
     except Exception as e:
         print(f"[WARN] Logo download failed: {e}", file=sys.stderr)
+        return None
+
+
+# ─────────────────────────────────────────────
+#  QR Code helper
+# ─────────────────────────────────────────────
+def _make_qr(url, size_mm=28):
+    """Generate a QR code image flowable for the given URL, or None on failure."""
+    if not url:
+        return None
+    try:
+        import qrcode
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        pil_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        buf = BytesIO()
+        pil_img.save(buf, format="PNG")
+        buf.seek(0)
+        sz = size_mm * mm
+        img = RLImage(buf)
+        img.drawWidth  = sz
+        img.drawHeight = sz
+        img.hAlign = "LEFT"
+        return img
+    except Exception as e:
+        print(f"[WARN] QR code failed: {e}", file=sys.stderr)
         return None
 
 
@@ -554,11 +586,12 @@ def generate_pdf(data):
     co_name   = co.get("name")               or "Opxio"
     co_email  = co.get("email")              or ""
     co_phone  = co.get("phone")              or ""
-    co_bank   = co.get("bank_name")          or ""
-    co_holder = co.get("bank_account_holder") or ""
-    co_acc    = co.get("bank_number")        or ""
-    co_pay    = co.get("payment_method")     or ""
-    logo_img  = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
+    co_bank      = co.get("bank_name")          or ""
+    co_holder    = co.get("bank_account_holder") or ""
+    co_acc       = co.get("bank_number")        or ""
+    co_pay       = co.get("payment_method")     or ""
+    co_terms_url = co.get("terms_url")          or ""
+    logo_img     = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
 
     issue_display = valid_display = ""
     if data.get("issue_date"):
@@ -624,7 +657,7 @@ def generate_pdf(data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
@@ -771,9 +804,9 @@ def generate_pdf(data):
     n_tot = len(tot_rows)
     tot_rows.append([
         Paragraph("Total Quote",
-                  st("tdl", fontName=F_BOLD, fontSize=11, textColor=C_INK, alignment=2)),
+                  st("tdl", fontName=F_BOLD, fontSize=11, textColor=C_WHITE, alignment=2)),
         Paragraph(f"RM {total:,.2f}",
-                  st("tdv", fontName=F_BOLD, fontSize=11, textColor=C_INK, alignment=2)),
+                  st("tdv", fontName=F_BOLD, fontSize=11, textColor=C_WHITE, alignment=2)),
     ])
 
     tot_tbl = Table(tot_rows, colWidths=[usable*0.65, usable*0.35])
@@ -783,7 +816,7 @@ def generate_pdf(data):
         ("LEFTPADDING",   (0,0),(-1,-1),        4),
         ("RIGHTPADDING",  (0,0),(-1,-1),        8),
         ("VALIGN",        (0,0),(-1,-1),        "MIDDLE"),
-        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_LIME),
+        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_INK),
         ("LEFTPADDING",   (0,n_tot),(-1,n_tot), 10),
         ("RIGHTPADDING",  (0,n_tot),(-1,n_tot), 10),
         ("TOPPADDING",    (0,n_tot),(-1,n_tot), 10),
@@ -796,11 +829,8 @@ def generate_pdf(data):
     story.append(HRFlowable(width=usable, color=C_RULE, thickness=0.5))
     story.append(Spacer(1, 6*mm))
 
-    # ── 8. Notes & Terms  |  Payment Details ─────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
-    for term in TERMS:
-        terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
-    terms_html = "<br/>".join(terms_lines)
+    # ── 8. T&C QR  |  Payment Details ───────────────────
+    qr_img = _make_qr(co_terms_url, size_mm=28)
 
     pay_lines = []
     if co_pay:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('METHOD')}</font><br/><font size='8' color='{HEX_BODY}'>{co_pay}</font>")
@@ -811,9 +841,35 @@ def generate_pdf(data):
     pay_header = f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
+    if qr_img:
+        # Left: QR code + acceptance statement
+        qr_label = Paragraph(
+            f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('TERMS & CONDITIONS')}</font>",
+            st("qrl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE, leading=10)
+        )
+        qr_note = Paragraph(
+            f"<font name='{F_REG}' size='7' color='{HEX_MUTED}'>Scan to read our full Terms & Conditions. "
+            "By proceeding with this quotation, the client acknowledges and agrees to the terms therein.</font>",
+            st("qrn", fontName=F_REG, fontSize=7, textColor=C_MUTED, leading=11)
+        )
+        left_col = Table([
+            [qr_label],
+            [Spacer(1, 3*mm)],
+            [qr_img],
+            [Spacer(1, 3*mm)],
+            [qr_note],
+        ], colWidths=[usable*0.55 - 20],
+           style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
+    else:
+        # Fallback: plain text terms
+        terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
+        for term in TERMS:
+            terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
+        left_col = Paragraph("<br/>".join(terms_lines), st("tp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY))
+
     bot = Table([[
-        Paragraph(terms_html, st("tp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
-        Paragraph(pay_html,   st("pp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
+        left_col,
+        Paragraph(pay_html, st("pp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
     ]], colWidths=[usable*0.55, usable*0.45])
     bot.setStyle(TableStyle([
         ("VALIGN",       (0,0),(-1,-1), "TOP"),
@@ -826,7 +882,7 @@ def generate_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
@@ -924,7 +980,7 @@ def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_
 #  INVOICE  — config & data fetch
 # ═══════════════════════════════════
 
-IMPL_FORM_BASE = "https://vision-core-delta.vercel.app/api/implementation_form"
+IMPL_FORM_BASE = "https://opxio.vercel.app/api/implementation_form"
 
 INV_PATTERN = re.compile(r"^INV-\d{4}-\d{4}(-[DSFR])?$")
 
@@ -1216,11 +1272,12 @@ def generate_invoice_pdf(data):
     co_name   = co.get("name")                or "Opxio"
     co_email  = co.get("email")               or ""
     co_phone  = co.get("phone")               or ""
-    co_bank   = co.get("bank_name")           or ""
-    co_holder = co.get("bank_account_holder") or ""
-    co_acc    = co.get("bank_number")         or ""
-    co_pay    = co.get("payment_method")      or ""
-    logo_img  = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
+    co_bank      = co.get("bank_name")           or ""
+    co_holder    = co.get("bank_account_holder") or ""
+    co_acc       = co.get("bank_number")         or ""
+    co_pay       = co.get("payment_method")      or ""
+    co_terms_url = co.get("terms_url")           or ""
+    logo_img     = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
 
     issue_display = _fmt_date(data.get("issue_date"))
     due_display   = _fmt_date(data.get("due_date"))
@@ -1279,7 +1336,7 @@ def generate_invoice_pdf(data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
@@ -1427,9 +1484,9 @@ def generate_invoice_pdf(data):
     due_label = "Amount Due" if is_deposit else "Total Due"
     tot_rows.append([
         Paragraph(due_label,
-                  st("tdl", fontName=F_BOLD, fontSize=11, textColor=C_INK, alignment=2)),
+                  st("tdl", fontName=F_BOLD, fontSize=11, textColor=C_WHITE, alignment=2)),
         Paragraph(f"RM {amount_due:,.2f}",
-                  st("tdv", fontName=F_BOLD, fontSize=11, textColor=C_INK, alignment=2)),
+                  st("tdv", fontName=F_BOLD, fontSize=11, textColor=C_WHITE, alignment=2)),
     ])
 
     tot_tbl = Table(tot_rows, colWidths=[usable*0.65, usable*0.35])
@@ -1439,7 +1496,7 @@ def generate_invoice_pdf(data):
         ("LEFTPADDING",   (0,0),(-1,-1),        4),
         ("RIGHTPADDING",  (0,0),(-1,-1),        8),
         ("VALIGN",        (0,0),(-1,-1),        "MIDDLE"),
-        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_LIME),
+        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_INK),
         ("LEFTPADDING",   (0,n_tot),(-1,n_tot), 10),
         ("RIGHTPADDING",  (0,n_tot),(-1,n_tot), 10),
         ("TOPPADDING",    (0,n_tot),(-1,n_tot), 10),
@@ -1452,11 +1509,8 @@ def generate_invoice_pdf(data):
     story.append(HRFlowable(width=usable, color=C_RULE, thickness=0.5))
     story.append(Spacer(1, 6*mm))
 
-    # ── 8. Terms | Payment Details ───────────────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
-    for term in INVOICE_TERMS:
-        terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
-    terms_html = "<br/>".join(terms_lines)
+    # ── 8. T&C QR  |  Payment Details ───────────────────
+    qr_img = _make_qr(co_terms_url, size_mm=28)
 
     pay_lines = []
     if co_pay:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('METHOD')}</font><br/><font size='8' color='{HEX_BODY}'>{co_pay}</font>")
@@ -1467,9 +1521,33 @@ def generate_invoice_pdf(data):
     pay_header = f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
+    if qr_img:
+        qr_label = Paragraph(
+            f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('TERMS & CONDITIONS')}</font>",
+            st("qrl2", fontName=F_MED, fontSize=7, textColor=C_SUBTLE, leading=10)
+        )
+        qr_note = Paragraph(
+            f"<font name='{F_REG}' size='7' color='{HEX_MUTED}'>Scan to read our full Terms & Conditions. "
+            "Payment of this invoice constitutes acceptance of the terms therein.</font>",
+            st("qrn2", fontName=F_REG, fontSize=7, textColor=C_MUTED, leading=11)
+        )
+        left_col = Table([
+            [qr_label],
+            [Spacer(1, 3*mm)],
+            [qr_img],
+            [Spacer(1, 3*mm)],
+            [qr_note],
+        ], colWidths=[usable*0.55 - 20],
+           style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
+    else:
+        terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
+        for term in INVOICE_TERMS:
+            terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
+        left_col = Paragraph("<br/>".join(terms_lines), st("tp2", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY))
+
     bot = Table([[
-        Paragraph(terms_html, st("tp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
-        Paragraph(pay_html,   st("pp", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
+        left_col,
+        Paragraph(pay_html, st("pp2", fontName=F_REG, fontSize=8, leading=15, textColor=C_BODY)),
     ]], colWidths=[usable*0.55, usable*0.45])
     bot.setStyle(TableStyle([
         ("VALIGN",       (0,0),(-1,-1), "TOP"),
@@ -1482,7 +1560,7 @@ def generate_invoice_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
@@ -1505,7 +1583,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
     if intake_url:
         try:
             db_r = requests.get(
-                "https://api.notion.com/v1/databases/9227dda9c4be42a1a4c6b1bce4862f8c",
+                "https://api.notion.com/v1/databases/b02fe60097f6823b901e81d600093692",
                 headers=hdrs, timeout=10
             )
             if db_r.ok and "Intake Form URL" in db_r.json().get("properties", {}):
@@ -1528,7 +1606,7 @@ def update_notion_invoice(page_id, pdf_url, amount_due, intake_url, hdrs):
 #  RECEIPT  — config & data
 # ═══════════════════════════════════
 
-RECEIPT_DB  = "3b99088af86c48c598a6422d764b24ac"
+RECEIPT_DB  = "1b2fe60097f682ba85e8016fba51d654"
 REC_PATTERN = re.compile(r"^REC-(\d{4})-(\d{4})$")
 
 
@@ -1652,7 +1730,7 @@ def generate_receipt_pdf(receipt_no, data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
@@ -1769,18 +1847,18 @@ def generate_receipt_pdf(receipt_no, data):
     story.append(summary_tbl)
     story.append(Spacer(1, 8*mm))
 
-    # ── 6. Amount received (large teal highlight) ─────────
+    # ── 6. Amount received ────────────────────────────────
     amount_paid = data.get("amount_paid", 0) or 0
     amt_tbl = Table([[
         Paragraph(_tracked("AMOUNT RECEIVED"),
-                  st("al", fontName=F_MED, fontSize=8, textColor=C_INK,
+                  st("al", fontName=F_MED, fontSize=8, textColor=C_WHITE,
                      alignment=0, leading=11)),
         Paragraph(f"RM {amount_paid:,.2f}",
                   st("av", fontName=F_BLK, fontSize=22,
-                     textColor=C_INK, alignment=2, leading=28)),
+                     textColor=C_WHITE, alignment=2, leading=28)),
     ]], colWidths=[usable * 0.40, usable * 0.60])
     amt_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_LIME),
+        ("BACKGROUND",    (0,0),(-1,-1), C_INK),
         ("LEFTPADDING",   (0,0),(0,0),   16),
         ("RIGHTPADDING",  (0,0),(0,0),   8),
         ("LEFTPADDING",   (1,0),(1,0),   8),
@@ -1818,7 +1896,7 @@ def generate_receipt_pdf(receipt_no, data):
     story.append(Spacer(1, 10*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_INK, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
@@ -1868,7 +1946,7 @@ class handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs, urlparse
             qs = parse_qs(urlparse(self.path).query)
             api_key = os.environ.get("NOTION_API_KEY", "")
-            INVOICE_DB = "9227dda9c4be42a1a4c6b1bce4862f8c"
+            INVOICE_DB = "b02fe60097f6823b901e81d600093692"
             hdrs = {"Authorization": "Bearer " + api_key, "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
             if "schema" in qs:
                 pid = (qs.get("page_id") or [None])[0]

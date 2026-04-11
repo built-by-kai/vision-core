@@ -85,8 +85,17 @@ export function invalidateClientCache(slug) {
 }
 
 /**
- * Helper: resolve a Notion DB id for a client
- * Falls back to the internal Opxio DB ids if not overridden
+ * Helper: get the Notion API token for a client.
+ * Uses the client's own notion_token if set, otherwise falls back to
+ * the shared NOTION_API_KEY env var (Opxio's internal token).
+ */
+export function getNotionToken(client) {
+  return client?.notion_token || process.env.NOTION_API_KEY
+}
+
+/**
+ * Helper: resolve a Notion DB id for a client.
+ * Falls back to the internal Opxio DB ids if not overridden.
  */
 export function resolveDB(client, dbKey, fallback) {
   return client?.databases?.[dbKey] || fallback
