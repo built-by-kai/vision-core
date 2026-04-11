@@ -50,7 +50,7 @@ const ADDON_LIBRARY = {
   },
   'Document Generation': {
     desc:        'Branded PDF quotes and invoices auto-generated from your Notion data. Button in Notion generates and emails the document. Runs on Opxio\'s server.',
-    price_label: 'RM 800', price_num: 800, monthly: 150, cadence: 'setup + RM 150/mo', type: 'setup+monthly', timing: 'Anytime',
+    price_label: 'RM 600', price_num: 600, monthly: 60, cadence: 'setup + RM 60/mo', type: 'setup+monthly', timing: 'Anytime',
   },
   'Lead Capture System': {
     desc:        'WhatsApp or form inquiries auto-populate your CRM pipeline without manual entry. Every lead captured, structured, and visible to the team immediately.',
