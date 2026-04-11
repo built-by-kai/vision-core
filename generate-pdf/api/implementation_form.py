@@ -20,7 +20,7 @@ import requests
 # ─────────────────────────────────────────────
 #  Config
 # ─────────────────────────────────────────────
-IMPL_DB = "cb42a5f93aaf46e6bcafe39dde6aecba"   # Client Implementation
+IMPL_DB = "c1dfe60097f682f1b0f10142af6449d0"   # Client Implementation
 
 PKG_LABELS = {
     "workflow-os":    "Workflow OS",
