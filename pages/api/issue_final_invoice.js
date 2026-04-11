@@ -9,7 +9,7 @@
 // 5. Updates Project status → In Review
 // 6. Advances Lead stage → Pending Final Payment
 
-import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
+import { getPage, patchPage, createPage, plain, DB, createLedgerEntry } from "../../lib/notion"
 
 
 async function process(payload) {
@@ -121,6 +121,31 @@ async function process(payload) {
       await patchPage(leadId, { "Stage": { status: { name: "Pending Final Payment" } } }, process.env.NOTION_API_KEY)
     } catch {}
   }
+
+  // ── Finance Ledger — auto-create Final Payment entry (Pending) ──────────
+  // Status is "Pending" because the invoice has been issued but not yet paid.
+  // When the client pays, the user updates this entry to "Received".
+  let companyName = ""
+  if (companyId) {
+    try {
+      const cp = await getPage(companyId, process.env.NOTION_API_KEY)
+      for (const v of Object.values(cp.properties)) {
+        if (v.type === "title") { companyName = plain(v.title); break }
+      }
+    } catch {}
+  }
+  createLedgerEntry({
+    title:     companyName ? `Final Payment — ${companyName}` : "Client Final Payment",
+    amount:    Math.round(finalPayment * 100) / 100,
+    category:  "Client Final Payment",
+    source:    "Client Payment",
+    payment:   "Bank Transfer",
+    status:    "Pending",
+    date:      today,
+    invoiceId: invId,
+    projectId: projectId,
+    notes:     "Auto-created when final invoice issued — update to Received when paid",
+  }, process.env.NOTION_API_KEY).catch(() => {})
 
   return {
     status:        "success",

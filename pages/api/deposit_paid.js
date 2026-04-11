@@ -2,7 +2,7 @@
 // POST /api/deposit_paid   { "page_id": "<invoice_page_id>" }
 // Triggered by Notion button "Mark Deposit Paid" on Invoice page.
 
-import { getPage, patchPage, queryDB, plain, DB } from "../../lib/notion"
+import { getPage, patchPage, queryDB, plain, DB, createLedgerEntry } from "../../lib/notion"
 
 const QUOTE_TYPE_TO_SLUG = {
   "full agency os":  "full-agency-os",
@@ -186,6 +186,21 @@ async function process(payload) {
   if (waUrl) {
     try { await patchPage(pageId, { "WA Link": { url: waUrl } }, token) } catch {}
   }
+
+  // ── Finance Ledger — auto-create Deposit entry ───────────────────────────
+  const depositAmt = props["Deposit (50%)"]?.number || props["Amount"]?.number || 0
+  createLedgerEntry({
+    title:     companyName ? `Deposit — ${companyName}` : "Client Deposit",
+    amount:    depositAmt,
+    category:  "Client Deposit",
+    source:    "Client Payment",
+    payment:   "Bank Transfer",
+    status:    "Received",
+    date:      today,
+    invoiceId: pageId,
+    projectId: projectId || null,
+    notes:     "Auto-created when deposit marked received",
+  }, token).catch(() => {})
 
   return {
     status:         "success",
