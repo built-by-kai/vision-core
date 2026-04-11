@@ -589,7 +589,7 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(500, {"error": str(e)})
             return
 
-        self._respond(200, {"service": "Vision Core — Create Invoice from Quotation",
+        self._respond(200, {"service": "Opxio — Create Invoice from Quotation",
                             "status":  "ready"})
 
     def do_POST(self):
@@ -657,7 +657,7 @@ class handler(BaseHTTPRequestHandler):
                 if webhook_secret:
                     gen_hdrs["Authorization"] = f"Bearer {webhook_secret}"
                 gr = requests.post(
-                    "https://vision-core-delta.vercel.app/api/generate_invoice",
+                    "https://opxio.vercel.app/api/generate_invoice",
                     headers=gen_hdrs,
                     json={"page_id": inv_id},
                     timeout=55,
