@@ -11,11 +11,10 @@
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
-const TOKEN = process.env.NOTION_API_KEY
 
 function hdrs() {
   return {
-    Authorization:    `Bearer ${TOKEN}`,
+    Authorization:    `Bearer ${process.env.NOTION_API_KEY}`,
     "Notion-Version": "2022-06-28",
     "Content-Type":   "application/json",
   }
@@ -26,7 +25,7 @@ async function process(payload) {
   if (!rawId) throw new Error("No page_id in payload")
   const quotId = rawId.replace(/-/g, "")
 
-  const quot  = await getPage(quotId, TOKEN)
+  const quot  = await getPage(quotId, process.env.NOTION_API_KEY)
   const props = quot.properties
 
   // Quotation fields
@@ -67,13 +66,13 @@ async function process(payload) {
     ...(leadId ? { "Deal Source": { relation: [{ id: leadId }] } } : {}),
   }
 
-  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, TOKEN)
+  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, process.env.NOTION_API_KEY)
   const invId   = invPage.id.replace(/-/g, "")
   console.log("[create_invoice] Invoice created:", invId)
 
   // Link Invoice ↔ Quotation
   try {
-    await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, TOKEN)
+    await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, process.env.NOTION_API_KEY)
   } catch {}
 
   // ── 2. Create or Link Project ─────────────────────────────────────────
@@ -90,24 +89,24 @@ async function process(payload) {
       ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
       ...(leadId ? { "Deal Source": { relation: [{ id: leadId }] } } : {}),
     }
-    const projPage = await createPage({ parent: { database_id: DB.PROJECTS }, properties: projProps }, TOKEN)
+    const projPage = await createPage({ parent: { database_id: DB.PROJECTS }, properties: projProps }, process.env.NOTION_API_KEY)
     projectId = projPage.id.replace(/-/g, "")
     console.log("[create_invoice] Project created:", projectId)
   } else {
     // Add-on: just link the supplementary invoice to the existing project
     try {
-      const proj  = await getPage(projectId, TOKEN)
+      const proj  = await getPage(projectId, process.env.NOTION_API_KEY)
       const invs  = proj.properties.Invoice?.relation || []
       const newInvs = [...invs.map(r => ({ id: r.id })), { id: invId }]
-      await patchPage(projectId, { "Invoice": { relation: newInvs } }, TOKEN)
+      await patchPage(projectId, { "Invoice": { relation: newInvs } }, process.env.NOTION_API_KEY)
     } catch {}
     console.log("[create_invoice] Linked supplementary invoice to existing project:", projectId)
   }
 
   // Link Project ↔ Invoice (if newly created)
   if (!existingProjectId) {
-    try { await patchPage(invId, { "Implementation": { relation: [{ id: projectId }] } }, TOKEN) } catch {}
-    try { await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, TOKEN) } catch {}
+    try { await patchPage(invId, { "Implementation": { relation: [{ id: projectId }] } }, process.env.NOTION_API_KEY) } catch {}
+    try { await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, process.env.NOTION_API_KEY) } catch {}
   }
 
   // ── 3. Advance Lead → "Won – Pending Deposit" ─────────────────────────
@@ -115,7 +114,7 @@ async function process(payload) {
     try {
       await patchPage(leadId, {
         "Stage": { status: { name: "Won – Pending Deposit" } }
-      }, TOKEN)
+      }, process.env.NOTION_API_KEY)
     } catch (e) {
       console.warn("[create_invoice] Lead stage:", e.message)
     }
@@ -125,7 +124,7 @@ async function process(payload) {
   try {
     await patchPage(quotId, {
       "Status": { select: { name: "Approved" } }
-    }, TOKEN)
+    }, process.env.NOTION_API_KEY)
   } catch {}
 
   return {
