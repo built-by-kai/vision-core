@@ -1,177 +1,22 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/generate.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": ["api/fonts/**"]
-      }
-    },
-    {
-      "src": "api/cal_booking.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/implementation_form.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/generate_invoice.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/create_invoice.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/generate_receipt.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/send_quotation.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/create_quotation.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/deposit_paid.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/issue_final_invoice.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/expansion_invoice.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/wa_redirect.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "widgets/**",
-      "use": "@vercel/static"
-    }
-  ],
+  "framework": "nextjs",
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" },
+        { "key": "X-Frame-Options", "value": "ALLOWALL" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors *" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "ALLOWALL"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors *"
-        }
+        { "key": "X-Frame-Options", "value": "ALLOWALL" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors *" }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/generate",
-      "dest": "api/generate.py"
-    },
-    {
-      "src": "/api/cal_booking",
-      "dest": "api/cal_booking.py"
-    },
-    {
-      "src": "/api/implementation_form",
-      "dest": "api/implementation_form.py"
-    },
-    {
-      "src": "/api/generate_invoice",
-      "dest": "api/generate_invoice.py"
-    },
-    {
-      "src": "/api/create_invoice",
-      "dest": "api/create_invoice.py"
-    },
-    {
-      "src": "/api/generate_receipt",
-      "dest": "api/generate_receipt.py"
-    },
-    {
-      "src": "/api/send_quotation",
-      "dest": "api/send_quotation.py"
-    },
-    {
-      "src": "/api/create_quotation",
-      "dest": "api/create_quotation.py"
-    },
-    {
-      "src": "/api/deposit_paid",
-      "dest": "api/deposit_paid.py"
-    },
-    {
-      "src": "/api/issue_final_invoice",
-      "dest": "api/issue_final_invoice.py"
-    },
-    {
-      "src": "/api/expansion_invoice",
-      "dest": "api/expansion_invoice.py"
-    },
-    {
-      "src": "/api/wa_redirect",
-      "dest": "api/wa_redirect.py"
-    },
-    {
-      "src": "/widgets/deals",
-      "dest": "/widgets/deals.html"
-    },
-    {
-      "src": "/widgets/meetings",
-      "dest": "/widgets/meetings.html"
-    },
-    {
-      "src": "/widgets/schedule",
-      "dest": "/widgets/schedule.html"
-    },
-    {
-      "src": "/widgets/board",
-      "dest": "/widgets/board.html"
-    },
-    {
-      "src": "/widgets/potential",
-      "dest": "/widgets/potential.html"
-    },
-    {
-      "src": "/widgets/active",
-      "dest": "/widgets/active.html"
-    },
-    {
-      "src": "/widgets/finance",
-      "dest": "/widgets/revenue.html"
-    },
-    {
-      "src": "/widgets/monthly",
-      "dest": "/widgets/monthly.html"
-    },
-    {
-      "src": "/widgets/topproducts",
-      "dest": "/widgets/topproducts.html"
-    },
-    {
-      "src": "/widgets/earnings",
-      "dest": "/widgets/earnings.html"
-    },
-    {
-      "src": "/widgets/visitors",
-      "dest": "/widgets/visitors.html"
-    },
-    {
-      "src": "/widgets/revenue-overview",
-      "dest": "/widgets/combined.html"
-    },
-    {
-      "src": "/widgets/projects",
-      "dest": "/widgets/projects.html"
     }
   ]
 }
