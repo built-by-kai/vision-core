@@ -411,7 +411,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         self._respond(200, {
-            "service": "Vision Core — Create Add-on Quotation",
+            "service": "Opxio — Create Add-on Quotation",
             "status":  "ready",
             "usage":   "POST with {page_id} from a Project page | GET ?setup=1 for one-time Phases DB setup",
         })
