@@ -50,6 +50,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/create_proposal_entry.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "widgets/**",
       "use": "@vercel/static"
     },
@@ -129,6 +133,10 @@
     {
       "src": "/api/generate_proposal",
       "dest": "api/generate_proposal.js"
+    },
+    {
+      "src": "/api/create_proposal_entry",
+      "dest": "api/create_proposal_entry.js"
     },
     {
       "src": "/widgets/deals",
