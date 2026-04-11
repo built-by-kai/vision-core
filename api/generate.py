@@ -631,7 +631,7 @@ def generate_pdf(data):
         return Table([
             [Paragraph(label,
                        st(f"ml_{label[:4]}", fontName=F_MED, fontSize=7,
-                          textColor=C_LIME, leading=10))],
+                          textColor=C_SUBTLE, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:4]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
@@ -655,7 +655,7 @@ def generate_pdf(data):
     # ── 4. Bill To ───────────────────────────────────────
     story.append(Paragraph(
         _tracked("BILL TO"),
-        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
+        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -797,7 +797,7 @@ def generate_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 8. Notes & Terms  |  Payment Details ─────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('NOTES & TERMS')}</font>", ""]
+    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
     for term in TERMS:
         terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
     terms_html = "<br/>".join(terms_lines)
@@ -808,7 +808,7 @@ def generate_pdf(data):
     if co_holder: pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NAME')}</font><br/><font size='8' color='{HEX_BODY}'>{co_holder}</font>")
     if co_acc:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NO.')}</font><br/><font size='8' color='{HEX_BODY}'>{co_acc}</font>")
 
-    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('PAYMENT DETAILS')}</font>"
+    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
     bot = Table([[
@@ -1286,7 +1286,7 @@ def generate_invoice_pdf(data):
         return Table([
             [Paragraph(label,
                        st(f"ml_{label[:4]}", fontName=F_MED, fontSize=7,
-                          textColor=C_LIME, leading=10))],
+                          textColor=C_SUBTLE, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:4]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
@@ -1310,7 +1310,7 @@ def generate_invoice_pdf(data):
     # ── 4. Bill To ───────────────────────────────────────
     story.append(Paragraph(
         _tracked("BILL TO"),
-        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
+        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -1453,7 +1453,7 @@ def generate_invoice_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 8. Terms | Payment Details ───────────────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('NOTES & TERMS')}</font>", ""]
+    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('NOTES & TERMS')}</font>", ""]
     for term in INVOICE_TERMS:
         terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
     terms_html = "<br/>".join(terms_lines)
@@ -1464,7 +1464,7 @@ def generate_invoice_pdf(data):
     if co_holder: pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NAME')}</font><br/><font size='8' color='{HEX_BODY}'>{co_holder}</font>")
     if co_acc:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NO.')}</font><br/><font size='8' color='{HEX_BODY}'>{co_acc}</font>")
 
-    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('PAYMENT DETAILS')}</font>"
+    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_SUBTLE}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
     bot = Table([[
@@ -1659,7 +1659,7 @@ def generate_receipt_pdf(receipt_no, data):
         return Table([
             [Paragraph(label,
                        st(f"ml_{label[:3]}", fontName=F_MED, fontSize=7,
-                          textColor=C_LIME, leading=10))],
+                          textColor=C_SUBTLE, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:3]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
@@ -1691,7 +1691,7 @@ def generate_receipt_pdf(receipt_no, data):
     # ── 4. Received From ─────────────────────────────────
     story.append(Paragraph(
         _tracked("RECEIVED FROM"),
-        st("rf_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
+        st("rf_lbl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -1730,11 +1730,11 @@ def generate_receipt_pdf(receipt_no, data):
 
     summary_rows = [
         [Paragraph(_tracked("PAYMENT FOR"),
-                   st("sl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
+                   st("sl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE)),
          Paragraph(f"Invoice {inv_ref_display} — {inv_type}",
                    st("sv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
         [Paragraph(_tracked("PAYMENT METHOD"),
-                   st("ml2", fontName=F_MED, fontSize=7, textColor=C_LIME)),
+                   st("ml2", fontName=F_MED, fontSize=7, textColor=C_SUBTLE)),
          Paragraph(pay_str,
                    st("mv2", fontName=F_REG, fontSize=9, textColor=C_BODY))],
     ]
@@ -1746,11 +1746,11 @@ def generate_receipt_pdf(receipt_no, data):
         bal_date = _fd(data.get("bal_date", ""))
         summary_rows += [
             [Paragraph(_tracked("DEPOSIT PAID"),
-                       st("dl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
+                       st("dl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE)),
              Paragraph(f"RM {dep_amt:,.2f}  ·  {dep_date}",
                        st("dv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
             [Paragraph(_tracked("BALANCE PAID"),
-                       st("bl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
+                       st("bl", fontName=F_MED, fontSize=7, textColor=C_SUBTLE)),
              Paragraph(f"RM {bal_amt:,.2f}  ·  {bal_date}",
                        st("bv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
         ]
