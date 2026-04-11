@@ -10,14 +10,20 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--inc:#34D399;--exp:#F87171;--pl:#AAFF00;}
-body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);--inc:#047857;--exp:#B91C1C;--pl:#5C9900;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.1);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);--lost:#C2410C;}
+
+/* card */
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
-.card:hover{border-color:rgba(170,255,0,.14);}
+.card:hover{border-color:rgba(170,255,0,.12);}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
-.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:.02em;}
+
+/* button */
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+/* topbar */
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
@@ -26,52 +32,54 @@ body.light .eyebrow{color:rgba(0,0,0,.28);}
 body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
-.section-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
-body.light .section-lbl{color:rgba(0,0,0,.3);}
-/* KPI Cards */
-.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-@media(max-width:500px){.kpi-grid{grid-template-columns:1fr;}}
-.kpi-card{padding:20px 20px 18px;position:relative;overflow:hidden;}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
-.kpi-card:hover::before{opacity:1;}
-.kpi-inc::before{background:linear-gradient(90deg,var(--inc),transparent);}
-.kpi-exp::before{background:linear-gradient(90deg,var(--exp),transparent);}
-.kpi-pl::before{background:linear-gradient(90deg,var(--g),transparent);}
-.kpi-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;}
-.kpi-inc .kpi-dot{background:var(--inc);}
-.kpi-exp .kpi-dot{background:var(--exp);}
-.kpi-pl  .kpi-dot{background:var(--g);}
-.kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:10px;}
-body.light .kpi-lbl{color:rgba(0,0,0,.5);}
-.kpi-val{font-size:26px;font-weight:900;letter-spacing:-1.5px;line-height:1;}
-.kpi-inc .kpi-val{color:var(--inc);}
-.kpi-exp .kpi-val{color:var(--exp);}
-.kpi-pl  .kpi-val{color:var(--g);}
-.kpi-pl  .kpi-val.negative{color:var(--exp);}
-.kpi-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:8px;}
-body.light .kpi-sub{color:rgba(0,0,0,.3);}
-/* Charts grid */
-.charts-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;margin-top:10px;}
-@media(max-width:600px){.charts-grid{grid-template-columns:1fr;}}
-.chart-card{padding:20px 20px 16px;}
-.chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:16px;}
-body.light .chart-title{color:rgba(0,0,0,.45);}
-.chart-wrap{position:relative;}
-.donut-wrap{display:flex;flex-direction:column;align-items:center;}
-.donut-canvas-wrap{position:relative;width:160px;height:160px;margin:0 auto 14px;}
-/* Category legend */
-.cat-list{width:100%;display:flex;flex-direction:column;gap:6px;margin-top:2px;}
-.cat-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
-.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.cat-name{font-size:10px;font-weight:500;color:rgba(255,255,255,.65);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .cat-name{color:rgba(0,0,0,.55);}
-.cat-pct{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);}
-body.light .cat-pct{color:rgba(0,0,0,.4);}
-.cat-amt{font-size:10px;font-weight:700;color:rgba(255,255,255,.75);min-width:52px;text-align:right;}
-body.light .cat-amt{color:rgba(0,0,0,.6);}
-/* Empty state */
-.empty{font-size:11px;font-weight:500;color:rgba(255,255,255,.2);text-align:center;padding:20px 0;}
+
+/* section label */
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+
+/* stat cards — exact same pattern as combined.html */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:580px){.grid-3{grid-template-columns:1fr 1fr;}}
+.stat{padding:16px 18px;position:relative;}
+.s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);}
+.s-dot.red{background:#FF6B6B;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.45);margin-bottom:10px;display:block;}
+body.light .s-lbl{color:rgba(0,0,0,.4);}
+.s-val{font-size:26px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+body.light .s-val{color:#5C9900;}
+.s-val.negative{color:#FF6B6B;}
+body.light .s-val.negative{color:#B91C1C;}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:8px;}
+body.light .s-sub{color:rgba(0,0,0,.3);}
+
+/* charts row */
+.charts-row{display:grid;grid-template-columns:220px 1fr;gap:10px;margin-top:0;}
+@media(max-width:620px){.charts-row{grid-template-columns:1fr;}}
+
+/* chart cards */
+.chart-card{padding:20px 20px 18px;}
+.chart-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:14px;}
+body.light .chart-title{color:rgba(0,0,0,.35);}
+
+/* donut */
+.donut-canvas-wrap{position:relative;width:130px;height:130px;margin:0 auto 14px;}
+.cat-list{display:flex;flex-direction:column;gap:5px;}
+.cat-row{display:flex;align-items:center;gap:7px;}
+.cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.cat-name{font-size:10px;font-weight:500;color:rgba(255,255,255,.6);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .cat-name{color:rgba(0,0,0,.5);}
+.cat-pct{font-size:10px;font-weight:700;color:rgba(255,255,255,.35);}
+body.light .cat-pct{color:rgba(0,0,0,.35);}
+.cat-amt{font-size:10px;font-weight:700;color:var(--g);min-width:52px;text-align:right;}
+body.light .cat-amt{color:#5C9900;}
+
+/* trend chart container */
+.trend-wrap{height:185px;position:relative;}
+
+/* empty */
+.empty{font-size:11px;font-weight:500;color:rgba(255,255,255,.2);text-align:center;padding:24px 0;}
 body.light .empty{color:rgba(0,0,0,.2);}
+
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
@@ -81,10 +89,9 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 </head>
 <body>
 
-<!-- Header -->
 <div class="topbar">
   <div>
-    <p class="eyebrow">Opxio · Finance</p>
+    <p class="eyebrow">Opxio · Revenue</p>
     <h1 class="h-title">Finance Snapshot</h1>
   </div>
   <div class="topbar-right">
@@ -94,121 +101,117 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </div>
 </div>
 
-<!-- KPI Cards -->
-<div class="section-lbl">Overview</div>
-<div class="kpi-grid">
-  <div class="card kpi-card kpi-inc">
-    <div class="kpi-dot"></div>
-    <div class="kpi-lbl">Total Income</div>
-    <div class="kpi-val" id="kpi-income">—</div>
-    <div class="kpi-sub">All cleared income</div>
+<div class="sec-lbl">This Month</div>
+<div class="grid-3">
+  <div class="card stat">
+    <div class="s-dot" id="dot-income"></div>
+    <span class="s-lbl">Income</span>
+    <div class="s-val" id="kpi-income">—</div>
+    <div class="s-sub">Cleared this month</div>
   </div>
-  <div class="card kpi-card kpi-exp">
-    <div class="kpi-dot"></div>
-    <div class="kpi-lbl">Total Expenses</div>
-    <div class="kpi-val" id="kpi-expenses">—</div>
-    <div class="kpi-sub">All cleared expenses</div>
+  <div class="card stat">
+    <div class="s-dot" id="dot-expenses"></div>
+    <span class="s-lbl">Expenses</span>
+    <div class="s-val" id="kpi-expenses">—</div>
+    <div class="s-sub">Cleared this month</div>
   </div>
-  <div class="card kpi-card kpi-pl">
-    <div class="kpi-dot"></div>
-    <div class="kpi-lbl">Net P&amp;L</div>
-    <div class="kpi-val" id="kpi-pl">—</div>
-    <div class="kpi-sub" id="kpi-pl-sub">Income minus expenses</div>
+  <div class="card stat">
+    <div class="s-dot" id="dot-pl"></div>
+    <span class="s-lbl">Net P&amp;L</span>
+    <div class="s-val" id="kpi-pl">—</div>
+    <div class="s-sub" id="kpi-pl-sub">Income minus expenses</div>
   </div>
 </div>
 
-<!-- Charts -->
-<div class="charts-grid">
-  <!-- Donut: Expense breakdown -->
+<div class="sec-lbl">Breakdown &amp; Trend</div>
+<div class="charts-row">
   <div class="card chart-card">
-    <div class="chart-title">Expense Breakdown</div>
-    <div class="donut-wrap">
-      <div class="donut-canvas-wrap">
-        <canvas id="donut-chart"></canvas>
-      </div>
-      <div class="cat-list" id="cat-legend"></div>
-    </div>
+    <div class="chart-title">Expense by Category</div>
+    <div class="donut-canvas-wrap"><canvas id="donut-chart"></canvas></div>
+    <div class="cat-list" id="cat-legend"></div>
   </div>
-
-  <!-- Line: 6-month P&L trend -->
   <div class="card chart-card">
-    <div class="chart-title">6-Month P&amp;L Trend</div>
-    <div class="chart-wrap" style="height:200px;">
-      <canvas id="trend-chart"></canvas>
-    </div>
+    <div class="chart-title">6-Month Net P&amp;L</div>
+    <div class="trend-wrap"><canvas id="trend-chart"></canvas></div>
   </div>
 </div>
 
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
-function apiUrl(path){ return '/api/data/finance-snapshot' + (_tok ? '?token=' + encodeURIComponent(_tok) : ''); }
-
 let light = false;
-let donutChart = null, trendChart = null;
+let donutInst = null, trendInst = null;
 
 function toggleMode(){
   light = !light;
   document.body.classList.toggle('light', light);
   document.getElementById('mb').textContent = light ? '🌙 Dark' : '☀ Light';
-  if (donutChart) updateChartTheme(donutChart);
-  if (trendChart) updateChartTheme(trendChart);
-}
-
-function updateChartTheme(chart) {
-  const gridColor = light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
-  const tickColor = light ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)';
-  if (chart.options.scales?.x) {
-    chart.options.scales.x.grid.color = gridColor;
-    chart.options.scales.x.ticks.color = tickColor;
-    chart.options.scales.y.grid.color = gridColor;
-    chart.options.scales.y.ticks.color = tickColor;
-  }
-  chart.update();
+  if (trendInst) rebuildTrend(_lastTrend);
 }
 
 function setTs(){ document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 
 function fmtRM(n) {
-  if (n >= 1000000) return 'RM ' + (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-  if (n >= 1000)    return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
-  return 'RM ' + Math.round(n).toLocaleString();
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1000000) return sign + 'RM ' + (abs/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (abs >= 1000)    return sign + 'RM ' + (abs/1000).toFixed(1).replace(/\.0$/,'') + 'K';
+  return sign + 'RM ' + Math.round(abs).toLocaleString();
 }
 
-// Donut palette — vibrant, distinct colours
-const PALETTE = ['#AAFF00','#60A5FA','#FBBF24','#F87171','#A78BFA','#2DD4BF','#FB923C','#E879F9','#34D399','#38BDF8'];
+// Donut palette — no teal, matches Opxio brand feel
+const PALETTE = ['#AAFF00','#FF6B35','#60A5FA','#FBBF24','#A78BFA','#F472B6','#34D399','#FB923C','#E879F9','#38BDF8'];
+
+function renderKPIs(kpi) {
+  const { thisMonthIncome: inc, thisMonthExpenses: exp, thisMonthPL: pl } = kpi;
+  document.getElementById('kpi-income').textContent   = fmtRM(inc || 0);
+  document.getElementById('kpi-expenses').textContent = fmtRM(exp || 0);
+
+  const plEl  = document.getElementById('kpi-pl');
+  const dotPL = document.getElementById('dot-pl');
+  const subPL = document.getElementById('kpi-pl-sub');
+  plEl.textContent = fmtRM(pl || 0);
+
+  if ((pl || 0) < 0) {
+    plEl.classList.add('negative');
+    dotPL.classList.add('red');
+    subPL.textContent = 'Running at a loss';
+  } else {
+    plEl.classList.remove('negative');
+    dotPL.classList.remove('red');
+    subPL.textContent = 'Net profit this month';
+  }
+}
 
 function renderDonut(breakdown) {
-  const ctx = document.getElementById('donut-chart').getContext('2d');
-  if (donutChart) { donutChart.destroy(); donutChart = null; }
+  if (donutInst) { donutInst.destroy(); donutInst = null; }
+  const legend = document.getElementById('cat-legend');
 
   if (!breakdown || !breakdown.length) {
-    document.getElementById('cat-legend').innerHTML = '<p class="empty">No expense data yet</p>';
+    legend.innerHTML = '<p class="empty">No expense data</p>';
     return;
   }
 
-  const labels = breakdown.map(b => b.cat);
-  const data   = breakdown.map(b => b.amount);
-  const colors = breakdown.map((_, i) => PALETTE[i % PALETTE.length]);
+  const top     = breakdown.slice(0, 6);
+  const labels  = top.map(b => b.cat);
+  const data    = top.map(b => b.amount);
+  const colors  = top.map((_, i) => PALETTE[i % PALETTE.length]);
+  const ctx     = document.getElementById('donut-chart').getContext('2d');
+  const border  = light ? '#fff' : '#1E1E1E';
 
-  donutChart = new Chart(ctx, {
+  donutInst = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: light ? '#fff' : '#1E1E1E', borderWidth: 2, hoverBorderWidth: 3 }] },
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: border, borderWidth: 2, hoverBorderWidth: 3 }] },
     options: {
-      cutout: '70%',
-      animation: { duration: 800 },
+      cutout: '72%',
+      animation: { duration: 700 },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${fmtRM(ctx.raw)} (${breakdown[ctx.dataIndex].pct}%)`
-          }
-        }
+        tooltip: { callbacks: { label: c => ` ${fmtRM(c.raw)} (${top[c.dataIndex].pct}%)` } }
       }
     }
   });
 
-  // Legend
-  document.getElementById('cat-legend').innerHTML = breakdown.map((b, i) => `
+  legend.innerHTML = top.map((b, i) => `
     <div class="cat-row">
       <span class="cat-dot" style="background:${colors[i]}"></span>
       <span class="cat-name">${b.cat}</span>
@@ -217,94 +220,72 @@ function renderDonut(breakdown) {
     </div>`).join('');
 }
 
-function renderTrend(monthly) {
-  const ctx = document.getElementById('trend-chart').getContext('2d');
-  if (trendChart) { trendChart.destroy(); trendChart = null; }
+let _lastTrend = null;
+function rebuildTrend(monthly) {
+  if (trendInst) { trendInst.destroy(); trendInst = null; }
   if (!monthly || !monthly.length) return;
+  _lastTrend = monthly;
 
-  const gridColor = light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
-  const tickColor = light ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)';
+  const grid  = light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
+  const tick  = light ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.3)';
+  const ctx   = document.getElementById('trend-chart').getContext('2d');
+  const vals  = monthly.map(m => m.pl);
+  const hasNeg = vals.some(v => v < 0);
 
-  trendChart = new Chart(ctx, {
+  // Gradient fill: green above zero, red below
+  const grad = ctx.createLinearGradient(0, 0, 0, 185);
+  grad.addColorStop(0,   'rgba(170,255,0,0.18)');
+  grad.addColorStop(0.6, 'rgba(170,255,0,0.04)');
+  grad.addColorStop(1,   'rgba(170,255,0,0)');
+
+  trendInst = new Chart(ctx, {
     type: 'line',
     data: {
       labels: monthly.map(m => m.m),
-      datasets: [
-        {
-          label: 'Income',
-          data: monthly.map(m => m.income),
-          borderColor: '#34D399',
-          backgroundColor: 'rgba(52,211,153,0.10)',
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointBackgroundColor: '#34D399',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        },
-        {
-          label: 'Expenses',
-          data: monthly.map(m => m.expense),
-          borderColor: '#F87171',
-          backgroundColor: 'rgba(248,113,113,0.08)',
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointBackgroundColor: '#F87171',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        },
-        {
-          label: 'Net P&L',
-          data: monthly.map(m => m.pl),
-          borderColor: '#AAFF00',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderDash: [4, 3],
-          tension: 0.4,
-          fill: false,
-          pointBackgroundColor: '#AAFF00',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        }
-      ]
+      datasets: [{
+        label: 'Net P&L',
+        data: vals,
+        borderColor: '#AAFF00',
+        backgroundColor: grad,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: vals.map(v => v < 0 ? '#FF6B6B' : '#AAFF00'),
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBorderWidth: 0,
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 900 },
-      interaction: { mode: 'index', intersect: false },
+      animation: { duration: 800 },
       plugins: {
-        legend: {
-          display: true,
-          labels: {
-            color: tickColor,
-            font: { family: "'Satoshi', sans-serif", size: 10, weight: '700' },
-            boxWidth: 10,
-            padding: 12,
-            usePointStyle: true,
-            pointStyle: 'circle',
-          }
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: light ? '#fff' : '#252525',
           borderColor: light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
           borderWidth: 1,
           titleColor: light ? '#111' : '#fff',
-          bodyColor: light ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)',
-          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtRM(ctx.raw)}` }
+          bodyColor: light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)',
+          callbacks: {
+            label: c => {
+              const v = c.raw;
+              return ` Net P&L: ${fmtRM(v)}${v < 0 ? ' ▼' : ' ▲'}`;
+            }
+          }
         }
       },
       scales: {
         x: {
-          grid: { color: gridColor },
-          ticks: { color: tickColor, font: { family: "'Satoshi', sans-serif", size: 10 } }
+          grid: { color: grid },
+          ticks: { color: tick, font: { family: "'Satoshi', sans-serif", size: 10, weight: '500' } }
         },
         y: {
-          grid: { color: gridColor },
+          grid: { color: grid },
           ticks: {
-            color: tickColor,
-            font: { family: "'Satoshi', sans-serif", size: 10 },
+            color: tick,
+            font: { family: "'Satoshi', sans-serif", size: 10, weight: '500' },
             callback: v => fmtRM(v)
           }
         }
@@ -315,40 +296,25 @@ function renderTrend(monthly) {
 
 async function loadData() {
   try {
-    const r = await fetch(apiUrl());
-    const j = await r.json();
-
-    // KPIs
-    const { totalIncome, totalExpenses, netPL } = j.kpi || {};
-    document.getElementById('kpi-income').textContent   = fmtRM(totalIncome   || 0);
-    document.getElementById('kpi-expenses').textContent = fmtRM(totalExpenses || 0);
-    const plEl = document.getElementById('kpi-pl');
-    plEl.textContent = fmtRM(Math.abs(netPL || 0));
-    if ((netPL || 0) < 0) {
-      plEl.classList.add('negative');
-      document.getElementById('kpi-pl-sub').textContent = 'Loss — review expenses';
-    } else {
-      plEl.classList.remove('negative');
-      document.getElementById('kpi-pl-sub').textContent = 'Net profit';
-    }
-
+    const url = '/api/data/finance-snapshot' + (_tok ? '?token=' + encodeURIComponent(_tok) : '');
+    const r   = await fetch(url);
+    const j   = await r.json();
+    renderKPIs(j.kpi || {});
     renderDonut(j.categoryBreakdown || []);
-    renderTrend(j.monthlyTrend || []);
+    rebuildTrend(j.monthlyTrend || []);
     setTs();
   } catch(e) {
-    console.error('finance-snapshot widget:', e);
+    console.error('finance-snapshot:', e);
   }
 }
 
-function doRefresh(){
+function doRefresh() {
   const b = document.getElementById('rb');
-  b.textContent = '↻';
-  b.style.opacity = '.4';
+  b.textContent = '↻'; b.style.opacity = '.4';
   loadData().then(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; });
 }
 
 loadData();
-setTs();
 setInterval(loadData, 5 * 60 * 1000);
 </script>
 </body>
