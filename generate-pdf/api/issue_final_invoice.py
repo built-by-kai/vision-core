@@ -25,10 +25,10 @@ What it does:
 
 DBs
 ───
-Projects     : 5719b2672d3442a29a22637a35398260
-Invoices     : 9227dda9c4be42a1a4c6b1bce4862f8c
-Quotations   : f8167f0bda054307b90b17ad6b9c5cf8
-Leads CRM    : 8690d55c4d0449068c51ef49d92a26a2
+Projects     : 842fe60097f68303b34e01a5432d24cc
+Invoices     : b02fe60097f6823b901e81d600093692
+Quotations   : b54fe60097f683e1930d012d635b14d5
+Leads CRM    : caafe60097f683398df40197eeedbffe
 """
 import json
 import os
@@ -38,9 +38,9 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
-INVOICES_DB  = "9227dda9c4be42a1a4c6b1bce4862f8c"
-LEADS_DB     = "8690d55c4d0449068c51ef49d92a26a2"
+PROJECTS_DB  = "842fe60097f68303b34e01a5432d24cc"
+INVOICES_DB  = "b02fe60097f6823b901e81d600093692"
+LEADS_DB     = "caafe60097f683398df40197eeedbffe"
 
 
 def _hdrs():
