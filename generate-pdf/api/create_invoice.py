@@ -11,9 +11,9 @@ Auto-determines Invoice Type:
   Payment Terms = "Full Upfront"  → Full Payment (no deposit)
   Payment Terms = "50% Deposit"   → Deposit invoice first
 
-Quotation DB : f8167f0bda054307b90b17ad6b9c5cf8
-Invoice DB   : 9227dda9c4be42a1a4c6b1bce4862f8c
-Projects DB  : 5719b2672d3442a29a22637a35398260
+Quotation DB : b54fe60097f683e1930d012d635b14d5
+Invoice DB   : b02fe60097f6823b901e81d600093692
+Projects DB  : 842fe60097f68303b34e01a5432d24cc
 """
 import json
 import os
@@ -24,9 +24,9 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-QUOTATION_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
-INVOICE_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
-PROJECTS_DB  = "5719b2672d3442a29a22637a35398260"
+QUOTATION_DB = "b54fe60097f683e1930d012d635b14d5"
+INVOICE_DB   = "b02fe60097f6823b901e81d600093692"
+PROJECTS_DB  = "842fe60097f68303b34e01a5432d24cc"
 
 # Cover image URLs per Package type (GitHub raw CDN — always available)
 COVER_BASE = "https://raw.githubusercontent.com/opxio-io/opxio/main/generate-pdf/covers"
@@ -672,7 +672,7 @@ class handler(BaseHTTPRequestHandler):
 
             # 1c. Advance the Deal stage to "Won – Pending Deposit"
             # Use lead_ids directly from quotation (faster than DB query)
-            DEALS_DB = "8690d55c4d0449068c51ef49d92a26a2"
+            DEALS_DB = "caafe60097f683398df40197eeedbffe"
             try:
                 lead_ids_to_advance = quotation.get("lead_ids", [])
                 # Fallback: query by Quotation relation if lead not on quotation yet
