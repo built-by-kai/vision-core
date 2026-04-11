@@ -49,15 +49,34 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   </div>
 </div>
 <div class="grid">
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Deposit Due</div><div class="s-val">2</div><div class="s-sub">Awaiting deposit</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Building</div><div class="s-val">5</div><div class="s-sub">In active delivery</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Balance Due</div><div class="s-val">3</div><div class="s-sub">Final payment pending</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Completed</div><div class="s-val">8</div><div class="s-sub">Fully delivered</div></div>
+  <div class="card stat"><div class="s-dot" style="background:#FBBF24;"></div><div class="s-lbl">Deposit Due</div><div class="s-val" id="a-deposit" style="color:#FBBF24;">—</div><div class="s-sub">Awaiting deposit</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Building</div><div class="s-val" id="a-building">—</div><div class="s-sub">In active delivery</div></div>
+  <div class="card stat"><div class="s-dot" style="background:#60A5FA;"></div><div class="s-lbl">Balance Due</div><div class="s-val" id="a-balance" style="color:#60A5FA;">—</div><div class="s-sub">Final payment pending</div></div>
+  <div class="card stat"><div class="s-dot" style="opacity:.35;"></div><div class="s-lbl">Completed</div><div class="s-val" id="a-done" style="color:rgba(170,255,0,.5);">—</div><div class="s-sub">Fully delivered</div></div>
 </div>
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
-setTs();setInterval(doRefresh,5*60*1000);
+
+async function loadData(){
+  try {
+    const [rf, rp] = await Promise.all([
+      fetch(apiUrl('/api/data/finance')),
+      fetch(apiUrl('/api/data/projects')),
+    ]);
+    const [jf, jp] = await Promise.all([rf.json(), rp.json()]);
+    document.getElementById('a-deposit').textContent  = jf.invoices?.depositPending?.count ?? '—';
+    document.getElementById('a-building').textContent = jp.counts?.active ?? '—';
+    document.getElementById('a-balance').textContent  = jf.invoices?.balancePending?.count ?? '—';
+    document.getElementById('a-done').textContent     = jp.counts?.done ?? '—';
+    setTs();
+  } catch(e){ console.error('active widget:', e); }
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+loadData();
+setInterval(loadData, 5*60*1000);
 </script></body></html>

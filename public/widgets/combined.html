@@ -177,36 +177,36 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div class="card stat">
     <div class="s-dot"></div>
     <span class="s-lbl">Total Revenue</span>
-    <div class="s-val">RM 9.4K</div>
+    <div class="s-val" id="c-rev">—</div>
     <div class="s-delta-row">
-      <span class="s-delta">↑ +18%</span>
+      <span class="s-delta" id="c-rev-d"></span>
       <span class="s-delta-lbl">vs last month</span>
     </div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <span class="s-lbl">Total Orders</span>
-    <div class="s-val">6</div>
+    <div class="s-val" id="c-orders">—</div>
     <div class="s-delta-row">
-      <span class="s-delta">↑ +2</span>
+      <span class="s-delta" id="c-ord-d"></span>
       <span class="s-delta-lbl">vs last month</span>
     </div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <span class="s-lbl">OS Installs</span>
-    <div class="s-val">4</div>
+    <div class="s-val" id="c-installs">—</div>
     <div class="s-delta-row">
-      <span class="s-delta">↑ +1</span>
+      <span class="s-delta" id="c-inst-d"></span>
       <span class="s-delta-lbl">vs last month</span>
     </div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <span class="s-lbl">Won Clients</span>
-    <div class="s-val">3</div>
+    <div class="s-val" id="c-won">—</div>
     <div class="s-delta-row">
-      <span class="s-delta neg">↓ −1</span>
+      <span class="s-delta" id="c-won-d"></span>
       <span class="s-delta-lbl">vs last month</span>
     </div>
   </div>
@@ -277,25 +277,25 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
     </div>
     <div class="earn-top">
       <div class="earn-eyebrow">This Month · Total Collected</div>
-      <div class="earn-amt">RM 9,400</div>
-      <div class="earn-diff">↑ 46% more <span class="earn-diff-lbl">than last month</span></div>
+      <div class="earn-amt" id="c-earn-amt">—</div>
+      <div class="earn-diff" id="c-earn-diff"><span class="earn-diff-lbl">Loading…</span></div>
     </div>
 
     <div class="earn-bars">
       <div class="ebar-row">
-        <span class="ebar-lbl">Feb</span>
-        <div class="ebar-track"><div class="ebar-fill" id="eb-feb" style="background:rgba(170,255,0,.3);width:0%"></div></div>
-        <span class="ebar-val">RM 4.2K</span>
+        <span class="ebar-lbl" id="eb-0-lbl">—</span>
+        <div class="ebar-track"><div class="ebar-fill" id="eb-0" style="background:rgba(170,255,0,.3);width:0%"></div></div>
+        <span class="ebar-val" id="eb-0-val">—</span>
       </div>
       <div class="ebar-row">
-        <span class="ebar-lbl">Mar</span>
-        <div class="ebar-track"><div class="ebar-fill" id="eb-mar" style="background:rgba(170,255,0,.55);width:0%"></div></div>
-        <span class="ebar-val">RM 6.4K</span>
+        <span class="ebar-lbl" id="eb-1-lbl">—</span>
+        <div class="ebar-track"><div class="ebar-fill" id="eb-1" style="background:rgba(170,255,0,.55);width:0%"></div></div>
+        <span class="ebar-val" id="eb-1-val">—</span>
       </div>
       <div class="ebar-row">
-        <span class="ebar-lbl">Apr</span>
-        <div class="ebar-track"><div class="ebar-fill" id="eb-apr" style="background:var(--g);width:0%"></div></div>
-        <span class="ebar-val">RM 9.4K</span>
+        <span class="ebar-lbl" id="eb-2-lbl">—</span>
+        <div class="ebar-track"><div class="ebar-fill" id="eb-2" style="background:var(--g);width:0%"></div></div>
+        <span class="ebar-val" id="eb-2-val">—</span>
       </div>
     </div>
 
@@ -362,12 +362,15 @@ function doRefresh() {
   setTimeout(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; setTs(); }, 800);
 }
 setTs();
-setInterval(doRefresh, 5 * 60 * 1000);
+
+// ── Token from URL ──
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path + '?token=' + encodeURIComponent(_tok) : path; }
 
 // ── Target / Ring ──
 const TGT_KEY = 'opxio_comb_tgt';
 let monthlyTarget = parseFloat(localStorage.getItem(TGT_KEY) || '12000');
-const collected = 9400;
+let collected = 0;
 
 function fmtRM(n) {
   if (n >= 1000) return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -403,31 +406,23 @@ function saveTgt() {
 }
 
 // ── Bar animation ──
-function animBars() {
-  const maxVal = 9400;
-  const bars = [
-    { id: 'eb-feb', val: 4200 },
-    { id: 'eb-mar', val: 6400 },
-    { id: 'eb-apr', val: 9400 },
-  ];
-  bars.forEach(b => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.getElementById(b.id).style.width = ((b.val / maxVal) * 100) + '%';
-      });
-    });
+function animBars(data) {
+  const vals = data.slice(-3);
+  const maxVal = Math.max(...vals.map(d => d.v), 1);
+  vals.forEach((d, i) => {
+    const fill = document.getElementById('eb-'+i);
+    if (fill) requestAnimationFrame(() => requestAnimationFrame(() => {
+      fill.style.width = ((d.v / maxVal) * 100) + '%';
+    }));
+    const lbl = document.getElementById('eb-'+i+'-lbl');
+    if (lbl) lbl.textContent = d.m.split(' ')[0];
+    const val = document.getElementById('eb-'+i+'-val');
+    if (val) val.textContent = fmtRM(d.v);
   });
 }
 
 // ── Revenue Chart Data ──
-const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-// Revenue per month (collected, lost) — sample data
-const revData = [
-  { m:'Jan', col:3800, lost:1200 },
-  { m:'Feb', col:4200, lost:800  },
-  { m:'Mar', col:6400, lost:2200 },
-  { m:'Apr', col:9400, lost:600  },
-];
+let revData = [];
 
 function drawRevChart() {
   const wrap = document.getElementById('cwrap');
@@ -591,13 +586,77 @@ function drawRevChart() {
   });
 }
 
+// ── Delta helper ──
+function mkDelta(cur, prev, isRM) {
+  const d = cur - prev, pos = d >= 0;
+  const s = isRM ? fmtRM(Math.abs(d)) : Math.abs(d).toString();
+  return { text: (pos ? '↑ +' : '↓ −') + s, cls: pos ? 's-delta' : 's-delta neg' };
+}
+
+// ── Live data ──
+async function loadData() {
+  try {
+    const r = await fetch(apiUrl('/api/data/finance'));
+    const j = await r.json();
+    if (j.error) return;
+
+    const t = j.thisMonth || {};
+
+    // Stat cards
+    const el = id => document.getElementById(id);
+    el('c-rev')?.textContent !== undefined && (el('c-rev').textContent = fmtRM(t.revenue||0));
+    el('c-orders')?.textContent !== undefined && (el('c-orders').textContent = t.orders||0);
+    el('c-installs')?.textContent !== undefined && (el('c-installs').textContent = t.installs||0);
+    el('c-won')?.textContent !== undefined && (el('c-won').textContent = t.wonClients||0);
+
+    const rv = mkDelta(t.revenue||0, t.prevRevenue||0, true);
+    if (el('c-rev-d')) { el('c-rev-d').textContent = rv.text; el('c-rev-d').className = rv.cls; }
+    const od = mkDelta(t.orders||0, 0, false);
+    if (el('c-ord-d')) { el('c-ord-d').textContent = od.text; el('c-ord-d').className = od.cls; }
+    const id2 = mkDelta(t.installs||0, t.prevInstalls||0, false);
+    if (el('c-inst-d')) { el('c-inst-d').textContent = id2.text; el('c-inst-d').className = id2.cls; }
+    const wd = mkDelta(t.wonClients||0, t.prevWon||0, false);
+    if (el('c-won-d')) { el('c-won-d').textContent = wd.text; el('c-won-d').className = wd.cls; }
+
+    // Earnings card
+    collected = t.revenue || 0;
+    if (el('c-earn-amt')) el('c-earn-amt').textContent = fmtRM(collected);
+    if (el('c-earn-diff')) {
+      const prevRev = t.prevRevenue || 0;
+      if (prevRev > 0) {
+        const pct = Math.round(((collected - prevRev) / prevRev) * 100);
+        el('c-earn-diff').innerHTML = (pct >= 0 ? `↑ ${pct}% more` : `↓ ${Math.abs(pct)}% less`) +
+          ' <span class="earn-diff-lbl">than last month</span>';
+      } else {
+        el('c-earn-diff').innerHTML = '<span class="earn-diff-lbl">No prior month data</span>';
+      }
+    }
+
+    renderRing(collected, monthlyTarget);
+
+    const monthly = j.monthly || [];
+    animBars(monthly);
+
+    // Build revData from monthly paid (lost = 0, no lost-deal revenue data yet)
+    revData = monthly.map(m => ({ m: m.m.split(' ')[0], col: m.v, lost: 0 }));
+    drawRevChart();
+    setTs();
+  } catch(e) { console.error('combined widget:', e); }
+}
+
+function doRefresh() {
+  const b = document.getElementById('rb');
+  b.textContent = '↻'; b.style.opacity = '.4';
+  loadData().then(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; });
+}
+
 // ── Init ──
 window.addEventListener('load', () => {
   renderRing(collected, monthlyTarget);
-  animBars();
-  drawRevChart();
+  loadData();
 });
 window.addEventListener('resize', drawRevChart);
+setInterval(loadData, 5 * 60 * 1000);
 </script>
 </body>
 </html>

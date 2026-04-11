@@ -118,81 +118,80 @@ body.light .p-label{color:rgba(0,0,0,0.55);}
 </div>
 
 <script>
-// ── Potential deals data ──
-const potential = [
-  { label:'Incoming',  count:0, color:'#6366F1' },
-  { label:'Contacted', count:0, color:'#8B5CF6' },
-  { label:'Qualified', count:0, color:'#60A5FA' },
-  { label:'Proposed',  count:2, color:'#FBBF24' },
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
+
+const POTENTIAL_STAGES = [
+  { label:'Incoming',      key:'Incoming',      color:'#6366F1' },
+  { label:'Contacted',     key:'Contacted',     color:'#8B5CF6' },
+  { label:'Qualified',     key:'Qualified',     color:'#60A5FA' },
+  { label:'Discovery Call',key:'Discovery Call',color:'#34D399' },
+  { label:'Proposed',      key:'Proposed',      color:'#FBBF24' },
 ];
 
-// ── Active deals data — grouped by stage ──
-const active = [
-  {
-    stage:'Deposit Due', color:'#FBBF24', deals:[
-      { client:'Revvup Motorsport', pic:'Amir Zulkifli',  value:'MYR 5,500', tag:'Operations OS', isNew:false },
-      { client:'Pinnacle Advisory', pic:'Daniel Tan',     value:'MYR 6,800', tag:'Business OS',   isNew:true  },
-    ]
-  },
-  {
-    stage:'Building', color:'#34D399', deals:[
-      { client:'Luminary Events Co.', pic:'Sarah Lim',  value:'MYR 8,500',  tag:'Business OS',      isNew:true  },
-      { client:'Nexora Digital',      pic:'Full Agency',value:'MYR 12,000', tag:'Full Agency OS',   isNew:false },
-    ]
-  },
-  {
-    stage:'Balance Due', color:'#60A5FA', deals:[]
-  },
-];
+const ACTIVE_STAGE_COLORS = {
+  'Incoming':     '#6366F1',
+  'Contacted':    '#8B5CF6',
+  'Qualified':    '#60A5FA',
+  'Discovery Call':'#34D399',
+  'Proposed':     '#FBBF24',
+};
 
-// ── Render Potential Deals ──
-const potTotal = potential.reduce((s,p) => s + p.count, 0);
-document.getElementById('potential-badge').textContent = potTotal + ' deals';
-
-const potEl = document.getElementById('potential-list');
-potential.forEach(p => {
-  potEl.innerHTML += `
-    <div class="p-row">
-      <div class="p-left">
-        <span class="p-dot" style="background:${p.color}"></span>
-        <span class="p-label">${p.label}</span>
-      </div>
-      <span class="p-count" style="color:${p.count > 0 ? p.color : 'rgba(255,255,255,0.2)'}">${p.count}</span>
+function renderPotential(stages) {
+  const potEl = document.getElementById('potential-list');
+  let total = 0;
+  potEl.innerHTML = POTENTIAL_STAGES.map(s => {
+    const count = stages[s.key] || 0;
+    total += count;
+    const col = count > 0 ? s.color : (document.body.classList.contains('light') ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)');
+    return `<div class="p-row">
+      <div class="p-left"><span class="p-dot" style="background:${s.color}"></span><span class="p-label">${s.label}</span></div>
+      <span class="p-count" style="color:${col}">${count}</span>
     </div>`;
-});
+  }).join('');
+  document.getElementById('potential-badge').textContent = total + ' deals';
+}
 
-// ── Render Active Deals ──
-const actTotal = active.reduce((s,g) => s + g.deals.length, 0);
-document.getElementById('active-badge').textContent = actTotal + ' deals';
-
-const actEl = document.getElementById('active-list');
-active.forEach((group, gi) => {
-  actEl.innerHTML += `
-    <div class="stage-header" style="${gi > 0 ? 'margin-top:14px' : ''}">
-      <span class="stage-dot" style="background:${group.color}"></span>
-      <span class="stage-header-label">${group.stage}</span>
-      <span class="stage-header-count">${group.deals.length}</span>
-    </div>`;
-
-  if (group.deals.length === 0) {
-    actEl.innerHTML += `<div class="empty-msg">No deals at this stage</div>`;
-  } else {
-    group.deals.forEach(d => {
-      actEl.innerHTML += `
-        <div class="deal-row">
-          <div class="deal-bar" style="background:${group.color}"></div>
+function renderActive(board) {
+  const actEl = document.getElementById('active-list');
+  let total = 0;
+  actEl.innerHTML = (board || []).map((group, gi) => {
+    const color = ACTIVE_STAGE_COLORS[group.stage] || '#AAFF00';
+    const deals = group.leads || [];
+    total += deals.length;
+    const rows = deals.length === 0
+      ? '<div class="empty-msg">No deals at this stage</div>'
+      : deals.map(d => `<div class="deal-row">
+          <div class="deal-bar" style="background:${color}"></div>
           <div class="deal-body">
-            <div class="deal-client">${d.client}</div>
-            <div class="deal-pic">${d.pic}</div>
+            <div class="deal-client">${d.name || '—'}</div>
+            <div class="deal-pic">${d.company || ''}</div>
           </div>
           <div class="deal-right">
-            <div class="deal-value">${d.value}</div>
-            <span class="deal-tag">${d.tag}</span>
+            <div class="deal-value">${d.value ? 'RM '+d.value.toLocaleString() : '—'}</div>
+            <span class="deal-tag">${d.pkg || ''}</span>
           </div>
-        </div>`;
-    });
-  }
-});
+        </div>`).join('');
+    return `<div class="stage-header" style="${gi > 0 ? 'margin-top:14px' : ''}">
+      <span class="stage-dot" style="background:${color}"></span>
+      <span class="stage-header-label">${group.stage}</span>
+      <span class="stage-header-count">${deals.length}</span>
+    </div>${rows}`;
+  }).join('');
+  document.getElementById('active-badge').textContent = total + ' deals';
+}
+
+async function loadData() {
+  try {
+    const r = await fetch(apiUrl('/api/data/pipeline'));
+    const j = await r.json();
+    renderPotential(j.stages || {});
+    renderActive(j.board || []);
+  } catch(e){ console.error('board widget:', e); }
+}
+
+loadData();
+setInterval(loadData, 5*60*1000);
 
 // ── Theme ──
 let isLight = false;
@@ -200,10 +199,6 @@ function toggleMode() {
   isLight = !isLight;
   document.body.classList.toggle('light', isLight);
   document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
-  // fix zero count colors in light mode
-  document.querySelectorAll('.p-count').forEach(el => {
-    if (el.textContent === '0') el.style.color = isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
-  });
 }
 </script>
 </body>

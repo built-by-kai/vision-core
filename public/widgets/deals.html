@@ -148,27 +148,14 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </div>
 
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 (function(){document.getElementById('sel-m').value=new Date().getMonth()+1;})();
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';drawChart();}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},900);}
-setTs();setInterval(doRefresh,5*60*1000);
 
-// Funnel
-const funnel=[
-  {l:'Incoming',    v:'RM 14.4K',n:4,pct:57},
-  {l:'Proposed',    v:'RM 44.8K',n:7,pct:100},
-  {l:'Deposit Due', v:'RM 12.8K',n:2,pct:29},
-  {l:'Active Build',v:'RM 22.7K',n:5,pct:71},
-  {l:'Lost',        v:'RM 0',    n:3,pct:43,lost:true},
-];
-document.getElementById('fb').textContent=funnel.reduce((s,f)=>s+f.n,0)+' deals';
-funnel.forEach(f=>{
-  document.getElementById('funnel').innerHTML+=`<div class="f-row"><span class="f-lbl">${f.l}</span><div class="f-bg"><div class="f-fill${f.lost?' lost':''}" style="width:${f.pct}%;"><span class="f-txt">${f.v}</span></div></div><span class="f-n">${f.n}</span></div>`;
-});
-
-// Donut
+// Donut — lead sources (static illustrative breakdown — no source data in API)
 const src=[
   {l:'Referral',v:8,c:'#AAFF00'},
   {l:'Threads', v:5,c:'rgba(170,255,0,.65)'},
@@ -191,11 +178,49 @@ src.forEach(s=>{
   document.getElementById('legend').innerHTML+=`<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${s.l}</span><span class="l-val">${s.v}</span></div>`;
 });
 
-// Chart — drawn at real offsetWidth to avoid blur/stretch
-const cm=new Date().getMonth();
-const allD=[{m:'Jan',v:3},{m:'Feb',v:5},{m:'Mar',v:4},{m:'Apr',v:7},{m:'May',v:6},{m:'Jun',v:9},{m:'Jul',v:5},{m:'Aug',v:8},{m:'Sep',v:4},{m:'Oct',v:6},{m:'Nov',v:7},{m:'Dec',v:5}];
-const data=allD.slice(0,cm+1);
-document.getElementById('cbadge').textContent=data.reduce((s,d)=>s+d.v,0)+' total this year';
+// Live chart data — drawn at real offsetWidth
+let data = [];
+
+function renderFunnel(stages) {
+  const order = [
+    {l:'Incoming',    key:'Incoming'},
+    {l:'Contacted',   key:'Contacted'},
+    {l:'Qualified',   key:'Qualified'},
+    {l:'Discovery',   key:'Discovery Call'},
+    {l:'Proposed',    key:'Proposed'},
+    {l:'Won',         key:'Won',  won:true},
+    {l:'Lost',        key:'Lost', lost:true},
+  ];
+  const maxN = Math.max(...order.map(r => stages[r.key]||0), 1);
+  const total = order.reduce((s,r) => s + (stages[r.key]||0), 0);
+  document.getElementById('fb').textContent = total + ' deals';
+  document.getElementById('funnel').innerHTML = order.map(r => {
+    const n = stages[r.key] || 0;
+    const pct = Math.round((n / maxN) * 100);
+    const cls = r.lost ? ' lost' : (r.won ? ' won' : '');
+    return `<div class="f-row"><span class="f-lbl">${r.l}</span><div class="f-bg"><div class="f-fill${cls}" style="width:${pct}%;"><span class="f-txt">${n} lead${n!==1?'s':''}</span></div></div><span class="f-n">${n}</span></div>`;
+  }).join('');
+}
+
+async function loadData() {
+  try {
+    const r = await fetch(apiUrl('/api/data/pipeline'));
+    const j = await r.json();
+    const stages = j.stages || {};
+    const monthly = j.monthly || [];
+
+    renderFunnel(stages);
+
+    data = monthly;
+    document.getElementById('cbadge').textContent = monthly.reduce((s,d)=>s+d.v,0)+' total this year';
+    drawChart();
+    setTs();
+  } catch(e){ console.error('deals widget:', e); }
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+loadData();
+setInterval(loadData, 5*60*1000);
 
 function drawChart(){
   const wrap=document.getElementById('cwrap');

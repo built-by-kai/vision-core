@@ -88,7 +88,7 @@ async function fetchProductInfo(slug) {
 async function extractLeadInfo(props) {
   const companyIds = (props.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
   let   picIds     = []
-  for (const field of ["PIC", "Contact", "Person in Charge"]) {
+  for (const field of ["PIC Name", "PIC", "Contact", "Person in Charge"]) {
     picIds = (props[field]?.relation || []).map(r => r.id.replace(/-/g, ""))
     if (picIds.length) break
   }
@@ -132,15 +132,18 @@ async function extractLeadInfo(props) {
   return { companyIds, picIds, product, addons }
 }
 
-// ── Find recently Notion-created quotation ────────────────────────────────
-async function findRecentQuotation(leadId, maxAgeSeconds = 120) {
-  for (let attempt = 0; attempt < 4; attempt++) {
+// ── Find recently Notion-created quotation ─────────────────────────────────
+// Notion button Action 1 creates the quotation (with template) before Action 2
+// fires our webhook. We find it by looking for the most recently created Draft
+// quotation — no Deal Source filter (template can't set relations).
+async function findRecentQuotation(maxAgeSeconds = 120) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const rows = await queryDB(DB.QUOTATIONS, {
-        property: "Deal Source", relation: { contains: leadId }
+        property: "Status", select: { equals: "Draft" }
       }, process.env.NOTION_API_KEY)
 
-      // Sort by created_time descending
+      // Sort by created_time descending — most recent first
       rows.sort((a, b) => new Date(b.created_time) - new Date(a.created_time))
 
       if (rows.length) {
@@ -153,30 +156,29 @@ async function findRecentQuotation(leadId, maxAgeSeconds = 120) {
     } catch (e) {
       console.warn(`[create_quotation] findRecentQuotation attempt ${attempt + 1}:`, e.message)
     }
-    if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)))
+    if (attempt < 2) await new Promise(r => setTimeout(r, 1500))
   }
   return null
 }
 
 // ── Patch quotation properties ─────────────────────────────────────────────
-async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, packageName }) {
+async function patchQuotationProps(quotId, { companyIds, quoteType, leadId }) {
   const today = new Date().toISOString().split("T")[0]
 
+  // Status is a select field (not status type) in this DB
   const patches = [
     { "Issue Date":    { date: { start: today } } },
     { "Payment Terms": { select: { name: "50% Deposit" } } },
-    { "Status":        { status: { name: "Draft" } } },
+    { "Status":        { select: { name: "Draft" } } },
     ...(quoteType ? [{ "Quote Type": { select: { name: quoteType } } }] : []),
-    ...(packageName ? [{ "Package Type": { rich_text: [{ text: { content: packageName } }] } }] : []),
     ...(companyIds.length ? [{ "Company": { relation: [{ id: companyIds[0] }] } }] : []),
-    ...(picIds.length ? [{ "PIC": { relation: [{ id: picIds[0] }] } }] : []),
   ]
 
   for (const props of patches) {
     try { await patchPage(quotId, props, process.env.NOTION_API_KEY) } catch {}
   }
 
-  // Link lead (try multiple field names)
+  // Link lead via Deal Source relation
   if (leadId) {
     for (const field of ["Deal Source", "Lead", "Deals", "Source"]) {
       try {
@@ -298,16 +300,20 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
-  try {
-    const body  = req.body || {}
-    const rawId = body.page_id || body.source?.page_id || body.data?.page_id
-    if (!rawId) return res.status(400).json({ error: "Missing page_id" })
-    const pageId = rawId.replace(/-/g, "")
+  const body  = req.body || {}
+  const rawId = body.page_id || body.source?.page_id || body.data?.page_id
+  if (!rawId) return res.status(400).json({ error: "Missing page_id" })
+  const pageId = rawId.replace(/-/g, "")
 
-    // ── Detect source ──────────────────────────────────────────────────────
+  // ── Respond immediately so Notion button doesn't timeout ──────────────────
+  res.status(200).json({ status: "processing", page_id: pageId })
+
+  // ── All heavy work runs after response is sent ────────────────────────────
+  try {
+    // ── Detect source ────────────────────────────────────────────────────────
     const { type: sourceType, props } = await detectSource(pageId)
 
-    let leadId = null, companyIds = [], picIds = []
+    let leadId = null, companyIds = []
     let product = null, addons = []
     let quoteType = "New Business"
 
@@ -315,7 +321,6 @@ export default async function handler(req, res) {
       leadId = pageId
       const info = await extractLeadInfo(props)
       companyIds = info.companyIds
-      picIds     = info.picIds
       product    = info.product
       addons     = info.addons
       quoteType  = product?.quote_type || "New Business"
@@ -323,30 +328,28 @@ export default async function handler(req, res) {
       companyIds = [pageId]
     }
 
-    // ── Find or create quotation page ─────────────────────────────────────
+    // ── Find or create quotation page ───────────────────────────────────────
     let quotId = null, quotUrl = null, foundViaNotion = false
 
     if (sourceType === "lead" && leadId) {
-      const recent = await findRecentQuotation(leadId)
+      // Look for the quotation Notion created via Action 1 (template applied)
+      const recent = await findRecentQuotation()
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
-        await patchQuotationProps(quotId, {
-          companyIds, picIds, quoteType, leadId, packageName: product?.name
-        })
+        await patchQuotationProps(quotId, { companyIds, quoteType, leadId })
       }
     }
 
     if (!quotId) {
+      // Fallback: create quotation ourselves
       const today = new Date().toISOString().split("T")[0]
       const cprops = {
         "Quotation No.": { title: [{ text: { content: "" } }] },
-        "Status":        { status: { name: "Draft" } },
+        "Status":        { select: { name: "Draft" } },
         "Issue Date":    { date: { start: today } },
         "Payment Terms": { select: { name: "50% Deposit" } },
         ...(quoteType ? { "Quote Type": { select: { name: quoteType } } } : {}),
-        ...(product?.name ? { "Package Type": { rich_text: [{ text: { content: product.name } }] } } : {}),
         ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(picIds.length ? { "PIC": { relation: [{ id: picIds[0] }] } } : {}),
       }
       const page = await createPage({ parent: { database_id: DB.QUOTATIONS }, properties: cprops }, process.env.NOTION_API_KEY)
       quotId  = page.id.replace(/-/g, "")
@@ -360,7 +363,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── Auto-populate line items ───────────────────────────────────────────
+    // ── Auto-populate line items ─────────────────────────────────────────────
     if (sourceType === "lead" && product?.id) {
       try {
         let liDbId = await findLineItemsDB(quotId)
@@ -368,12 +371,11 @@ export default async function handler(req, res) {
 
         await ensureProductRelation(liDbId)
 
-        // Base OS first (gets row No. 1)
+        // Base OS first (row No. 1)
         if (OS_PACKAGE_SLUGS.has(product.slug)) {
           const base = await fetchProductInfo("base-os")
           if (base?.id) {
             await createLineItem(liDbId, base)
-            // Brief delay to maintain ordering
             await new Promise(r => setTimeout(r, 500))
           }
         }
@@ -390,25 +392,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── Advance Lead stage → Proposed ─────────────────────────────────────
+    // ── Advance Lead stage → Proposed ───────────────────────────────────────
     if (leadId) {
       try { await patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, process.env.NOTION_API_KEY) } catch {}
     }
 
-    return res.json({
-      status:            "success",
-      source_type:       sourceType,
-      quotation_id:      quotId,
-      quotation_url:     quotUrl,
-      quote_type:        quoteType,
-      lead_id:           leadId,
-      company_ids:       companyIds,
-      line_item:         product?.name || null,
-      addons:            addons.map(a => a.name),
-      found_via_notion:  foundViaNotion,
-    })
+    console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType })
   } catch (e) {
     console.error("[create_quotation]", e)
-    return res.status(500).json({ error: e.message })
   }
 }

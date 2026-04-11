@@ -170,61 +170,77 @@ body.light .container-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);bo
 </div>
 
 <script>
-// ── Sample data ──
-const meetings = [
-  { client:'Revvup Motorsport', project:'Operations OS', type:'Kickoff',    date:'Mon, 14 Apr', time:'10:00 AM', color:'#60A5FA', bg:'rgba(96,165,250,0.12)', initials:'RM', today:false },
-  { client:'Pinnacle Advisory',  project:'Business OS',  type:'Discovery',  date:'Mon, 14 Apr', time:'2:30 PM',  color:'#34D399', bg:'rgba(52,211,153,0.12)', initials:'PA', today:false },
-  { client:'Creaitors Studio',   project:'Marketing OS', type:'Follow-up',  date:'Tue, 15 Apr', time:'11:00 AM', color:'#A78BFA', bg:'rgba(167,139,250,0.12)',initials:'CS', today:false },
-  { client:'Atlas Creative Co.', project:'Sales OS',     type:'Proposal',   date:'Wed, 16 Apr', time:'3:00 PM',  color:'#FBBF24', bg:'rgba(251,191,36,0.12)', initials:'AC', today:false },
-  { client:'Momentum Agency',    project:'Starter OS',   type:'Discovery',  date:'Thu, 17 Apr', time:'9:00 AM',  color:'#F87171', bg:'rgba(248,113,113,0.12)',initials:'MA', today:false },
-  { client:'Nexus Consulting',   project:'Intelligence OS','type':'Onboarding',date:'Fri, 18 Apr',time:'4:00 PM', color:'#2DD4BF', bg:'rgba(45,212,191,0.12)', initials:'NC', today:false },
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
+
+// ── Avatar color palette ──
+const COLORS = [
+  { c:'#60A5FA', bg:'rgba(96,165,250,0.12)' },
+  { c:'#34D399', bg:'rgba(52,211,153,0.12)' },
+  { c:'#A78BFA', bg:'rgba(167,139,250,0.12)' },
+  { c:'#FBBF24', bg:'rgba(251,191,36,0.12)' },
+  { c:'#F87171', bg:'rgba(248,113,113,0.12)' },
+  { c:'#2DD4BF', bg:'rgba(45,212,191,0.12)' },
 ];
+function colorFor(str) { let h=0; for(const c of str) h=(h*31+c.charCodeAt(0))&0xffff; return COLORS[h%COLORS.length]; }
+function initials(name) { return name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '??'; }
 
 // ── Render meetings ──
 function renderMeetings(data) {
   const el = document.getElementById('meetings-list');
   if (!data.length) {
-    el.innerHTML = '<div class="empty-state">No meetings scheduled for this period.</div>';
+    el.innerHTML = '<div class="empty-state">No upcoming meetings found.</div>';
     return;
   }
-  el.innerHTML = data.map(m => `
-    <div class="m-row">
-      <div class="m-bar" style="background:${m.color}"></div>
-      <div class="m-avatar" style="background:${m.bg};color:${m.color}">${m.initials}</div>
+  el.innerHTML = data.map(m => {
+    const clr = colorFor(m.client);
+    const ini = m.initials || initials(m.client);
+    return `<div class="m-row">
+      <div class="m-bar" style="background:${clr.c}"></div>
+      <div class="m-avatar" style="background:${clr.bg};color:${clr.c}">${ini}</div>
       <div class="m-body">
         <div class="m-client">${m.client}${m.today ? '<span class="today-tag">Today</span>' : ''}</div>
-        <div class="m-project">${m.project}</div>
+        <div class="m-project">${m.project || ''}</div>
       </div>
-      <div class="m-type-badge">${m.type}</div>
+      <div class="m-type-badge">${m.type || ''}</div>
       <div class="m-date-block">
         <div class="m-date">${m.date}</div>
         <div class="m-time">${m.time}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── Compute stats ──
-function computeStats(data) {
-  document.getElementById('total-badge').textContent   = data.length + ' meetings';
-  document.getElementById('stat-week').textContent     = data.length;
-  document.getElementById('stat-month').textContent    = data.length;
-  document.getElementById('stat-discovery').textContent= data.filter(m => m.type === 'Discovery').length;
-  document.getElementById('stat-followup').textContent = data.filter(m => m.type === 'Follow-up').length;
+function computeStats(data, stats) {
+  document.getElementById('total-badge').textContent    = data.length + ' meetings';
+  document.getElementById('stat-week').textContent      = stats?.week   ?? data.length;
+  document.getElementById('stat-month').textContent     = stats?.month  ?? data.length;
+  document.getElementById('stat-discovery').textContent = stats?.discovery ?? data.filter(m=>m.type==='Discovery').length;
+  document.getElementById('stat-followup').textContent  = stats?.followup  ?? data.filter(m=>m.type==='Follow-up').length;
+}
+
+// ── Load from API ──
+async function loadData() {
+  try {
+    const r = await fetch(apiUrl('/api/data/meetings'));
+    const j = await r.json();
+    const meetings = j.meetings || [];
+    renderMeetings(meetings);
+    computeStats(meetings, j.stats);
+  } catch(e){ console.error('schedule widget:', e); }
 }
 
 // ── Init ──
 (function(){
   const now = new Date();
   document.getElementById('sel-month').value = now.getMonth() + 1;
-  renderMeetings(meetings);
-  computeStats(meetings);
 })();
+loadData();
 
 // ── Filter ──
 function onFilterChange() {
-  const m = document.getElementById('sel-month').value;
-  const y = document.getElementById('sel-year').value;
-  console.log('Filter:', m, y); // Hook to Notion API
+  loadData(); // re-fetch on filter change
 }
 
 // ── Refresh ──
@@ -232,8 +248,9 @@ function handleRefresh() {
   const btn = document.getElementById('refresh-btn');
   btn.textContent = '↻ Refreshing…';
   btn.style.opacity = '0.5';
-  setTimeout(() => { btn.textContent = '↻ Refresh'; btn.style.opacity = '1'; }, 1200);
+  loadData().then(() => { btn.textContent = '↻ Refresh'; btn.style.opacity = '1'; });
 }
+setInterval(loadData, 5*60*1000);
 
 // ── Theme ──
 let isLight = false;
