@@ -1,0 +1,204 @@
+/* ── Section ───────────────────────────────────────────── */
+.section {
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6B7280;
+  margin: 0 0 20px 0;
+}
+
+/* ── KPI Row ───────────────────────────────────────────── */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ── Data Card ─────────────────────────────────────────── */
+.card {
+  background: #111111;
+  border: 1px solid #1F2937;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.cardAccent {
+  border-color: #374151;
+  background: #161616;
+}
+
+.cardLabel {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6B7280;
+  margin: 0 0 8px 0;
+}
+
+.cardValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #F9FAFB;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.cardSub {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* ── Widget Block ──────────────────────────────────────── */
+.widgetBlock {
+  background: #111111;
+  border: 1px solid #1F2937;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.widgetTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #D1D5DB;
+  margin: 0 0 16px 0;
+}
+
+/* ── Bar Chart ─────────────────────────────────────────── */
+.barChart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 180px 1fr 32px;
+  align-items: center;
+  gap: 12px;
+}
+
+.barLabel {
+  font-size: 12px;
+  color: #9CA3AF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  background: #1F2937;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: #F9FAFB;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.barCount {
+  font-size: 12px;
+  color: #6B7280;
+  text-align: right;
+}
+
+/* ── Phase Tracker ─────────────────────────────────────── */
+.phaseList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phaseRow {
+  display: grid;
+  grid-template-columns: 10px 1fr 120px 40px 100px;
+  align-items: center;
+  gap: 12px;
+}
+
+.phaseStatus {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.phaseName {
+  font-size: 13px;
+  color: #D1D5DB;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressTrack {
+  background: #1F2937;
+  border-radius: 4px;
+  height: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #F9FAFB;
+  border-radius: 4px;
+}
+
+.phaseProgress {
+  font-size: 11px;
+  color: #6B7280;
+  text-align: right;
+}
+
+.phaseDue {
+  font-size: 11px;
+  color: #6B7280;
+  text-align: right;
+}
+
+/* ── Skeletons ─────────────────────────────────────────── */
+.skeletonRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cardSkeleton {
+  height: 92px;
+  background: #111111;
+  border: 1px solid #1F2937;
+  border-radius: 8px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Grid (Intelligence OS) ────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.empty {
+  font-size: 13px;
+  color: #6B7280;
+  text-align: center;
+  padding: 48px 0;
+}
