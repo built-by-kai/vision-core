@@ -49,15 +49,30 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   </div>
 </div>
 <div class="grid">
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Incoming</div><div class="s-val">4</div><div class="s-sub">New enquiries</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Contacted</div><div class="s-val">7</div><div class="s-sub">First touch done</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Qualified</div><div class="s-val">5</div><div class="s-sub">Fit confirmed</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Proposed</div><div class="s-val">3</div><div class="s-sub">Quote sent</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Incoming</div><div class="s-val" id="p-incoming">—</div><div class="s-sub">New enquiries</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Contacted</div><div class="s-val" id="p-contacted">—</div><div class="s-sub">First touch done</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Qualified</div><div class="s-val" id="p-qualified">—</div><div class="s-sub">Fit confirmed</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Proposed</div><div class="s-val" id="p-proposed">—</div><div class="s-sub">Quote sent</div></div>
 </div>
 <script>
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
-setTs();setInterval(doRefresh,5*60*1000);
+setTs();
+async function loadData(){
+  try {
+    const r = await fetch('/api/data/pipeline');
+    const j = await r.json();
+    const s = j.stages || {};
+    document.getElementById('p-incoming').textContent  = s['Incoming']       || 0;
+    document.getElementById('p-contacted').textContent = s['Contacted']      || 0;
+    document.getElementById('p-qualified').textContent = s['Qualified']      || 0;
+    document.getElementById('p-proposed').textContent  = (s['Proposed'] || 0) + (s['Discovery Call'] || 0);
+    setTs();
+  } catch(e){ console.error('potential widget:', e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData, 5*60*1000);
 </script></body></html>

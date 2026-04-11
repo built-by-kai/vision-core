@@ -145,35 +145,25 @@ function setTs(){document.getElementById('ts').textContent='Updated '+new Date()
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
 setTs();setInterval(doRefresh,5*60*1000);
 
-// ── Sample data — TODO: wire to Notion Projects DB + Phases DB ──
-const stats = { active:3, review:1, done:7, hold:1 };
-
-const builds = [
-  { name:'Creaitors — Ads Management System', client:'Creaitors', type:'Expansion', phase:'Database Build', phasePct:60, status:'build' },
-  { name:'Client A — Business OS', client:'Client A', type:'Business OS', phase:'Sales OS Setup', phasePct:35, status:'build' },
-  { name:'Client B — Operations OS', client:'Client B', type:'Operations OS', phase:'Client Review', phasePct:90, status:'review' },
-  { name:'Client C — Starter OS', client:'Client C', type:'Starter OS', phase:'On Hold', phasePct:20, status:'hold' },
-];
-
 function statusConfig(s) {
-  if (s==='build')  return { dot:'dot-active', pill:'pill-build',  label:'Building'   };
+  if (s==='active') return { dot:'dot-active', pill:'pill-build',  label:'Building'   };
   if (s==='review') return { dot:'dot-review', pill:'pill-review', label:'In Review'  };
   if (s==='hold')   return { dot:'dot-hold',   pill:'pill-hold',   label:'On Hold'    };
   if (s==='done')   return { dot:'dot-done',   pill:'pill-done',   label:'Completed'  };
   return { dot:'dot-hold', pill:'pill-hold', label:s };
 }
 
-function render() {
-  document.getElementById('s-active').textContent = stats.active;
-  document.getElementById('s-review').textContent = stats.review;
-  document.getElementById('s-done').textContent   = stats.done;
-  document.getElementById('s-hold').textContent   = stats.hold;
+function render(counts, builds) {
+  document.getElementById('s-active').textContent = counts.active || 0;
+  document.getElementById('s-review').textContent = counts.review || 0;
+  document.getElementById('s-done').textContent   = counts.done   || 0;
+  document.getElementById('s-hold').textContent   = counts.hold   || 0;
 
-  const active = builds.filter(b => b.status !== 'done');
-  document.getElementById('active-count').textContent = active.length + ' project' + (active.length!==1?'s':'');
+  document.getElementById('active-count').textContent = builds.length + ' project' + (builds.length!==1?'s':'');
 
   const list = document.getElementById('build-list');
-  list.innerHTML = active.map(b => {
+  if (!builds.length) { list.innerHTML = '<div style="padding:20px;text-align:center;opacity:.3;font-size:12px;">No active builds</div>'; return; }
+  list.innerHTML = builds.map(b => {
     const cfg = statusConfig(b.status);
     return `
     <div class="build-item">
@@ -194,5 +184,15 @@ function render() {
   }).join('');
 }
 
-render();
+async function loadData(){
+  try {
+    const r = await fetch('/api/data/projects');
+    const j = await r.json();
+    render(j.counts || {}, j.builds || []);
+    setTs();
+  } catch(e){ console.error('projects widget:', e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData, 5*60*1000);
 </script></body></html>

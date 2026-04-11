@@ -82,7 +82,7 @@ body.light .m-amt{color:#111;}
   <div class="card earn-card">
     <div class="earn-lbl">Total Earnings</div>
     <div class="earn-sub">Profit vs Expenses</div>
-    <div class="earn-val">RM 22.7K</div>
+    <div class="earn-val" id="earn-val">—</div>
     <div class="earn-compare">
       <span>↑ 46% more</span>
       <span class="earn-compare-lbl">than last month</span>
@@ -115,29 +115,40 @@ function setTs(){document.getElementById('ts').textContent='Updated '+new Date()
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
 setTs();setInterval(doRefresh,5*60*1000);
 
-// Month comparison data
-const months=[
-  {name:'2 months ago', amt:15500, max:30000},
-  {name:'Last month',   amt:15580, max:30000},
-  {name:'This month',   amt:22700, max:30000, current:true},
-];
-const rowEl=document.getElementById('month-rows');
-months.forEach(m=>{
-  rowEl.innerHTML+=`<div class="m-row">
-    <span class="m-name">${m.name}</span>
-    <div class="m-bar-wrap"><div class="m-bar-fill" style="width:${(m.amt/m.max*100).toFixed(1)}%;"></div></div>
-    <span class="m-amt${m.current?' current':''}">${m.amt>=1000?'RM '+(m.amt/1000).toFixed(1)+'K':'RM '+m.amt}</span>
-  </div>`;
-});
+function fmtRM(n){return n>=1000?'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K':'RM '+Math.round(n).toLocaleString();}
 
-// Circular progress
-const target=30000, earned=22700;
-const pct=Math.min((earned/target)*100,100);
-const circ=2*Math.PI*62;
-const offset=circ*(1-pct/100);
-document.getElementById('circ-val').textContent=Math.round(pct)+'%';
-document.getElementById('remain-txt').textContent='RM '+(target-earned).toLocaleString()+' to target';
-requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  document.getElementById('circ-fill').setAttribute('stroke-dashoffset',offset.toFixed(2));
-}));
+function renderEarnings(monthly, target){
+  const labels = ['2 months ago','Last month','This month'];
+  const max = Math.max(...monthly.map(m=>m.v), target, 1);
+  const rowEl=document.getElementById('month-rows');
+  rowEl.innerHTML = monthly.map((m,i)=>`<div class="m-row">
+    <span class="m-name">${labels[i]||m.m}</span>
+    <div class="m-bar-wrap"><div class="m-bar-fill" style="width:${(m.v/max*100).toFixed(1)}%;"></div></div>
+    <span class="m-amt${i===monthly.length-1?' current':''}">${fmtRM(m.v)}</span>
+  </div>`).join('');
+
+  const earned = monthly[monthly.length-1]?.v || 0;
+  document.getElementById('earn-val').textContent = fmtRM(earned);
+  const pct = Math.min((earned/target)*100,100);
+  const circ = 2*Math.PI*62;
+  document.getElementById('circ-val').textContent = Math.round(pct)+'%';
+  document.getElementById('remain-txt').textContent = earned>=target ? 'Target reached! 🎉' : fmtRM(target-earned)+' to target';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.getElementById('circ-fill').setAttribute('stroke-dashoffset',(circ*(1-pct/100)).toFixed(2));
+  }));
+}
+
+async function loadData(){
+  try {
+    const r=await fetch('/api/data/finance');
+    const j=await r.json();
+    const monthly = (j.monthly||[]).slice(-3);
+    while(monthly.length<3) monthly.unshift({m:'—',v:0});
+    renderEarnings(monthly, 30000);
+    setTs();
+  } catch(e){ console.error('earnings widget:',e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData,5*60*1000);
 </script></body></html>

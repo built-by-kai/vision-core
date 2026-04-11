@@ -89,22 +89,26 @@ function setTs(){document.getElementById('ts').textContent='Updated '+new Date()
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
 setTs();setInterval(doRefresh,5*60*1000);
 
-const products=[
-  {name:'Business OS',    sub:'Operations + Sales',  pct:46, sales:'46%'},
-  {name:'Operations OS',  sub:'Full ops system',      pct:27, sales:'27%'},
-  {name:'Sales OS',       sub:'Revenue pipeline',     pct:15, sales:'15%'},
-  {name:'Starter OS',     sub:'Entry package',        pct:8,  sales:'8%'},
-  {name:'Marketing OS',   sub:'Campaigns & content',  pct:4,  sales:'4%'},
-];
-const total=products.reduce((s,p)=>s+p.pct,0);
-document.getElementById('badge').textContent=products.length+' products';
-const rowsEl=document.getElementById('rows');
-products.forEach((p,i)=>{
-  rowsEl.innerHTML+=`<div class="t-row">
+function renderProducts(products){
+  document.getElementById('badge').textContent=products.length+' products';
+  const rowsEl=document.getElementById('rows');
+  if(!products.length){rowsEl.innerHTML='<div style="padding:20px;text-align:center;opacity:.3;font-size:12px;">No approved quotes yet</div>';return;}
+  rowsEl.innerHTML=products.map((p,i)=>`<div class="t-row">
     <span class="t-num">${String(i+1).padStart(2,'0')}</span>
     <div><div class="t-name">${p.name}</div><div class="t-sub">${p.sub}</div></div>
     <div><div class="pop-wrap"><div class="pop-fill" style="width:${p.pct}%;"></div></div></div>
-    <div><span class="sales-badge">${p.sales}</span></div>
-  </div>`;
-});
+    <div><span class="sales-badge">${p.pct}%</span></div>
+  </div>`).join('');
+}
+async function loadData(){
+  try {
+    const r=await fetch('/api/data/finance');
+    const j=await r.json();
+    renderProducts(j.topProducts||[]);
+    setTs();
+  } catch(e){ console.error('topproducts widget:',e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData, 5*60*1000);
 </script></body></html>

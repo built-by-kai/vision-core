@@ -69,16 +69,11 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 <script>
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
-const meetings=[
-  {date:'14 Apr',time:'10:00 AM',client:'Revvup Motorsport', proj:'Operations OS',type:'Kickoff',  today:true},
-  {date:'14 Apr',time:'2:30 PM', client:'Pinnacle Advisory',proj:'Business OS',   type:'Discovery',today:true},
-  {date:'15 Apr',time:'11:00 AM',client:'Creaitors Studio', proj:'Marketing OS',  type:'Follow-up',today:false},
-  {date:'16 Apr',time:'3:00 PM', client:'Atlas Creative',   proj:'Sales OS',      type:'Proposal', today:false},
-  {date:'17 Apr',time:'9:00 AM', client:'Momentum Agency',  proj:'Starter OS',    type:'Discovery',today:false},
-];
-const el=document.getElementById('list');
-meetings.forEach(m=>{
-  el.innerHTML+=`<div class="m-row">
+function renderMeetings(meetings){
+  const el=document.getElementById('list');
+  document.querySelector('.panel-badge').textContent = meetings.length + ' meetings';
+  if(!meetings.length){el.innerHTML='<div style="padding:20px;text-align:center;opacity:.3;font-size:12px;">No upcoming meetings</div>';return;}
+  el.innerHTML=meetings.map(m=>`<div class="m-row">
     <div class="m-bar"></div>
     <div class="m-dt">
       <span class="m-date">${m.date}</span>
@@ -86,9 +81,18 @@ meetings.forEach(m=>{
     </div>
     <div class="m-info">
       <div class="m-client">${m.client}${m.today?'<span class="today-tag">TODAY</span>':''}</div>
-      <div class="m-proj">${m.proj}</div>
+      <div class="m-proj">${m.project||''}</div>
     </div>
     <span class="m-badge">${m.type}</span>
-  </div>`;
-});
+  </div>`).join('');
+}
+async function loadData(){
+  try {
+    const r=await fetch('/api/data/meetings');
+    const j=await r.json();
+    renderMeetings(j.meetings||[]);
+  } catch(e){ console.error('meetings widget:',e); }
+}
+loadData();
+setInterval(loadData, 5*60*1000);
 </script></body></html>

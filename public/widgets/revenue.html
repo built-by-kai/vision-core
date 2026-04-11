@@ -135,14 +135,6 @@ function fmtRM(n){
   return 'RM '+Math.round(n).toLocaleString();
 }
 
-// TODO: wire to Notion API — Quotations DB + Invoice DB
-const data = {
-  qDraft:0, qIssued:0, qApproved:0, qRejected:0,
-  iDepositAmt:0,  iDepositCount:0,
-  iBalanceAmt:0,  iBalanceCount:0,
-  iPaidAmt:0,     iPaidCount:0,
-};
-
 function render(d){
   document.getElementById('q-draft').textContent    = d.qDraft;
   document.getElementById('q-issued').textContent   = d.qIssued;
@@ -157,5 +149,27 @@ function render(d){
   document.getElementById('i-paid-count').textContent    = d.iPaidCount + ' invoice' + (d.iPaidCount!==1?'s':'');
 }
 
-render(data);
+async function loadData(){
+  try {
+    const r = await fetch('/api/data/finance');
+    const j = await r.json();
+    const q = j.quotations || {}, inv = j.invoices || {};
+    render({
+      qDraft:    q.Draft    || 0,
+      qIssued:   q.Issued   || 0,
+      qApproved: q.Approved || 0,
+      qRejected: q.Rejected || 0,
+      iDepositAmt:   inv.depositPending?.total || 0,
+      iDepositCount: inv.depositPending?.count || 0,
+      iBalanceAmt:   inv.balancePending?.total || 0,
+      iBalanceCount: inv.balancePending?.count || 0,
+      iPaidAmt:   inv.paid?.total || 0,
+      iPaidCount: inv.paid?.count || 0,
+    });
+    setTs();
+  } catch(e){ console.error('finance widget:', e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData, 5*60*1000);
 </script></body></html>

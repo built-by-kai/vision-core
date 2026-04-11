@@ -69,26 +69,26 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div class="card stat">
     <div class="s-dot"></div>
     <div class="s-lbl">Total Revenue</div>
-    <div class="s-val">RM 22.7K</div>
-    <div><span class="s-delta">↑ +18%</span><span class="s-delta-lbl">vs last month</span></div>
+    <div class="s-val" id="m-revenue">—</div>
+    <div><span class="s-delta" id="m-rev-delta"></span><span class="s-delta-lbl" id="m-rev-lbl"></span></div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <div class="s-lbl">Total Orders</div>
-    <div class="s-val">9</div>
-    <div><span class="s-delta">↑ +2</span><span class="s-delta-lbl">vs last month</span></div>
+    <div class="s-val" id="m-orders">—</div>
+    <div><span class="s-delta" id="m-ord-delta"></span><span class="s-delta-lbl">vs last month</span></div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <div class="s-lbl">OS Installs</div>
-    <div class="s-val">7</div>
-    <div><span class="s-delta">↑ +3</span><span class="s-delta-lbl">vs last month</span></div>
+    <div class="s-val" id="m-installs">—</div>
+    <div><span class="s-delta" id="m-inst-delta"></span><span class="s-delta-lbl">vs last month</span></div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <div class="s-lbl">Won Clients</div>
-    <div class="s-val">4</div>
-    <div><span class="s-delta neg">↓ -1</span><span class="s-delta-lbl">vs last month</span></div>
+    <div class="s-val" id="m-won">—</div>
+    <div><span class="s-delta" id="m-won-delta"></span><span class="s-delta-lbl">vs last month</span></div>
   </div>
 </div>
 <script>
@@ -97,5 +97,37 @@ function toggleMode(){light=!light;document.body.classList.toggle('light',light)
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
 (function(){document.getElementById('sel-m').value=new Date().getMonth()+1;})();
-setTs();setInterval(doRefresh,5*60*1000);
+setTs();
+
+function fmtRM(n){return n>=1000?'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K':'RM '+Math.round(n).toLocaleString();}
+function delta(cur,prev,isRM){
+  const d=cur-prev,pos=d>=0;
+  const s=isRM?fmtRM(Math.abs(d)):Math.abs(d)+'';
+  return {text:(pos?'↑ +':'↓ -')+s, cls:pos?'s-delta':'s-delta neg'};
+}
+
+async function loadData(){
+  try {
+    const r=await fetch('/api/data/finance');
+    const j=await r.json();
+    const t=j.thisMonth||{};
+    document.getElementById('m-revenue').textContent  = fmtRM(t.revenue||0);
+    document.getElementById('m-orders').textContent   = t.orders||0;
+    document.getElementById('m-installs').textContent = t.installs||0;
+    document.getElementById('m-won').textContent      = t.wonClients||0;
+    const rv=delta(t.revenue||0,t.prevRevenue||0,true);
+    document.getElementById('m-rev-delta').textContent=rv.text;document.getElementById('m-rev-delta').className=rv.cls;
+    document.getElementById('m-rev-lbl').textContent='vs last month';
+    const od=delta(t.orders||0,0,false);
+    document.getElementById('m-ord-delta').textContent=od.text;document.getElementById('m-ord-delta').className=od.cls;
+    const id=delta(t.installs||0,t.prevInstalls||0,false);
+    document.getElementById('m-inst-delta').textContent=id.text;document.getElementById('m-inst-delta').className=id.cls;
+    const wd=delta(t.wonClients||0,t.prevWon||0,false);
+    document.getElementById('m-won-delta').textContent=wd.text;document.getElementById('m-won-delta').className=wd.cls;
+    setTs();
+  } catch(e){ console.error('monthly widget:',e); }
+}
+loadData();
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setInterval(loadData,5*60*1000);
 </script></body></html>
