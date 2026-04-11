@@ -340,7 +340,7 @@ def append_template_blocks(page_id, hdrs):
 
         # footer
         {"type": "paragraph", "paragraph": {
-            "rich_text": [T("builtbykai — Prepared with care.", italic=True)],
+            "rich_text": [T("Opxio — Prepared with care.", italic=True)],
         }},
     ]
 
@@ -1160,7 +1160,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         self._respond(200, {
-            "service": "Vision Core — Create Quotation",
+            "service": "Opxio — Create Quotation",
             "status":  "ready",
             "usage":   (
                 "POST {page_id} from Lead/Company — or {page_id, type:'addon'} from Project. "
