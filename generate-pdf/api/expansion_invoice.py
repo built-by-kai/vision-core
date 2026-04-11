@@ -27,8 +27,8 @@ Payment logic:
 
 DBs
 ───
-Expansions   : 47a500ac8dd4464d96a8e4d799485421
-Invoices     : 9227dda9c4be42a1a4c6b1bce4862f8c
+Expansions   : 7c6fe60097f682fbbe9b81f828f6d3f8
+Invoices     : b02fe60097f6823b901e81d600093692
 """
 import json
 import os
@@ -38,8 +38,8 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-EXPANSIONS_DB = "47a500ac8dd4464d96a8e4d799485421"
-INVOICES_DB   = "9227dda9c4be42a1a4c6b1bce4862f8c"
+EXPANSIONS_DB = "7c6fe60097f682fbbe9b81f828f6d3f8"
+INVOICES_DB   = "b02fe60097f6823b901e81d600093692"
 
 
 def _hdrs():
