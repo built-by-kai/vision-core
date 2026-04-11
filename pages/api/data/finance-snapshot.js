@@ -1,8 +1,9 @@
 // /api/data/finance-snapshot — token-authenticated
-// Queries Finance & Expense Tracker DB
-// Returns: Income/Expenses/P&L KPIs, category breakdown, 6-month trend
+// Widget 3 — Finance Snapshot (v5 spec)
+// KPIs: income this month, expenses this month, net P&L this month
+// Charts: expense breakdown by category (donut), 6-month net P&L trend (single line)
 
-import { queryDB, plain, DB } from "../../../lib/notion"
+import { queryDB, DB } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
@@ -11,7 +12,6 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120")
 
   try {
-    // ── Auth ──────────────────────────────────────────────────────────────────
     const accessToken = req.query.token || req.headers["x-widget-token"]
     if (!accessToken) return res.status(401).json({ error: "Missing token" })
 
@@ -25,21 +25,19 @@ export default async function handler(req, res) {
     const year  = now.getFullYear()
     const month = now.getMonth() // 0-indexed
 
-    // ── Fetch all entries ──────────────────────────────────────────────────────
     const entries = await queryDB(FINANCE_DB, null, notionToken)
 
-    // ── Aggregation helpers ────────────────────────────────────────────────────
-    let totalIncome   = 0
-    let totalExpenses = 0
-    const categoryMap = {}
-    const monthlyMap  = {}
-
-    // Build 6-month keys
+    // Build 6-month bucket keys
+    const monthlyPL = {}
     for (let i = 5; i >= 0; i--) {
       const d   = new Date(year, month - i, 1)
       const key = d.toLocaleString("default", { month: "short", year: "2-digit" })
-      monthlyMap[key] = { income: 0, expense: 0 }
+      monthlyPL[key] = { income: 0, expense: 0 }
     }
+
+    let thisMonthIncome   = 0
+    let thisMonthExpenses = 0
+    const categoryMap     = {}
 
     for (const entry of entries) {
       const p      = entry.properties
@@ -48,26 +46,24 @@ export default async function handler(req, res) {
       const amount = p["Amount (RM)"]?.number || 0
       const cat    = p.Category?.select?.name || "Uncategorised"
 
-      // Skip cancelled entries
       if (status === "Cancelled") continue
 
-      // Date: prefer Date property, fall back to created_time
-      const rawDate = p.Date?.date?.start || entry.created_time
-      const date    = rawDate ? new Date(rawDate) : new Date()
-      const mKey    = date.toLocaleString("default", { month: "short", year: "2-digit" })
+      const rawDate  = p.Date?.date?.start || entry.created_time
+      const date     = rawDate ? new Date(rawDate) : new Date()
+      const isThisMo = date.getMonth() === month && date.getFullYear() === year
+      const mKey     = date.toLocaleString("default", { month: "short", year: "2-digit" })
 
       if (type === "Income") {
-        totalIncome += amount
-        if (mKey in monthlyMap) monthlyMap[mKey].income += amount
+        if (isThisMo) thisMonthIncome += amount
+        if (mKey in monthlyPL) monthlyPL[mKey].income += amount
       } else if (type === "Expense") {
-        totalExpenses += amount
-        if (mKey in monthlyMap) monthlyMap[mKey].expense += amount
+        if (isThisMo) thisMonthExpenses += amount
+        if (mKey in monthlyPL) monthlyPL[mKey].expense += amount
+        // Category breakdown: all-time expenses for the donut
         categoryMap[cat] = (categoryMap[cat] || 0) + amount
       }
-      // Transfer: excluded from P&L
     }
 
-    // ── Category breakdown ─────────────────────────────────────────────────────
     const totalExpCat = Object.values(categoryMap).reduce((s, v) => s + v, 0) || 1
     const categoryBreakdown = Object.entries(categoryMap)
       .sort((a, b) => b[1] - a[1])
@@ -77,19 +73,17 @@ export default async function handler(req, res) {
         pct: Math.round((amount / totalExpCat) * 100),
       }))
 
-    // ── Monthly trend ──────────────────────────────────────────────────────────
-    const monthlyTrend = Object.entries(monthlyMap).map(([m, v]) => ({
+    // Single net P&L per month for the line chart
+    const monthlyTrend = Object.entries(monthlyPL).map(([m, v]) => ({
       m,
-      income:  v.income,
-      expense: v.expense,
-      pl:      v.income - v.expense,
+      pl: v.income - v.expense,
     }))
 
     res.status(200).json({
       kpi: {
-        totalIncome,
-        totalExpenses,
-        netPL: totalIncome - totalExpenses,
+        thisMonthIncome,
+        thisMonthExpenses,
+        thisMonthPL: thisMonthIncome - thisMonthExpenses,
       },
       categoryBreakdown,
       monthlyTrend,
