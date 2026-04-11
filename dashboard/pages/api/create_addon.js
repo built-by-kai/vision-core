@@ -9,18 +9,17 @@
 
 import { getPage, createPage, queryDB, plain, DB } from "../../lib/notion"
 
-const TOKEN = process.env.NOTION_API_KEY
 
 function hdrs() {
   return {
-    Authorization:    `Bearer ${TOKEN}`,
+    Authorization:    `Bearer ${process.env.NOTION_API_KEY}`,
     "Notion-Version": "2022-06-28",
     "Content-Type":   "application/json",
   }
 }
 
 async function fetchProject(projectId) {
-  const page  = await getPage(projectId, TOKEN)
+  const page  = await getPage(projectId, process.env.NOTION_API_KEY)
   const props = page.properties
 
   const companyIds = (props.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
