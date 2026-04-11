@@ -11,7 +11,7 @@ Triggered by a Notion button "Send to Client".
 
 The user then clicks the "WA Link" field in Notion to open WhatsApp.
 
-Quotation DB : f8167f0bda054307b90b17ad6b9c5cf8
+Quotation DB : b54fe60097f683e1930d012d635b14d5
 """
 import json
 import os
@@ -23,7 +23,7 @@ from urllib.parse import quote as url_quote
 
 import requests
 
-QUOTATIONS_DB = "f8167f0bda054307b90b17ad6b9c5cf8"
+QUOTATIONS_DB = "b54fe60097f683e1930d012d635b14d5"
 
 
 def _plain(arr):
@@ -183,7 +183,7 @@ def ensure_wa_link_property(page_id, hdrs):
 
 def advance_lead_stage(page_id, hdrs):
     """Find leads linked to this quotation and advance them to 'Quotation Issued'."""
-    LEADS_DB = "8690d55c4d0449068c51ef49d92a26a2"
+    LEADS_DB = "caafe60097f683398df40197eeedbffe"
     try:
         # The "Deal Source" property on the Quotation page holds the linked Lead(s)
         pr = requests.get(f"https://api.notion.com/v1/pages/{page_id}",
