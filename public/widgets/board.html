@@ -122,19 +122,17 @@ const _tok = new URLSearchParams(location.search).get('token') || '';
 function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 
 const POTENTIAL_STAGES = [
-  { label:'Incoming',      key:'Incoming',      color:'#6366F1' },
-  { label:'Contacted',     key:'Contacted',     color:'#8B5CF6' },
-  { label:'Qualified',     key:'Qualified',     color:'#60A5FA' },
-  { label:'Discovery Call',key:'Discovery Call',color:'#34D399' },
-  { label:'Proposed',      key:'Proposed',      color:'#FBBF24' },
+  { label:'Incoming',  key:'Incoming',  color:'#6366F1' },
+  { label:'Contacted', key:'Contacted', color:'#8B5CF6' },
+  { label:'Qualified', key:'Qualified', color:'#60A5FA' },
+  { label:'Proposed',  key:'Proposed',  color:'#FBBF24' },
 ];
 
 const ACTIVE_STAGE_COLORS = {
-  'Incoming':     '#6366F1',
-  'Contacted':    '#8B5CF6',
-  'Qualified':    '#60A5FA',
-  'Discovery Call':'#34D399',
-  'Proposed':     '#FBBF24',
+  'Incoming':  '#6366F1',
+  'Contacted': '#8B5CF6',
+  'Qualified': '#60A5FA',
+  'Proposed':  '#FBBF24',
 };
 
 function renderPotential(stages) {

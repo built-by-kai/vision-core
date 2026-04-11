@@ -23,7 +23,16 @@ export default async function handler(req, res) {
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
-    const stages = { Incoming: 0, Contacted: 0, Qualified: 0, "Discovery Call": 0, Proposed: 0, Won: 0, Lost: 0 }
+    // Stages matching Opxio's Deals CRM status options
+    // Pre-sale funnel: Incoming → Contacted → Qualified → Proposed
+    // Won equivalent: "Deposit Due" (quote approved, deposit invoice issued)
+    // Post-sale (excluded from funnel): Building, Balance Due, Delivered
+    // Dead: Lost, Inactive
+    const FUNNEL_STAGES  = ["Incoming", "Contacted", "Qualified", "Proposed"]
+    const WON_STAGES     = ["Deposit Due", "Building", "Balance Due", "Delivered"]
+    const DEAD_STAGES    = ["Lost", "Inactive"]
+
+    const stages = { Incoming: 0, Contacted: 0, Qualified: 0, Proposed: 0, "Deposit Due": 0, Lost: 0 }
     const boardGroups = {}
     const monthly = {}
     for (let i = 5; i >= 0; i--) {
@@ -31,28 +40,30 @@ export default async function handler(req, res) {
       monthly[d.toLocaleString("default", { month: "short" })] = 0
     }
 
-    let pipelineValue   = 0  // sum of Estimated Value for active (non-Won/Lost) leads
+    let pipelineValue   = 0  // sum of Estimated Value for active pre-sale leads
     let thisMonthWon    = 0
     let thisMonthLost   = 0
 
     for (const lead of leads) {
       const p     = lead.properties
       const stage = p.Stage?.status?.name || p.Stage?.select?.name || "Unknown"
-      const name  = plain(p["Lead Name"] || p.Name || p.Title) || "Untitled"
+      const name  = plain(p["Lead Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
       const value = p["Estimated Value"]?.number || 0
-      const pkg   = plain(p["Package Type"]?.select?.name || p["Package Type"] || "") || ""
+      const pkg   = p["Package Type"]?.select?.name || p["Package"]?.select?.name || ""
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
 
       if (stage in stages) stages[stage]++
 
-      if (!["Won", "Lost"].includes(stage)) {
+      // Board shows pre-sale funnel leads only
+      if (FUNNEL_STAGES.includes(stage)) {
         pipelineValue += value
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, value, pkg })
       }
 
-      if (isThisMonth && stage === "Won")  thisMonthWon++
+      // "Deposit Due" = Won (deal closed, deposit invoice sent)
+      if (isThisMonth && WON_STAGES.includes(stage) && stage === "Deposit Due") thisMonthWon++
       if (isThisMonth && stage === "Lost") thisMonthLost++
 
       const mKey  = created.toLocaleString("default", { month: "short" })
@@ -60,10 +71,13 @@ export default async function handler(req, res) {
       if (created >= mDate && mKey in monthly) monthly[mKey]++
     }
 
-    const stageOrder = ["Incoming", "Contacted", "Qualified", "Discovery Call", "Proposed"]
+    const stageOrder = FUNNEL_STAGES
     const board = stageOrder.filter(s => boardGroups[s]).map(s => ({ stage: s, leads: boardGroups[s] }))
 
-    const totalActive    = leads.filter(l => !["Won","Lost"].includes(l.properties.Stage?.status?.name || l.properties.Stage?.select?.name || "")).length
+    const totalActive    = leads.filter(l => {
+      const s = l.properties.Stage?.status?.name || l.properties.Stage?.select?.name || ""
+      return FUNNEL_STAGES.includes(s)
+    }).length
     const winRateTotal   = thisMonthWon + thisMonthLost
     const winRate        = winRateTotal > 0 ? Math.round((thisMonthWon / winRateTotal) * 100) : null
 

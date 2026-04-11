@@ -183,13 +183,12 @@ let data = [];
 
 function renderFunnel(stages) {
   const order = [
-    {l:'Incoming',    key:'Incoming'},
-    {l:'Contacted',   key:'Contacted'},
-    {l:'Qualified',   key:'Qualified'},
-    {l:'Discovery',   key:'Discovery Call'},
-    {l:'Proposed',    key:'Proposed'},
-    {l:'Won',         key:'Won',  won:true},
-    {l:'Lost',        key:'Lost', lost:true},
+    {l:'Incoming',     key:'Incoming'},
+    {l:'Contacted',    key:'Contacted'},
+    {l:'Qualified',    key:'Qualified'},
+    {l:'Proposed',     key:'Proposed'},
+    {l:'Deposit Due',  key:'Deposit Due', won:true},
+    {l:'Lost',         key:'Lost',        lost:true},
   ];
   const maxN = Math.max(...order.map(r => stages[r.key]||0), 1);
   const total = order.reduce((s,r) => s + (stages[r.key]||0), 0);
