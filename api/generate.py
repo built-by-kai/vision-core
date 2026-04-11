@@ -74,7 +74,7 @@ F_BIT  = "Satoshi-BoldItalic" if _SATOSHI else "Helvetica-BoldOblique"
 
 # Core palette
 C_INK    = colors.HexColor("#0D0D0D")   # near-black: header bg, table header
-C_TEAL   = colors.HexColor("#2DD4BF")   # teal accent: accent lines, total row
+C_LIME   = colors.HexColor("#AAFF00")   # lime green accent: accent lines, total row
 C_BODY   = colors.HexColor("#1A1A1A")   # main body text
 C_MUTED  = colors.HexColor("#6B7280")   # secondary / address text
 C_SUBTLE = colors.HexColor("#9CA3AF")   # labels, captions
@@ -84,7 +84,7 @@ C_WHITE  = colors.white
 
 # Hex strings (for inline HTML color attrs in Paragraph markup)
 HEX_INK    = "#0D0D0D"
-HEX_TEAL   = "#2DD4BF"
+HEX_LIME   = "#AAFF00"
 HEX_BODY   = "#1A1A1A"
 HEX_MUTED  = "#6B7280"
 HEX_SUBTLE = "#9CA3AF"
@@ -154,7 +154,9 @@ def fetch_company_details(headers):
         results = r.json().get("results", [])
         if not results:
             return {}
-        p = results[0].get("properties", {})
+
+        page = results[0]
+        p    = page.get("properties", {})
 
         def _v(key):
             prop = p.get(key, {})
@@ -166,6 +168,30 @@ def fetch_company_details(headers):
             if t == "select":       return (prop.get("select") or {}).get("name", "")
             return ""
 
+        # ── Logo: try page icon first, then any files property named Logo/Brand Logo
+        logo_url = ""
+        icon = page.get("icon") or {}
+        if icon.get("type") == "external":
+            logo_url = icon["external"].get("url", "")
+        elif icon.get("type") == "file":
+            logo_url = icon["file"].get("url", "")
+
+        if not logo_url:
+            for prop_name in ["Logo", "Brand Logo", "logo", "Brand"]:
+                prop = p.get(prop_name, {})
+                if prop.get("type") == "files":
+                    files = prop.get("files", [])
+                    if files:
+                        f0 = files[0]
+                        if f0.get("type") == "external":
+                            logo_url = f0["external"].get("url", "")
+                        elif f0.get("type") == "file":
+                            logo_url = f0["file"].get("url", "")
+                        if logo_url:
+                            break
+
+        print(f"[INFO] Logo URL: {logo_url[:60] if logo_url else 'none'}", file=sys.stderr)
+
         return {
             "name":                _v("Name"),
             "email":               _v("Email"),
@@ -174,10 +200,41 @@ def fetch_company_details(headers):
             "bank_account_holder": _v("Bank Account Holder Name"),
             "bank_number":         _v("Bank Number"),
             "payment_method":      _v("Payment Method"),
+            "logo_url":            logo_url,
         }
     except Exception as e:
         print(f"[WARN] company details: {e}", file=sys.stderr)
         return {}
+
+
+# ─────────────────────────────────────────────
+#  Logo helper
+# ─────────────────────────────────────────────
+from reportlab.platypus import Image as RLImage
+
+def _fetch_logo(logo_url, max_w_mm=38, max_h_mm=14):
+    """Download logo URL and return a ReportLab Image flowable, or None on failure."""
+    if not logo_url:
+        return None
+    try:
+        resp = requests.get(logo_url, timeout=10)
+        resp.raise_for_status()
+        buf = BytesIO(resp.content)
+        img = RLImage(buf)
+        # Scale to fit within max dimensions while preserving aspect ratio
+        img_w, img_h = img.imageWidth, img.imageHeight
+        if img_w <= 0 or img_h <= 0:
+            return None
+        max_w = max_w_mm * mm
+        max_h = max_h_mm * mm
+        scale = min(max_w / img_w, max_h / img_h)
+        img.drawWidth  = img_w * scale
+        img.drawHeight = img_h * scale
+        img.hAlign = "LEFT"
+        return img
+    except Exception as e:
+        print(f"[WARN] Logo download failed: {e}", file=sys.stderr)
+        return None
 
 
 # ─────────────────────────────────────────────
@@ -501,6 +558,7 @@ def generate_pdf(data):
     co_holder = co.get("bank_account_holder") or ""
     co_acc    = co.get("bank_number")        or ""
     co_pay    = co.get("payment_method")     or ""
+    logo_img  = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
 
     issue_display = valid_display = ""
     if data.get("issue_date"):
@@ -527,13 +585,25 @@ def generate_pdf(data):
     if co_phone: co_contact += co_phone
     if co_email: co_contact += ("  ·  " if co_contact else "") + co_email
 
-    hdr_left = Table([
-        [Paragraph(co_name,
-                   st("hdr_name", fontName=F_BOLD, fontSize=14, textColor=C_WHITE, leading=18))],
-        [Paragraph(co_contact,
-                   st("hdr_contact", fontName=F_REG, fontSize=8, textColor=colors.HexColor("#9CA3AF"),
-                      leading=12))],
-    ], colWidths=[usable * 0.55],
+    # Left side: logo (if available) or company name text, plus contact line below
+    if logo_img:
+        left_rows = [
+            [logo_img],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+    else:
+        left_rows = [
+            [Paragraph(co_name,
+                       st("hdr_name", fontName=F_BOLD, fontSize=14,
+                          textColor=C_WHITE, leading=18))],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+
+    hdr_left = Table(left_rows, colWidths=[usable * 0.55],
        style=TableStyle([("PADDING", (0,0),(-1,-1), 0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     hdr_right = Paragraph(
@@ -554,18 +624,18 @@ def generate_pdf(data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
         return Table([
-            [Paragraph(_tracked(label),
+            [Paragraph(label,
                        st(f"ml_{label[:4]}", fontName=F_MED, fontSize=7,
-                          textColor=C_TEAL, leading=10))],
+                          textColor=C_LIME, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:4]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
-        ], colWidths=[usable/3 - 4],
+        ], colWidths=[usable/3 - 28],
            style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     meta = Table([[
@@ -585,7 +655,7 @@ def generate_pdf(data):
     # ── 4. Bill To ───────────────────────────────────────
     story.append(Paragraph(
         _tracked("BILL TO"),
-        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_TEAL, leading=11)
+        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -713,7 +783,7 @@ def generate_pdf(data):
         ("LEFTPADDING",   (0,0),(-1,-1),        4),
         ("RIGHTPADDING",  (0,0),(-1,-1),        8),
         ("VALIGN",        (0,0),(-1,-1),        "MIDDLE"),
-        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_TEAL),
+        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_LIME),
         ("LEFTPADDING",   (0,n_tot),(-1,n_tot), 10),
         ("RIGHTPADDING",  (0,n_tot),(-1,n_tot), 10),
         ("TOPPADDING",    (0,n_tot),(-1,n_tot), 10),
@@ -727,7 +797,7 @@ def generate_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 8. Notes & Terms  |  Payment Details ─────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_TEAL}'>{_tracked('NOTES & TERMS')}</font>", ""]
+    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('NOTES & TERMS')}</font>", ""]
     for term in TERMS:
         terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
     terms_html = "<br/>".join(terms_lines)
@@ -738,7 +808,7 @@ def generate_pdf(data):
     if co_holder: pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NAME')}</font><br/><font size='8' color='{HEX_BODY}'>{co_holder}</font>")
     if co_acc:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NO.')}</font><br/><font size='8' color='{HEX_BODY}'>{co_acc}</font>")
 
-    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_TEAL}'>{_tracked('PAYMENT DETAILS')}</font>"
+    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
     bot = Table([[
@@ -756,7 +826,7 @@ def generate_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
@@ -1150,6 +1220,7 @@ def generate_invoice_pdf(data):
     co_holder = co.get("bank_account_holder") or ""
     co_acc    = co.get("bank_number")         or ""
     co_pay    = co.get("payment_method")      or ""
+    logo_img  = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
 
     issue_display = _fmt_date(data.get("issue_date"))
     due_display   = _fmt_date(data.get("due_date"))
@@ -1169,13 +1240,24 @@ def generate_invoice_pdf(data):
     if co_phone: co_contact += co_phone
     if co_email: co_contact += ("  ·  " if co_contact else "") + co_email
 
-    hdr_left = Table([
-        [Paragraph(co_name,
-                   st("hdr_name", fontName=F_BOLD, fontSize=14, textColor=C_WHITE, leading=18))],
-        [Paragraph(co_contact,
-                   st("hdr_contact", fontName=F_REG, fontSize=8,
-                      textColor=colors.HexColor("#9CA3AF"), leading=12))],
-    ], colWidths=[usable * 0.55],
+    if logo_img:
+        left_rows = [
+            [logo_img],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+    else:
+        left_rows = [
+            [Paragraph(co_name,
+                       st("hdr_name", fontName=F_BOLD, fontSize=14,
+                          textColor=C_WHITE, leading=18))],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+
+    hdr_left = Table(left_rows, colWidths=[usable * 0.55],
        style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     inv_type_label = data.get("invoice_type", "")
@@ -1197,18 +1279,18 @@ def generate_invoice_pdf(data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
         return Table([
-            [Paragraph(_tracked(label),
+            [Paragraph(label,
                        st(f"ml_{label[:4]}", fontName=F_MED, fontSize=7,
-                          textColor=C_TEAL, leading=10))],
+                          textColor=C_LIME, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:4]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
-        ], colWidths=[usable/3 - 4],
+        ], colWidths=[usable/3 - 28],
            style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     meta = Table([[
@@ -1228,7 +1310,7 @@ def generate_invoice_pdf(data):
     # ── 4. Bill To ───────────────────────────────────────
     story.append(Paragraph(
         _tracked("BILL TO"),
-        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_TEAL, leading=11)
+        st("bt_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -1357,7 +1439,7 @@ def generate_invoice_pdf(data):
         ("LEFTPADDING",   (0,0),(-1,-1),        4),
         ("RIGHTPADDING",  (0,0),(-1,-1),        8),
         ("VALIGN",        (0,0),(-1,-1),        "MIDDLE"),
-        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_TEAL),
+        ("BACKGROUND",    (0,n_tot),(-1,n_tot), C_LIME),
         ("LEFTPADDING",   (0,n_tot),(-1,n_tot), 10),
         ("RIGHTPADDING",  (0,n_tot),(-1,n_tot), 10),
         ("TOPPADDING",    (0,n_tot),(-1,n_tot), 10),
@@ -1371,7 +1453,7 @@ def generate_invoice_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 8. Terms | Payment Details ───────────────────────
-    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_TEAL}'>{_tracked('NOTES & TERMS')}</font>", ""]
+    terms_lines = [f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('NOTES & TERMS')}</font>", ""]
     for term in INVOICE_TERMS:
         terms_lines.append(f"<font name='{F_REG}' size='8' color='{HEX_MUTED}'>• {term}</font>")
     terms_html = "<br/>".join(terms_lines)
@@ -1382,7 +1464,7 @@ def generate_invoice_pdf(data):
     if co_holder: pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NAME')}</font><br/><font size='8' color='{HEX_BODY}'>{co_holder}</font>")
     if co_acc:    pay_lines.append(f"<font color='{HEX_SUBTLE}' size='7'>{_tracked('ACCOUNT NO.')}</font><br/><font size='8' color='{HEX_BODY}'>{co_acc}</font>")
 
-    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_TEAL}'>{_tracked('PAYMENT DETAILS')}</font>"
+    pay_header = f"<font name='{F_MED}' size='7' color='{HEX_LIME}'>{_tracked('PAYMENT DETAILS')}</font>"
     pay_html   = pay_header + "<br/><br/>" + "<br/><br/>".join(pay_lines) if pay_lines else pay_header
 
     bot = Table([[
@@ -1400,7 +1482,7 @@ def generate_invoice_pdf(data):
     story.append(Spacer(1, 6*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
@@ -1517,6 +1599,7 @@ def generate_receipt_pdf(receipt_no, data):
     co_name  = co.get("name")  or "Opxio"
     co_email = co.get("email") or ""
     co_phone = co.get("phone") or ""
+    logo_img = _fetch_logo(co.get("logo_url", ""), max_w_mm=42, max_h_mm=14)
 
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
@@ -1533,13 +1616,24 @@ def generate_receipt_pdf(receipt_no, data):
     if co_phone: co_contact += co_phone
     if co_email: co_contact += ("  ·  " if co_contact else "") + co_email
 
-    hdr_left = Table([
-        [Paragraph(co_name,
-                   st("hdr_name", fontName=F_BOLD, fontSize=14, textColor=C_WHITE, leading=18))],
-        [Paragraph(co_contact,
-                   st("hdr_contact", fontName=F_REG, fontSize=8,
-                      textColor=colors.HexColor("#9CA3AF"), leading=12))],
-    ], colWidths=[usable * 0.55],
+    if logo_img:
+        left_rows = [
+            [logo_img],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+    else:
+        left_rows = [
+            [Paragraph(co_name,
+                       st("hdr_name", fontName=F_BOLD, fontSize=14,
+                          textColor=C_WHITE, leading=18))],
+            [Paragraph(co_contact,
+                       st("hdr_contact", fontName=F_REG, fontSize=8,
+                          textColor=colors.HexColor("#9CA3AF"), leading=12))],
+        ]
+
+    hdr_left = Table(left_rows, colWidths=[usable * 0.55],
        style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     hdr = Table([[hdr_left,
@@ -1558,18 +1652,18 @@ def generate_receipt_pdf(receipt_no, data):
     story.append(hdr)
 
     # ── 2. Teal accent line ──────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=3, spaceAfter=7*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=3, spaceAfter=7*mm))
 
     # ── 3. Meta row ──────────────────────────────────────
     def _mcell(label, value):
         return Table([
-            [Paragraph(_tracked(label),
+            [Paragraph(label,
                        st(f"ml_{label[:3]}", fontName=F_MED, fontSize=7,
-                          textColor=C_TEAL, leading=10))],
+                          textColor=C_LIME, leading=10))],
             [Paragraph(value,
                        st(f"mv_{label[:3]}", fontName=F_BOLD, fontSize=11,
                           textColor=C_BODY, leading=16))],
-        ], colWidths=[usable/3 - 4],
+        ], colWidths=[usable/3 - 28],
            style=TableStyle([("PADDING",(0,0),(-1,-1),0), ("VALIGN",(0,0),(-1,-1),"TOP")]))
 
     pay_date_display = _fmt_date(data.get("pay_date")) or datetime.now().strftime("%d %B %Y")
@@ -1597,7 +1691,7 @@ def generate_receipt_pdf(receipt_no, data):
     # ── 4. Received From ─────────────────────────────────
     story.append(Paragraph(
         _tracked("RECEIVED FROM"),
-        st("rf_lbl", fontName=F_MED, fontSize=7, textColor=C_TEAL, leading=11)
+        st("rf_lbl", fontName=F_MED, fontSize=7, textColor=C_LIME, leading=11)
     ))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph(
@@ -1636,11 +1730,11 @@ def generate_receipt_pdf(receipt_no, data):
 
     summary_rows = [
         [Paragraph(_tracked("PAYMENT FOR"),
-                   st("sl", fontName=F_MED, fontSize=7, textColor=C_TEAL)),
+                   st("sl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
          Paragraph(f"Invoice {inv_ref_display} — {inv_type}",
                    st("sv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
         [Paragraph(_tracked("PAYMENT METHOD"),
-                   st("ml2", fontName=F_MED, fontSize=7, textColor=C_TEAL)),
+                   st("ml2", fontName=F_MED, fontSize=7, textColor=C_LIME)),
          Paragraph(pay_str,
                    st("mv2", fontName=F_REG, fontSize=9, textColor=C_BODY))],
     ]
@@ -1652,11 +1746,11 @@ def generate_receipt_pdf(receipt_no, data):
         bal_date = _fd(data.get("bal_date", ""))
         summary_rows += [
             [Paragraph(_tracked("DEPOSIT PAID"),
-                       st("dl", fontName=F_MED, fontSize=7, textColor=C_TEAL)),
+                       st("dl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
              Paragraph(f"RM {dep_amt:,.2f}  ·  {dep_date}",
                        st("dv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
             [Paragraph(_tracked("BALANCE PAID"),
-                       st("bl", fontName=F_MED, fontSize=7, textColor=C_TEAL)),
+                       st("bl", fontName=F_MED, fontSize=7, textColor=C_LIME)),
              Paragraph(f"RM {bal_amt:,.2f}  ·  {bal_date}",
                        st("bv", fontName=F_REG, fontSize=9, textColor=C_BODY))],
         ]
@@ -1686,7 +1780,7 @@ def generate_receipt_pdf(receipt_no, data):
                      textColor=C_INK, alignment=2, leading=28)),
     ]], colWidths=[usable * 0.40, usable * 0.60])
     amt_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_TEAL),
+        ("BACKGROUND",    (0,0),(-1,-1), C_LIME),
         ("LEFTPADDING",   (0,0),(0,0),   16),
         ("RIGHTPADDING",  (0,0),(0,0),   8),
         ("LEFTPADDING",   (1,0),(1,0),   8),
@@ -1724,7 +1818,7 @@ def generate_receipt_pdf(receipt_no, data):
     story.append(Spacer(1, 10*mm))
 
     # ── 9. Footer ─────────────────────────────────────────
-    story.append(HRFlowable(width=usable, color=C_TEAL, thickness=1.5, spaceAfter=3*mm))
+    story.append(HRFlowable(width=usable, color=C_LIME, thickness=1.5, spaceAfter=3*mm))
     fp_parts = [co_name]
     if co_email: fp_parts.append(co_email)
     if co_phone: fp_parts.append(co_phone)
