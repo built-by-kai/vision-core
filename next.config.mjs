@@ -5,7 +5,7 @@ const nextConfig = {
     const widgets = [
       'revenue', 'deals', 'projects', 'active', 'meetings', 'schedule',
       'earnings', 'monthly', 'topproducts', 'potential', 'board',
-      'visitors', 'combined',
+      'visitors', 'combined', 'finance-snapshot',
     ]
     return widgets.map(name => ({
       source:      `/widgets/${name}`,
@@ -15,3 +15,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
