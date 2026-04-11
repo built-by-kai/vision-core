@@ -115,11 +115,11 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </div>
 
 <div class="stat-row">
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Active Leads</div><div class="s-val">18</div><div class="s-sub">Incoming + Proposed</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Pipeline Value</div><div class="s-val">RM 94.7K</div><div class="s-sub">Excl. lost &amp; inactive</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Deposit Due</div><div class="s-val">2</div><div class="s-sub">Awaiting payment</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Active Build</div><div class="s-val">5</div><div class="s-sub">Currently in delivery</div></div>
-  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Win Rate</div><div class="s-val">71%</div><div class="s-sub">Closed won this month</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Active Leads</div><div class="s-val" id="d-active">—</div><div class="s-sub">Incoming + Proposed</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Pipeline Value</div><div class="s-val" id="d-value">—</div><div class="s-sub">Excl. lost &amp; inactive</div></div>
+  <div class="card stat"><div class="s-dot" style="background:#FBBF24;"></div><div class="s-lbl">Deposit Due</div><div class="s-val" id="d-deposit" style="color:#FBBF24;">—</div><div class="s-sub">Awaiting payment</div></div>
+  <div class="card stat"><div class="s-dot" style="background:#34D399;"></div><div class="s-lbl">Active Build</div><div class="s-val" id="d-build" style="color:#34D399;">—</div><div class="s-sub">Currently in delivery</div></div>
+  <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Win Rate</div><div class="s-val" id="d-winrate">—</div><div class="s-sub">Closed won this month</div></div>
 </div>
 
 <div class="grid-2">
@@ -202,12 +202,27 @@ function renderFunnel(stages) {
   }).join('');
 }
 
+function fmtRM(n){if(n>=1000)return'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K';return'RM '+Math.round(n).toLocaleString();}
+
 async function loadData() {
   try {
-    const r = await fetch(apiUrl('/api/data/pipeline'));
-    const j = await r.json();
-    const stages = j.stages || {};
-    const monthly = j.monthly || [];
+    const [rp, rf, rj] = await Promise.all([
+      fetch(apiUrl('/api/data/pipeline')),
+      fetch(apiUrl('/api/data/finance')),
+      fetch(apiUrl('/api/data/projects')),
+    ]);
+    const [jp, jf, jj] = await Promise.all([rp.json(), rf.json(), rj.json()]);
+
+    const stages = jp.stages || {};
+    const monthly = jp.monthly || [];
+
+    // Stat cards
+    const el = id => document.getElementById(id);
+    if(el('d-active'))  el('d-active').textContent  = jp.totalActive ?? '—';
+    if(el('d-value'))   el('d-value').textContent   = jp.pipelineValue ? fmtRM(jp.pipelineValue) : '—';
+    if(el('d-deposit')) el('d-deposit').textContent = jf.invoices?.depositPending?.count ?? '—';
+    if(el('d-build'))   el('d-build').textContent   = jj.counts?.active ?? '—';
+    if(el('d-winrate')) el('d-winrate').textContent = jp.winRate != null ? jp.winRate+'%' : '—';
 
     renderFunnel(stages);
 
