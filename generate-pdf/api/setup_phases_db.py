@@ -31,7 +31,7 @@ from http.server import BaseHTTPRequestHandler
 
 import requests
 
-PROJECTS_DB = "5719b2672d3442a29a22637a35398260"
+PROJECTS_DB = "842fe60097f68303b34e01a5432d24cc"
 NOTION_VER  = "2022-06-28"
 
 
