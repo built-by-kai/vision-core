@@ -143,7 +143,7 @@ def build_whatsapp_url(data: dict) -> str:
         "Looking forward to working with you!",
         "",
         "Best regards,",
-        "Vision Core",
+        "Opxio",
     ]
     message = "\n".join(lines)
     return f"https://wa.me/{phone}?text={url_quote(message)}"
@@ -262,7 +262,7 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        self._respond(200, {"service": "Vision Core — Send Quotation to Client",
+        self._respond(200, {"service": "Opxio — Send Quotation to Client",
                             "status":  "ready"})
 
     def do_POST(self):
