@@ -4,8 +4,9 @@ const nextConfig = {
   async rewrites() {
     const widgets = [
       // Revenue OS
-      'proposals-payments', 'deals', 'board', 'potential', 'visitors',
-      'earnings', 'monthly', 'topproducts', 'combined', 'finance-snapshot',
+      'proposals-payments', 'revenue-overview', 'deals', 'board',
+      'potential', 'visitors', 'earnings', 'monthly', 'topproducts',
+      'finance-snapshot',
       // Operations OS
       'projects', 'active',
       // Shared
