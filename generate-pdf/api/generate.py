@@ -980,7 +980,7 @@ def update_notion_page(page_id, pdf_url, total_amount, quotation_no=None, title_
 #  INVOICE  — config & data fetch
 # ═══════════════════════════════════
 
-IMPL_FORM_BASE = "https://vision-core-delta.vercel.app/api/implementation_form"
+IMPL_FORM_BASE = "https://opxio.vercel.app/api/implementation_form"
 
 INV_PATTERN = re.compile(r"^INV-\d{4}-\d{4}(-[DSFR])?$")
 
