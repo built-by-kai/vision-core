@@ -3,9 +3,13 @@ const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     const widgets = [
-      'revenue', 'deals', 'projects', 'active', 'meetings', 'schedule',
-      'earnings', 'monthly', 'topproducts', 'potential', 'board',
-      'visitors', 'combined', 'finance-snapshot',
+      // Revenue OS
+      'proposals-payments', 'deals', 'board', 'potential', 'visitors',
+      'earnings', 'monthly', 'topproducts', 'combined', 'finance-snapshot',
+      // Operations OS
+      'projects', 'active',
+      // Shared
+      'meetings', 'schedule',
     ]
     return widgets.map(name => ({
       source:      `/widgets/${name}`,
