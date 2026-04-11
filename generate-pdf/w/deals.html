@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Opxio — Deals CRM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',-apple-system,sans-serif;padding:16px;transition:background 0.3s;background:#191919;color:#fff;}
+
+/* ── Cards — exact creaitors ── */
+.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s ease;}
+.card:hover{border-color:rgba(255,255,255,0.12);}
+
+/* ── Stat card colours ── */
+.card-green .s-label{color:#6EE7B7;}.card-green .s-value{color:#34D399;}.card-green .s-accent{background:#34D399;}
+.card-blue  .s-label{color:#93C5FD;}.card-blue  .s-value{color:#60A5FA;}.card-blue  .s-accent{background:#60A5FA;}
+.card-amber .s-label{color:#FCD34D;}.card-amber .s-value{color:#FBBF24;}.card-amber .s-accent{background:#FBBF24;}
+.card-teal  .s-label{color:#5EEAD4;}.card-teal  .s-value{color:#2DD4BF;}.card-teal  .s-accent{background:#2DD4BF;}
+
+/* ── Light mode — exact creaitors ── */
+body.light{background:#fff;color:#111;}
+body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
+body.light .card:hover{border-color:rgba(0,0,0,0.1);}
+body.light .card-green .s-label{color:#059669;}body.light .card-green .s-value{color:#047857;}body.light .card-green .s-accent{background:#059669;}
+body.light .card-blue  .s-label{color:#2563EB;}body.light .card-blue  .s-value{color:#1D4ED8;}body.light .card-blue  .s-accent{background:#2563EB;}
+body.light .card-amber .s-label{color:#D97706;}body.light .card-amber .s-value{color:#B45309;}body.light .card-amber .s-accent{background:#D97706;}
+body.light .card-teal  .s-label{color:#0D9488;}body.light .card-teal  .s-value{color:#0F766E;}body.light .card-teal  .s-accent{background:#0D9488;}
+body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+body.light .toggle-btn:hover{border-color:rgba(0,0,0,0.15);color:rgba(0,0,0,0.6);}
+body.light .sub-text{color:#9CA3AF;}
+body.light .container-title{color:rgba(0,0,0,0.35);}
+body.light .f-label{color:rgba(0,0,0,0.5);}
+body.light .f-bar-bg{background:rgba(0,0,0,0.06);}
+body.light .f-val-text{color:rgba(255,255,255,0.9);}
+body.light .f-count{color:rgba(0,0,0,0.7);}
+body.light .donut-center-val{fill:#111;}
+body.light .donut-center-label{fill:rgba(0,0,0,0.3);}
+body.light .legend-name{color:rgba(0,0,0,0.6);}
+body.light .legend-count{color:rgba(0,0,0,0.8);}
+body.light .date-select{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.7);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+body.light .date-select option{background:#fff;color:rgba(0,0,0,0.8);}
+
+/* ── Buttons ── */
+.toggle-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;line-height:1;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;}
+.toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+
+/* ── Date selects — exact creaitors ── */
+.date-filter{display:flex;align-items:center;gap:6px;}
+.date-select{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:#2A2A2A;color:rgba(255,255,255,0.7);outline:none;transition:all 0.2s;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.4)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
+.date-select:focus{border-color:rgba(255,255,255,0.3);}
+.date-select:hover{border-color:rgba(255,255,255,0.25);}
+.date-select option{background:#2A2A2A;color:rgba(255,255,255,0.8);}
+
+/* ── Top bar ── */
+.top-bar{display:flex;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+.top-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.page-label{font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:3px;}
+.page-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+body.light .page-label{color:rgba(0,0,0,0.3);}
+body.light .page-title{color:#111;}
+
+/* ── Stat row ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.stat-card{padding:18px 20px;position:relative;overflow:hidden;}
+.s-accent{position:absolute;top:16px;right:16px;width:7px;height:7px;border-radius:50%;opacity:0.8;}
+.s-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
+.s-value{font-size:30px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
+.sub-text{font-size:11px;margin-top:8px;font-weight:500;color:#6B7280;}
+
+/* ── 2-col grid ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.container-card{padding:24px 26px;}
+.container-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+.container-badge{font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:2px 8px;}
+body.light .container-title{color:rgba(0,0,0,0.35);}
+body.light .container-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.08);}
+
+/* ── FUNNEL — exact creaitors ── */
+.f-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.f-row:last-child{margin-bottom:0;}
+.f-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:rgba(255,255,255,0.4);width:80px;flex-shrink:0;}
+.f-bar-bg{flex:1;height:36px;border-radius:8px;background:rgba(255,255,255,0.06);overflow:hidden;position:relative;}
+.f-bar-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 14px;transition:width 0.5s ease;min-width:0;}
+.f-val-text{font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);white-space:nowrap;}
+.f-count{font-size:13px;font-weight:800;color:rgba(255,255,255,0.6);width:24px;text-align:right;flex-shrink:0;}
+body.light .f-count{color:rgba(0,0,0,0.7);}
+
+/* ── DONUT — exact creaitors ── */
+.donut-container{display:flex;align-items:center;justify-content:center;gap:24px;padding:10px 0;}
+.donut-svg{flex-shrink:0;}
+.donut-center-val{font-weight:800;fill:#fff;}
+.donut-center-label{font-weight:600;fill:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.5px;}
+.legend{display:flex;flex-direction:column;gap:12px;}
+.legend-item{display:flex;align-items:center;gap:10px;}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.legend-name{font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);flex:1;min-width:60px;}
+.legend-count{font-size:15px;font-weight:800;color:rgba(255,255,255,0.85);}
+
+/* ── Responsive ── */
+@media(max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+@media(max-width:768px){body{padding:10px;}.stat-row{grid-template-columns:repeat(2,1fr);gap:8px;}.stat-card{padding:14px 16px;}.s-value{font-size:22px;}.grid-2{grid-template-columns:1fr;}.container-card{padding:16px;}.f-row{gap:6px;margin-bottom:10px;}.f-label{width:60px;font-size:8px;}.f-bar-bg{height:28px;}.f-bar-fill{padding:0 8px;}.f-val-text{font-size:10px;}.f-count{font-size:11px;width:20px;}.donut-container{flex-direction:column;gap:16px;}.legend{flex-direction:row;flex-wrap:wrap;gap:8px 16px;justify-content:center;}.legend-name{font-size:12px;min-width:auto;}.legend-count{font-size:13px;}.legend-dot{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div>
+    <p class="page-label">Opxio · Sales</p>
+    <h1 class="page-title">Deals CRM</h1>
+  </div>
+  <div class="top-right">
+    <div class="date-filter">
+      <select class="date-select" id="sel-month" onchange="onFilterChange()">
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <select class="date-select" id="sel-year" onchange="onFilterChange()">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+    </div>
+    <button class="toggle-btn" onclick="handleRefresh()" id="refresh-btn">↻ Refresh</button>
+    <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+  </div>
+</div>
+
+<!-- KPI stat cards -->
+<div class="stat-row">
+  <div class="card stat-card card-blue">
+    <div class="s-accent"></div>
+    <div class="s-label">Active Leads</div>
+    <div class="s-value">18</div>
+    <div class="sub-text">Incoming + Proposed</div>
+  </div>
+  <div class="card stat-card card-green">
+    <div class="s-accent"></div>
+    <div class="s-label">Pipeline Value</div>
+    <div class="s-value">RM 94.7K</div>
+    <div class="sub-text">Excl. lost &amp; inactive</div>
+  </div>
+  <div class="card stat-card card-amber">
+    <div class="s-accent"></div>
+    <div class="s-label">Deposit Due</div>
+    <div class="s-value">2</div>
+    <div class="sub-text">Awaiting payment</div>
+  </div>
+  <div class="card stat-card card-teal">
+    <div class="s-accent"></div>
+    <div class="s-label">Win Rate</div>
+    <div class="s-value">71%</div>
+    <div class="sub-text">Closed won this month</div>
+  </div>
+</div>
+
+<!-- Bottom 2-col panels -->
+<div class="grid-2">
+
+  <!-- Deal Pipeline Funnel -->
+  <div class="card container-card">
+    <div class="container-title">
+      Deal Pipeline Funnel
+      <span class="container-badge" id="funnel-badge"></span>
+    </div>
+    <div id="funnel"></div>
+  </div>
+
+  <!-- Lead Sources -->
+  <div class="card container-card">
+    <div class="container-title">Lead Sources</div>
+    <div class="donut-container">
+      <svg class="donut-svg" width="180" height="180" viewBox="0 0 180 180" id="donut-svg"></svg>
+      <div class="legend" id="donut-legend"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Set current month on load ──
+(function(){
+  const now = new Date();
+  document.getElementById('sel-month').value = now.getMonth() + 1;
+})();
+
+// ── Theme toggle ──
+let isLight = false;
+function toggleMode() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+
+// ── Filter change ──
+function onFilterChange() {
+  const m = document.getElementById('sel-month').value;
+  const y = document.getElementById('sel-year').value;
+  // Hook this up to your Notion API when ready
+  console.log('Filter:', m, y);
+}
+
+// ── Refresh ──
+function handleRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '↻ Refreshing…';
+  btn.style.opacity = '0.5';
+  setTimeout(() => {
+    btn.textContent = '↻ Refresh';
+    btn.style.opacity = '1';
+  }, 1200);
+}
+
+// ── Funnel ──
+const funnel = [
+  { label:'Incoming',     value:'RM 14.4K', count:4, color:'#6366F1', pct:57  },
+  { label:'Proposed',     value:'RM 44.8K', count:7, color:'#8B5CF6', pct:100 },
+  { label:'Deposit Due',  value:'RM 12.8K', count:2, color:'#F59E0B', pct:29  },
+  { label:'Active Build', value:'RM 22.7K', count:5, color:'#3B82F6', pct:71  },
+  { label:'Lost',         value:'RM 0',     count:3, color:'#6B7280', pct:43  },
+];
+
+const funnelTotal = funnel.reduce((s,f) => s + f.count, 0);
+document.getElementById('funnel-badge').textContent = funnelTotal + ' deals';
+
+const funnelEl = document.getElementById('funnel');
+funnel.forEach(f => {
+  funnelEl.innerHTML += `
+    <div class="f-row">
+      <span class="f-label">${f.label}</span>
+      <div class="f-bar-bg">
+        <div class="f-bar-fill" style="width:${f.pct}%;background:${f.color};">
+          <span class="f-val-text">${f.value}</span>
+        </div>
+      </div>
+      <span class="f-count">${f.count}</span>
+    </div>`;
+});
+
+// ── Donut ──
+const sources = [
+  { label:'Referral', value:8, color:'#06B6D4' },
+  { label:'Threads',  value:5, color:'#F59E0B' },
+  { label:'Website',  value:4, color:'#F87171' },
+  { label:'Walk-in',  value:2, color:'#F472B6' },
+  { label:'TikTok',   value:2, color:'#A78BFA' },
+];
+const srcTotal = sources.reduce((s,x) => s + x.value, 0);
+
+const cx=90, cy=90, r=66, sw=24;
+const circ = 2*Math.PI*r;
+let offset = 0, paths = '';
+
+// Background track circle
+paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(128,128,128,0.08)" stroke-width="${sw}"/>`;
+
+sources.forEach(s => {
+  const dash = (s.value / srcTotal) * circ;
+  const gap  = circ - dash;
+  paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+    stroke="${s.color}" stroke-width="${sw}"
+    stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
+    stroke-dashoffset="${(-offset).toFixed(2)}"
+    transform="rotate(-90 ${cx} ${cy})"/>`;
+  offset += dash;
+});
+
+// Center text
+paths += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" dominant-baseline="middle" font-family="Inter,-apple-system,sans-serif" font-size="28" class="donut-center-val">${srcTotal}</text>`;
+paths += `<text x="${cx}" y="${cy + 16}" text-anchor="middle" dominant-baseline="middle" font-family="Inter,-apple-system,sans-serif" font-size="9" class="donut-center-label">LEADS</text>`;
+
+document.getElementById('donut-svg').innerHTML = paths;
+
+const legendEl = document.getElementById('donut-legend');
+sources.forEach(s => {
+  legendEl.innerHTML += `
+    <div class="legend-item">
+      <span class="legend-dot" style="background:${s.color}"></span>
+      <span class="legend-name">${s.label}</span>
+      <span class="legend-count">${s.value}</span>
+    </div>`;
+});
+</script>
+</body>
+</html>

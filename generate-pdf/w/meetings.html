@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Opxio — Meetings</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;transition:background 0.3s;}
+body.light{background:#fff;color:#111;}
+
+.card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s;}
+body.light .card{background:linear-gradient(145deg,#fff,#F7F8FA);border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03);}
+
+.toggle-btn{background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
+body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.4);}
+
+/* header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.h-left{}
+.eyebrow{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,0.3);}
+.h-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+body.light .h-title{color:#111;}
+
+/* panel */
+.panel{padding:16px 18px;}
+.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.panel-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);}
+body.light .panel-label{color:rgba(0,0,0,0.35);}
+.panel-badge{font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:2px 8px;}
+body.light .panel-badge{color:rgba(0,0,0,0.4);background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.08);}
+
+/* meeting row */
+.m-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.m-row:last-child{border-bottom:none;padding-bottom:0;}
+.m-row:first-child{padding-top:0;}
+body.light .m-row{border-bottom-color:rgba(0,0,0,0.05);}
+
+.m-bar{width:2px;height:34px;border-radius:99px;flex-shrink:0;}
+.m-dot-time{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;width:36px;}
+.m-time{font-size:9.5px;font-weight:700;color:rgba(255,255,255,0.45);text-align:center;white-space:nowrap;}
+body.light .m-time{color:rgba(0,0,0,0.4);}
+.m-date-short{font-size:8.5px;font-weight:500;color:rgba(255,255,255,0.25);text-align:center;white-space:nowrap;}
+body.light .m-date-short{color:rgba(0,0,0,0.3);}
+
+.m-body{flex:1;min-width:0;}
+.m-client{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .m-client{color:#111;}
+.m-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,0.35);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .m-sub{color:rgba(0,0,0,0.4);}
+
+.m-badge{font-size:9px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);flex-shrink:0;white-space:nowrap;}
+body.light .m-badge{background:rgba(0,0,0,0.05);color:rgba(0,0,0,0.4);}
+
+.today-pill{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(99,102,241,0.2);color:#818cf8;border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-left">
+    <p class="eyebrow">Opxio · Schedule</p>
+    <h1 class="h-title">Upcoming Meetings</h1>
+  </div>
+  <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">☀️ Light</button>
+</div>
+
+<div class="card panel">
+  <div class="panel-top">
+    <span class="panel-label">This Week</span>
+    <span class="panel-badge" id="badge">0 meetings</span>
+  </div>
+  <div id="list"></div>
+</div>
+
+<script>
+const meetings = [
+  { client:'Revvup Motorsport',  sub:'Operations OS',  type:'Kickoff',   date:'14 Apr', time:'10:00 AM', color:'#60A5FA', today:true  },
+  { client:'Pinnacle Advisory',  sub:'Business OS',    type:'Discovery', date:'14 Apr', time:'2:30 PM',  color:'#34D399', today:true  },
+  { client:'Creaitors Studio',   sub:'Marketing OS',   type:'Follow-up', date:'15 Apr', time:'11:00 AM', color:'#A78BFA', today:false },
+  { client:'Atlas Creative',     sub:'Sales OS',       type:'Proposal',  date:'16 Apr', time:'3:00 PM',  color:'#FBBF24', today:false },
+  { client:'Momentum Agency',    sub:'Starter OS',     type:'Discovery', date:'17 Apr', time:'9:00 AM',  color:'#F87171', today:false },
+];
+
+document.getElementById('badge').textContent = meetings.length + ' meetings';
+
+const el = document.getElementById('list');
+el.innerHTML = meetings.map(m => `
+  <div class="m-row">
+    <div class="m-bar" style="background:${m.color}"></div>
+    <div class="m-dot-time">
+      <span class="m-time">${m.time}</span>
+      <span class="m-date-short">${m.date}</span>
+    </div>
+    <div class="m-body">
+      <div class="m-client">${m.client}${m.today ? '<span class="today-pill">Today</span>' : ''}</div>
+      <div class="m-sub">${m.sub}</div>
+    </div>
+    <span class="m-badge">${m.type}</span>
+  </div>`).join('');
+
+let isLight = false;
+function toggleMode() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('toggle-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+</script>
+</body>
+</html>
