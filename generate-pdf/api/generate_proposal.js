@@ -20,10 +20,12 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Auth
-  const key = req.headers['x-api-key'] || req.query.key;
-  if (!SECRET || key !== SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Auth — only enforced if PROPOSAL_SECRET env var is set
+  if (SECRET) {
+    const key = req.headers['x-api-key'] || req.query.key;
+    if (key !== SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
   }
 
   try {
