@@ -67,6 +67,8 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div id="list"></div>
 </div>
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function renderMeetings(meetings){
@@ -88,7 +90,7 @@ function renderMeetings(meetings){
 }
 async function loadData(){
   try {
-    const r=await fetch('/api/data/meetings');
+    const r=await fetch(apiUrl('/api/data/meetings'));
     const j=await r.json();
     renderMeetings(j.meetings||[]);
   } catch(e){ console.error('meetings widget:',e); }

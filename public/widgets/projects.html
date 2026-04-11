@@ -139,6 +139,8 @@ body.light .pill-hold{background:rgba(0,0,0,.04);color:rgba(0,0,0,.35);border-co
 </div>
 
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -186,7 +188,7 @@ function render(counts, builds) {
 
 async function loadData(){
   try {
-    const r = await fetch('/api/data/projects');
+    const r = await fetch(apiUrl('/api/data/projects'));
     const j = await r.json();
     render(j.counts || {}, j.builds || []);
     setTs();

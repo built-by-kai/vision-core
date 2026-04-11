@@ -55,6 +55,8 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div class="card stat"><div class="s-dot"></div><div class="s-lbl">Proposed</div><div class="s-val" id="p-proposed">—</div><div class="s-sub">Quote sent</div></div>
 </div>
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -62,7 +64,7 @@ function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b
 setTs();
 async function loadData(){
   try {
-    const r = await fetch('/api/data/pipeline');
+    const r = await fetch(apiUrl('/api/data/pipeline'));
     const j = await r.json();
     const s = j.stages || {};
     document.getElementById('p-incoming').textContent  = s['Incoming']       || 0;

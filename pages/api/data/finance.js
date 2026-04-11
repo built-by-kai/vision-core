@@ -1,8 +1,9 @@
-// /api/data/finance
-// Returns aggregated finance data from Quotations + Invoice DBs
+// /api/data/finance — token-authenticated
+// Resolves client by access_token → uses their Notion key + DB IDs
 // Called by widgets: revenue.html, earnings.html, monthly.html, topproducts.html
 
 import { queryDB, plain, DB } from "../../../lib/notion"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
@@ -10,125 +11,92 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120")
 
   try {
-    const token = process.env.NOTION_API_KEY
+    // ── Auth ────────────────────────────────────────────────────────────────
+    const accessToken = req.query.token || req.headers["x-widget-token"]
+    if (!accessToken) return res.status(401).json({ error: "Missing token" })
+
+    const client = await getClientByToken(accessToken)
+    if (!client) return res.status(403).json({ error: "Invalid token" })
+
+    const notionToken  = getNotionToken(client)
+    const QUOTATIONS_DB = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
+    const INVOICE_DB    = resolveDB(client, "INVOICE",    DB.INVOICE)
+
     const now   = new Date()
     const year  = now.getFullYear()
-    const month = now.getMonth() // 0-indexed
+    const month = now.getMonth()
 
-    // ── Fetch all quotations ──────────────────────────────────────────────
-    const quotes = await queryDB(DB.QUOTATIONS, null, token)
+    // ── Fetch ────────────────────────────────────────────────────────────────
+    const [quotes, invoices] = await Promise.all([
+      queryDB(QUOTATIONS_DB, null, notionToken),
+      queryDB(INVOICE_DB,    null, notionToken),
+    ])
 
-    const qStatus = { Draft: 0, Issued: 0, Approved: 0, Rejected: 0 }
+    // ── Quotations by status ─────────────────────────────────────────────────
+    const qStatus  = { Draft: 0, Issued: 0, Approved: 0, Rejected: 0 }
     const pkgCount = {}
 
     for (const q of quotes) {
       const p = q.properties
-      // Status is a Notion "status" type
       const s = p.Status?.status?.name || p.Status?.select?.name || ""
       if (s in qStatus) qStatus[s]++
-      // Package type for top products
       if (s === "Approved") {
-        const pkg = plain(p["Package Type"]) || "Unknown"
+        const pkg = plain(p["Package Type"]) || "Other"
         pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
       }
     }
 
-    // ── Fetch all invoices ────────────────────────────────────────────────
-    const invoices = await queryDB(DB.INVOICE, null, token)
-
+    // ── Invoices ─────────────────────────────────────────────────────────────
     let depositPendingAmt = 0, depositPendingCount = 0
     let balancePendingAmt = 0, balancePendingCount = 0
     let paidAmt = 0, paidCount = 0
 
-    // Monthly paid totals — last 3 months
     const monthlyPaid = {}
     for (let i = 2; i >= 0; i--) {
-      const d = new Date(year, month - i, 1)
+      const d   = new Date(year, month - i, 1)
       const key = d.toLocaleString("default", { month: "short", year: "2-digit" })
       monthlyPaid[key] = 0
     }
 
-    // This month stats
-    let thisMonthRev = 0, thisMonthOrders = 0, thisMonthInstalls = 0, lastMonthRev = 0, lastMonthInstalls = 0
+    let thisMonthRev = 0, thisMonthOrders = 0, thisMonthInstalls = 0
+    let lastMonthRev = 0, lastMonthInstalls = 0, wonThisMonth = 0, wonLastMonth = 0
 
     for (const inv of invoices) {
       const p   = inv.properties
       const s   = p.Status?.select?.name || ""
       const amt = p["Total Amount"]?.number || 0
       const typ = p["Invoice Type"]?.select?.name || ""
-      const createdStr = inv.created_time || ""
-      const created = new Date(createdStr)
-      const cm = created.getMonth(), cy = created.getFullYear()
+      const d   = new Date(inv.created_time)
+      const cm  = d.getMonth(), cy = d.getFullYear()
+      const lm  = month === 0 ? 11 : month - 1
+      const ly  = month === 0 ? year - 1 : year
 
-      // Deposit pending: type=Deposit, status=Pending
       if (typ === "Deposit" && (s === "Pending" || s === "Sent")) {
         depositPendingAmt += amt; depositPendingCount++
       }
-      // Balance pending: type=Final Payment or Full Payment, status=Pending
       if ((typ === "Final Payment" || typ === "Full Payment") && (s === "Pending" || s === "Sent")) {
         balancePendingAmt += amt; balancePendingCount++
       }
-      // Paid
       if (s === "Paid" || s === "Deposit Received") {
         paidAmt += amt; paidCount++
-
-        // Monthly breakdown
-        const mKey = created.toLocaleString("default", { month: "short", year: "2-digit" })
+        const mKey = d.toLocaleString("default", { month: "short", year: "2-digit" })
         if (mKey in monthlyPaid) monthlyPaid[mKey] += amt
-
-        // This month
-        if (cm === month && cy === year) {
-          thisMonthRev += amt
-          thisMonthOrders++
-          if (typ === "Deposit" || typ === "Full Payment") thisMonthInstalls++
-        }
-        // Last month
-        const lastM = month === 0 ? 11 : month - 1
-        const lastY = month === 0 ? year - 1 : year
-        if (cm === lastM && cy === lastY) {
-          lastMonthRev += amt
-          if (typ === "Deposit" || typ === "Full Payment") lastMonthInstalls++
+        if (cm === month && cy === year) { thisMonthRev += amt; thisMonthOrders++ }
+        if (cm === lm    && cy === ly)   { lastMonthRev += amt }
+        if ((typ === "Deposit" || typ === "Full Payment")) {
+          if (cm === month && cy === year) { thisMonthInstalls++; wonThisMonth++ }
+          if (cm === lm    && cy === ly)   { lastMonthInstalls++; wonLastMonth++ }
         }
       }
     }
 
-    // ── Top products ──────────────────────────────────────────────────────
     const totalApproved = Object.values(pkgCount).reduce((s, v) => s + v, 0) || 1
-    const topProducts = Object.entries(pkgCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
+    const topProducts   = Object.entries(pkgCount)
+      .sort((a, b) => b[1] - a[1]).slice(0, 6)
       .map(([name, count]) => ({
-        name,
-        sub: pkgSubtitle(name),
-        count,
+        name, sub: pkgSubtitle(name), count,
         pct: Math.round((count / totalApproved) * 100),
       }))
-
-    // ── Monthly array ─────────────────────────────────────────────────────
-    const monthlyArr = Object.entries(monthlyPaid).map(([m, amt]) => ({ m, v: amt }))
-
-    // ── Won clients this month (Deposit invoices paid this month) ─────────
-    const wonThisMonth = invoices.filter(inv => {
-      const p = inv.properties
-      const typ = p["Invoice Type"]?.select?.name || ""
-      const s   = p.Status?.select?.name || ""
-      const d   = new Date(inv.created_time)
-      return (typ === "Deposit" || typ === "Full Payment") &&
-             (s === "Paid" || s === "Deposit Received") &&
-             d.getMonth() === month && d.getFullYear() === year
-    }).length
-
-    const wonLastMonth = invoices.filter(inv => {
-      const p   = inv.properties
-      const typ = p["Invoice Type"]?.select?.name || ""
-      const s   = p.Status?.select?.name || ""
-      const d   = new Date(inv.created_time)
-      const lm  = month === 0 ? 11 : month - 1
-      const ly  = month === 0 ? year - 1 : year
-      return (typ === "Deposit" || typ === "Full Payment") &&
-             (s === "Paid" || s === "Deposit Received") &&
-             d.getMonth() === lm && d.getFullYear() === ly
-    }).length
 
     res.status(200).json({
       quotations: qStatus,
@@ -137,15 +105,11 @@ export default async function handler(req, res) {
         balancePending: { count: balancePendingCount, total: balancePendingAmt },
         paid:           { count: paidCount,           total: paidAmt },
       },
-      monthly: monthlyArr,
-      thisMonth: {
-        revenue:    thisMonthRev,
-        orders:     thisMonthOrders,
-        installs:   thisMonthInstalls,
-        wonClients: wonThisMonth,
-        prevRevenue:  lastMonthRev,
-        prevInstalls: lastMonthInstalls,
-        prevWon:      wonLastMonth,
+      monthly:    Object.entries(monthlyPaid).map(([m, v]) => ({ m, v })),
+      thisMonth:  {
+        revenue: thisMonthRev, orders: thisMonthOrders,
+        installs: thisMonthInstalls, wonClients: wonThisMonth,
+        prevRevenue: lastMonthRev, prevInstalls: lastMonthInstalls, prevWon: wonLastMonth,
       },
       topProducts,
     })
@@ -157,12 +121,9 @@ export default async function handler(req, res) {
 
 function pkgSubtitle(name) {
   const map = {
-    "Business OS":    "Operations + Sales",
-    "Operations OS":  "Full ops system",
-    "Sales OS":       "Revenue pipeline",
-    "Starter OS":     "Entry package",
-    "Marketing OS":   "Campaigns & content",
-    "Intelligence OS":"Prospect intelligence",
+    "Business OS": "Operations + Sales", "Operations OS": "Full ops system",
+    "Sales OS": "Revenue pipeline",      "Starter OS": "Entry package",
+    "Marketing OS": "Campaigns & content","Intelligence OS": "Prospect intelligence",
   }
   return map[name] || "Add-on / Custom"
 }

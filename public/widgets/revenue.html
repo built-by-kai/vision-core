@@ -124,6 +124,8 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </div>
 
 <script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
 let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -151,7 +153,7 @@ function render(d){
 
 async function loadData(){
   try {
-    const r = await fetch('/api/data/finance');
+    const r = await fetch(apiUrl('/api/data/finance'));
     const j = await r.json();
     const q = j.quotations || {}, inv = j.invoices || {};
     render({
