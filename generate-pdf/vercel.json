@@ -46,6 +46,10 @@
       "use": "@vercel/python"
     },
     {
+      "src": "api/generate_proposal.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "widgets/**",
       "use": "@vercel/static"
     },
@@ -121,6 +125,10 @@
     {
       "src": "/api/wa_redirect",
       "dest": "api/wa_redirect.py"
+    },
+    {
+      "src": "/api/generate_proposal",
+      "dest": "api/generate_proposal.js"
     },
     {
       "src": "/widgets/deals",
