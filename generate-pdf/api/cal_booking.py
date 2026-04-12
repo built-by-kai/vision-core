@@ -8,22 +8,22 @@ import requests
 # ─────────────────────────────────────────────
 #  Notion Database IDs
 # ─────────────────────────────────────────────
-CLIENTS_DB    = "036622227fd244ad9a77633d5ae0a64b"  # Clients (People)
+CONTACTS_DB   = "b0afe60097f68265b93401fbc6f0fec4"  # Contacts (People)
 COMPANIES_DB  = "725fe60097f682c09be901fe6ebb6b41"  # Companies
-LEADS_DB      = "caafe60097f683398df40197eeedbffe"  # Leads CRM
-MEETINGS_DB   = "e283b9d542a34865bf518c3a0e43f1fe"  # Meetings
-PIC_HIST_DB   = "3c870b0a06b647b3bc85c042d56cfb6f"  # PIC History
+LEADS_DB      = "caafe60097f683398df40197eeedbffe"  # Deals CRM
+MEETINGS_DB   = "f9ffe60097f68389a09981dfece9e98f"  # Meetings
+PIC_HIST_DB   = "36efe60097f682d2b3410198d11714c7"  # PIC History
 EXPANSIONS_DB = "7c6fe60097f682fbbe9b81f828f6d3f8"  # Expansions (active client add-ons)
 
 # Valid Source options per database
-CLIENTS_SOURCES  = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal"}
-LEADS_SOURCES    = {"Threads", "Linkedin", "WhatsApp", "Email", "Instagram", "TikTok"}
+CONTACTS_SOURCES = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal Staff", "Referral"}
+LEADS_SOURCES    = {"Threads", "Linkedin", "WhatsApp", "Email", "Instagram", "TikTok", "Referral", "Existing Client"}
 
 # Valid Industry options for Companies
 VALID_INDUSTRIES = {
     "Marketing & Creative Agency", "Consulting & Advisory", "Media & Content Production",
     "Events & Experiential", "PR & Communications", "Technology & SaaS",
-    "E-commerce & Retail", "Real Estate", "Education & Training", "Health & Wellness",
+    "E-Commerce & Retail", "Real Estate", "Education & Training", "Health & Wellness",
     "Legal & Professional Services", "Finance & Accounting", "Manufacturing",
     "Printing & Packaging", "Other",
 }
@@ -45,11 +45,15 @@ ROLE_MAP = {
     "marketing manager":        "Marketing Manager",
     "project manager":          "Project Manager",
     "executive staff":          "Executive Staff",
+    "general manager":          "Executive Staff",
     "biz dev manager":          "Biz Dev Manager",
-    "other":                    None,                 # skip — no matching option
+    "employee/staff":           None,  # no matching option — role left blank
+    "employee":                 None,
+    "staff":                    None,
+    "other":                    None,  # skip — no matching option
 }
 
-# Map Notion Role → Department (auto-populated on client creation)
+# Map Notion Role → Department (auto-populated on contact creation)
 DEPT_MAP = {
     "CEO":              "Board of Directors",
     "COO":              "Operations",
@@ -60,7 +64,6 @@ DEPT_MAP = {
     "Biz Dev Manager":  "Sales & Marketing",
     "Executive Staff":  "Board of Directors",
     "Ops Manager":      "Operations",
-    # Project Manager — no clear dept match, left blank
 }
 
 
@@ -184,7 +187,7 @@ def process_booking(payload):
     elif payload.get("meetingUrl"):
         meeting_url = payload["meetingUrl"]
 
-    # Location text — "Online Meeting (Cal Video)" if video call, else physical address
+    # Location text
     location_text = ""
     if meeting_url:
         location_text = "Online Meeting (Cal Video)"
@@ -206,7 +209,6 @@ def process_booking(payload):
     notion_role = None
     if role_raw:
         role_key = role_raw.lower().strip()
-        # strip parenthetical abbreviation e.g. "Chief Executive Officer (CEO)" → match on full name
         for key, val in ROLE_MAP.items():
             if key in role_key:
                 notion_role = val
@@ -224,12 +226,11 @@ def process_booking(payload):
     # What the active client is looking for — determines routing
     request_type     = rv(responses, "requestType", "request_type", "lookingFor",
                           "what_are_you_looking_for", default="").lower()
-    # Classify: "new system" → new Lead, "add-on"/"expansion" → Expansions DB
+    # Classify: "add-on"/"expansion" → Expansions DB, else → Leads CRM
     is_expansion = any(k in request_type for k in ("add", "expansion", "extra", "feature", "addon"))
-    is_new_system = any(k in request_type for k in ("new system", "new service", "new os", "rebuild"))
     is_active_client = bool(bound_company_id)  # came via company-specific link
 
-    # Debug: log all response keys + values to help trace missing fields
+    # Debug: log all response keys + values
     print(f"[DEBUG] Response keys: {list(responses.keys())}", file=sys.stderr)
     for k, v in responses.items():
         print(f"[DEBUG]   {k!r} = {v!r}", file=sys.stderr)
@@ -241,8 +242,8 @@ def process_booking(payload):
     company_is_new     = False
     company_has_people = False
 
-    # Active client link — company already known, skip find-or-create
     if bound_company_id:
+        # Active client link — company already known
         company_id = bound_company_id
         try:
             co_page = requests.get(f"https://api.notion.com/v1/pages/{company_id}",
@@ -263,7 +264,6 @@ def process_booking(payload):
         # Fallback: match by email domain (different person, same company)
         if not existing_co and email and "@" in email:
             domain = email.split("@")[1].lower()
-            # Skip generic providers
             if domain not in {"gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"}:
                 r_all = requests.post(
                     f"https://api.notion.com/v1/databases/{COMPANIES_DB}/query",
@@ -296,26 +296,26 @@ def process_booking(payload):
             company_is_new = True
             print(f"[INFO] Created company: {company_id}", file=sys.stderr)
 
-    # ── 2. Find or create Client (Person) ──────
-    client_id     = None
-    is_new_client = False
+    # ── 2. Find or create Contact ──────────────
+    contact_id    = None
+    is_new_contact = False
     existing_cl   = None
 
     if email:
         existing_cl = search_db(
-            CLIENTS_DB,
+            CONTACTS_DB,
             {"property": "Email", "email": {"equals": email}},
             hdrs,
         )
         if existing_cl:
-            client_id = existing_cl["id"].replace("-", "")
-            print(f"[INFO] Existing client: {client_id}", file=sys.stderr)
+            contact_id = existing_cl["id"].replace("-", "")
+            print(f"[INFO] Existing contact: {contact_id}", file=sys.stderr)
             # Ensure company is linked if not already
             if company_id:
                 existing_co_rels = existing_cl.get("properties", {}).get("Company", {}).get("relation", [])
                 existing_co_ids  = [r["id"].replace("-", "") for r in existing_co_rels]
                 if company_id not in existing_co_ids:
-                    update_page(client_id, {
+                    update_page(contact_id, {
                         "Company": {"relation": existing_co_rels + [{"id": company_id}]}
                     }, hdrs)
         else:
@@ -337,14 +337,18 @@ def process_booking(payload):
             if company_id:
                 cl_props["Company"] = {"relation": [{"id": company_id}]}
 
-            src = map_sources(referral_list, CLIENTS_SOURCES)
+            src = map_sources(referral_list, CONTACTS_SOURCES)
             if src:
                 cl_props["Source"] = {"multi_select": src}
 
-            new_cl    = create_page(CLIENTS_DB, cl_props, hdrs, icon_emoji="👤")
-            client_id = new_cl["id"].replace("-", "")
-            is_new_client = True
-            print(f"[INFO] Created client: {client_id}", file=sys.stderr)
+            new_cl     = create_page(CONTACTS_DB, cl_props, hdrs, icon_emoji="👤")
+            contact_id = new_cl["id"].replace("-", "")
+            is_new_contact = True
+            is_pic_assigned = is_pic
+            print(f"[INFO] Created contact: {contact_id}", file=sys.stderr)
+
+    # Track whether this contact is the PIC (used for PIC History)
+    is_pic_assigned = is_new_contact and (company_is_new or not company_has_people)
 
     # ── 3. Build notes ─────────────────────────
     notes_parts = []
@@ -377,12 +381,15 @@ def process_booking(payload):
         lead_id   = new_entry["id"].replace("-", "")
         print(f"[INFO] Created expansion: {lead_id}", file=sys.stderr)
     else:
-        # New lead or active client wanting new system → Leads CRM
-        # Active client skips "Lead" and starts at "Qualified"
-        stage = "Qualified" if is_active_client else "Lead"
+        # New lead or active client wanting new system → Deals CRM
+        # Active client skips "Incoming" and starts at "Qualified"
+        stage       = "Qualified" if is_active_client else "Incoming"
+        client_type = "Existing Client" if is_active_client else "New Client"
+
         lead_props = {
-            "Lead Name": {"title": [{"text": {"content": entry_name}}]},
-            "Stage":     {"status": {"name": stage}},
+            "Lead Name":   {"title": [{"text": {"content": entry_name}}]},
+            "Stage":       {"status": {"name": stage}},
+            "Client Type": {"select": {"name": client_type}},
         }
         if company_id:
             lead_props["Company"] = {"relation": [{"id": company_id}]}
@@ -390,10 +397,12 @@ def process_booking(payload):
             lead_props["Notes"] = {"rich_text": [{"text": {"content": notes_text}}]}
 
         lead_src = map_sources(referral_list, LEADS_SOURCES)
+        if is_active_client and not lead_src:
+            lead_src = [{"name": "Existing Client"}]
         if lead_src:
             lead_props["Source"] = {"multi_select": lead_src}
 
-        # Discovery Call date — stamp the booked meeting date on the lead
+        # Discovery Call date
         if start_time:
             lead_props["Discovery Call"] = {"date": {"start": start_time, "end": end_time or None}}
 
@@ -401,10 +410,9 @@ def process_booking(payload):
         lead_id   = new_entry["id"].replace("-", "")
         print(f"[INFO] Created lead (stage={stage}): {lead_id}", file=sys.stderr)
 
-    # Link lead ↔ client:
-    #   Primary side: Clients.Deals → populates synced "Clients" on Leads
-    if client_id:
-        update_page(client_id, {"Deals": {"relation": [{"id": lead_id}]}}, hdrs)
+    # Link contact → lead (Contacts.Deals is primary side)
+    if contact_id and lead_id:
+        update_page(contact_id, {"Deals": {"relation": [{"id": lead_id}]}}, hdrs)
 
     # ── 5. Create Meeting ──────────────────────
     if is_active_client:
@@ -432,7 +440,7 @@ def process_booking(payload):
     print(f"[INFO] Created meeting: {mtg_id}", file=sys.stderr)
 
     # ── 6. PIC History entry (new PIC only) ───
-    if is_new_client and is_pic and client_id:
+    if is_pic_assigned and contact_id:
         booking_date = start_time[:10] if start_time else ""
         hist_props = {
             "PIC Name":   {"title": [{"text": {"content": name}}]},
@@ -445,69 +453,62 @@ def process_booking(payload):
 
         try:
             new_hist = create_page(PIC_HIST_DB, hist_props, hdrs)
-            hist_id  = new_hist["id"]          # keep hyphens for API calls
+            hist_id  = new_hist["id"]
             print(f"[INFO] Created PIC history: {hist_id}", file=sys.stderr)
 
-            # Link Person: try PIC History.Person directly first;
-            # if synced (read-only), fall back to Clients.History
+            # Link Person (Contacts.History primary side fallback to PIC History.Person)
             try:
-                update_page(hist_id, {"Person": {"relation": [{"id": client_id}]}}, hdrs)
+                update_page(hist_id, {"Person": {"relation": [{"id": contact_id}]}}, hdrs)
             except Exception:
-                existing_hist = existing_cl.get("properties", {}).get("History", {}).get("relation", []) if existing_cl else []
-                update_page(client_id, {"History": {"relation": existing_hist + [{"id": hist_id}]}}, hdrs)
+                existing_hist_rels = existing_cl.get("properties", {}).get("History", {}).get("relation", []) if existing_cl else []
+                update_page(contact_id, {"History": {"relation": existing_hist_rels + [{"id": hist_id}]}}, hdrs)
 
-            # Link Related Deal: try via Leads.PIC Changes (primary side)
-            try:
-                update_page(lead_id, {"PIC Changes": {"relation": [{"id": hist_id}]}}, hdrs)
-            except Exception as e:
-                print(f"[WARN] Could not link PIC history to lead: {e}", file=sys.stderr)
+            # Link Related Deal (via Deals CRM PIC Changes — primary side)
+            if lead_id:
+                try:
+                    update_page(lead_id, {"PIC Changes": {"relation": [{"id": hist_id}]}}, hdrs)
+                except Exception as e:
+                    print(f"[WARN] Could not link PIC history to lead: {e}", file=sys.stderr)
 
         except Exception as e:
             print(f"[WARN] PIC history creation failed: {e}", file=sys.stderr)
 
-    # ── 7. Link meeting back to Lead & Client ──
-    # Participants is synced from Leads.Meetings (primary side = Leads)
-    # Attendee is synced from Clients.Meetings (primary side = Clients)
-    # Must update from the primary side to populate the synced view on Meetings
+    # ── 7. Link meeting → Lead & Contact ──────
+    # Deals CRM.Meetings is primary → populates Meetings.Participants
+    if lead_id:
+        update_page(lead_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
 
-    # Main booker's lead → Participants
-    update_page(lead_id, {"Meetings": {"relation": [{"id": mtg_id}]}}, hdrs)
-
-    # Main booker's client → Attendee
-    if client_id:
+    # Contacts.Meetings is primary → populates Meetings.Attendee
+    if contact_id:
         existing_cl_mtgs = []
         if existing_cl:
             existing_cl_mtgs = existing_cl.get("properties", {}).get("Meetings", {}).get("relation", [])
-        update_page(client_id, {
+        update_page(contact_id, {
             "Meetings": {"relation": existing_cl_mtgs + [{"id": mtg_id}]}
         }, hdrs)
 
-    # ── 8. Link guest attendees (Cal.com "guests" field) ──
+    # ── 8. Link guest attendees ────────────────
     for guest_email in guest_emails:
         guest_cl = search_db(
-            CLIENTS_DB,
+            CONTACTS_DB,
             {"property": "Email", "email": {"equals": guest_email}},
             hdrs,
         )
         if not guest_cl:
-            print(f"[INFO] Guest {guest_email!r} not found in Clients — skipping", file=sys.stderr)
+            print(f"[INFO] Guest {guest_email!r} not found in Contacts — skipping", file=sys.stderr)
             continue
 
         guest_cl_id = guest_cl["id"].replace("-", "")
-        print(f"[INFO] Linking guest {guest_email!r} (client {guest_cl_id}) to meeting", file=sys.stderr)
+        print(f"[INFO] Linking guest {guest_email!r} (contact {guest_cl_id}) to meeting", file=sys.stderr)
 
-        # Link to Attendee (via Clients.Meetings — primary side)
         existing_guest_mtgs = guest_cl.get("properties", {}).get("Meetings", {}).get("relation", [])
         update_page(guest_cl_id, {
             "Meetings": {"relation": existing_guest_mtgs + [{"id": mtg_id}]}
         }, hdrs)
 
-        # Link to Participants (via Leads.Meetings — primary side)
-        # Find this guest's leads from their Deals relation
         guest_deals = guest_cl.get("properties", {}).get("Deals", {}).get("relation", [])
         for deal in guest_deals:
             deal_id = deal["id"].replace("-", "")
-            # Fetch existing meetings on this lead to append
             deal_page = requests.get(
                 f"https://api.notion.com/v1/pages/{deal_id}",
                 headers=hdrs, timeout=10,
@@ -519,16 +520,16 @@ def process_booking(payload):
             print(f"[INFO] Linked guest lead {deal_id} to meeting", file=sys.stderr)
 
     return {
-        "status":          "success",
-        "entry_name":      entry_name,
-        "routed_to":       "expansions" if (is_active_client and is_expansion) else "leads_crm",
-        "stage":           "New Request" if (is_active_client and is_expansion) else ("Qualified" if is_active_client else "Lead"),
-        "company_id":      company_id,
-        "client_id":       client_id,
-        "lead_id":         lead_id,
-        "meeting_id":      mtg_id,
-        "is_new_client":   is_new_client,
-        "company_is_new":  company_is_new,
+        "status":           "success",
+        "entry_name":       entry_name,
+        "routed_to":        "expansions" if (is_active_client and is_expansion) else "leads_crm",
+        "stage":            "New Request" if (is_active_client and is_expansion) else ("Qualified" if is_active_client else "Incoming"),
+        "company_id":       company_id,
+        "contact_id":       contact_id,
+        "lead_id":          lead_id,
+        "meeting_id":       mtg_id,
+        "is_new_contact":   is_new_contact,
+        "company_is_new":   company_is_new,
     }
 
 
@@ -547,7 +548,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._respond(200, {
-            "service": "Vision Core – Cal.com Booking Webhook",
+            "service": "Opxio – Cal.com Booking Webhook",
             "status":  "ready",
         })
 
