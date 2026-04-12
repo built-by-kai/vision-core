@@ -170,29 +170,43 @@ async function createLineItemsDB(pageId) {
   return db.id.replace(/-/g, "")
 }
 
-// ── Clear existing rows from the inline DB (template placeholder rows) ────
-async function clearExistingRows(dbId) {
+// ── Get existing placeholder rows from the inline DB ──────────────────────
+async function getExistingRows(dbId) {
   try {
     const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
       method: "POST", headers: hdrs(),
       body: JSON.stringify({ page_size: 50 }),
     })
-    if (!r.ok) return
-    const rows = (await r.json()).results || []
-    // Archive all existing rows (Notion doesn't support hard-delete via API)
-    await Promise.all(rows.map(row =>
-      fetch(`https://api.notion.com/v1/pages/${row.id}`, {
-        method: "PATCH", headers: hdrs(),
-        body: JSON.stringify({ archived: true }),
-      }).catch(() => {})
-    ))
-    console.log(`[clearExistingRows] archived ${rows.length} template rows`)
+    if (!r.ok) return []
+    return (await r.json()).results || []
   } catch (e) {
-    console.warn("[clearExistingRows]", e.message)
+    console.warn("[getExistingRows]", e.message)
+    return []
   }
 }
 
-// ── Create a single line item ──────────────────────────────────────────────
+// ── Fill an existing placeholder row with product data ─────────────────────
+async function fillRow(rowId, product) {
+  const props = {
+    "Qty": { number: 1 },
+    ...(product.id        ? { "Product":   { relation: [{ id: product.id }] } } : {}),
+    ...(product.price != null ? { "Unit Price": { number: Number(product.price) } } : {}),
+    ...(product.description ? { "Product Description": { rich_text: [{ text: { content: product.description.slice(0, 2000) } }] } } : {}),
+  }
+  // Try with description col first, then without
+  for (const descCol of product.description ? ["Product Description", "Description", "Details", null] : [null]) {
+    const p = descCol
+      ? { ...props, [descCol]: { rich_text: [{ text: { content: product.description.slice(0, 2000) } }] } }
+      : props
+    const r = await fetch(`https://api.notion.com/v1/pages/${rowId}`, {
+      method: "PATCH", headers: hdrs(),
+      body: JSON.stringify({ properties: p }),
+    })
+    if (r.ok) return
+  }
+}
+
+// ── Create a new line item row ─────────────────────────────────────────────
 async function createLineItem(dbId, product) {
   const baseProps = {
     "Notes": { title: [] },
@@ -302,21 +316,28 @@ export default async function handler(req, res) {
     if (!dbId) {
       dbId = await createLineItemsDB(propId)
       console.log("[create_proposal] created line items DB:", dbId)
-    } else {
-      // Template already has the inline DB — clear any placeholder rows first
-      await clearExistingRows(dbId)
     }
 
-    // ── 5. Create line items (Base OS → Main product → Add-ons) ─────────────
+    // ── 5. Fill line items (Base OS → Main product → Add-ons) ───────────────
     const lineItems = []
     if (isOS && baseProduct?.id) lineItems.push(baseProduct)
     if (mainProduct?.id)         lineItems.push(mainProduct)
     lineItems.push(...addonProducts.filter(Boolean))
 
-    for (const item of lineItems) {
-      await createLineItem(dbId, item)
+    // Use existing template placeholder rows first, create new rows for overflow
+    const existingRows = await getExistingRows(dbId)
+    console.log(`[create_proposal] ${existingRows.length} existing rows, ${lineItems.length} products`)
+
+    for (let i = 0; i < lineItems.length; i++) {
+      if (i < existingRows.length) {
+        // Fill the existing placeholder row in place
+        await fillRow(existingRows[i].id, lineItems[i])
+      } else {
+        // More products than placeholder rows — create new rows
+        await createLineItem(dbId, lineItems[i])
+      }
     }
-    console.log(`[create_proposal] ${lineItems.length} line items created`)
+    console.log(`[create_proposal] ${lineItems.length} line items populated`)
 
     // ── 6. Advance Lead stage ────────────────────────────────────────────────
     patchPage(leadId, { "Stage": { status: { name: "Proposal Sent" } } }, process.env.NOTION_API_KEY).catch(() => {})
