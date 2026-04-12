@@ -443,6 +443,11 @@ export default async function handler(req, res) {
       ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
       ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
       ...(picIds.length     ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
+      // Copy Situation from Lead so it pre-fills the proposal — editable in Notion before generating
+      ...((() => {
+        const sit = plain(leadProps.Situation?.rich_text || [])
+        return sit ? { "Situation": { rich_text: [{ text: { content: sit.slice(0, 2000) } }] } } : {}
+      })()),
     }
     await patchPage(propId, patchProps, process.env.NOTION_API_KEY)
 
