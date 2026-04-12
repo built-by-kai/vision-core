@@ -1,6 +1,6 @@
 // /api/data/pipeline — token-authenticated
-// Queries the Leads DB (early-stage funnel: Incoming → Converted)
-// Stages: Incoming, Contacted, Qualified, Converted, Lost
+// Queries the Leads DB (new client funnel)
+// Simplified stages: Incoming → Contacted → Discovery Done → Awaiting Deposit → Converted → Lost
 
 import { queryDB, plain, DB } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
@@ -26,37 +26,41 @@ export default async function handler(req, res) {
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
-    // Leads funnel stages
-    const FUNNEL_STAGES = ["Incoming", "Contacted", "Qualified"]
-    const stages = { Incoming: 0, Contacted: 0, Qualified: 0, Converted: 0, Lost: 0 }
-    const boardGroups = {}
-    const monthly = {}
+    // Active pre-conversion stages
+    const ACTIVE_STAGES = ["Incoming", "Contacted", "Discovery Done", "Awaiting Deposit"]
+    const stages = {
+      "Incoming":         0,
+      "Contacted":        0,
+      "Discovery Done":   0,
+      "Awaiting Deposit": 0,
+      "Converted":        0,
+      "Lost":             0,
+    }
+    const boardGroups   = {}
+    const monthly       = {}
     for (let i = 5; i >= 0; i--) {
       const d = new Date(year, month - i, 1)
       monthly[d.toLocaleString("default", { month: "short" })] = 0
     }
 
-    let pipelineValue   = 0
-    let thisMonthLeads  = 0
+    let thisMonthLeads     = 0
     let thisMonthConverted = 0
-    let thisMonthLost   = 0
-    const sourceCounts  = {}
+    let thisMonthLost      = 0
+    const sourceCounts     = {}
 
     for (const lead of leads) {
       const p     = lead.properties
       const stage = p.Stage?.status?.name || p.Stage?.select?.name || "Unknown"
-      const name  = plain(p["Lead Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
-      const value = p["Estimated Value"]?.number || 0
-      const pkg   = p["OS Interest"]?.select?.name || p["Package Type"]?.select?.name || ""
+      const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
+      const pkg   = p["OS Interest"]?.select?.name || ""
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
 
       if (stage in stages) stages[stage]++
 
-      if (FUNNEL_STAGES.includes(stage)) {
-        pipelineValue += value
+      if (ACTIVE_STAGES.includes(stage)) {
         if (!boardGroups[stage]) boardGroups[stage] = []
-        boardGroups[stage].push({ name, value, pkg })
+        boardGroups[stage].push({ name, pkg })
       }
 
       if (isThisMonth) {
@@ -77,13 +81,13 @@ export default async function handler(req, res) {
       }
     }
 
-    const board = FUNNEL_STAGES
+    const board = ACTIVE_STAGES
       .filter(s => boardGroups[s])
       .map(s => ({ stage: s, leads: boardGroups[s] }))
 
     const totalActive = leads.filter(l => {
       const s = l.properties.Stage?.status?.name || l.properties.Stage?.select?.name || ""
-      return FUNNEL_STAGES.includes(s)
+      return ACTIVE_STAGES.includes(s)
     }).length
 
     const convTotal = thisMonthConverted + thisMonthLost
@@ -92,16 +96,14 @@ export default async function handler(req, res) {
     res.status(200).json({
       stages,
       board,
-      monthly:        Object.entries(monthly).map(([m, v]) => ({ m, v })),
+      monthly:             Object.entries(monthly).map(([m, v]) => ({ m, v })),
       totalActive,
-      pipelineValue,
       convRate,
       thisMonthLeads,
       thisMonthConverted,
       thisMonthLost,
-      // legacy compat
-      winRate:        convRate,
-      thisMonthWon:   thisMonthConverted,
+      winRate:             convRate,
+      thisMonthWon:        thisMonthConverted,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
