@@ -4,7 +4,7 @@
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;min-height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
@@ -12,11 +12,13 @@ body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
 .card:hover{border-color:rgba(170,255,0,.1);}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+body.light .card:hover{border-color:rgba(0,0,0,.1);}
 
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
 
+/* HEADER */
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .h-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
@@ -26,46 +28,89 @@ body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
 
-/* section label */
+/* SECTION LABEL */
 .sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
 body.light .sec-lbl{color:rgba(0,0,0,.28);}
 
-/* grids */
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-@media(max-width:600px){.g4{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:480px){.g3{grid-template-columns:repeat(2,1fr);}}
+/* ── MONEY STRIP: 4 finance cards ── */
+.money-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:640px){.money-strip{grid-template-columns:repeat(2,1fr);}}
+.m-card{padding:16px 18px;position:relative;overflow:hidden;}
+.m-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--accent,var(--g));border-radius:99px 0 0 99px;opacity:.8;}
+.m-card:hover::before{opacity:1;}
+.m-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.42);margin-bottom:9px;display:block;}
+body.light .m-lbl{color:rgba(0,0,0,.38);}
+.m-val{font-size:24px;font-weight:900;letter-spacing:-1.2px;line-height:1;color:var(--accent,var(--g));}
+body.light .m-val{color:var(--accent,#5C9900);}
+.m-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.2);margin-top:7px;}
+body.light .m-sub{color:rgba(0,0,0,.28);}
 
-/* stat card */
-.stat{padding:16px 18px;position:relative;}
-.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.6;}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
-body.light .s-lbl{color:rgba(0,0,0,.4);}
-.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
-body.light .s-val{color:#5C9900;}
-.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
-body.light .s-sub{color:rgba(0,0,0,.28);}
+/* ── DOCUMENT STATUS TABLE ── */
+.doc-card{padding:18px 22px;}
+.doc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.doc-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.8);}
+body.light .doc-title{color:rgba(0,0,0,.7);}
+.doc-table{width:100%;border-collapse:collapse;}
+.doc-table th{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.22);padding-bottom:8px;text-align:center;}
+.doc-table th:first-child{text-align:left;}
+body.light .doc-table th{color:rgba(0,0,0,.28);}
+.doc-table td{padding:9px 4px;border-top:1px solid rgba(255,255,255,.05);vertical-align:middle;}
+body.light .doc-table td{border-top-color:rgba(0,0,0,.06);}
+.doc-table td:first-child{font-size:11px;font-weight:700;color:rgba(255,255,255,.55);padding-left:0;}
+body.light .doc-table td:first-child{color:rgba(0,0,0,.45);}
+.doc-table .center{text-align:center;}
+/* pill badges */
+.pill{display:inline-block;font-size:12px;font-weight:900;letter-spacing:-.5px;padding:3px 10px;border-radius:6px;min-width:34px;text-align:center;}
+.pill-draft{background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);}
+body.light .pill-draft{background:rgba(0,0,0,.06);color:rgba(0,0,0,.4);}
+.pill-issued{background:rgba(170,255,0,.1);color:#AAFF00;border:1px solid rgba(170,255,0,.18);}
+body.light .pill-issued{background:rgba(92,153,0,.1);color:#5C9900;border-color:rgba(92,153,0,.2);}
+.pill-approved{background:rgba(52,211,153,.12);color:#34D399;border:1px solid rgba(52,211,153,.2);}
+body.light .pill-approved{background:rgba(16,160,96,.1);color:#10A060;border-color:rgba(16,160,96,.18);}
+.pill-rejected{background:rgba(255,107,107,.1);color:#FF6B6B;border:1px solid rgba(255,107,107,.18);}
+body.light .pill-rejected{background:rgba(200,50,50,.08);color:#C83232;border-color:rgba(200,50,50,.14);}
 
-/* invoice card — bigger RM amount */
-.inv-stat{padding:18px 20px;position:relative;}
-.inv-stat .s-dot{top:16px;right:16px;}
-.inv-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:12px;display:block;}
-body.light .inv-lbl{color:rgba(0,0,0,.4);}
-.inv-val{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;color:var(--g);}
-.inv-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);margin-top:6px;}
-body.light .inv-count{color:rgba(0,0,0,.3);}
-.expense{color:#FF6B6B !important;}
-.s-dot.orange{background:#FF9500;}
+/* ── INVOICE BREAKDOWN ── */
+.inv-card{padding:18px 22px;}
+.inv-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.inv-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.8);}
+body.light .inv-title{color:rgba(0,0,0,.7);}
+.inv-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.03);}
+body.light .inv-cols{background:rgba(0,0,0,.03);}
+.inv-col{padding:14px 16px;border-right:1px solid rgba(255,255,255,.05);}
+.inv-col:last-child{border-right:none;}
+body.light .inv-col{border-right-color:rgba(0,0,0,.06);}
+.inv-col-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.35);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+body.light .inv-col-lbl{color:rgba(0,0,0,.38);}
+.inv-col-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.inv-col-amt{font-size:20px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.inv-col-count{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:5px;}
+body.light .inv-col-count{color:rgba(0,0,0,.28);}
+/* proportional progress bar */
+.inv-bar-wrap{margin-top:14px;}
+.inv-bar-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;display:flex;}
+body.light .inv-bar-track{background:rgba(0,0,0,.07);}
+.inv-seg{height:100%;transition:width .9s cubic-bezier(.4,0,.2,1);border-radius:0;}
+.inv-seg:first-child{border-radius:999px 0 0 999px;}
+.inv-seg:last-child{border-radius:0 999px 999px 0;}
+.inv-bar-legend{display:flex;gap:14px;margin-top:8px;}
+.inv-leg-item{display:flex;align-items:center;gap:5px;}
+.inv-leg-dot{width:6px;height:6px;border-radius:50%;}
+.inv-leg-txt{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);}
+body.light .inv-leg-txt{color:rgba(0,0,0,.3);}
+
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
 body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
-body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </style></head><body>
 
 <div class="header">
-  <div><p class="eyebrow">Revenue OS</p><h1 class="h-title">Billing Overview</h1></div>
+  <div>
+    <p class="eyebrow">Opxio &middot; Revenue OS</p>
+    <h1 class="h-title">Billing Overview</h1>
+  </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -73,127 +118,160 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   </div>
 </div>
 
-<!-- QUOTATIONS BY STATUS -->
-<div class="sec-lbl">Quotations</div>
-<div class="g4">
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Draft</span>
-    <div class="s-val" id="q-draft">0</div>
-    <div class="s-sub">Not yet sent</div>
+<!-- ── MONEY STRIP ── -->
+<div class="sec-lbl">Financial Position</div>
+<div class="money-strip">
+  <div class="card m-card">
+    <span class="m-lbl">Proposal Pipeline</span>
+    <div class="m-val" id="m-pipeline">—</div>
+    <div class="m-sub" id="m-pipeline-sub">—</div>
   </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Issued</span>
-    <div class="s-val" id="q-issued">0</div>
-    <div class="s-sub">Sent, awaiting reply</div>
+  <div class="card m-card" style="--accent:#FBBF24;">
+    <span class="m-lbl">Deposit Pending</span>
+    <div class="m-val" id="m-deposit">—</div>
+    <div class="m-sub" id="m-deposit-sub">—</div>
   </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Approved</span>
-    <div class="s-val" id="q-approved">0</div>
-    <div class="s-sub">Client confirmed</div>
+  <div class="card m-card" style="--accent:#FB923C;">
+    <span class="m-lbl">Balance Pending</span>
+    <div class="m-val" id="m-balance">—</div>
+    <div class="m-sub" id="m-balance-sub">—</div>
   </div>
-  <div class="card stat">
-    <div class="s-dot orange"></div>
-    <span class="s-lbl">Rejected</span>
-    <div class="s-val expense" id="q-rejected">0</div>
-    <div class="s-sub">Declined or expired</div>
+  <div class="card m-card">
+    <span class="m-lbl">Total Collected</span>
+    <div class="m-val" id="m-collected">—</div>
+    <div class="m-sub" id="m-collected-sub">—</div>
   </div>
 </div>
 
-<!-- PROPOSALS CRM BY STATUS -->
-<div class="sec-lbl">Proposals</div>
-<div class="g4">
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Draft</span>
-    <div class="s-val" id="p-draft">0</div>
-    <div class="s-sub">In progress</div>
+<!-- ── DOCUMENT STATUS ── -->
+<div class="sec-lbl">Document Status</div>
+<div class="card doc-card">
+  <div class="doc-hdr">
+    <span class="doc-title">Quotations &amp; Proposals</span>
   </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Sent</span>
-    <div class="s-val" id="p-sent">0</div>
-    <div class="s-sub">Awaiting decision</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <span class="s-lbl">Accepted</span>
-    <div class="s-val" id="p-accepted">0</div>
-    <div class="s-sub">Client signed off</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot orange"></div>
-    <span class="s-lbl">Rejected</span>
-    <div class="s-val expense" id="p-rejected">0</div>
-    <div class="s-sub">Declined</div>
-  </div>
-</div>
-<div class="card stat" style="margin-top:10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
-  <span class="s-lbl" style="margin-bottom:0;">Pipeline Value</span>
-  <span style="font-size:20px;font-weight:900;letter-spacing:-1px;color:var(--g);" id="p-value">RM 0</span>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:100px;"></th>
+        <th>Draft</th>
+        <th>Issued / Sent</th>
+        <th>Approved</th>
+        <th>Rejected</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Quotations</td>
+        <td class="center"><span class="pill pill-draft" id="q-draft">0</span></td>
+        <td class="center"><span class="pill pill-issued" id="q-issued">0</span></td>
+        <td class="center"><span class="pill pill-approved" id="q-approved">0</span></td>
+        <td class="center"><span class="pill pill-rejected" id="q-rejected">0</span></td>
+      </tr>
+      <tr>
+        <td>Proposals</td>
+        <td class="center"><span class="pill pill-draft" id="p-draft">0</span></td>
+        <td class="center"><span class="pill pill-issued" id="p-sent">0</span></td>
+        <td class="center"><span class="pill pill-approved" id="p-accepted">0</span></td>
+        <td class="center"><span class="pill pill-rejected" id="p-rejected">0</span></td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<!-- INVOICES BY STATUS -->
-<div class="sec-lbl">Invoices</div>
-<div class="g3">
-  <div class="card inv-stat">
-    <div class="s-dot"></div>
-    <span class="inv-lbl">Deposit Pending</span>
-    <div class="inv-val" id="i-deposit">RM 0</div>
-    <div class="inv-count" id="i-deposit-count">0 invoices</div>
+<!-- ── INVOICE BREAKDOWN ── -->
+<div class="sec-lbl">Invoice Breakdown</div>
+<div class="card inv-card">
+  <div class="inv-hdr">
+    <span class="inv-title">Outstanding &amp; Collected</span>
   </div>
-  <div class="card inv-stat">
-    <div class="s-dot"></div>
-    <span class="inv-lbl">Balance Pending</span>
-    <div class="inv-val" id="i-balance">RM 0</div>
-    <div class="inv-count" id="i-balance-count">0 invoices</div>
+  <div class="inv-cols">
+    <div class="inv-col">
+      <div class="inv-col-lbl"><span class="inv-col-dot" style="background:#FBBF24;"></span>Deposit Pending</div>
+      <div class="inv-col-amt" style="color:#FBBF24;" id="i-deposit">—</div>
+      <div class="inv-col-count" id="i-deposit-n">—</div>
+    </div>
+    <div class="inv-col">
+      <div class="inv-col-lbl"><span class="inv-col-dot" style="background:#FB923C;"></span>Balance Pending</div>
+      <div class="inv-col-amt" style="color:#FB923C;" id="i-balance">—</div>
+      <div class="inv-col-count" id="i-balance-n">—</div>
+    </div>
+    <div class="inv-col">
+      <div class="inv-col-lbl"><span class="inv-col-dot" style="background:#AAFF00;"></span>Total Collected</div>
+      <div class="inv-col-amt" style="color:#AAFF00;" id="i-paid">—</div>
+      <div class="inv-col-count" id="i-paid-n">—</div>
+    </div>
   </div>
-  <div class="card inv-stat">
-    <div class="s-dot"></div>
-    <span class="inv-lbl">Fully Paid</span>
-    <div class="inv-val" id="i-paid">RM 0</div>
-    <div class="inv-count" id="i-paid-count">0 invoices</div>
+  <div class="inv-bar-wrap">
+    <div class="inv-bar-track">
+      <div class="inv-seg" id="bar-deposit" style="background:#FBBF24;width:0%;"></div>
+      <div class="inv-seg" id="bar-balance" style="background:#FB923C;width:0%;"></div>
+      <div class="inv-seg" id="bar-paid"    style="background:#AAFF00;width:0%;"></div>
+    </div>
+    <div class="inv-bar-legend">
+      <div class="inv-leg-item"><div class="inv-leg-dot" style="background:#FBBF24;"></div><span class="inv-leg-txt">Deposit pending</span></div>
+      <div class="inv-leg-item"><div class="inv-leg-dot" style="background:#FB923C;"></div><span class="inv-leg-txt">Balance pending</span></div>
+      <div class="inv-leg-item"><div class="inv-leg-dot" style="background:#AAFF00;"></div><span class="inv-leg-txt">Collected</span></div>
+    </div>
   </div>
 </div>
 
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
-function apiUrl(path){ return _tok ? path+'?token='+encodeURIComponent(_tok) : path; }
-let light=false;
-function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
-function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';setTimeout(()=>{b.textContent='↻ Refresh';b.style.opacity='1';setTs();},800);}
-setTs();setInterval(doRefresh,5*60*1000);
+function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
+let light = false;
+function toggleMode(){ light=!light; document.body.classList.toggle('light',light); document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light'; }
+function setTs(){ document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 
 function fmtRM(n){
+  if(!n) return 'RM 0';
+  if(n>=1000000) return 'RM '+(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
   if(n>=1000) return 'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
   return 'RM '+Math.round(n).toLocaleString();
 }
+function plural(n, w){ return n+' '+w+(n===1?'':'s'); }
 
 function render(d){
+  // Money strip
+  document.getElementById('m-pipeline').textContent    = fmtRM(d.pValue);
+  document.getElementById('m-pipeline-sub').textContent = plural(d.pDraft + d.pSent, 'active proposal');
+  document.getElementById('m-deposit').textContent     = fmtRM(d.iDepositAmt);
+  document.getElementById('m-deposit-sub').textContent  = plural(d.iDepositCount, 'invoice');
+  document.getElementById('m-balance').textContent     = fmtRM(d.iBalanceAmt);
+  document.getElementById('m-balance-sub').textContent  = plural(d.iBalanceCount, 'invoice');
+  document.getElementById('m-collected').textContent   = fmtRM(d.iPaidAmt);
+  document.getElementById('m-collected-sub').textContent = plural(d.iPaidCount, 'invoice');
+
+  // Document status pills
   document.getElementById('q-draft').textContent    = d.qDraft;
   document.getElementById('q-issued').textContent   = d.qIssued;
   document.getElementById('q-approved').textContent = d.qApproved;
   document.getElementById('q-rejected').textContent = d.qRejected;
-
   document.getElementById('p-draft').textContent    = d.pDraft;
   document.getElementById('p-sent').textContent     = d.pSent;
   document.getElementById('p-accepted').textContent = d.pAccepted;
   document.getElementById('p-rejected').textContent = d.pRejected;
-  document.getElementById('p-value').textContent    = fmtRM(d.pValue);
 
-  document.getElementById('i-deposit').textContent       = fmtRM(d.iDepositAmt);
-  document.getElementById('i-deposit-count').textContent = d.iDepositCount + ' invoice' + (d.iDepositCount!==1?'s':'');
-  document.getElementById('i-balance').textContent       = fmtRM(d.iBalanceAmt);
-  document.getElementById('i-balance-count').textContent = d.iBalanceCount + ' invoice' + (d.iBalanceCount!==1?'s':'');
-  document.getElementById('i-paid').textContent          = fmtRM(d.iPaidAmt);
-  document.getElementById('i-paid-count').textContent    = d.iPaidCount + ' invoice' + (d.iPaidCount!==1?'s':'');
+  // Invoice breakdown
+  document.getElementById('i-deposit').textContent = fmtRM(d.iDepositAmt);
+  document.getElementById('i-deposit-n').textContent = plural(d.iDepositCount, 'invoice');
+  document.getElementById('i-balance').textContent  = fmtRM(d.iBalanceAmt);
+  document.getElementById('i-balance-n').textContent = plural(d.iBalanceCount, 'invoice');
+  document.getElementById('i-paid').textContent     = fmtRM(d.iPaidAmt);
+  document.getElementById('i-paid-n').textContent   = plural(d.iPaidCount, 'invoice');
+
+  // Proportional bar
+  const tot = d.iDepositAmt + d.iBalanceAmt + d.iPaidAmt;
+  if(tot > 0){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      document.getElementById('bar-deposit').style.width = ((d.iDepositAmt/tot)*100).toFixed(1)+'%';
+      document.getElementById('bar-balance').style.width = ((d.iBalanceAmt/tot)*100).toFixed(1)+'%';
+      document.getElementById('bar-paid').style.width    = ((d.iPaidAmt/tot)*100).toFixed(1)+'%';
+    }));
+  }
 }
 
 async function loadData(){
-  try {
+  try{
     const r = await fetch(apiUrl('/api/data/finance'));
     const j = await r.json();
     const q = j.quotations || {}, inv = j.invoices || {}, pr = j.proposals || {};
@@ -215,9 +293,15 @@ async function loadData(){
       iPaidCount: inv.paid?.count || 0,
     });
     setTs();
-  } catch(e){ console.error('finance widget:', e); }
+  }catch(e){ console.error('billing widget:',e); }
 }
+
+function doRefresh(){
+  const b=document.getElementById('rb');
+  b.textContent='↻'; b.style.opacity='.4';
+  loadData().then(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; });
+}
+
 loadData();
-function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
 setInterval(loadData, 5*60*1000);
 </script></body></html>
