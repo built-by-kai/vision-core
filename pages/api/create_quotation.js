@@ -10,7 +10,7 @@
 //
 // DBs: Quotations, Leads CRM, Companies, Catalogue (Products)
 
-import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
+import { getPage, patchPage, createPage, queryDB, plain, DB } from "../../lib/notion"
 
 
 function hdrs() {
@@ -360,25 +360,34 @@ async function ensureProductRelation(dbId) {
 }
 
 // ── Create a single line item ──────────────────────────────────────────────
-async function createLineItem(dbId, product, retry = true) {
-  const props = {
+async function createLineItem(dbId, product) {
+  // Base props — no description field yet (column name varies by template)
+  const baseProps = {
     "Notes": { title: [] },
     "Qty":   { number: 1 },
     ...(product.id ? { "Product": { relation: [{ id: product.id }] } } : {}),
     ...(product.price != null ? { "Unit Price": { number: Number(product.price) } } : {}),
-    ...(product.description ? { "Description": { rich_text: [{ text: { content: product.description } }] } } : {}),
   }
-  const r = await fetch("https://api.notion.com/v1/pages", {
-    method: "POST", headers: hdrs(),
-    body:   JSON.stringify({ parent: { database_id: dbId }, properties: props }),
-  })
-  if (!r.ok && retry) {
-    // Retry without Description
-    const p2 = { ...props }; delete p2.Description
-    await fetch("https://api.notion.com/v1/pages", {
+
+  // Try each known description column name in order
+  const descColumns = product.description
+    ? ["Product Description", "Description", "Details"]
+    : []
+
+  for (const col of [...descColumns, null]) {
+    const props = col
+      ? { ...baseProps, [col]: { rich_text: [{ text: { content: product.description.slice(0, 2000) } }] } }
+      : baseProps
+    const r = await fetch("https://api.notion.com/v1/pages", {
       method: "POST", headers: hdrs(),
-      body:   JSON.stringify({ parent: { database_id: dbId }, properties: p2 }),
+      body:   JSON.stringify({ parent: { database_id: dbId }, properties: props }),
     })
+    if (r.ok) return await r.json()
+    if (col === null) {
+      // Last attempt failed — log the error
+      const text = await r.text()
+      console.warn(`[createLineItem] all attempts failed: ${r.status} ${text.slice(0, 200)}`)
+    }
   }
 }
 
@@ -486,8 +495,11 @@ export default async function handler(req, res) {
       try { await patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, process.env.NOTION_API_KEY) } catch {}
     }
 
-    console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType })
-    return res.status(200).json({ status: "ok", quotId, quotUrl, foundViaNotion, quoteType })
+    console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType, productFound: !!product?.id })
+    return res.status(200).json({
+      status: "ok", quotId, quotUrl, foundViaNotion, quoteType,
+      productFound: !!product?.id, productName: product?.name ?? null,
+    })
 
   } catch (e) {
     console.error("[create_quotation] fatal:", e)
