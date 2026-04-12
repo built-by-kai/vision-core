@@ -35,8 +35,27 @@ async function mapQuotationPayload(body) {
     return '';
   };
 
-  // OS type — "Package Type" on Quotation is rich_text
-  const osType = txt(props['Package Type']) || txt(props['OS Type']) || '';
+  // OS type — "Package Type" on Quotation is rich_text (full product name from DB,
+  // e.g. "Business OS (Revenue OS + Operations OS)"). Normalize to the short key
+  // used in OS_DEFAULT_MODULES ("Business OS", "Revenue OS", etc.)
+  const rawPkg = txt(props['Package Type']) || txt(props['OS Type']) || '';
+  const OS_TYPE_NORM = {
+    'business os':    'Business OS',
+    'revenue os':     'Revenue OS',
+    'sales os':       'Revenue OS',
+    'operations os':  'Operations OS',
+    'marketing os':   'Marketing OS',
+    'agency os':      'Agency OS',
+    'full platform':  'Agency OS',
+    'team os':        'Team OS',
+    'retention os':   'Retention OS',
+    'intelligence os':'Intelligence OS',
+    'starter os':     'Starter OS',
+    'micro install':  'Micro Install',
+  };
+  const rawLower = rawPkg.toLowerCase();
+  const osType = Object.entries(OS_TYPE_NORM).reduce((found, [key, val]) =>
+    found || (rawLower.startsWith(key) ? val : null), null) || rawPkg;
 
   // Ref number from Notion unique_id
   const uid = props['Quotation No.']?.unique_id;
@@ -240,17 +259,14 @@ export default async function handler(req, res) {
       }
     }
 
-    // Validate only the truly blocking fields — company name and OS type.
-    // fee=0 is valid, contact_name can be blank (renders gracefully).
-    if (!proposalData.company_name) {
-      return res.status(400).json({ error: 'Missing required field: company_name' });
-    }
+    // Validate: OS type is the only hard requirement — modules derive from it.
+    // company_name, contact_name, fee can all be blank and still render gracefully.
     if (!proposalData.os_type) {
-      return res.status(400).json({ error: 'Missing required field: os_type — set OS Type on the Notion page first.' });
+      return res.status(400).json({ error: 'Set Package Type on the Quotation page first, then generate.' });
     }
-    // Modules must exist after auto-prefill
+    // Modules must exist — if still empty after auto-prefill, OS type wasn't recognised
     if (!proposalData.modules || Object.keys(proposalData.modules).length === 0) {
-      return res.status(400).json({ error: 'Missing required field: modules — set OS Type so defaults can be applied.' });
+      return res.status(400).json({ error: `OS type "${proposalData.os_type}" not recognised — check Package Type value.` });
     }
 
     const html = renderProposal(proposalData);
