@@ -11,6 +11,8 @@ import {
   fetchQuotationData, fetchInvoiceData, fetchProposalData,
   generateQuotationPdf, generateInvoicePdf, generateReceiptPdf
 } from "../../lib/pdf"
+import { renderProposal, OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from "../../lib/proposal_template"
+import { htmlToPdf } from "../../lib/puppeteer"
 import { uploadBlob } from "../../lib/blob"
 import { patchPage, getPage, plain, fetchCompanyDetails } from "../../lib/notion"
 
@@ -48,8 +50,48 @@ async function handleQuotation(pageId) {
 }
 
 async function handleProposal(pageId) {
-  const data     = await fetchProposalData(pageId, process.env.NOTION_API_KEY)
-  const pdfBuf   = await generateQuotationPdf(data)  // docType=Proposal handled inside
+  const data = await fetchProposalData(pageId, process.env.NOTION_API_KEY)
+
+  // ── Map fetched data → renderProposal format ────────────────────────────
+  const osType    = data.os_type || ""
+  const modules   = OS_DEFAULT_MODULES[osType] || {}
+  const addonsLater = OS_DEFAULT_ADDONS_LATER[osType] || []
+
+  // Derive fee from line items total (sum all except Base OS if desired)
+  const fee = (data.line_items || []).reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0) || data.fee || 0
+
+  // Format dates for display
+  function fmtDate(iso) {
+    if (!iso) return ""
+    const d = new Date(iso)
+    return d.toLocaleDateString("en-MY", { day: "numeric", month: "long", year: "numeric" })
+  }
+
+  const templateData = {
+    ref_number:    data.proposal_no,
+    date:          fmtDate(data.issue_date) || new Date().toLocaleDateString("en-MY", { month: "long", year: "numeric" }),
+    valid_until:   fmtDate(data.valid_until),
+    company_name:  data.company_name || "Client",
+    contact_name:  data.pic_name     || "",
+    contact_role:  data.pic_role     || "",
+    whatsapp:      data.pic_phone    || "",
+    email:         "hello@opxio.io",
+    website:       "opxio.io",
+    os_type:       osType,
+    install_tier:  "Standard",
+    notion_plan:   "Plus",
+    timeline:      "3–4 weeks",
+    fee,
+    retainer:      "maintenance",
+    situation:     [],         // stripped from simplified DB — left blank
+    modules,
+    addons_now:    [],
+    addons_later:  addonsLater,
+  }
+
+  const html   = renderProposal(templateData)
+  const pdfBuf = await htmlToPdf(html)
+
   const filename = `proposals/${data.proposal_no || pageId}.pdf`
   const { url }  = await uploadBlob(filename, pdfBuf)
   const pdfUrl   = `${url}?v=${Date.now()}`
