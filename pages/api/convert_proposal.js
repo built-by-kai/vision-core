@@ -155,6 +155,7 @@ export default async function handler(req, res) {
     const payTerms   = pp["Payment Terms"]?.select?.name || "50% Deposit"
     const quoteType  = pp["Quote Type"]?.select?.name || "New Business"
     const proposalNo = plain(pp["Ref Number"]?.title || [])
+    const leadIds    = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
 
     // Company name for package type field (rich text in Quotations)
     let packageName = osType
@@ -202,6 +203,18 @@ export default async function handler(req, res) {
     await patchPage(propId, {
       "Status": { select: { name: "Converted" } },
     }, process.env.NOTION_API_KEY)
+
+    // ── 7. Advance Lead stage → "Quotation Issued" ───────────────────────────
+    if (leadIds.length) {
+      try {
+        await patchPage(leadIds[0], {
+          "Stage": { status: { name: "Quotation Issued" } },
+        }, process.env.NOTION_API_KEY)
+        console.log("[convert_proposal] lead stage → Quotation Issued:", leadIds[0])
+      } catch (e) {
+        console.warn("[convert_proposal] could not advance lead stage:", e.message)
+      }
+    }
 
     console.log("[convert_proposal] done →", quotId)
     return res.status(200).json({
