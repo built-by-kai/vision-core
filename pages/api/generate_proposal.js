@@ -6,7 +6,7 @@
 // trick is applied BEFORE the module is first loaded (required for Node 24+
 // on Vercel, where @sparticuz/chromium's auto-detection only handles Node ≤22).
 
-import { renderProposal, mapNotionPayload } from '../../lib/proposal_template.js';
+import { renderProposal, mapNotionPayload, getPrefillPayload } from '../../lib/proposal_template.js';
 import { uploadBlob } from '../../lib/blob.js';
 
 export const config = {
@@ -45,6 +45,39 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ─── PREFILL MODE ──────────────────────────────────────────────────────
+    // ?action=prefill — patches Notion page with OS-type defaults so the user
+    // can review/edit module and add-on fields before generating the PDF.
+    if (req.query.action === 'prefill') {
+      const notionPageId = req.body.data?.id || req.body.id;
+      const props = req.body.data?.properties || req.body.properties || {};
+      const osType = props['OS Type']?.select?.name || '';
+
+      if (!notionPageId || !osType) {
+        return res.status(400).json({ error: 'Missing page ID or OS Type — set OS Type first, then pre-fill.' });
+      }
+
+      const patchProperties = getPrefillPayload(osType);
+
+      const notionRes = await fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${process.env.NOTION_API_KEY}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ properties: patchProperties }),
+      });
+
+      if (!notionRes.ok) {
+        const err = await notionRes.json();
+        return res.status(500).json({ error: 'Notion patch failed', details: err });
+      }
+
+      return res.status(200).json({ success: true, prefilled: true, os_type: osType });
+    }
+
+    // ─── GENERATE PDF MODE ────────────────────────────────────────────────
     let proposalData = null;
     let notionPageId = null;
     const isNotionMode = req.query.source === 'notion';
@@ -124,3 +157,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
