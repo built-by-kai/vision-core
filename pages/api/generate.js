@@ -89,12 +89,26 @@ async function handleProposal(pageId) {
     addons_later:  addonsLater,
   }
 
-  const html   = renderProposal(templateData)
-  const pdfBuf = await htmlToPdf(html)
+  let html, pdfBuf, pdfUrl
+  try {
+    html   = renderProposal(templateData)
+    console.log("[generate:proposal] HTML rendered, launching Puppeteer...")
+    pdfBuf = await htmlToPdf(html)
+    console.log("[generate:proposal] PDF generated, uploading...")
+  } catch (puppeteerErr) {
+    // Write error to Notion page so we can see what's failing
+    const errMsg = puppeteerErr?.message || String(puppeteerErr)
+    console.error("[generate:proposal] Puppeteer error:", errMsg)
+    await patchPage(pageId, {
+      "Status": { select: { name: "Draft" } },
+      "PDF":    { url: `https://opxio.io?err=${encodeURIComponent(errMsg.slice(0, 200))}` },
+    }, process.env.NOTION_API_KEY).catch(() => {})
+    throw puppeteerErr
+  }
 
   const filename = `proposals/${data.proposal_no || pageId}.pdf`
   const { url }  = await uploadBlob(filename, pdfBuf)
-  const pdfUrl   = `${url}?v=${Date.now()}`
+  pdfUrl = `${url}?v=${Date.now()}`
 
   await patchPage(pageId, {
     "PDF":    { url: pdfUrl },
