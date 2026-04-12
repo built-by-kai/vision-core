@@ -434,9 +434,22 @@ export default async function handler(req, res) {
     // ── 2. Find or create quotation page ────────────────────────────────────
     let quotId = null, quotUrl = null, foundViaNotion = false
 
-    // ── 2. Find or create the quotation page ────────────────────────────────
     if (sourceType === "lead") {
-      const recent = await findQuotationFromLead(props)
+      // Notion's button fires the webhook BEFORE it finishes updating the
+      // bidirectional Quotation relation on the lead page. If we find nothing,
+      // wait 2.5s and re-fetch the lead page to get the updated relation.
+      let recent = await findQuotationFromLead(props)
+      if (!recent) {
+        console.log("[create_quotation] quotation not in relation yet — retrying after 2.5s")
+        await new Promise(r => setTimeout(r, 2500))
+        try {
+          const freshLead = await getPage(leadId, process.env.NOTION_API_KEY)
+          recent = await findQuotationFromLead(freshLead.properties)
+          if (recent) console.log("[create_quotation] found quotation on retry")
+        } catch (e) {
+          console.warn("[create_quotation] retry fetch failed:", e.message)
+        }
+      }
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
         console.log("[create_quotation] found quotation via lead relation:", quotId)
