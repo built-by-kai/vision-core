@@ -21,16 +21,16 @@ body.light .ts{color:rgba(0,0,0,.22);}
 
 /* stat cards */
 .stat{padding:18px 18px 16px;position:relative;}
-.stat-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);opacity:.5;}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);opacity:1;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(255,255,255,.2),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
 .stat:hover::before{opacity:1;}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.38);margin-bottom:10px;}
-body.light .s-lbl{color:rgba(0,0,0,.38);}
-.s-val{font-size:36px;font-weight:900;letter-spacing:-2px;line-height:1;color:rgba(255,255,255,.25);}
-body.light .s-val{color:rgba(0,0,0,.2);}
-.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.15);margin-top:7px;}
-body.light .s-sub{color:rgba(0,0,0,.22);}
-.s-tag{display:inline-block;margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.06);}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55);margin-bottom:10px;}
+body.light .s-lbl{color:rgba(0,0,0,.45);}
+.s-val{font-size:36px;font-weight:900;letter-spacing:-2px;line-height:1;color:rgba(255,255,255,.85);}
+body.light .s-val{color:rgba(0,0,0,.65);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.35);margin-top:7px;}
+body.light .s-sub{color:rgba(0,0,0,.35);}
+.s-tag{display:inline-block;margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);}
 
 /* active deal accent (Building) */
 .stat.is-active .stat-dot{background:var(--g);opacity:.6;}
