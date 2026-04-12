@@ -255,49 +255,86 @@ async function createLineItem(dbId, product) {
 
 // ─── Convert Lead → Deal ──────────────────────────────────────────────────────
 // Called by ?type=deal  (Notion "Convert to Deal" button on Leads page)
-async function handleConvertToDeal(leadId, res) {
-  const lead      = await getPage(leadId, process.env.NOTION_API_KEY)
-  const lp        = lead.properties
+//
+// Button setup — two actions:
+//   Action 1: "Add page to Deals DB" — Notion creates the Deal page from template.
+//             In the button config, set "Lead Source" = current Lead page.
+//             This creates the bidirectional link before the webhook fires.
+//   Action 2: "Send webhook" → POST /api/create_proposal with {"type":"deal"}
+//             Webhook finds the newly created Deal via Lead.Deal relation,
+//             patches all data in, advances Lead stage → Converted.
+//
+// Fallback: if the two-action button isn't set up, the handler creates
+// the Deal page itself (same end result).
 
-  const companyIds = (lp.Company?.relation  || []).map(r => r.id.replace(/-/g, ""))
+async function findDealFromLead(leadProps, maxAgeSeconds = 180) {
+  // Primary: check the Lead.Deal relation (set by Action 1 button)
+  const dealIds = (leadProps.Deal?.relation || []).map(r => r.id.replace(/-/g, ""))
+  for (const id of dealIds) {
+    try {
+      const dp = await getPage(id, process.env.NOTION_API_KEY)
+      const age = (Date.now() - new Date(dp.created_time).getTime()) / 1000
+      if (age < maxAgeSeconds) return dp
+    } catch {}
+  }
+  return null
+}
+
+async function handleConvertToDeal(leadId, res) {
+  const token = process.env.NOTION_API_KEY
+  const lead  = await getPage(leadId, token)
+  const lp    = lead.properties
+
+  const companyIds = (lp.Company?.relation    || []).map(r => r.id.replace(/-/g, ""))
   const picIds     = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
   const osInterest = lp["OS Interest"]?.select?.name || ""
   const addons     = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
   const situation  = plain(lp.Situation?.rich_text || [])
-  const notes      = plain(lp.Notes?.rich_text || [])
+  const notes      = plain(lp.Notes?.rich_text     || [])
+  const leadName   = lp["Lead Name"]?.title?.[0]?.plain_text || ""
 
-  // Map OS Interest → Package Type for Deals DB
-  const packageType = osInterest
+  // ── Find or create the Deal page ──────────────────────────────────────────
+  // If Action 1 already created it (two-action button), find it via Lead.Deal relation
+  // and just patch it. Otherwise create it fresh.
+  let dealPage = await findDealFromLead(lp)
+  let dealId
 
-  const today = new Date().toISOString().split("T")[0]
+  if (dealPage) {
+    dealId = dealPage.id.replace(/-/g, "")
+    console.log(`[convert_to_deal] found existing deal page: ${dealId}`)
+  } else {
+    // Fallback: create the Deal page (single-action button or webhook-only setup)
+    dealPage = await createPage({
+      parent: { database_id: DB.DEALS },
+      properties: {
+        "Lead Name":   { title: [{ text: { content: leadName } }] },
+        "Stage":       { status: { name: "Discovery Done" } },
+        "Lead Source": { relation: [{ id: leadId }] },
+      },
+    }, token)
+    dealId = dealPage.id.replace(/-/g, "")
+    console.log(`[convert_to_deal] created new deal page: ${dealId}`)
+  }
 
-  // Create Deal page in Deals DB
-  const dealProps = {
-    "Lead Name":    { title: [{ text: { content: lp["Lead Name"]?.title?.[0]?.plain_text || "" } }] },
-    "Stage":        { status: { name: "Discovery Done" } },
-    "Lead Source":  { relation: [{ id: leadId }] },
+  // ── Patch all Lead data into the Deal ─────────────────────────────────────
+  await patchPage(dealId, {
+    "Stage":       { status: { name: "Discovery Done" } },
+    "Lead Source": { relation: [{ id: leadId }] },
     ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
     ...(picIds.length     ? { "PIC Name":     { relation: [{ id: picIds[0]     }] } } : {}),
-    ...(packageType       ? { "Package Type": { select: { name: packageType } } } : {}),
+    ...(osInterest        ? { "Package Type": { select: { name: osInterest } } } : {}),
     ...(addons.length     ? { "Add-ons":      { multi_select: addons.map(n => ({ name: n })) } } : {}),
     ...(situation         ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
     ...(notes             ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
-  }
+  }, token)
 
-  const dealPage = await createPage({
-    parent: { database_id: DB.DEALS },
-    properties: dealProps,
-  }, process.env.NOTION_API_KEY)
-
-  const dealId = dealPage.id.replace(/-/g, "")
-
-  // Update Lead: set Deal relation + advance Stage → Converted
+  // ── Update Lead: link Deal + advance Stage → Converted ────────────────────
   await patchPage(leadId, {
     "Deal":  { relation: [{ id: dealId }] },
     "Stage": { status: { name: "Converted" } },
-  }, process.env.NOTION_API_KEY)
+  }, token)
 
-  console.log(`[convert_to_deal] lead ${leadId} → deal ${dealId}`)
+  console.log(`[convert_to_deal] ✓ lead ${leadId} → deal ${dealId}`)
   return res.status(200).json({ status: "ok", leadId, dealId, dealUrl: dealPage.url })
 }
 
