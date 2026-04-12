@@ -5,12 +5,12 @@
 // 1. Detect whether source page is a Lead or Company
 // 2. Find recently Notion-created quotation (from button action 1) OR create new one
 // 3. Patch quotation properties (dates, terms, quote type, company, PIC)
-// 4. Auto-populate line items (Base OS + main product)
+// 4. Auto-populate line items (Base OS + main product + add-ons)
 // 5. Advance Lead stage → Proposed
 //
 // DBs: Quotations, Leads CRM, Companies, Catalogue (Products)
 
-import { getPage, patchPage, createPage, queryDB, plain, DB } from "../../lib/notion"
+import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
 
 function hdrs() {
@@ -21,36 +21,96 @@ function hdrs() {
   }
 }
 
-// ── Package slug maps ──────────────────────────────────────────────────────
+// ── Package slug maps (aligned with Catalogue DB, Apr 2026) ───────────────
 const PACKAGE_SLUG_MAP = {
   "operations os":                  "operations-os",
-  "sales os":                       "sales-os",
+  "sales os":                       "revenue-os",
+  "revenue os":                     "revenue-os",
   "business os":                    "business-os",
-  "business os – phase by phase":   "business-os-phase",
+  "business os – phase by phase":   "business-os",
+  "agency os":                      "full-platform-os",
+  "marketing os":                   "marketing-os",
+  "team os":                        "team-os",
+  "retention os":                   "retention-os",
+  "intelligence os":                "intelligence-os",
   "starter os":                     "starter-os",
+  "micro install":                  "micro-install-1",
+  "micro install — 1 module":       "micro-install-1",
+  "micro install — 2 modules":      "micro-install-2",
+  "micro install — 3 modules":      "micro-install-3",
 }
 
 const INTEREST_SLUG_MAP = {
   "operations os":                      "operations-os",
-  "sales os":                           "sales-os",
+  "sales os":                           "revenue-os",
+  "revenue os":                         "revenue-os",
   "business os":                        "business-os",
+  "agency os":                          "full-platform-os",
+  "marketing os":                       "marketing-os",
+  "team os":                            "team-os",
+  "retention os":                       "retention-os",
   "starter os":                         "starter-os",
   "additional module":                  "addon-system-module",
   "additional system module":           "addon-system-module",
   "automation (within":                 "addon-automation-within",
   "automation (cross":                  "addon-automation-cross",
   "advanced dashboard":                 "addon-dashboard",
+  "enhanced dashboard":                 "addon-dashboard",
   "custom widget":                      "addon-widget",
   "api / external integration":         "addon-api-integration",
   "automation & workflow integration":  "addon-workflow-integration",
   "lead capture system":                "addon-lead-capture",
   "client portal view":                 "addon-client-portal",
   "ai agent integration":               "addon-ai-agent",
+  "ads platform integration":           "addon-ads-integration",
+  "project kickoff":                    "automation-project-kickoff",
+  "campaign kickoff":                   "automation-campaign-kickoff",
+  "onboarding kickoff":                 "automation-onboarding-kickoff",
 }
 
 const OS_PACKAGE_SLUGS = new Set([
-  "operations-os", "sales-os", "business-os", "business-os-phase", "starter-os"
+  "operations-os", "revenue-os", "business-os", "full-platform-os",
+  "marketing-os", "team-os", "retention-os", "intelligence-os",
+  "starter-os", "micro-install-1", "micro-install-2", "micro-install-3",
 ])
+
+// ── Module descriptions per OS slug ───────────────────────────────────────
+const OS_MODULES = {
+  "revenue-os": {
+    "Revenue OS": ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                   "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+  },
+  "operations-os": {
+    "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                      "Team Responsibility Matrix", "SOP & Process Library"],
+  },
+  "marketing-os": {
+    "Marketing OS": ["Campaign Tracker", "Content Production Tracker", "Content Calendar",
+                     "Brand & Asset Library", "Ads Tracker"],
+  },
+  "business-os": {
+    "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                      "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+    "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                      "Team Responsibility Matrix", "SOP & Process Library"],
+  },
+  "full-platform-os": {
+    "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                      "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+    "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                      "Team Responsibility Matrix", "SOP & Process Library"],
+    "Marketing OS":  ["Campaign Tracker", "Content Production Tracker", "Content Calendar",
+                      "Brand & Asset Library", "Ads Tracker"],
+  },
+}
+
+function buildModuleDescription(slug) {
+  const groups = OS_MODULES[slug]
+  if (!groups) return ""
+  return Object.entries(groups)
+    .map(([grp, mods]) => `${grp}: ${mods.join(" · ")}`)
+    .join("\n")
+}
 
 // ── Detect source type ─────────────────────────────────────────────────────
 async function detectSource(pageId) {
@@ -114,12 +174,19 @@ async function extractLeadInfo(props) {
     "automation (within database)":      "addon-automation-within",
     "automation (cross-database)":       "addon-automation-cross",
     "advanced dashboard":                "addon-dashboard",
+    "enhanced dashboard":                "addon-dashboard",
     "custom widget":                     "addon-widget",
     "api / external integration":        "addon-api-integration",
     "automation & workflow (make/n8n)":  "addon-workflow-integration",
     "lead capture system":               "addon-lead-capture",
     "client portal view":                "addon-client-portal",
     "ai agent integration":              "addon-ai-agent",
+    "ads platform integration":          "addon-ads-integration",
+    "project kickoff automation":        "automation-project-kickoff",
+    "campaign kickoff automation":       "automation-campaign-kickoff",
+    "client onboarding kickoff":         "automation-onboarding-kickoff",
+    "renewal kickoff automation":        "automation-renewal-kickoff",
+    "hiring kickoff automation":         "automation-hiring-kickoff",
   }
   for (const item of (props["Add-ons"]?.multi_select || [])) {
     const aSlug = addonSlugMap[item.name.toLowerCase().trim()]
@@ -133,25 +200,36 @@ async function extractLeadInfo(props) {
 }
 
 // ── Find recently Notion-created quotation ─────────────────────────────────
-// Notion button Action 1 creates the quotation (with template) before Action 2
-// fires our webhook. We find it by looking for the most recently created Draft
-// quotation — no Deal Source filter (template can't set relations).
-async function findRecentQuotation(maxAgeSeconds = 120) {
+// Notion button Action 1 creates the quotation page (with template) before
+// Action 2 fires our webhook. The template page has NO Status set — so we
+// can't filter by Status. Instead, sort by created_time and pick the most
+// recent page within a tight time window (60 s).
+async function findRecentQuotation(maxAgeSeconds = 60) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const rows = await queryDB(DB.QUOTATIONS, {
-        property: "Status", select: { equals: "Draft" }
-      }, process.env.NOTION_API_KEY)
-
-      // Sort by created_time descending — most recent first
-      rows.sort((a, b) => new Date(b.created_time) - new Date(a.created_time))
-
-      if (rows.length) {
-        const age = (Date.now() - new Date(rows[0].created_time)) / 1000
-        if (age <= maxAgeSeconds) {
-          const id = rows[0].id.replace(/-/g, "")
-          return { id, url: rows[0].url || `https://notion.so/${id}` }
+      const r = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
+        method:  "POST",
+        headers: hdrs(),
+        body:    JSON.stringify({
+          sorts:     [{ timestamp: "created_time", direction: "descending" }],
+          page_size: 1,
+        }),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        const page = data.results?.[0]
+        if (page) {
+          const age = (Date.now() - new Date(page.created_time)) / 1000
+          console.log(`[create_quotation] findRecentQuotation: newest page age ${age.toFixed(1)}s`)
+          if (age <= maxAgeSeconds) {
+            const id = page.id.replace(/-/g, "")
+            return { id, url: page.url || `https://notion.so/${id}` }
+          }
+          // Page is old → no recent Notion-created page exists
+          return null
         }
+      } else {
+        console.warn(`[create_quotation] findRecentQuotation ${r.status}: ${await r.text()}`)
       }
     } catch (e) {
       console.warn(`[create_quotation] findRecentQuotation attempt ${attempt + 1}:`, e.message)
@@ -162,27 +240,34 @@ async function findRecentQuotation(maxAgeSeconds = 120) {
 }
 
 // ── Patch quotation properties ─────────────────────────────────────────────
-async function patchQuotationProps(quotId, { companyIds, quoteType, leadId }) {
+// PIC is a ROLLUP on the Quotation DB — auto-resolves from Company. Do not patch.
+async function patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName }) {
   const today = new Date().toISOString().split("T")[0]
+  const token = process.env.NOTION_API_KEY
 
   // Status is a select field (not status type) in this DB
   const patches = [
     { "Issue Date":    { date: { start: today } } },
     { "Payment Terms": { select: { name: "50% Deposit" } } },
     { "Status":        { select: { name: "Draft" } } },
-    ...(quoteType ? [{ "Quote Type": { select: { name: quoteType } } }] : []),
+    ...(quoteType    ? [{ "Quote Type":   { select: { name: quoteType } } }] : []),
+    ...(packageName  ? [{ "Package Type": { rich_text: [{ text: { content: packageName } }] } }] : []),
     ...(companyIds.length ? [{ "Company": { relation: [{ id: companyIds[0] }] } }] : []),
   ]
 
   for (const props of patches) {
-    try { await patchPage(quotId, props, process.env.NOTION_API_KEY) } catch {}
+    try {
+      await patchPage(quotId, props, token)
+    } catch (e) {
+      console.warn("[create_quotation] patch prop failed:", Object.keys(props)[0], e.message)
+    }
   }
 
   // Link lead via Deal Source relation
   if (leadId) {
     for (const field of ["Deal Source", "Lead", "Deals", "Source"]) {
       try {
-        await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, process.env.NOTION_API_KEY)
+        await patchPage(quotId, { [field]: { relation: [{ id: leadId }] } }, token)
         break
       } catch {}
     }
@@ -336,7 +421,7 @@ export default async function handler(req, res) {
       const recent = await findRecentQuotation()
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
-        await patchQuotationProps(quotId, { companyIds, quoteType, leadId })
+        await patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName: product?.name })
       }
     }
 
@@ -380,8 +465,9 @@ export default async function handler(req, res) {
           }
         }
 
-        // Main product (row No. 2)
-        await createLineItem(liDbId, product)
+        // Main product (row No. 2) — use module description if available
+        const modDesc = buildModuleDescription(product.slug)
+        await createLineItem(liDbId, { ...product, description: modDesc || product.description })
 
         // Add-ons (rows No. 3+)
         for (const addon of addons) {
