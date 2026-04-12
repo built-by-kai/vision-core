@@ -11,8 +11,7 @@ import {
   fetchQuotationData, fetchInvoiceData, fetchProposalData,
   generateQuotationPdf, generateInvoicePdf, generateReceiptPdf
 } from "../../lib/pdf"
-import { OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from "../../lib/proposal_template"
-import { renderProposal } from "../../lib/proposal_template"
+import { OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER, renderProposal } from "../../lib/proposal_template"
 import { htmlToPdf } from "../../lib/puppeteer"
 import { uploadBlob } from "../../lib/blob"
 import { patchPage, getPage, queryDB, plain, fetchCompanyDetails, DB } from "../../lib/notion"
@@ -272,5 +271,6 @@ export default function handler(req, res) {
 
   waitUntil(work)
 }
+
 
 
