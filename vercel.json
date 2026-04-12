@@ -6,6 +6,9 @@
       "maxDuration": 60
     }
   },
+  "rewrites": [
+    { "source": "/widgets/:name", "destination": "/widgets/:name.html" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
