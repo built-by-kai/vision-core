@@ -285,13 +285,15 @@ async function handleConvertToDeal(leadId, res) {
   const lead  = await getPage(leadId, token)
   const lp    = lead.properties
 
-  const companyIds = (lp.Company?.relation    || []).map(r => r.id.replace(/-/g, ""))
-  const picIds     = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
-  const osInterest = lp["OS Interest"]?.select?.name || ""
-  const addons     = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
-  const situation  = plain(lp.Situation?.rich_text || [])
-  const notes      = plain(lp.Notes?.rich_text     || [])
-  const leadName   = lp["Lead Name"]?.title?.[0]?.plain_text || ""
+  const companyIds    = (lp.Company?.relation    || []).map(r => r.id.replace(/-/g, ""))
+  const picIds        = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+  const osInterest    = lp["OS Interest"]?.select?.name || ""
+  const addons        = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
+  const situation     = plain(lp.Situation?.rich_text || [])
+  const notes         = plain(lp.Notes?.rich_text     || [])
+  const leadName      = plain(lp["Lead Name"]?.title   || [])
+  const discoveryCall = lp["Discovery Call"]?.date?.start || null
+  const sources       = (lp.Source?.multi_select || []).map(s => ({ name: s.name }))
 
   // ── Find or create the Deal page ──────────────────────────────────────────
   // If Action 1 already created it (two-action button), find it via Lead.Deal relation
@@ -320,12 +322,15 @@ async function handleConvertToDeal(leadId, res) {
   await patchPage(dealId, {
     "Stage":       { status: { name: "Discovery Done" } },
     "Lead Source": { relation: [{ id: leadId }] },
-    ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
-    ...(picIds.length     ? { "PIC Name":     { relation: [{ id: picIds[0]     }] } } : {}),
-    ...(osInterest        ? { "Package Type": { select: { name: osInterest } } } : {}),
-    ...(addons.length     ? { "Add-ons":      { multi_select: addons.map(n => ({ name: n })) } } : {}),
-    ...(situation         ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
-    ...(notes             ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
+    ...(leadName          ? { "Lead Name":     { title: [{ text: { content: leadName } }] } } : {}),
+    ...(companyIds.length ? { "Company":       { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(picIds.length     ? { "PIC Name":      { relation: [{ id: picIds[0]     }] } } : {}),
+    ...(osInterest        ? { "Package Type":  { select: { name: osInterest } } } : {}),
+    ...(addons.length     ? { "Add-ons":       { multi_select: addons.map(n => ({ name: n })) } } : {}),
+    ...(situation         ? { "Situation":     { rich_text: [{ text: { content: situation } }] } } : {}),
+    ...(notes             ? { "Notes":         { rich_text: [{ text: { content: notes } }] } } : {}),
+    ...(discoveryCall     ? { "Discovery Call":{ date: { start: discoveryCall } } } : {}),
+    ...(sources.length    ? { "Source":        { multi_select: sources } } : {}),
   }, token)
 
   // ── Update Lead: link Deal + advance Stage → Converted ────────────────────
