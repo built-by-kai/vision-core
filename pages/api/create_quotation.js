@@ -249,20 +249,24 @@ async function patchQuotationProps(quotId, { companyIds, quoteType, leadId, pack
   }
 
   // Single PATCH call with all properties at once (faster, atomic)
+  let patchErrors = []
   try {
     await patchPage(quotId, propPatches, token)
     console.log("[create_quotation] core props patched in one call")
   } catch (e) {
     // If bulk fails, fall back to individual patches
-    console.warn("[create_quotation] bulk patch failed, trying individually:", e.message)
+    console.warn("[create_quotation] bulk patch failed, trying individually:", e.message.slice(0, 300))
+    patchErrors.push(e.message.slice(0, 200))
     await Promise.allSettled(
       Object.entries(propPatches).map(([k, v]) =>
-        patchPage(quotId, { [k]: v }, token).catch(err =>
-          console.warn(`[create_quotation] patch '${k}' failed:`, err.message)
-        )
+        patchPage(quotId, { [k]: v }, token).catch(err => {
+          patchErrors.push(`${k}: ${err.message.slice(0, 150)}`)
+          console.warn(`[create_quotation] patch '${k}' failed:`, err.message.slice(0, 200))
+        })
       )
     )
   }
+  return patchErrors
 
   // Deal Source — try field names until one works
   if (leadId) {
@@ -432,12 +436,13 @@ export default async function handler(req, res) {
     // ── 2. Find or create quotation page ────────────────────────────────────
     let quotId = null, quotUrl = null, foundViaNotion = false
 
+    let patchErrors = []
     if (sourceType === "lead") {
       const recent = await findRecentQuotation()
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
         console.log("[create_quotation] found Notion-created quotation:", quotId)
-        await patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName: product?.name })
+        patchErrors = await patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName: product?.name })
       }
     }
 
@@ -495,10 +500,13 @@ export default async function handler(req, res) {
       try { await patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, process.env.NOTION_API_KEY) } catch {}
     }
 
-    console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType, productFound: !!product?.id })
+    const keyPrefix = (process.env.NOTION_API_KEY || "").slice(0, 12)
+    console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType, productFound: !!product?.id, keyPrefix })
     return res.status(200).json({
       status: "ok", quotId, quotUrl, foundViaNotion, quoteType,
       productFound: !!product?.id, productName: product?.name ?? null,
+      keyPrefix,
+      patchErrors: patchErrors.length ? patchErrors : undefined,
     })
 
   } catch (e) {
