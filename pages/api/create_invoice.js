@@ -109,14 +109,17 @@ async function process(payload) {
     try { await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, process.env.NOTION_API_KEY) } catch {}
   }
 
-  // ── 3. Advance Deal → "Deposit Due" ───────────────────────────────────
+  // ── 3. Advance Lead/Deal → "Awaiting Deposit" ────────────────────────────
+  // For Leads (new clients): Lead stage → "Awaiting Deposit"
+  // For Deals (existing clients): Deal stage → "Awaiting Deposit"
+  // Both have this stage option. This fires when quotation is approved.
   if (leadId) {
     try {
       await patchPage(leadId, {
-        "Stage": { status: { name: "Deposit Due" } }
+        "Stage": { status: { name: "Awaiting Deposit" } }
       }, process.env.NOTION_API_KEY)
     } catch (e) {
-      console.warn("[create_invoice] Lead stage:", e.message)
+      console.warn("[create_invoice] stage advance:", e.message)
     }
   }
 
