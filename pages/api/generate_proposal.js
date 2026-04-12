@@ -63,20 +63,12 @@ export default async function handler(req, res) {
     await browser.close();
 
     if (isNotionMode) {
-      // Upload to Vercel Blob
+      // Upload to Vercel Blob — returns { url, pathname }
       const filename = `proposal-${proposalData.ref_number || 'draft'}.pdf`;
-      const blobUrl = await uploadBlob(filename, pdfBuffer);
+      const { url: pdfUrl } = await uploadBlob(filename, pdfBuffer);
 
-      // Patch the Notion page with the PDF URL
+      // Patch the Notion page PDF property with the blob URL
       const notionApiKey = process.env.NOTION_API_KEY;
-      const patchBody = {
-        properties: {
-          'PDF': {
-            url: blobUrl
-          }
-        }
-      };
-
       await fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
         method: 'PATCH',
         headers: {
@@ -84,13 +76,17 @@ export default async function handler(req, res) {
           'Notion-Version': '2022-06-28',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(patchBody)
+        body: JSON.stringify({
+          properties: {
+            'PDF': { url: pdfUrl }
+          }
+        })
       });
 
       return res.status(200).json({
         success: true,
         filename,
-        pdf_url: blobUrl
+        pdf_url: pdfUrl
       });
     } else {
       // Direct mode: return PDF as download
