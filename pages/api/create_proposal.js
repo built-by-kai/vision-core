@@ -82,6 +82,31 @@ async function fetchProductInfo(slug) {
 }
 
 // ── Find the most recently created proposal (within last 3 min) ────────────
+// ── Find proposal via Lead's Proposals relation (primary) ─────────────────
+// Notion button Action 1 creates proposal page with Deal Source = Lead,
+// which auto-populates Lead.Proposals (bidirectional). We read that to find
+// the newly created proposal — same pattern as create_quotation.js
+async function findProposalFromLead(leadProps, maxAgeSeconds = 180) {
+  const proposalIds = (leadProps.Proposals?.relation || []).map(r => r.id.replace(/-/g, ""))
+  if (!proposalIds.length) return null
+
+  const pages = await Promise.all(proposalIds.map(async id => {
+    try {
+      const p   = await getPage(id, process.env.NOTION_API_KEY)
+      const age = (Date.now() - new Date(p.created_time)) / 1000
+      return age <= maxAgeSeconds ? { id, page: p, age } : null
+    } catch { return null }
+  }))
+
+  const recent = pages.filter(Boolean).sort((a, b) => a.age - b.age)[0]
+  if (recent) {
+    console.log(`[findProposalFromLead] found: ${recent.id.slice(0,8)} age:${recent.age.toFixed(0)}s`)
+    return { id: recent.id }
+  }
+  return null
+}
+
+// ── Fallback: find most recently created proposal page (time-based) ────────
 async function findRecentProposal(maxAgeSeconds = 180) {
   try {
     const r = await fetch(`https://api.notion.com/v1/databases/${DB.PROPOSALS}/query`, {
@@ -97,7 +122,7 @@ async function findRecentProposal(maxAgeSeconds = 180) {
       const age = (now - new Date(row.created_time)) / 1000
       if (age <= maxAgeSeconds) {
         const id = row.id.replace(/-/g, "")
-        console.log(`[findRecentProposal] found: ${id.slice(0,8)} age:${age.toFixed(0)}s`)
+        console.log(`[findRecentProposal] fallback found: ${id.slice(0,8)} age:${age.toFixed(0)}s`)
         return { id, page: row }
       }
     }
@@ -275,8 +300,18 @@ export default async function handler(req, res) {
     console.log("[create_proposal] lead:", leadId, "slug:", slug, "addons:", addonSlugs.length)
 
     // ── 2. Find recently created Proposal page ───────────────────────────────
+    // Primary: via Lead.Proposals bidirectional relation (most reliable)
+    // Fallback: time-based search (if button wasn't set up with Deal Source)
     let propId = null
-    const recent = await findRecentProposal()
+    let recent = await findProposalFromLead(leadProps)
+    if (!recent) {
+      console.log("[create_proposal] relation not found yet — retrying after 2.5s")
+      await new Promise(r => setTimeout(r, 2500))
+      const freshLead = await getPage(leadId, process.env.NOTION_API_KEY)
+      recent = await findProposalFromLead(freshLead.properties)
+    }
+    if (!recent) recent = await findRecentProposal()
+
     if (recent) {
       propId = recent.id
       console.log("[create_proposal] found proposal:", propId)
@@ -305,7 +340,8 @@ export default async function handler(req, res) {
       "Status":        { select: { name: "Draft" } },
       "Date":          { date: { start: today } },
       "Payment Terms": { select: { name: "50% Deposit" } },
-      ...(osName       ? { "OS Type":     { select: { name: osName } } } : {}),
+      "Deal Source":   { relation: [{ id: leadId }] },
+      ...(osName        ? { "OS Type":  { select: { name: osName } } } : {}),
       ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
       ...(picIds.length     ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
     }
