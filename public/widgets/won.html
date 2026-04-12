@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Won Deals</title><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--bal:#F5A623;--balm:rgba(245,166,35,.1);}
+body.light{--g:#5C9900;--gb:rgba(92,153,0,.22);--bal:#C47D00;}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.12);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.07);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;letter-spacing:-.03em;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* stat cards */
+.stat{padding:20px 20px 18px;position:relative;}
+.stat-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.5;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat:hover::before{opacity:1;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-bottom:12px;}
+body.light .s-lbl{color:rgba(0,0,0,.38);}
+.s-val{font-size:40px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--g);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.2);margin-top:9px;}
+body.light .s-sub{color:rgba(0,0,0,.28);}
+.s-tag{display:inline-block;margin-top:10px;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid rgba(170,255,0,.15);}
+
+/* balance due amber accent */
+.stat.is-balance::before{background:linear-gradient(90deg,var(--bal),transparent);}
+.stat.is-balance .stat-dot{background:var(--bal);}
+.stat.is-balance .s-val{color:var(--bal);}
+.stat.is-balance .s-tag{background:rgba(245,166,35,.1);color:var(--bal);border-color:rgba(245,166,35,.2);}
+.stat.is-balance:hover{border-color:rgba(245,166,35,.15);}
+
+/* delivered — strong green */
+.stat.is-delivered::before{opacity:1;}
+
+/* grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:600px){.grid3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:380px){.grid3{grid-template-columns:1fr;}}
+
+/* footer */
+.foot{display:flex;align-items:stretch;gap:0;margin-top:10px;background:#1E1E1E;border:1px solid rgba(255,255,255,.04);border-radius:10px;overflow:hidden;}
+body.light .foot{background:#fff;border-color:rgba(0,0,0,.06);}
+.foot-item{flex:1;padding:10px 14px;border-right:1px solid rgba(255,255,255,.05);}
+body.light .foot-item{border-color:rgba(0,0,0,.05);}
+.foot-item:last-child{border-right:none;}
+.f-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-bottom:3px;}
+body.light .f-lbl{color:rgba(0,0,0,.3);}
+.f-val{font-size:16px;font-weight:900;letter-spacing:-.5px;color:var(--g);}
+.f-val.amber{color:var(--bal);}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+</style></head><body>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  <div><p class="eyebrow">Opxio · Revenue OS</p><h1 class="h-title">Won Deals</h1></div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="grid3">
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Building</div>
+    <div class="s-val" id="v-building">—</div>
+    <div class="s-sub">Active installs in progress</div>
+    <div class="s-tag">In Build</div>
+  </div>
+  <div class="card stat is-balance">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Balance Due</div>
+    <div class="s-val" id="v-balance">—</div>
+    <div class="s-sub">Build done, final payment pending</div>
+    <div class="s-tag">Awaiting Payment</div>
+  </div>
+  <div class="card stat is-delivered">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Delivered</div>
+    <div class="s-val" id="v-delivered">—</div>
+    <div class="s-sub">Fully paid and handed over</div>
+    <div class="s-tag">Complete</div>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="foot-item">
+    <div class="f-lbl">Active Builds</div>
+    <div class="f-val" id="f-active">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Balance Pending</div>
+    <div class="f-val amber" id="f-balance">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Delivered This Month</div>
+    <div class="f-val" id="f-delivered">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Won This Month</div>
+    <div class="f-val" id="f-won">—</div>
+  </div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
+let light = false;
+function toggleMode(){ light=!light; document.body.classList.toggle('light',light); document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light'; }
+function setTs(){ document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+async function loadData(){
+  try {
+    const r = await fetch(apiUrl('/api/data/deals'));
+    const j = await r.json();
+    const s = j.stages || {};
+    const building  = s['Building']    ?? 0;
+    const balance   = s['Balance Due'] ?? 0;
+    const delivered = s['Delivered']   ?? 0;
+    document.getElementById('v-building').textContent  = building;
+    document.getElementById('v-balance').textContent   = balance;
+    document.getElementById('v-delivered').textContent = delivered;
+    document.getElementById('f-active').textContent    = building;
+    document.getElementById('f-balance').textContent   = balance;
+    document.getElementById('f-delivered').textContent = j.deliveredThisMonth ?? 0;
+    document.getElementById('f-won').textContent       = j.wonThisMonth       ?? 0;
+    setTs();
+  } catch(e) { console.error('won widget:', e); }
+}
+loadData();
+function doRefresh(){ const b=document.getElementById('rb'); b.textContent='↻'; b.style.opacity='.4'; loadData().then(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; }); }
+setInterval(loadData, 5*60*1000);
+</script></body></html>
