@@ -199,66 +199,45 @@ async function extractLeadInfo(props) {
   return { companyIds, picIds, product, addons }
 }
 
-// ── Find recently Notion-created quotation ─────────────────────────────────
-// Notion button Action 1 creates the page (sets Deal Source = lead), Action 2
-// fires our webhook. Notion has an indexing delay of 5–15s before new pages
-// appear in DB queries. We wait 5s then retry up to 5 times.
-async function findRecentQuotation(leadId = null, maxAgeSeconds = 180) {
-  // Wait for Notion to index the newly-created page
-  await new Promise(r => setTimeout(r, 5000))
+// ── Find the Notion-created quotation for this lead ────────────────────────
+// The Notion button (Action 1) creates the quotation AND links it to the lead
+// via the bidirectional Quotation ↔ Deal Source relation — SYNCHRONOUSLY.
+// So by the time Action 2 fires our webhook, the lead page's Quotation
+// relation already contains the new page's ID. No DB query or indexing delay.
+// We read the lead's Quotation relation (from already-fetched props), fetch
+// each linked quotation directly by ID, and return the newest unpatched one.
+async function findQuotationFromLead(leadProps, maxAgeSeconds = 180) {
+  const quotationIds = (leadProps.Quotation?.relation || []).map(r => r.id.replace(/-/g, ""))
+  if (!quotationIds.length) {
+    console.log("[findQuotation] no quotations in lead relation")
+    return null
+  }
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  let newest = null
+  for (const qId of quotationIds) {
     try {
-      // Strategy 1: filter by Deal Source = this lead (button sets it on creation)
-      if (leadId) {
-        const r1 = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
-          method: "POST", headers: hdrs(),
-          body: JSON.stringify({
-            filter: { property: "Deal Source", relation: { contains: leadId } },
-            sorts:  [{ timestamp: "created_time", direction: "descending" }],
-            page_size: 1,
-          }),
-        })
-        if (r1.ok) {
-          const page = (await r1.json()).results?.[0]
-          if (page) {
-            const age = (Date.now() - new Date(page.created_time)) / 1000
-            console.log(`[findRecentQuotation] Deal Source hit attempt ${attempt + 1}, age: ${age.toFixed(1)}s`)
-            if (age <= maxAgeSeconds) {
-              const id = page.id.replace(/-/g, "")
-              return { id, url: page.url || `https://notion.so/${id}` }
-            }
-          }
-        }
-      }
-
-      // Strategy 2: newest page by time (fallback)
-      const r2 = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
-        method: "POST", headers: hdrs(),
-        body: JSON.stringify({
-          sorts:     [{ timestamp: "created_time", direction: "descending" }],
-          page_size: 1,
-        }),
-      })
-      if (r2.ok) {
-        const page = (await r2.json()).results?.[0]
-        if (page) {
-          const age = (Date.now() - new Date(page.created_time)) / 1000
-          console.log(`[findRecentQuotation] newest page attempt ${attempt + 1}, age: ${age.toFixed(1)}s`)
-          if (age <= maxAgeSeconds) {
-            const id = page.id.replace(/-/g, "")
-            return { id, url: page.url || `https://notion.so/${id}` }
-          }
+      const q = await getPage(qId, process.env.NOTION_API_KEY)
+      const age = (Date.now() - new Date(q.created_time)) / 1000
+      const alreadyPatched = !!q.properties?.["Issue Date"]?.date?.start
+      console.log(`[findQuotation] ${qId.slice(0,8)} age:${age.toFixed(0)}s patched:${alreadyPatched}`)
+      if (age <= maxAgeSeconds && !alreadyPatched) {
+        if (!newest || new Date(q.created_time) > new Date(newest.page.created_time)) {
+          newest = { page: q, id: qId }
         }
       }
     } catch (e) {
-      console.warn(`[findRecentQuotation] attempt ${attempt + 1}:`, e.message)
+      console.warn(`[findQuotation] fetch ${qId.slice(0,8)}:`, e.message)
     }
-
-    if (attempt < 4) await new Promise(r => setTimeout(r, 2000))
   }
 
-  console.warn("[findRecentQuotation] gave up after 5 attempts")
+  if (newest) {
+    const { id, page } = newest
+    const url = page.url || `https://notion.so/${id}`
+    console.log(`[findQuotation] returning ${id.slice(0,8)}`)
+    return { id, url }
+  }
+
+  console.warn("[findQuotation] no unpatched recent quotation found in lead relation")
   return null
 }
 
@@ -468,7 +447,7 @@ export default async function handler(req, res) {
 
     let patchErrors = []
     if (sourceType === "lead") {
-      const recent = await findRecentQuotation(leadId)
+      const recent = await findQuotationFromLead(props)
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
         console.log("[create_quotation] found Notion-created quotation:", quotId)
