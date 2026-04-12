@@ -123,12 +123,17 @@ export default async function handler(req, res) {
       }
     }
 
-    // Validate required fields
-    const requiredFields = ['company_name', 'contact_name', 'os_type', 'fee', 'modules'];
-    for (const field of requiredFields) {
-      if (!proposalData[field]) {
-        return res.status(400).json({ error: `Missing required field: ${field}` });
-      }
+    // Validate only the truly blocking fields — company name and OS type.
+    // fee=0 is valid, contact_name can be blank (renders gracefully).
+    if (!proposalData.company_name) {
+      return res.status(400).json({ error: 'Missing required field: company_name' });
+    }
+    if (!proposalData.os_type) {
+      return res.status(400).json({ error: 'Missing required field: os_type — set OS Type on the Notion page first.' });
+    }
+    // Modules must exist after auto-prefill
+    if (!proposalData.modules || Object.keys(proposalData.modules).length === 0) {
+      return res.status(400).json({ error: 'Missing required field: modules — set OS Type so defaults can be applied.' });
     }
 
     const html = renderProposal(proposalData);
