@@ -200,36 +200,66 @@ async function extractLeadInfo(props) {
 }
 
 // ── Find recently Notion-created quotation ─────────────────────────────────
-// Notion button Action 1 creates the page, Action 2 fires our webhook.
-// By the time we run, the page already exists — query newest page, no filter.
-// Single attempt: no retries needed since the page was just created.
-async function findRecentQuotation(maxAgeSeconds = 90) {
-  try {
-    const r = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
-      method:  "POST",
-      headers: hdrs(),
-      body:    JSON.stringify({
-        sorts:     [{ timestamp: "created_time", direction: "descending" }],
-        page_size: 1,
-      }),
-    })
-    if (!r.ok) {
-      console.warn(`[create_quotation] findRecentQuotation ${r.status}`)
-      return null
+// Notion button Action 1 creates the page (sets Deal Source = lead), Action 2
+// fires our webhook. Notion has an indexing delay of 5–15s before new pages
+// appear in DB queries. We wait 5s then retry up to 5 times.
+async function findRecentQuotation(leadId = null, maxAgeSeconds = 180) {
+  // Wait for Notion to index the newly-created page
+  await new Promise(r => setTimeout(r, 5000))
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      // Strategy 1: filter by Deal Source = this lead (button sets it on creation)
+      if (leadId) {
+        const r1 = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
+          method: "POST", headers: hdrs(),
+          body: JSON.stringify({
+            filter: { property: "Deal Source", relation: { contains: leadId } },
+            sorts:  [{ timestamp: "created_time", direction: "descending" }],
+            page_size: 1,
+          }),
+        })
+        if (r1.ok) {
+          const page = (await r1.json()).results?.[0]
+          if (page) {
+            const age = (Date.now() - new Date(page.created_time)) / 1000
+            console.log(`[findRecentQuotation] Deal Source hit attempt ${attempt + 1}, age: ${age.toFixed(1)}s`)
+            if (age <= maxAgeSeconds) {
+              const id = page.id.replace(/-/g, "")
+              return { id, url: page.url || `https://notion.so/${id}` }
+            }
+          }
+        }
+      }
+
+      // Strategy 2: newest page by time (fallback)
+      const r2 = await fetch(`https://api.notion.com/v1/databases/${DB.QUOTATIONS}/query`, {
+        method: "POST", headers: hdrs(),
+        body: JSON.stringify({
+          sorts:     [{ timestamp: "created_time", direction: "descending" }],
+          page_size: 1,
+        }),
+      })
+      if (r2.ok) {
+        const page = (await r2.json()).results?.[0]
+        if (page) {
+          const age = (Date.now() - new Date(page.created_time)) / 1000
+          console.log(`[findRecentQuotation] newest page attempt ${attempt + 1}, age: ${age.toFixed(1)}s`)
+          if (age <= maxAgeSeconds) {
+            const id = page.id.replace(/-/g, "")
+            return { id, url: page.url || `https://notion.so/${id}` }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`[findRecentQuotation] attempt ${attempt + 1}:`, e.message)
     }
-    const page = (await r.json()).results?.[0]
-    if (!page) return null
-    const age = (Date.now() - new Date(page.created_time)) / 1000
-    console.log(`[create_quotation] newest quotation age: ${age.toFixed(1)}s`)
-    if (age <= maxAgeSeconds) {
-      const id = page.id.replace(/-/g, "")
-      return { id, url: page.url || `https://notion.so/${id}` }
-    }
-    return null
-  } catch (e) {
-    console.warn("[create_quotation] findRecentQuotation:", e.message)
-    return null
+
+    if (attempt < 4) await new Promise(r => setTimeout(r, 2000))
   }
+
+  console.warn("[findRecentQuotation] gave up after 5 attempts")
+  return null
 }
 
 // ── Patch quotation properties (parallel) ─────────────────────────────────
@@ -438,7 +468,7 @@ export default async function handler(req, res) {
 
     let patchErrors = []
     if (sourceType === "lead") {
-      const recent = await findRecentQuotation()
+      const recent = await findRecentQuotation(leadId)
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
         console.log("[create_quotation] found Notion-created quotation:", quotId)
