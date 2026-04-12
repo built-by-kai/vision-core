@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — CRM & Pipeline</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:.2px;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+/* Top bar */
+.top-bar{display:flex;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
+.top-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat{padding:18px 18px 16px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;}
+.stat:hover::before{opacity:1;}
+.s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
+.s-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.85);margin-bottom:10px;line-height:1.4;}
+body.light .s-lbl{color:rgba(0,0,0,.8);}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-val.green{color:#34D399!important;}
+.s-val.amber{color:#FBBF24!important;}
+body.light .s-val.green{color:#10A060!important;}
+body.light .s-val.amber{color:#D97706!important;}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:7px;}
+body.light .s-sub{color:rgba(0,0,0,.3);}
+/* 2-col */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* Panel: flex-col so donut section can center vertically */
+.panel{padding:22px 24px;display:flex;flex-direction:column;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+body.light .panel-title{color:rgba(0,0,0,.7);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);margin-left:auto;}
+/* Mode toggle */
+.mode-wrap{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;}
+body.light .mode-wrap{background:rgba(0,0,0,.06);}
+.mbn{background:transparent;border:none;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .18s;letter-spacing:.04em;}
+body.light .mbn{color:rgba(0,0,0,.35);}
+.mbn.al{background:rgba(170,255,0,.14);color:#AAFF00;}
+.mbn.ad{background:rgba(100,200,0,.14);color:#77CC00;}
+body.light .mbn.al{background:rgba(92,153,0,.12);color:#4A8000;}
+body.light .mbn.ad{background:rgba(61,122,0,.12);color:#3D7A00;}
+/* Funnel */
+.f-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.f-row:last-child{margin-bottom:0;}
+.f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.5);width:84px;flex-shrink:0;line-height:1.3;}
+body.light .f-lbl{color:rgba(0,0,0,.4);}
+.f-bg{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,.04);overflow:hidden;}
+body.light .f-bg{background:rgba(0,0,0,.05);}
+.f-fill{height:100%;border-radius:7px;display:flex;align-items:center;padding:0 10px;transition:width .55s cubic-bezier(.4,0,.2,1);}
+/* Leads colors — lighter lime */
+.lm     {background:rgba(170,255,0,.45);}
+.lm-won {background:rgba(170,255,0,.20);}
+.lm-lost{background:rgba(255,255,255,.05);}
+/* Deals colors — deeper green */
+.dm          {background:rgba(100,200,0,.55);}
+.dm-delivered{background:rgba(100,200,0,.82);}
+.dm-lost     {background:rgba(255,255,255,.05);}
+body.light .lm     {background:rgba(92,153,0,.35);}
+body.light .lm-won {background:rgba(92,153,0,.16);}
+body.light .dm     {background:rgba(61,122,0,.40);}
+body.light .dm-delivered{background:rgba(61,122,0,.68);}
+.f-txt{font-size:11px;font-weight:700;color:rgba(0,0,0,.65);white-space:nowrap;}
+.lm-lost .f-txt,.dm-lost .f-txt{color:rgba(255,255,255,.25);}
+body.light .f-txt{color:rgba(255,255,255,.85);}
+body.light .lm-lost .f-txt, body.light .dm-lost .f-txt{color:rgba(0,0,0,.25);}
+.f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.45);width:20px;text-align:right;flex-shrink:0;}
+body.light .f-n{color:rgba(0,0,0,.4);}
+/* Donut — centered in remaining panel space */
+.donut-wrap{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 0;}
+.d-val{font-weight:900;fill:#fff;}
+body.light .d-val{fill:#111;}
+.d-lbl{font-weight:700;fill:rgba(255,255,255,.22);}
+body.light .d-lbl{fill:rgba(0,0,0,.3);}
+.legend{display:flex;flex-direction:column;gap:9px;}
+.l-row{display:flex;align-items:center;gap:9px;}
+.l-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.l-name{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.5);flex:1;}
+body.light .l-name{color:rgba(0,0,0,.5);}
+.l-val{font-size:13px;font-weight:900;color:#fff;}
+body.light .l-val{color:#111;}
+/* Chart */
+.chart-card{padding:22px 24px;margin-top:10px;}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
+body.light .chart-title{color:rgba(0,0,0,.7);}
+.chart-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.chart-wrap{position:relative;width:100%;height:160px;}
+#leads-chart{display:block;overflow:visible;}
+.ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
+body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
+/* Responsive */
+@media(max-width:900px){.stat-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:64px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+</style></head><body>
+
+<div class="top-bar">
+  <div>
+    <p class="eyebrow">Opxio &middot; Revenue OS</p>
+    <h1 class="h-title">CRM &amp; Pipeline</h1>
+  </div>
+  <div class="top-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleLight()" id="lb">☀ Light</button>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Active Leads</div>
+    <div class="s-val" id="d-active">—</div>
+    <div class="s-sub">In lead pipeline</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Leads — Potential Value</div>
+    <div class="s-val" id="d-potential">—</div>
+    <div class="s-sub">Pre-win deal value</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="background:#34D399;opacity:.7;"></div>
+    <div class="s-lbl">In Delivery</div>
+    <div class="s-val green" id="d-building">—</div>
+    <div class="s-sub">Building stage</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="background:#FBBF24;opacity:.7;"></div>
+    <div class="s-lbl">Balance Due</div>
+    <div class="s-val amber" id="d-balance">—</div>
+    <div class="s-sub">Awaiting final payment</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <div class="s-lbl">Conv. Rate</div>
+    <div class="s-val" id="d-conv">—</div>
+    <div class="s-sub">Leads converted this month</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card panel">
+    <div class="panel-title">
+      Pipeline Funnel
+      <div class="mode-wrap">
+        <button class="mbn al" id="mbn-leads" onclick="setMode('leads')">Leads</button>
+        <button class="mbn" id="mbn-deals" onclick="setMode('deals')">Deals</button>
+      </div>
+      <span class="panel-badge" id="fb">—</span>
+    </div>
+    <div id="funnel"></div>
+  </div>
+  <div class="card panel">
+    <div class="panel-title">Lead Sources</div>
+    <div class="donut-wrap">
+      <svg width="148" height="148" viewBox="0 0 160 160" id="donut"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card chart-card">
+  <div class="chart-hdr">
+    <span class="chart-title">Leads Incoming by Month</span>
+    <span class="chart-badge" id="cbadge">—</span>
+  </div>
+  <div class="chart-wrap" id="cwrap">
+    <svg id="leads-chart"></svg>
+    <div class="ctip" id="ctip"></div>
+  </div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p; }
+
+let light = false;
+let funnelMode = 'leads';
+let pipeData = null;
+let dealsData = null;
+let chartData = [];
+
+function toggleLight(){
+  light = !light;
+  document.body.classList.toggle('light', light);
+  document.getElementById('lb').textContent = light ? '🌙 Dark' : '☀ Light';
+  drawChart();
+}
+
+function setTs(){
+  document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+function fmtRM(n){
+  if(!n) return '—';
+  if(n >= 1000000) return 'RM ' + (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1000)    return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
+  return 'RM ' + Math.round(n).toLocaleString();
+}
+
+// ── Mode toggle ──────────────────────────────────────────────────────────────
+function setMode(mode) {
+  funnelMode = mode;
+  document.getElementById('mbn-leads').className = 'mbn' + (mode === 'leads' ? ' al' : '');
+  document.getElementById('mbn-deals').className = 'mbn' + (mode === 'deals' ? ' ad' : '');
+  renderFunnel();
+}
+
+// ── Donut ─────────────────────────────────────────────────────────────────────
+const DONUT_COLORS = [
+  '#AAFF00','rgba(170,255,0,.72)','rgba(170,255,0,.48)',
+  'rgba(170,255,0,.30)','rgba(170,255,0,.18)','rgba(170,255,0,.09)',
+];
+function renderDonut(sources) {
+  const src = (sources || []).slice(0, 6);
+  if (!src.length) {
+    document.getElementById('donut').innerHTML =
+      `<text x="80" y="88" text-anchor="middle" font-size="11" class="d-lbl" font-family="Satoshi,-apple-system,sans-serif">No data</text>`;
+    document.getElementById('legend').innerHTML = '';
+    return;
+  }
+  const colored = src.map((s,i) => ({...s, c: DONUT_COLORS[i] || DONUT_COLORS[DONUT_COLORS.length-1]}));
+  const tot = colored.reduce((s,x) => s+x.count, 0);
+  const R=55, SW=18, C=2*Math.PI*R;
+  let off=0, p='';
+  p += `<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${SW}"/>`;
+  colored.forEach(s => {
+    const d=(s.count/tot)*C, g=C-d;
+    p += `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${d.toFixed(2)} ${g.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
+    off += d;
+  });
+  p += `<text x="80" y="74" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${tot}</text>`;
+  p += `<text x="80" y="94" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
+  document.getElementById('donut').innerHTML = p;
+  document.getElementById('legend').innerHTML = colored.map(s =>
+    `<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${s.label}</span><span class="l-val">${s.count}</span></div>`
+  ).join('');
+}
+
+// ── Leads funnel ─────────────────────────────────────────────────────────────
+function renderLeadsFunnel(stages) {
+  const order = [
+    { l: 'Incoming',       key: 'Incoming',         cls: 'lm'      },
+    { l: 'Contacted',      key: 'Contacted',         cls: 'lm'      },
+    { l: 'Discovery Done', key: 'Discovery Done',    cls: 'lm'      },
+    { l: 'Await. Deposit', key: 'Awaiting Deposit',  cls: 'lm'      },
+    { l: 'Converted',      key: 'Converted',         cls: 'lm-won'  },
+    { l: 'Lost',           key: 'Lost',              cls: 'lm-lost' },
+  ];
+  const maxN = Math.max(...order.map(r => stages[r.key] || 0), 1);
+  const total = order.reduce((s,r) => s + (stages[r.key] || 0), 0);
+  document.getElementById('fb').textContent = total + ' leads';
+  document.getElementById('funnel').innerHTML = order.map(r => {
+    const n = stages[r.key] || 0;
+    const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
+    return `<div class="f-row">
+      <span class="f-lbl">${r.l}</span>
+      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;">${n > 0 ? `<span class="f-txt">${n}</span>` : ''}</div></div>
+      <span class="f-n">${n}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Deals funnel — actual stages only ────────────────────────────────────────
+function renderDealsFunnel(stages) {
+  const order = [
+    { l: 'Incoming',       key: 'Incoming',         cls: 'dm'           },
+    { l: 'Discovery Done', key: 'Discovery Done',    cls: 'dm'           },
+    { l: 'Await. Deposit', key: 'Awaiting Deposit',  cls: 'dm'           },
+    { l: 'Building',       key: 'Building',          cls: 'dm'           },
+    { l: 'Balance Due',    key: 'Balance Due',        cls: 'dm'           },
+    { l: 'Delivered',      key: 'Delivered',          cls: 'dm-delivered' },
+    { l: 'Lost',           key: 'Lost',               cls: 'dm-lost'      },
+  ];
+  const maxN = Math.max(...order.map(r => stages[r.key] || 0), 1);
+  const total = order.reduce((s,r) => s + (stages[r.key] || 0), 0);
+  document.getElementById('fb').textContent = total + ' deals';
+  document.getElementById('funnel').innerHTML = order.map(r => {
+    const n = stages[r.key] || 0;
+    const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
+    return `<div class="f-row">
+      <span class="f-lbl">${r.l}</span>
+      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;">${n > 0 ? `<span class="f-txt">${n}</span>` : ''}</div></div>
+      <span class="f-n">${n}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderFunnel() {
+  if (funnelMode === 'leads') {
+    renderLeadsFunnel((pipeData && pipeData.stages) || {});
+  } else {
+    renderDealsFunnel((dealsData && dealsData.stages) || {});
+  }
+}
+
+// ── Data load ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [rp, rd] = await Promise.all([
+      fetch(apiUrl('/api/data/pipeline')),
+      fetch(apiUrl('/api/data/deals')),
+    ]);
+    const [jp, jd] = await Promise.all([rp.json(), rd.json()]);
+
+    pipeData  = jp;
+    dealsData = jd;
+
+    document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
+    document.getElementById('d-potential').textContent = jd.potentialValue ? fmtRM(jd.potentialValue) : '—';
+    document.getElementById('d-building').textContent  = jd.stages?.Building          ?? '—';
+    document.getElementById('d-balance').textContent   = jd.stages?.['Balance Due']   ?? '—';
+    document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
+
+    renderDonut(jp.sources);
+    renderFunnel();
+
+    chartData = jp.monthly || [];
+    document.getElementById('cbadge').textContent = chartData.reduce((s,d)=>s+d.v,0) + ' total this year';
+    drawChart();
+    setTs();
+  } catch(e) {
+    console.error('CRM widget:', e);
+  }
+}
+
+function doRefresh() {
+  const b = document.getElementById('rb');
+  b.textContent = '↻'; b.style.opacity = '.4';
+  loadData().then(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; });
+}
+
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+
+// ── Line chart ─────────────────────────────────────────────────────────────────
+function drawChart() {
+  const wrap = document.getElementById('cwrap');
+  const svg  = document.getElementById('leads-chart');
+  const ns   = 'http://www.w3.org/2000/svg';
+  const W    = wrap.offsetWidth || 600;
+  const H    = wrap.offsetHeight || 160;
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.innerHTML = '';
+  if (!chartData.length) return;
+
+  const PAD  = {t:14, r:20, b:30, l:28};
+  const cW   = W - PAD.l - PAD.r;
+  const cH   = H - PAD.t - PAD.b;
+  const maxV = Math.max(...chartData.map(d => d.v), 1);
+  const isDark  = !document.body.classList.contains('light');
+  const dimCol  = isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.45)';
+  const gridCol = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+
+  function xP(i){ return PAD.l + (i / (chartData.length - 1 || 1)) * cW; }
+  function yP(v){ return PAD.t + cH - (v / maxV) * cH; }
+
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.t + (i/4) * cH;
+    const gl = document.createElementNS(ns, 'line');
+    gl.setAttribute('x1', PAD.l); gl.setAttribute('x2', W - PAD.r);
+    gl.setAttribute('y1', y); gl.setAttribute('y2', y);
+    gl.setAttribute('stroke', gridCol); gl.setAttribute('stroke-dasharray', '3,5');
+    svg.appendChild(gl);
+    if (i < 4) {
+      const t = document.createElementNS(ns, 'text');
+      t.setAttribute('x', PAD.l - 5); t.setAttribute('y', y + 4);
+      t.setAttribute('text-anchor', 'end'); t.setAttribute('fill', dimCol);
+      t.setAttribute('font-size', '10'); t.setAttribute('font-weight', '500');
+      t.setAttribute('font-family', 'Satoshi,-apple-system,sans-serif');
+      t.textContent = Math.round(maxV - (i/4) * maxV);
+      svg.appendChild(t);
+    }
+  }
+
+  chartData.forEach((d, i) => {
+    const isCur = i === chartData.length - 1;
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', xP(i)); t.setAttribute('y', H - PAD.b + 16);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', isCur ? '#AAFF00' : dimCol);
+    t.setAttribute('font-size', '10'); t.setAttribute('font-weight', isCur ? '700' : '500');
+    t.setAttribute('font-family', 'Satoshi,-apple-system,sans-serif');
+    t.textContent = d.m; svg.appendChild(t);
+  });
+
+  function smooth(pts) {
+    if (pts.length < 2) return `M ${pts[0][0]} ${pts[0][1]}`;
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x1,y1]=pts[i-1],[x2,y2]=pts[i],cx=(x1+x2)/2;
+      d += ` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
+    }
+    return d;
+  }
+  const pts   = chartData.map((d,i) => [xP(i), yP(d.v)]);
+  const pathD = smooth(pts);
+  const last  = pts[pts.length-1], first = pts[0];
+
+  const defs = document.createElementNS(ns, 'defs');
+  const grad = document.createElementNS(ns, 'linearGradient');
+  grad.setAttribute('id','gF'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0'); grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+  const s1 = document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#AAFF00'); s1.setAttribute('stop-opacity','0.22');
+  const s2 = document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#AAFF00'); s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.insertBefore(defs, svg.firstChild);
+
+  const area = document.createElementNS(ns,'path');
+  area.setAttribute('d', pathD + ` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
+  area.setAttribute('fill','url(#gF)'); svg.appendChild(area);
+
+  const line = document.createElementNS(ns,'path');
+  line.setAttribute('d', pathD); line.setAttribute('fill','none');
+  line.setAttribute('stroke','#AAFF00'); line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-linecap','round'); svg.appendChild(line);
+
+  chartData.forEach((d, i) => {
+    const isCur = i === chartData.length - 1;
+    const dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('cx', xP(i)); dot.setAttribute('cy', yP(d.v));
+    dot.setAttribute('r', isCur ? '5' : '3.5');
+    dot.setAttribute('fill', isCur ? '#AAFF00' : '#1E1E1E');
+    dot.setAttribute('stroke','#AAFF00'); dot.setAttribute('stroke-width','2');
+    if (isCur) dot.setAttribute('filter','drop-shadow(0 0 5px rgba(170,255,0,0.8))');
+    svg.appendChild(dot);
+  });
+
+  const hL = document.createElementNS(ns,'line');
+  hL.setAttribute('stroke','rgba(170,255,0,0.1)'); hL.setAttribute('stroke-width','1');
+  hL.setAttribute('y1', PAD.t); hL.setAttribute('y2', H - PAD.b); hL.style.opacity = '0';
+  svg.appendChild(hL);
+
+  const tip = document.getElementById('ctip');
+  wrap.onmousemove = function(e) {
+    const rect = wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    let bi=null, bd=Infinity;
+    chartData.forEach((d,i)=>{ const dist=Math.abs(xP(i)-mx); if(dist<bd){bd=dist;bi=i;} });
+    if (bi===null||bd>50){hide();return;}
+    const d=chartData[bi], px=xP(bi);
+    hL.setAttribute('x1',px); hL.setAttribute('x2',px); hL.style.opacity='1';
+    tip.style.display='block';
+    tip.style.left=Math.min(e.clientX-rect.left+14,rect.width-110)+'px';
+    tip.style.top=(e.clientY-rect.top-46)+'px';
+    tip.innerHTML=`<span style="color:rgba(255,255,255,.4);font-size:9px;">${d.m}</span>&nbsp;&nbsp;${d.v} leads`;
+  };
+  wrap.onmouseleave=hide;
+  function hide(){tip.style.display='none';hL.style.opacity='0';}
+}
+
+window.addEventListener('load', () => setTimeout(drawChart, 80));
+window.addEventListener('resize', drawChart);
+</script></body></html>
