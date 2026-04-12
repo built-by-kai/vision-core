@@ -142,7 +142,6 @@ async function process(payload) {
         const addons        = (lp["Add-ons"]?.multi_select || []).map(a => ({ name: a.name }))
         const situation     = plain(lp.Situation?.rich_text || [])
         const notes         = plain(lp.Notes?.rich_text     || [])
-        const sources       = (lp.Source?.multi_select      || []).map(s => ({ name: s.name }))
         const discoveryCall = lp["Discovery Call"]?.date?.start || null
 
         // Create Deal in Deals DB starting at Building
@@ -158,7 +157,6 @@ async function process(payload) {
             ...(addons.length  ? { "Add-ons":      { multi_select: addons } } : {}),
             ...(situation      ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
             ...(notes          ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
-            ...(sources.length ? { "Source":       { multi_select: sources } } : {}),
             ...(discoveryCall  ? { "Discovery Call": { date: { start: discoveryCall } } } : {}),
           },
         }, token)
@@ -288,3 +286,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
+
