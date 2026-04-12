@@ -9,15 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@sparticuz/chromium": "131.0.1",
     "@supabase/supabase-js": "^2.103.0",
     "@vercel/blob": "^0.27.0",
+    "@vercel/functions": "^3.4.3",
     "next": "16.2.3",
     "pdfkit": "^0.15.1",
+    "puppeteer-core": "22.15.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "@sparticuz/chromium": "131.0.1",
-    "puppeteer-core": "22.15.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "eslint": "^9",
