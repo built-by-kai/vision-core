@@ -33,14 +33,15 @@ export default async function handler(req, res) {
     ])
 
     // ── Deals stage breakdown ──────────────────────────────────────────────
-    const POTENTIAL_STAGES = ["Discovery Done", "Quotation Issued", "Quotation Approved", "Deposit Due"]
+    const POTENTIAL_STAGES = ["Incoming", "Discovery Done", "Awaiting Deposit"]
     const WON_STAGES       = ["Building", "Balance Due", "Delivered"]
 
     const stages = {
+      "Incoming":           0,
       "Discovery Done":     0,
       "Quotation Issued":   0,
       "Quotation Approved": 0,
-      "Deposit Due":        0,
+      "Awaiting Deposit":   0,
       "Building":           0,
       "Balance Due":        0,
       "Delivered":          0,
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
         boardGroups[stage].push({ name, value, pkg })
       }
       if (WON_STAGES.includes(stage)) buildingValue += value
-      if (isThisMonth && stage === "Deposit Due") wonThisMonth++
+      if (isThisMonth && stage === "Awaiting Deposit") wonThisMonth++
       if (isThisMonth && stage === "Delivered")   deliveredThisMonth++
     }
 
