@@ -84,8 +84,25 @@ async function handleProposal(pageId) {
   const modules   = OS_DEFAULT_MODULES[osType] || {}
   const addonsLater = OS_DEFAULT_ADDONS_LATER[osType] || []
 
-  // Derive fee from line items total (sum all except Base OS if desired)
-  const fee = (data.line_items || []).reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0) || data.fee || 0
+  // ── Split line items: core (Base OS + main OS) vs add-ons ─────────────
+  // Core items are the OS packages — everything else is an add-on for this proposal
+  const isCoreItem = name => /base\s*os/i.test(name) || /\bos\b$/i.test(name.trim())
+  const coreItems  = (data.line_items || []).filter(i => isCoreItem(i.name || ''))
+  const addonItems = (data.line_items || []).filter(i => !isCoreItem(i.name || ''))
+
+  // Derive fee from core items (Base OS + main OS), fall back to all items if none tagged
+  const feeBase = coreItems.length
+    ? coreItems.reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0)
+    : (data.line_items || []).reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0)
+  const fee = feeBase || data.fee || 0
+
+  // Map add-on line items to the proposal template format
+  const addonNowItems = addonItems.map(i => ({
+    name:        i.name || '',
+    desc:        i.desc || '',
+    price_label: i.unit_price ? `RM ${Number(i.unit_price).toLocaleString('en-MY')}` : '',
+    cadence:     'one-time',
+  }))
 
   // Format dates for display
   function fmtDate(iso) {
@@ -112,7 +129,7 @@ async function handleProposal(pageId) {
     retainer:      "maintenance",
     situation:     [],         // stripped from simplified DB — left blank
     modules,
-    addons_now:    [],
+    addons_now:    addonNowItems,
     addons_later:  addonsLater,
   }
 
