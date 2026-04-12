@@ -1,0 +1,309 @@
+// ─── create_proposal.js ────────────────────────────────────────────────────
+// POST /api/create_proposal  { "page_id": "<lead_page_id>" }
+// Triggered by Notion button on a Lead CRM page (two-action button):
+//   Action 1: "Add a page to Proposals DB" (applies template with inline P&S DB)
+//   Action 2: "Send webhook" to this endpoint with Lead page_id
+//
+// What this does:
+//   1. Reads lead info (Company, PIC, OS Type, Add-Ons)
+//   2. Finds the recently created Proposal page (within last 3min)
+//   3. Patches Proposal with lead data (OS Type, Company, PIC, Payment Terms)
+//   4. Creates or finds the inline Products & Services DB on the Proposal page
+//   5. Auto-populates line items (Base OS → Main OS → Add-Ons, sequential)
+//   6. Advances Lead stage → "Proposal Sent"
+
+import { getPage, patchPage, createPage, queryDB, plain, DB } from "../../lib/notion"
+
+function hdrs() {
+  return {
+    Authorization:    `Bearer ${process.env.NOTION_API_KEY}`,
+    "Notion-Version": "2022-06-28",
+    "Content-Type":   "application/json",
+  }
+}
+
+// ── Package slug → Catalogue DB ───────────────────────────────────────────
+const OS_TYPE_SLUG_MAP = {
+  "revenue os":      "revenue-os",
+  "sales os":        "revenue-os",
+  "operations os":   "operations-os",
+  "business os":     "business-os",
+  "marketing os":    "marketing-os",
+  "agency os":       "full-platform-os",
+  "full platform":   "full-platform-os",
+  "team os":         "team-os",
+  "retention os":    "retention-os",
+  "intelligence os": "intelligence-os",
+  "starter os":      "starter-os",
+}
+
+const ADDON_SLUG_MAP = {
+  "additional system module":           "addon-system-module",
+  "automation (within database)":       "addon-automation-within",
+  "automation — within database":       "addon-automation-within",
+  "automation (cross-database)":        "addon-automation-cross",
+  "automation — cross-database":        "addon-automation-cross",
+  "advanced dashboard":                 "addon-dashboard",
+  "enhanced dashboard":                 "addon-dashboard",
+  "custom widget":                      "addon-widget",
+  "api / external integration":         "addon-api-integration",
+  "automation & workflow integration":  "addon-workflow-integration",
+  "lead capture system":                "addon-lead-capture",
+  "client portal view":                 "addon-client-portal",
+  "ai agent integration":               "addon-ai-agent",
+}
+
+const OS_PACKAGE_SLUGS = new Set([
+  "revenue-os", "operations-os", "business-os", "full-platform-os",
+  "marketing-os", "team-os", "retention-os", "intelligence-os",
+  "starter-os",
+])
+
+// ── Fetch product info from Catalogue ──────────────────────────────────────
+async function fetchProductInfo(slug) {
+  if (!slug) return null
+  try {
+    const rows = await queryDB(DB.CATALOGUE, {
+      property: "Slug", rich_text: { equals: slug }
+    }, process.env.NOTION_API_KEY)
+    if (!rows.length) return null
+    const p = rows[0]
+    return {
+      id:          p.id.replace(/-/g, ""),
+      name:        plain(p.properties["Product Name"]?.title || []),
+      price:       p.properties.Price?.number ?? null,
+      description: plain(p.properties.Description?.rich_text || []),
+      slug,
+    }
+  } catch (e) {
+    console.warn("[create_proposal] fetchProductInfo:", slug, e.message)
+    return null
+  }
+}
+
+// ── Find the most recently created proposal (within last 3 min) ────────────
+async function findRecentProposal(maxAgeSeconds = 180) {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB.PROPOSALS}/query`, {
+      method: "POST", headers: hdrs(),
+      body: JSON.stringify({
+        sorts: [{ timestamp: "created_time", direction: "descending" }],
+        page_size: 5,
+        filter: { property: "Status", select: { equals: "Draft" } },
+      }),
+    })
+    const data = await r.json()
+    const now  = Date.now()
+    for (const row of data.results || []) {
+      const age = (now - new Date(row.created_time)) / 1000
+      if (age <= maxAgeSeconds) {
+        const id = row.id.replace(/-/g, "")
+        console.log(`[findRecentProposal] found: ${id.slice(0,8)} age:${age.toFixed(0)}s`)
+        return { id, page: row }
+      }
+    }
+  } catch (e) {
+    console.warn("[findRecentProposal]", e.message)
+  }
+  return null
+}
+
+// ── Find inline Products & Services DB on a page ──────────────────────────
+async function findLineItemsDB(pageId) {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=50`, {
+      headers: hdrs(),
+    })
+    if (!r.ok) return null
+    const blocks = (await r.json()).results || []
+    // Check direct children AND inside callouts
+    const callouts = blocks.filter(b => b.type === "callout")
+    const inner = await Promise.all(
+      callouts.map(async b => {
+        try {
+          const nb = await fetch(`https://api.notion.com/v1/blocks/${b.id}/children`, { headers: hdrs() })
+          return nb.ok ? (await nb.json()).results || [] : []
+        } catch { return [] }
+      })
+    )
+    const allBlocks = [...blocks, ...inner.flat()]
+    const dbBlock = allBlocks.find(b => b.type === "child_database")
+    if (dbBlock) return dbBlock.id.replace(/-/g, "")
+  } catch (e) {
+    console.warn("[findLineItemsDB]", e.message)
+  }
+  return null
+}
+
+// ── Create Products & Services inline DB on the proposal page ─────────────
+async function createLineItemsDB(pageId) {
+  // Callout header
+  await fetch(`https://api.notion.com/v1/blocks/${pageId}/children`, {
+    method: "PATCH", headers: hdrs(),
+    body: JSON.stringify({ children: [{
+      type: "callout",
+      callout: {
+        rich_text: [{ type: "text", text: { content: "Products & Services" }, annotations: { bold: true } }],
+        icon: null, color: "default_background",
+      },
+    }] }),
+  })
+
+  // Inline DB
+  const r = await fetch("https://api.notion.com/v1/databases", {
+    method: "POST", headers: hdrs(),
+    body: JSON.stringify({
+      parent:    { type: "page_id", page_id: pageId },
+      is_inline: true,
+      title:     [{ type: "text", text: { content: "Products & Services" } }],
+      properties: {
+        "Notes":               { title: {} },
+        "Product":             { relation: { database_id: DB.CATALOGUE, single_property: {} } },
+        "Product Description": { rich_text: {} },
+        "Unit Price":          { number: { format: "ringgit" } },
+        "Qty":                 { number: { format: "number" } },
+        "Subtotal":            { formula: { expression: 'prop("Qty") * prop("Unit Price")' } },
+      },
+    }),
+  })
+  if (!r.ok) throw new Error(`Create DB: ${r.status} ${(await r.text()).slice(0, 150)}`)
+  const db = await r.json()
+  return db.id.replace(/-/g, "")
+}
+
+// ── Create a single line item ──────────────────────────────────────────────
+async function createLineItem(dbId, product) {
+  const baseProps = {
+    "Notes": { title: [] },
+    "Qty":   { number: 1 },
+    ...(product.id    ? { "Product":   { relation: [{ id: product.id }] } } : {}),
+    ...(product.price != null ? { "Unit Price": { number: Number(product.price) } } : {}),
+  }
+  const descCols = product.description ? ["Product Description", "Description", "Details"] : []
+  for (const col of [...descCols, null]) {
+    const props = col
+      ? { ...baseProps, [col]: { rich_text: [{ text: { content: product.description.slice(0, 2000) } }] } }
+      : baseProps
+    const r = await fetch("https://api.notion.com/v1/pages", {
+      method: "POST", headers: hdrs(),
+      body:   JSON.stringify({ parent: { database_id: dbId }, properties: props }),
+    })
+    if (r.ok) return
+    if (col === null) console.warn("[createLineItem] failed:", r.status)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+export default async function handler(req, res) {
+  if (req.method === "GET") return res.json({ service: "Opxio — Create Proposal", status: "ready" })
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
+
+  const body  = req.body || {}
+  const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
+  if (!rawId) return res.status(400).json({ error: "Missing page_id" })
+  const leadId = rawId.replace(/-/g, "")
+
+  try {
+    // ── 1. Get Lead info ─────────────────────────────────────────────────────
+    const lead       = await getPage(leadId, process.env.NOTION_API_KEY)
+    const leadProps  = lead.properties
+    const companyIds = (leadProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+
+    let picIds = []
+    for (const f of ["PIC Name", "PIC", "Contact", "Person in Charge"]) {
+      picIds = (leadProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
+      if (picIds.length) break
+    }
+
+    // Resolve OS type
+    const pkgRaw = (leadProps["Package Type"]?.select?.name || "").toLowerCase().trim()
+    const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
+    const osName = leadProps["Package Type"]?.select?.name || ""
+
+    // Add-ons from lead
+    const addonSlugs = []
+    for (const item of (leadProps["Add-Ons"]?.multi_select || leadProps.Interest?.multi_select || [])) {
+      const k = item.name.toLowerCase().trim()
+      for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
+        if (k.includes(key)) { addonSlugs.push(val); break }
+      }
+    }
+
+    // Fetch products in parallel
+    const isOS = OS_PACKAGE_SLUGS.has(slug)
+    const [mainProduct, baseProduct, ...addonProducts] = await Promise.all([
+      fetchProductInfo(slug),
+      isOS ? fetchProductInfo("base-os") : Promise.resolve(null),
+      ...addonSlugs.map(s => fetchProductInfo(s)),
+    ])
+
+    console.log("[create_proposal] lead:", leadId, "slug:", slug, "addons:", addonSlugs.length)
+
+    // ── 2. Find recently created Proposal page ───────────────────────────────
+    let propId = null
+    const recent = await findRecentProposal()
+    if (recent) {
+      propId = recent.id
+      console.log("[create_proposal] found proposal:", propId)
+    } else {
+      // Fallback: create proposal page directly
+      const today = new Date().toISOString().split("T")[0]
+      const newProp = await createPage({
+        parent: { database_id: DB.PROPOSALS },
+        properties: {
+          "Ref Number":    { title: [{ text: { content: "" } }] },
+          "Status":        { select: { name: "Draft" } },
+          "Date":          { date: { start: today } },
+          "Payment Terms": { select: { name: "50% Deposit" } },
+          ...(osName ? { "OS Type": { select: { name: osName } } } : {}),
+          ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
+          ...(picIds.length ? { "PIC": { relation: [{ id: picIds[0] }] } } : {}),
+        }
+      }, process.env.NOTION_API_KEY)
+      propId = newProp.id.replace(/-/g, "")
+      console.log("[create_proposal] fallback created:", propId)
+    }
+
+    // ── 3. Patch Proposal properties ─────────────────────────────────────────
+    const today = new Date().toISOString().split("T")[0]
+    const patchProps = {
+      "Status":        { select: { name: "Draft" } },
+      "Date":          { date: { start: today } },
+      "Payment Terms": { select: { name: "50% Deposit" } },
+      ...(osName       ? { "OS Type":     { select: { name: osName } } } : {}),
+      ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
+      ...(picIds.length     ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
+    }
+    await patchPage(propId, patchProps, process.env.NOTION_API_KEY)
+
+    // ── 4. Line Items DB ─────────────────────────────────────────────────────
+    let dbId = await findLineItemsDB(propId)
+    if (!dbId) {
+      dbId = await createLineItemsDB(propId)
+      console.log("[create_proposal] created line items DB:", dbId)
+    }
+
+    // ── 5. Create line items (Base OS → Main product → Add-ons) ─────────────
+    const lineItems = []
+    if (isOS && baseProduct?.id) lineItems.push(baseProduct)
+    if (mainProduct?.id)         lineItems.push(mainProduct)
+    lineItems.push(...addonProducts.filter(Boolean))
+
+    for (const item of lineItems) {
+      await createLineItem(dbId, item)
+    }
+    console.log(`[create_proposal] ${lineItems.length} line items created`)
+
+    // ── 6. Advance Lead stage ────────────────────────────────────────────────
+    patchPage(leadId, { "Stage": { status: { name: "Proposal Sent" } } }, process.env.NOTION_API_KEY).catch(() => {})
+
+    return res.status(200).json({
+      status: "ok", propId,
+      productName: mainProduct?.name ?? null,
+      lineItemsCount: lineItems.length,
+    })
+  } catch (e) {
+    console.error("[create_proposal] error:", e.message, e.stack)
+    return res.status(500).json({ error: e.message })
+  }
+}

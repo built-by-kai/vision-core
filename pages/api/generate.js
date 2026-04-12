@@ -8,7 +8,7 @@
 
 import { waitUntil } from "@vercel/functions"
 import {
-  fetchQuotationData, fetchInvoiceData,
+  fetchQuotationData, fetchInvoiceData, fetchProposalData,
   generateQuotationPdf, generateInvoicePdf, generateReceiptPdf
 } from "../../lib/pdf"
 import { uploadBlob } from "../../lib/blob"
@@ -45,6 +45,23 @@ async function handleQuotation(pageId) {
 
   console.log(`[generate:quotation] done — ${data.quotation_no} — ${pdfUrl}`)
   return { type: "quotation", quotation_no: data.quotation_no, pdf_url: pdfUrl, total }
+}
+
+async function handleProposal(pageId) {
+  const data     = await fetchProposalData(pageId, process.env.NOTION_API_KEY)
+  const pdfBuf   = await generateQuotationPdf(data)  // docType=Proposal handled inside
+  const filename = `proposals/${data.proposal_no || pageId}.pdf`
+  const { url }  = await uploadBlob(filename, pdfBuf)
+  const pdfUrl   = `${url}?v=${Date.now()}`
+
+  await patchPage(pageId, {
+    "PDF":    { url: pdfUrl },
+    "Status": { select: { name: "Send Proposal" } },
+    "Date":   { date: { start: new Date().toISOString().split("T")[0] } },
+  }, process.env.NOTION_API_KEY)
+
+  console.log(`[generate:proposal] done — ${data.proposal_no} — ${pdfUrl}`)
+  return { type: "proposal", proposal_no: data.proposal_no, pdf_url: pdfUrl }
 }
 
 async function handleInvoice(pageId) {
@@ -139,6 +156,8 @@ export default function handler(req, res) {
         await handleInvoice(pageId)
       } else if (type === "receipt") {
         await handleReceipt(pageId)
+      } else if (type === "proposal") {
+        await handleProposal(pageId)
       } else {
         await handleQuotation(pageId)
       }
