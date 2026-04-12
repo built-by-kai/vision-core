@@ -18,7 +18,8 @@
     "puppeteer-core": "22.15.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "docx": "^8.5.0"
   },
   "devDependencies": {
     "eslint": "^9",
