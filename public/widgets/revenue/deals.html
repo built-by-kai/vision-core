@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Current Deals</title><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--bal:#F5A623;--balm:rgba(245,166,35,.1);}
+body.light{--g:#5C9900;--gb:rgba(92,153,0,.22);--bal:#C47D00;}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.12);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.07);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;letter-spacing:-.03em;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* stat cards */
+.stat{padding:18px 18px 16px;position:relative;}
+.stat-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);opacity:.5;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat:hover::before{opacity:1;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.38);margin-bottom:10px;}
+body.light .s-lbl{color:rgba(0,0,0,.38);}
+.s-val{font-size:36px;font-weight:900;letter-spacing:-2px;line-height:1;color:rgba(255,255,255,.25);}
+body.light .s-val{color:rgba(0,0,0,.2);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.15);margin-top:7px;}
+body.light .s-sub{color:rgba(0,0,0,.22);}
+.s-tag{display:inline-block;margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.06);}
+
+/* active deal accent (Building) */
+.stat.is-active .stat-dot{background:var(--g);opacity:.6;}
+.stat.is-active::before{background:linear-gradient(90deg,var(--g),transparent);}
+.stat.is-active .s-val{color:var(--g);}
+.stat.is-active .s-tag{background:var(--gm);color:var(--g);border-color:rgba(170,255,0,.15);}
+.stat.is-active:hover{border-color:rgba(170,255,0,.12);}
+
+/* balance due amber */
+.stat.is-balance .stat-dot{background:var(--bal);opacity:.7;}
+.stat.is-balance::before{background:linear-gradient(90deg,var(--bal),transparent);}
+.stat.is-balance .s-val{color:var(--bal);}
+.stat.is-balance .s-tag{background:rgba(245,166,35,.1);color:var(--bal);border-color:rgba(245,166,35,.2);}
+.stat.is-balance:hover{border-color:rgba(245,166,35,.15);}
+
+/* delivered */
+.stat.is-delivered .stat-dot{background:var(--g);opacity:.9;}
+.stat.is-delivered::before{opacity:1;}
+.stat.is-delivered .s-val{color:var(--g);}
+.stat.is-delivered .s-tag{background:var(--gm);color:var(--g);border-color:rgba(170,255,0,.2);}
+
+/* grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:600px){.grid3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:380px){.grid3{grid-template-columns:1fr;}}
+
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:14px 0 8px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+
+/* footer */
+.foot{display:flex;align-items:stretch;gap:0;margin-top:10px;background:#1E1E1E;border:1px solid rgba(255,255,255,.04);border-radius:10px;overflow:hidden;}
+body.light .foot{background:#fff;border-color:rgba(0,0,0,.06);}
+.foot-item{flex:1;padding:10px 14px;border-right:1px solid rgba(255,255,255,.05);}
+body.light .foot-item{border-color:rgba(0,0,0,.05);}
+.foot-item:last-child{border-right:none;}
+.f-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-bottom:3px;}
+body.light .f-lbl{color:rgba(0,0,0,.3);}
+.f-val{font-size:16px;font-weight:900;letter-spacing:-.5px;color:var(--g);}
+.f-val.amber{color:var(--bal);}
+body.light .f-val{color:#5C9900;}
+body.light .f-val.amber{color:#C47D00;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+</style></head><body>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  <div><p class="eyebrow">Revenue OS</p><h1 class="h-title">Current Deals</h1></div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="sec-lbl">Early Stage</div>
+<div class="grid3">
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Incoming</div>
+    <div class="s-val" id="v-incoming">—</div>
+    <div class="s-sub">New leads not yet contacted</div>
+    <div class="s-tag">New</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Discovery Done</div>
+    <div class="s-val" id="v-discovery">—</div>
+    <div class="s-sub">Call done, proposal in progress</div>
+    <div class="s-tag">Scoped</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Awaiting Deposit</div>
+    <div class="s-val" id="v-awaiting">—</div>
+    <div class="s-sub">Proposal approved, deposit pending</div>
+    <div class="s-tag">Pending</div>
+  </div>
+</div>
+
+<div class="sec-lbl">Active</div>
+<div class="grid3">
+  <div class="card stat is-active">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Building</div>
+    <div class="s-val" id="v-building">—</div>
+    <div class="s-sub">Active installs in progress</div>
+    <div class="s-tag">In Build</div>
+  </div>
+  <div class="card stat is-balance">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Balance Due</div>
+    <div class="s-val" id="v-balance">—</div>
+    <div class="s-sub">Build done, final payment pending</div>
+    <div class="s-tag">Awaiting Payment</div>
+  </div>
+  <div class="card stat is-delivered">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Delivered</div>
+    <div class="s-val" id="v-delivered">—</div>
+    <div class="s-sub">Fully paid and handed over</div>
+    <div class="s-tag">Complete</div>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="foot-item">
+    <div class="f-lbl">Active Builds</div>
+    <div class="f-val" id="f-active">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Balance Pending</div>
+    <div class="f-val amber" id="f-balance">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Delivered This Month</div>
+    <div class="f-val" id="f-delivered">—</div>
+  </div>
+  <div class="foot-item">
+    <div class="f-lbl">Won This Month</div>
+    <div class="f-val" id="f-won">—</div>
+  </div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
+let light = false;
+function toggleMode(){ light=!light; document.body.classList.toggle('light',light); document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light'; }
+function setTs(){ document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+async function loadData(){
+  try {
+    const r = await fetch(apiUrl('/api/data/deals'));
+    const j = await r.json();
+    const s = j.stages || {};
+    document.getElementById('v-incoming').textContent  = s['Incoming']         ?? 0;
+    document.getElementById('v-discovery').textContent = s['Discovery Done']   ?? 0;
+    document.getElementById('v-awaiting').textContent  = s['Awaiting Deposit'] ?? 0;
+    document.getElementById('v-building').textContent  = s['Building']         ?? 0;
+    document.getElementById('v-balance').textContent   = s['Balance Due']      ?? 0;
+    document.getElementById('v-delivered').textContent = s['Delivered']        ?? 0;
+    document.getElementById('f-active').textContent    = s['Building']         ?? 0;
+    document.getElementById('f-balance').textContent   = s['Balance Due']      ?? 0;
+    document.getElementById('f-delivered').textContent = j.deliveredThisMonth  ?? 0;
+    document.getElementById('f-won').textContent       = j.wonThisMonth        ?? 0;
+    setTs();
+  } catch(e) { console.error('deals widget:', e); }
+}
+loadData();
+function doRefresh(){ const b=document.getElementById('rb'); b.textContent='↻'; b.style.opacity='.4'; loadData().then(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; }); }
+setInterval(loadData, 5*60*1000);
+</script></body></html>
