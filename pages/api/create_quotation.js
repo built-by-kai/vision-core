@@ -507,10 +507,10 @@ export default async function handler(req, res) {
       console.log("[create_quotation] fallback: created new quotation:", quotId)
     }
 
-    // ── 4. Advance Deal stage → Proposal Sent ───────────────────────────────
-    if (leadId) {
-      patchPage(leadId, { "Stage": { status: { name: "Proposal Sent" } } }, process.env.NOTION_API_KEY).catch(() => {})
-    }
+    // ── 4. No Lead/Deal stage advancement on quotation creation ─────────────
+    // Quotation status (Draft → Issued → Approved) is tracked on the Quotation
+    // document itself. The Lead stage only changes at "Awaiting Deposit" (triggered
+    // by create_invoice when quotation is approved) and "Converted" (deposit paid).
 
     const keyPrefix = (process.env.NOTION_API_KEY || "").slice(0, 12)
     console.log("[create_quotation] done", { quotId, foundViaNotion, quoteType, productFound: !!product?.id })
