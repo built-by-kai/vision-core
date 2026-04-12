@@ -2,7 +2,7 @@
 // POST /api/deposit_paid   { "page_id": "<invoice_page_id>" }
 // Triggered by Notion button "Mark Deposit Paid" on Invoice page.
 
-import { getPage, patchPage, queryDB, plain, DB, createLedgerEntry } from "../../lib/notion"
+import { getPage, patchPage, createPage, queryDB, plain, DB, createLedgerEntry } from "../../lib/notion"
 
 const QUOTE_TYPE_TO_SLUG = {
   "full agency os":  "full-agency-os",
@@ -121,15 +121,72 @@ async function process(payload) {
     } catch {}
   }
 
+  // ── Detect Lead vs Deal and advance stage / create Deal ─────────────────
+  // "Deal Source" on Invoice can point to a Lead (new client) or Deal (existing client).
+  // • Lead  → mark Lead "Converted", spin up a new Deal at "Building"
+  // • Deal  → advance Deal to "Building" directly
+  let dealId = null // will be set if we create or find a Deal
   if (leadId) {
     try {
-      const lp = await getPage(leadId, token)
-      const currentStage = lp.properties.Stage?.status?.name || ""
-      const doneStages   = ["Building", "Balance Due", "Delivered", "Active", "Closed – Paid"]
-      if (!doneStages.includes(currentStage)) {
-        await patchPage(leadId, { "Stage": { status: { name: "Building" } } }, token)
+      const sourcePage  = await getPage(leadId, token)
+      const sourceDbId  = (sourcePage.parent?.database_id || "").replace(/-/g, "")
+      const isLead      = sourceDbId === DB.LEADS.replace(/-/g, "")
+
+      if (isLead) {
+        // ── New client: Lead → Converted, create Deal at Building ─────────────
+        const lp = sourcePage.properties
+        const leadName      = plain(lp["Lead Name"]?.title || []) || "New Deal"
+        const compIds       = (lp.Company?.relation       || []).map(r => r.id.replace(/-/g, ""))
+        const picIds        = (lp["PIC Name"]?.relation   || []).map(r => r.id.replace(/-/g, ""))
+        const osInterest    = lp["OS Interest"]?.select?.name || ""
+        const addons        = (lp["Add-ons"]?.multi_select || []).map(a => ({ name: a.name }))
+        const situation     = plain(lp.Situation?.rich_text || [])
+        const notes         = plain(lp.Notes?.rich_text     || [])
+        const sources       = (lp.Source?.multi_select      || []).map(s => ({ name: s.name }))
+        const discoveryCall = lp["Discovery Call"]?.date?.start || null
+
+        // Create Deal in Deals DB starting at Building
+        const dealPage = await createPage({
+          parent: { database_id: DB.DEALS },
+          properties: {
+            "Lead Name":   { title: [{ text: { content: leadName } }] },
+            "Stage":       { status: { name: "Building" } },
+            "Lead Source": { relation: [{ id: leadId }] },
+            ...(compIds.length ? { "Company":      { relation: [{ id: compIds[0] }] } } : {}),
+            ...(picIds.length  ? { "PIC Name":     { relation: [{ id: picIds[0]  }] } } : {}),
+            ...(osInterest     ? { "Package Type": { select: { name: osInterest } } } : {}),
+            ...(addons.length  ? { "Add-ons":      { multi_select: addons } } : {}),
+            ...(situation      ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
+            ...(notes          ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
+            ...(sources.length ? { "Source":       { multi_select: sources } } : {}),
+            ...(discoveryCall  ? { "Discovery Call": { date: { start: discoveryCall } } } : {}),
+          },
+        }, token)
+        dealId = dealPage.id.replace(/-/g, "")
+        console.log(`[deposit_paid] lead converted → new deal: ${dealId}`)
+
+        // Mark Lead as Converted (was "Awaiting Deposit") + link Deal
+        await patchPage(leadId, {
+          "Stage": { status: { name: "Converted" } },
+          "Deal":  { relation: [{ id: dealId }] },
+        }, token)
+
+        // Re-point Invoice and Project Deal Source to the new Deal
+        await patchPage(pageId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {})
+
+      } else {
+        // ── Existing client: Deal → Building ─────────────────────────────────
+        dealId = leadId
+        const currentStage = sourcePage.properties.Stage?.status?.name || ""
+        const doneStages   = ["Building", "Balance Due", "Delivered"]
+        if (!doneStages.includes(currentStage)) {
+          await patchPage(dealId, { "Stage": { status: { name: "Building" } } }, token)
+          console.log(`[deposit_paid] deal stage → Building: ${dealId}`)
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.warn("[deposit_paid] stage advance:", e.message)
+    }
   }
 
   let projectId = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
@@ -148,6 +205,8 @@ async function process(payload) {
     await patchPage(projectId, {
       "Status":     { select: { name: "Build Started" } },
       "Start Date": { date: { start: today } },
+      // If we created a new Deal (from Lead conversion), link it to the Project
+      ...(dealId && dealId !== leadId ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
     }, token)
     try {
       await patchPage(pageId, { "Implementation": { relation: [{ id: projectId }] } }, token)
