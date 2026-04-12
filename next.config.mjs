@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Prevent webpack from bundling binary-dependent packages
+  // Required for @sparticuz/chromium + puppeteer-core to work in serverless functions
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   async rewrites() {
     const widgets = [
       // Revenue OS
@@ -20,4 +23,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
