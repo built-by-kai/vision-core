@@ -26,8 +26,10 @@ async function handleQuotation(pageId, res) {
   const { url }  = await uploadBlob(filename, pdfBuf)
 
   const total = (data.line_items || []).reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0)
+  // Append timestamp so Notion always opens a fresh PDF (Vercel Blob caches 1 year by default)
+  const pdfUrl = `${url}?v=${Date.now()}`
   await patchPage(pageId, {
-    "PDF":        { url },
+    "PDF":        { url: pdfUrl },
     "Status":     { select: { name: "Draft" } },
     "Issue Date": { date: { start: new Date().toISOString().split("T")[0] } },
     ...(total > 0 ? { "Amount": { number: total } } : {}),
@@ -40,7 +42,7 @@ async function handleQuotation(pageId, res) {
     status:       "success",
     type:         "quotation",
     quotation_no: data.quotation_no,
-    pdf_url:      url,
+    pdf_url:      pdfUrl,
     total,
   })
 }
