@@ -294,7 +294,6 @@ async function handleConvertToDeal(leadId, res) {
   const notes         = plain(lp.Notes?.rich_text     || [])
   const leadName      = plain(lp["Lead Name"]?.title   || [])
   const discoveryCall = lp["Discovery Call"]?.date?.start || null
-  const sources       = (lp.Source?.multi_select || []).map(s => ({ name: s.name }))
 
   // ── Find or create the Deal page ──────────────────────────────────────────
   // If Action 1 already created it (two-action button), find it via Lead.Deal relation
@@ -331,7 +330,6 @@ async function handleConvertToDeal(leadId, res) {
     ...(situation         ? { "Situation":     { rich_text: [{ text: { content: situation } }] } } : {}),
     ...(notes             ? { "Notes":         { rich_text: [{ text: { content: notes } }] } } : {}),
     ...(discoveryCall     ? { "Discovery Call":{ date: { start: discoveryCall } } } : {}),
-    ...(sources.length    ? { "Source":        { multi_select: sources } } : {}),
   }, token)
 
   // ── Update Lead: link Deal + advance Stage → Converted ────────────────────
