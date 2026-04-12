@@ -51,35 +51,124 @@ PRODUCTS_DB   = "9d61639072364fb09eeccece94d082a7"  # Catalogue DB (rebuilt Apr 
 # These match the option names set on Leads CRM Package Type field exactly.
 # Slugs for which Base OS (RM 0, included) is auto-added as first line item
 OS_PACKAGE_SLUGS = frozenset({
-    "operations-os", "sales-os", "business-os", "business-os-phase", "starter-os"
+    "operations-os", "sales-os", "revenue-os", "business-os", "business-os-phase",
+    "agency-os", "marketing-os", "team-os", "retention-os", "starter-os",
+    "micro-install",
 })
 
 PACKAGE_SLUG_MAP = {
-    "operations os":              "operations-os",
-    "sales os":                   "sales-os",
-    "business os":                "business-os",
-    "business os – phase by phase": "business-os-phase",
-    "starter os":                 "starter-os",
+    "operations os":                    "operations-os",
+    "sales os":                         "sales-os",
+    "revenue os":                       "revenue-os",
+    "business os":                      "business-os",
+    "business os – phase by phase":     "business-os-phase",
+    "agency os":                        "agency-os",
+    "marketing os":                     "marketing-os",
+    "team os":                          "team-os",
+    "retention os":                     "retention-os",
+    "starter os":                       "starter-os",
+    "micro install":                    "micro-install",
+    "micro install — 1 module":         "micro-install",
+    "micro install — 2 modules":        "micro-install",
+    "micro install — 3 modules":        "micro-install",
 }
 
 # Fallback keyword map for Interest multi-select and legacy/partial matches
 INTEREST_SLUG_MAP = {
     "operations os":                     "operations-os",
     "sales os":                          "sales-os",
+    "revenue os":                        "revenue-os",
     "business os":                       "business-os",
+    "agency os":                         "agency-os",
+    "marketing os":                      "marketing-os",
+    "team os":                           "team-os",
+    "retention os":                      "retention-os",
     "starter os":                        "starter-os",
+    "micro install":                     "micro-install",
     "additional module":                 "addon-system-module",
     "additional system module":          "addon-system-module",
     "automation (within":                "addon-automation-within",
     "automation (cross":                 "addon-automation-cross",
     "advanced dashboard":                "addon-dashboard",
+    "enhanced dashboard":                "addon-enhanced-dashboard",
     "custom widget":                     "addon-widget",
     "api / external integration":        "addon-api-integration",
     "automation & workflow integration": "addon-workflow-integration",
     "lead capture system":               "addon-lead-capture",
     "client portal view":                "addon-client-portal",
     "ai agent integration":              "addon-ai-agent",
+    "project kickoff automation":        "addon-kickoff-project",
+    "campaign kickoff automation":       "addon-kickoff-campaign",
+    "client onboarding kickoff":         "addon-kickoff-onboarding",
+    "renewal kickoff automation":        "addon-kickoff-renewal",
+    "hiring kickoff automation":         "addon-kickoff-hiring",
+    "ads platform integration":          "addon-ads-integration",
 }
+
+# Modules included per OS slug — shown in the Description of the OS line item
+# so the client can see exactly what they're getting in the quotation.
+OS_MODULES = {
+    "revenue-os": {
+        "Revenue OS": ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                       "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+    },
+    "sales-os": {
+        "Revenue OS": ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                       "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+    },
+    "operations-os": {
+        "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                          "Team Responsibility Matrix", "SOP & Process Library"],
+    },
+    "marketing-os": {
+        "Marketing OS": ["Campaign Tracker", "Content Production Tracker", "Content Calendar",
+                         "Brand & Asset Library", "Ads Tracker"],
+    },
+    "business-os": {
+        "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                          "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+        "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                          "Team Responsibility Matrix", "SOP & Process Library"],
+    },
+    "business-os-phase": {
+        "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                          "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+        "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                          "Team Responsibility Matrix", "SOP & Process Library"],
+    },
+    "agency-os": {
+        "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
+                          "Finance & Expense Tracker", "Product & Pricing Catalogue"],
+        "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
+                          "Team Responsibility Matrix", "SOP & Process Library"],
+        "Marketing OS":  ["Campaign Tracker", "Content Production Tracker", "Content Calendar",
+                          "Brand & Asset Library", "Ads Tracker"],
+    },
+    "team-os": {
+        "Team OS": ["Hiring Pipeline", "Team Onboarding Tracker", "Performance & Goals",
+                    "Leave & Availability", "Role & Compensation Log"],
+    },
+    "retention-os": {
+        "Retention OS": ["Client Health Tracker", "NPS & Feedback Log", "Renewal Pipeline",
+                         "Upsell Opportunity Tracker", "Support & Issue Log"],
+    },
+}
+
+
+def build_module_description(slug):
+    """
+    Returns a formatted string listing the modules included for the given OS slug.
+    Used as the Description field on the main OS line item in the quotation.
+    Example: "Revenue OS: CRM & Pipeline · Proposal & Deal Tracker · ..."
+    Returns empty string for slugs without a defined module set (e.g. starter-os).
+    """
+    groups = OS_MODULES.get(slug)
+    if not groups:
+        return ""
+    lines = []
+    for group_name, mods in groups.items():
+        lines.append(f"{group_name}: {' · '.join(mods)}")
+    return "\n".join(lines)
 
 
 # ── Helpers ───────────────────────────────────
@@ -478,12 +567,21 @@ def extract_lead_info(props, hdrs):
         "automation (within database)":      "addon-automation-within",
         "automation (cross-database)":       "addon-automation-cross",
         "advanced dashboard":                "addon-dashboard",
+        "enhanced dashboard":                "addon-enhanced-dashboard",
         "custom widget":                     "addon-widget",
         "api / external integration":        "addon-api-integration",
         "automation & workflow (make/n8n)":  "addon-workflow-integration",
         "lead capture system":               "addon-lead-capture",
         "client portal view":                "addon-client-portal",
         "ai agent integration":              "addon-ai-agent",
+        "project kickoff automation":        "addon-kickoff-project",
+        "campaign kickoff automation":       "addon-kickoff-campaign",
+        "client onboarding kickoff":         "addon-kickoff-onboarding",
+        "renewal kickoff automation":        "addon-kickoff-renewal",
+        "hiring kickoff automation":         "addon-kickoff-hiring",
+        "ads platform integration":          "addon-ads-integration",
+        "team os":                           "team-os",
+        "retention os":                      "retention-os",
     }
 
     addon_products = []
@@ -832,9 +930,14 @@ def process(payload):
                                          base["price"], hdrs,
                                          description=base.get("description", ""))
 
+            # Use module list as description — overrides Products DB description
+            # so client sees exactly what's included in the OS package.
+            slug_for_desc = product.get("slug", "")
+            module_desc = build_module_description(slug_for_desc)
+            os_description = module_desc or product.get("description", "")
             create_line_item(li_db_id, product["id"], product["name"],
                              product["price"], hdrs,
-                             description=product.get("description", ""))
+                             description=os_description)
 
             # Add confirmed add-on line items (No. 3, 4, 5…)
             for addon in addon_products:
