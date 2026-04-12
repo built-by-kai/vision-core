@@ -2,28 +2,22 @@
 // GET /api/generate?page_id=<id>&type=quotation|invoice|receipt
 // Generates PDF, uploads to Vercel Blob, writes URL back to Notion page.
 // Triggered by Notion button "Generate PDF".
+// Uses dynamic imports so module-load errors are surfaced as JSON (not HTML 500).
 
-import {
-  fetchQuotationData, fetchInvoiceData,
-  generateQuotationPdf, generateInvoicePdf, generateReceiptPdf
-} from "../../lib/pdf"
-import { uploadBlob } from "../../lib/blob"
-import { patchPage, getPage, plain } from "../../lib/notion"
-
-
-// Increase default body size limit is not needed for GET, but set timeout via config
 export const config = {
   api: { responseLimit: false },
 }
 
 function detectType(req) {
-  // Explicit ?type= param
   if (req.query.type) return req.query.type.toLowerCase()
-  // Fallback: look at the referer or path
   return "quotation"
 }
 
 async function handleQuotation(pageId, res) {
+  const { fetchQuotationData, generateQuotationPdf } = await import("../../lib/pdf")
+  const { uploadBlob } = await import("../../lib/blob")
+  const { patchPage } = await import("../../lib/notion")
+
   const data     = await fetchQuotationData(pageId, process.env.NOTION_API_KEY)
   const pdfBuf   = await generateQuotationPdf(data)
   const filename = `quotations/${data.quotation_no || pageId}.pdf`
@@ -51,6 +45,10 @@ async function handleQuotation(pageId, res) {
 }
 
 async function handleInvoice(pageId, res) {
+  const { fetchInvoiceData, generateInvoicePdf } = await import("../../lib/pdf")
+  const { uploadBlob } = await import("../../lib/blob")
+  const { patchPage } = await import("../../lib/notion")
+
   const data   = await fetchInvoiceData(pageId, process.env.NOTION_API_KEY)
   const pdfBuf = await generateInvoicePdf(data)
   const suffix = data.invoice_type === "Deposit" ? "-D" : data.invoice_type === "Final Payment" ? "-F" : ""
@@ -72,7 +70,10 @@ async function handleInvoice(pageId, res) {
 }
 
 async function handleReceipt(pageId, res) {
-  // Fetch receipt page
+  const { generateReceiptPdf } = await import("../../lib/pdf")
+  const { uploadBlob } = await import("../../lib/blob")
+  const { getPage, patchPage, plain, fetchCompanyDetails } = await import("../../lib/notion")
+
   const page   = await getPage(pageId, process.env.NOTION_API_KEY)
   const props  = page.properties
 
@@ -86,8 +87,7 @@ async function handleReceipt(pageId, res) {
   const compRels  = props.Company?.relation || []
   if (compRels.length) {
     try {
-      const { getPage: gp } = await import("../../lib/notion")
-      const cp   = await gp(compRels[0].id.replace(/-/g, ""), process.env.NOTION_API_KEY)
+      const cp   = await getPage(compRels[0].id.replace(/-/g, ""), process.env.NOTION_API_KEY)
       const cprops = cp.properties
       for (const [, v] of Object.entries(cprops)) {
         if (v.type === "title") { companyName = plain(v.title); break }
@@ -100,13 +100,11 @@ async function handleReceipt(pageId, res) {
   const invRels = props.Invoice?.relation || []
   if (invRels.length) {
     try {
-      const { getPage: gp } = await import("../../lib/notion")
-      const ip = await gp(invRels[0].id.replace(/-/g, ""), process.env.NOTION_API_KEY)
+      const ip = await getPage(invRels[0].id.replace(/-/g, ""), process.env.NOTION_API_KEY)
       invoiceNo = plain(ip.properties["Invoice No."]?.title || [])
     } catch {}
   }
 
-  const { fetchCompanyDetails } = await import("../../lib/notion")
   const ourCompany = await fetchCompanyDetails(process.env.NOTION_API_KEY)
 
   const data = {
@@ -147,6 +145,6 @@ export default async function handler(req, res) {
     return await handleQuotation(pageId, res)
   } catch (e) {
     console.error(`[generate:${type}]`, e)
-    return res.status(500).json({ error: e.message })
+    return res.status(500).json({ error: e.message, stack: e.stack?.split("\n").slice(0, 5) })
   }
 }
