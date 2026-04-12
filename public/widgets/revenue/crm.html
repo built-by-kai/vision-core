@@ -74,12 +74,9 @@ body.light .lm     {background:rgba(92,153,0,.35);}
 body.light .lm-won {background:rgba(92,153,0,.16);}
 body.light .dm     {background:rgba(61,122,0,.40);}
 body.light .dm-delivered{background:rgba(61,122,0,.68);}
-.f-txt{font-size:11px;font-weight:700;color:rgba(0,0,0,.65);white-space:nowrap;}
-.lm-lost .f-txt,.dm-lost .f-txt{color:rgba(255,255,255,.25);}
-body.light .f-txt{color:rgba(255,255,255,.85);}
-body.light .lm-lost .f-txt, body.light .dm-lost .f-txt{color:rgba(0,0,0,.25);}
-.f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.45);width:20px;text-align:right;flex-shrink:0;}
-body.light .f-n{color:rgba(0,0,0,.4);}
+
+.f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.6);width:24px;text-align:right;flex-shrink:0;}
+body.light .f-n{color:rgba(0,0,0,.5);}
 /* Donut — centered in remaining panel space */
 .donut-wrap{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 0;}
 .d-val{font-weight:900;fill:#fff;}
@@ -275,8 +272,8 @@ function renderLeadsFunnel(stages) {
     const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
     return `<div class="f-row">
       <span class="f-lbl">${r.l}</span>
-      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;">${n > 0 ? `<span class="f-txt">${n}</span>` : ''}</div></div>
-      <span class="f-n">${n}</span>
+      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;"></div></div>
+      <span class="f-n">${n || ''}</span>
     </div>`;
   }).join('');
 }
@@ -300,8 +297,8 @@ function renderDealsFunnel(stages) {
     const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
     return `<div class="f-row">
       <span class="f-lbl">${r.l}</span>
-      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;">${n > 0 ? `<span class="f-txt">${n}</span>` : ''}</div></div>
-      <span class="f-n">${n}</span>
+      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;"></div></div>
+      <span class="f-n">${n || ''}</span>
     </div>`;
   }).join('');
 }
@@ -471,3 +468,4 @@ function drawChart() {
 window.addEventListener('load', () => setTimeout(drawChart, 80));
 window.addEventListener('resize', drawChart);
 </script></body></html>
+
