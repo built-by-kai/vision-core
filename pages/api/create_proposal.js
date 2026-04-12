@@ -89,7 +89,6 @@ async function findRecentProposal(maxAgeSeconds = 180) {
       body: JSON.stringify({
         sorts: [{ timestamp: "created_time", direction: "descending" }],
         page_size: 5,
-        filter: { property: "Status", select: { equals: "Draft" } },
       }),
     })
     const data = await r.json()
@@ -171,6 +170,28 @@ async function createLineItemsDB(pageId) {
   return db.id.replace(/-/g, "")
 }
 
+// ── Clear existing rows from the inline DB (template placeholder rows) ────
+async function clearExistingRows(dbId) {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: "POST", headers: hdrs(),
+      body: JSON.stringify({ page_size: 50 }),
+    })
+    if (!r.ok) return
+    const rows = (await r.json()).results || []
+    // Archive all existing rows (Notion doesn't support hard-delete via API)
+    await Promise.all(rows.map(row =>
+      fetch(`https://api.notion.com/v1/pages/${row.id}`, {
+        method: "PATCH", headers: hdrs(),
+        body: JSON.stringify({ archived: true }),
+      }).catch(() => {})
+    ))
+    console.log(`[clearExistingRows] archived ${rows.length} template rows`)
+  } catch (e) {
+    console.warn("[clearExistingRows]", e.message)
+  }
+}
+
 // ── Create a single line item ──────────────────────────────────────────────
 async function createLineItem(dbId, product) {
   const baseProps = {
@@ -220,9 +241,9 @@ export default async function handler(req, res) {
     const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
     const osName = leadProps["Package Type"]?.select?.name || ""
 
-    // Add-ons from lead
+    // Add-ons from lead — field is "Add-ons" (lowercase o)
     const addonSlugs = []
-    for (const item of (leadProps["Add-Ons"]?.multi_select || leadProps.Interest?.multi_select || [])) {
+    for (const item of (leadProps["Add-ons"]?.multi_select || leadProps["Add-Ons"]?.multi_select || [])) {
       const k = item.name.toLowerCase().trim()
       for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
         if (k.includes(key)) { addonSlugs.push(val); break }
@@ -281,6 +302,9 @@ export default async function handler(req, res) {
     if (!dbId) {
       dbId = await createLineItemsDB(propId)
       console.log("[create_proposal] created line items DB:", dbId)
+    } else {
+      // Template already has the inline DB — clear any placeholder rows first
+      await clearExistingRows(dbId)
     }
 
     // ── 5. Create line items (Base OS → Main product → Add-ons) ─────────────
