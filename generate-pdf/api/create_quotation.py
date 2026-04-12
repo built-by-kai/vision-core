@@ -51,57 +51,57 @@ PRODUCTS_DB   = "9d61639072364fb09eeccece94d082a7"  # Catalogue DB (rebuilt Apr 
 # These match the option names set on Leads CRM Package Type field exactly.
 # Slugs for which Base OS (RM 0, included) is auto-added as first line item
 OS_PACKAGE_SLUGS = frozenset({
-    "operations-os", "sales-os", "revenue-os", "business-os", "business-os-phase",
-    "agency-os", "marketing-os", "team-os", "retention-os", "starter-os",
-    "micro-install",
+    "operations-os", "revenue-os", "business-os", "full-platform-os",
+    "marketing-os", "team-os", "retention-os", "starter-os",
+    "micro-install-1", "micro-install-2", "micro-install-3",
 })
 
 PACKAGE_SLUG_MAP = {
     "operations os":                    "operations-os",
-    "sales os":                         "sales-os",
+    "sales os":                         "revenue-os",        # renamed to Revenue OS
     "revenue os":                       "revenue-os",
     "business os":                      "business-os",
-    "business os – phase by phase":     "business-os-phase",
-    "agency os":                        "agency-os",
+    "business os – phase by phase":     "business-os",       # same product, diff payment plan
+    "agency os":                        "full-platform-os",  # DB slug
     "marketing os":                     "marketing-os",
     "team os":                          "team-os",
     "retention os":                     "retention-os",
     "starter os":                       "starter-os",
-    "micro install":                    "micro-install",
-    "micro install — 1 module":         "micro-install",
-    "micro install — 2 modules":        "micro-install",
-    "micro install — 3 modules":        "micro-install",
+    "micro install":                    "micro-install-1",   # default to 1-module
+    "micro install — 1 module":         "micro-install-1",
+    "micro install — 2 modules":        "micro-install-2",
+    "micro install — 3 modules":        "micro-install-3",
 }
 
 # Fallback keyword map for Interest multi-select and legacy/partial matches
 INTEREST_SLUG_MAP = {
     "operations os":                     "operations-os",
-    "sales os":                          "sales-os",
+    "sales os":                          "revenue-os",
     "revenue os":                        "revenue-os",
     "business os":                       "business-os",
-    "agency os":                         "agency-os",
+    "agency os":                         "full-platform-os",
     "marketing os":                      "marketing-os",
     "team os":                           "team-os",
     "retention os":                      "retention-os",
     "starter os":                        "starter-os",
-    "micro install":                     "micro-install",
+    "micro install":                     "micro-install-1",
     "additional module":                 "addon-system-module",
     "additional system module":          "addon-system-module",
     "automation (within":                "addon-automation-within",
     "automation (cross":                 "addon-automation-cross",
     "advanced dashboard":                "addon-dashboard",
-    "enhanced dashboard":                "addon-enhanced-dashboard",
+    "enhanced dashboard":                "addon-dashboard",        # same DB entry
     "custom widget":                     "addon-widget",
     "api / external integration":        "addon-api-integration",
     "automation & workflow integration": "addon-workflow-integration",
     "lead capture system":               "addon-lead-capture",
     "client portal view":                "addon-client-portal",
     "ai agent integration":              "addon-ai-agent",
-    "project kickoff automation":        "addon-kickoff-project",
-    "campaign kickoff automation":       "addon-kickoff-campaign",
-    "client onboarding kickoff":         "addon-kickoff-onboarding",
-    "renewal kickoff automation":        "addon-kickoff-renewal",
-    "hiring kickoff automation":         "addon-kickoff-hiring",
+    "project kickoff automation":        "automation-project-kickoff",   # actual DB slug
+    "campaign kickoff automation":       "automation-campaign-kickoff",
+    "client onboarding kickoff":         "automation-onboarding-kickoff",
+    "renewal kickoff automation":        "automation-renewal-kickoff",
+    "hiring kickoff automation":         "automation-hiring-kickoff",
     "ads platform integration":          "addon-ads-integration",
 }
 
@@ -109,10 +109,6 @@ INTEREST_SLUG_MAP = {
 # so the client can see exactly what they're getting in the quotation.
 OS_MODULES = {
     "revenue-os": {
-        "Revenue OS": ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
-                       "Finance & Expense Tracker", "Product & Pricing Catalogue"],
-    },
-    "sales-os": {
         "Revenue OS": ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
                        "Finance & Expense Tracker", "Product & Pricing Catalogue"],
     },
@@ -130,13 +126,7 @@ OS_MODULES = {
         "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
                           "Team Responsibility Matrix", "SOP & Process Library"],
     },
-    "business-os-phase": {
-        "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
-                          "Finance & Expense Tracker", "Product & Pricing Catalogue"],
-        "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
-                          "Team Responsibility Matrix", "SOP & Process Library"],
-    },
-    "agency-os": {
+    "full-platform-os": {
         "Revenue OS":    ["CRM & Pipeline", "Proposal & Deal Tracker", "Payment Tracker",
                           "Finance & Expense Tracker", "Product & Pricing Catalogue"],
         "Operations OS": ["Project Tracker", "Task Management", "Client Onboarding Tracker",
@@ -567,18 +557,18 @@ def extract_lead_info(props, hdrs):
         "automation (within database)":      "addon-automation-within",
         "automation (cross-database)":       "addon-automation-cross",
         "advanced dashboard":                "addon-dashboard",
-        "enhanced dashboard":                "addon-enhanced-dashboard",
+        "enhanced dashboard":                "addon-dashboard",           # same DB entry
         "custom widget":                     "addon-widget",
         "api / external integration":        "addon-api-integration",
         "automation & workflow (make/n8n)":  "addon-workflow-integration",
         "lead capture system":               "addon-lead-capture",
         "client portal view":                "addon-client-portal",
         "ai agent integration":              "addon-ai-agent",
-        "project kickoff automation":        "addon-kickoff-project",
-        "campaign kickoff automation":       "addon-kickoff-campaign",
-        "client onboarding kickoff":         "addon-kickoff-onboarding",
-        "renewal kickoff automation":        "addon-kickoff-renewal",
-        "hiring kickoff automation":         "addon-kickoff-hiring",
+        "project kickoff automation":        "automation-project-kickoff",   # actual DB slugs
+        "campaign kickoff automation":       "automation-campaign-kickoff",
+        "client onboarding kickoff":         "automation-onboarding-kickoff",
+        "renewal kickoff automation":        "automation-renewal-kickoff",
+        "hiring kickoff automation":         "automation-hiring-kickoff",
         "ads platform integration":          "addon-ads-integration",
         "team os":                           "team-os",
         "retention os":                      "retention-os",
