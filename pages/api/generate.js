@@ -14,15 +14,37 @@ import {
 import { renderProposal, OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from "../../lib/proposal_template"
 import { htmlToPdf } from "../../lib/puppeteer"
 import { uploadBlob } from "../../lib/blob"
-import { patchPage, getPage, plain, fetchCompanyDetails } from "../../lib/notion"
+import { patchPage, getPage, queryDB, plain, fetchCompanyDetails, DB } from "../../lib/notion"
 
 export const config = {
   api: { responseLimit: false },
 }
 
 function detectType(req) {
-  const t = (req.query.type || "quotation").toLowerCase()
+  const t = (req.query.type || req.body?.type || "quotation").toLowerCase()
   return t
+}
+
+// ── Sequential proposal number generator: PRO-2026-001 ───────────────────
+async function generateProposalNo() {
+  try {
+    const rows = await queryDB(DB.PROPOSALS, null, process.env.NOTION_API_KEY)
+    const year = new Date().getFullYear()
+    let maxNum = 0
+    for (const row of rows) {
+      for (const [, v] of Object.entries(row.properties)) {
+        if (v.type === "title") {
+          const t = plain(v.title)
+          const m = t.match(/PRO-\d{4}-(\d+)/i)
+          if (m) { const n = parseInt(m[1]); if (n > maxNum) maxNum = n }
+        }
+      }
+    }
+    return `PRO-${year}-${String(maxNum + 1).padStart(3, "0")}`
+  } catch (e) {
+    console.warn("[generateProposalNo]", e.message)
+    return `PRO-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`
+  }
 }
 
 async function handleQuotation(pageId) {
@@ -52,6 +74,11 @@ async function handleQuotation(pageId) {
 async function handleProposal(pageId) {
   const data = await fetchProposalData(pageId, process.env.NOTION_API_KEY)
 
+  // ── Generate sequential ref number if page title is still empty ─────────
+  // fetchProposalData returns a timestamp fallback if title is blank — detect and replace
+  const titleIsBlank = !data.proposal_no || /PRO-\d{4}-\d{10,}/.test(data.proposal_no)
+  const proposalNo   = titleIsBlank ? await generateProposalNo() : data.proposal_no
+
   // ── Map fetched data → renderProposal format ────────────────────────────
   const osType    = data.os_type || ""
   const modules   = OS_DEFAULT_MODULES[osType] || {}
@@ -68,7 +95,7 @@ async function handleProposal(pageId) {
   }
 
   const templateData = {
-    ref_number:    data.proposal_no,
+    ref_number:    proposalNo,
     date:          fmtDate(data.issue_date) || new Date().toLocaleDateString("en-MY", { month: "long", year: "numeric" }),
     valid_until:   fmtDate(data.valid_until),
     company_name:  data.company_name || "Client",
@@ -92,7 +119,7 @@ async function handleProposal(pageId) {
   const html   = renderProposal(templateData)
   const pdfBuf = await htmlToPdf(html)
 
-  const filename = `proposals/${data.proposal_no || pageId}.pdf`
+  const filename = `proposals/${proposalNo || pageId}.pdf`
   const { url }  = await uploadBlob(filename, pdfBuf)
   const pdfUrl   = `${url}?v=${Date.now()}`
 
@@ -100,10 +127,14 @@ async function handleProposal(pageId) {
     "PDF":    { url: pdfUrl },
     "Status": { select: { name: "Send Proposal" } },
     "Date":   { date: { start: new Date().toISOString().split("T")[0] } },
+    // Write the ref number back to the title field
+    ...(proposalNo && data.title_prop_name
+      ? { [data.title_prop_name]: { title: [{ text: { content: proposalNo } }] } }
+      : {}),
   }, process.env.NOTION_API_KEY)
 
-  console.log(`[generate:proposal] done — ${data.proposal_no} — ${pdfUrl}`)
-  return { type: "proposal", proposal_no: data.proposal_no, pdf_url: pdfUrl }
+  console.log(`[generate:proposal] done — ${proposalNo} — ${pdfUrl}`)
+  return { type: "proposal", proposal_no: proposalNo, pdf_url: pdfUrl }
 }
 
 async function handleInvoice(pageId) {
@@ -181,8 +212,16 @@ export default function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" })
   }
 
-  const rawId = req.query.page_id || req.query.id || req.body?.page_id
-  if (!rawId) return res.status(400).json({ error: "Missing page_id" })
+  // Notion webhooks send page ID in body.data.id — also accept query params for manual calls
+  const rawId = req.body?.data?.id || req.body?.page_id || req.body?.data?.page_id ||
+                req.query.page_id  || req.query.id
+
+  // Reject unsubstituted Notion template literals like {{id}}
+  if (!rawId || rawId.includes("{{")) {
+    return res.status(400).json({
+      error: "Missing or invalid page_id. Notion button config: do NOT put page_id in the URL — Notion sends it automatically in the request body.",
+    })
+  }
 
   const pageId = rawId.replace(/-/g, "")
   const type   = detectType(req)
@@ -210,3 +249,4 @@ export default function handler(req, res) {
 
   waitUntil(work)
 }
+
