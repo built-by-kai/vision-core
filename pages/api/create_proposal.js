@@ -72,6 +72,7 @@ async function fetchProductInfo(slug) {
       id:          p.id.replace(/-/g, ""),
       name:        plain(p.properties["Product Name"]?.title || []),
       price:       p.properties.Price?.number ?? null,
+      quote_type:  p.properties["Quote Type"]?.select?.name || "New Business",
       description: plain(p.properties.Description?.rich_text || []),
       slug,
     }
@@ -374,9 +375,10 @@ export default async function handler(req, res) {
     }
 
     // Resolve OS type
-    const pkgRaw = (leadProps["Package Type"]?.select?.name || "").toLowerCase().trim()
+    // OS Interest (Leads field) or Package Type (Deals field) — check both
+    const osName = leadProps["OS Interest"]?.select?.name || leadProps["Package Type"]?.select?.name || ""
+    const pkgRaw = osName.toLowerCase().trim()
     const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
-    const osName = leadProps["Package Type"]?.select?.name || ""
 
     // Add-ons from lead — field is "Add-ons" (lowercase o)
     const addonSlugs = []
@@ -439,7 +441,8 @@ export default async function handler(req, res) {
       "Date":          { date: { start: today } },
       "Payment Terms": { select: { name: "50% Deposit" } },
       "Deal Source":   { relation: [{ id: leadId }] },
-      ...(osName        ? { "OS Type":  { select: { name: osName } } } : {}),
+      ...(osName               ? { "OS Type":    { select: { name: osName } } } : {}),
+      ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
       ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
       ...(picIds.length     ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
     }
@@ -473,8 +476,7 @@ export default async function handler(req, res) {
     }
     console.log(`[create_proposal] ${lineItems.length} line items populated`)
 
-    // ── 6. Advance Lead stage ────────────────────────────────────────────────
-    patchPage(leadId, { "Stage": { status: { name: "Proposal Sent" } } }, process.env.NOTION_API_KEY).catch(() => {})
+    // ── 6. Stage advancement removed — proposal/quotation status tracked on documents
 
     return res.status(200).json({
       status: "ok", propId,
@@ -486,3 +488,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
+
