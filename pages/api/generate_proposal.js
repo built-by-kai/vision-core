@@ -1,9 +1,11 @@
 // pages/api/generate_proposal.js
 // Generates PDF proposals from Notion data or direct POST request
 // Handles both Notion webhook automation and direct API calls
+//
+// Note: Uses dynamic imports for @sparticuz/chromium to ensure the env var
+// trick is applied BEFORE the module is first loaded (required for Node 24+
+// on Vercel, where @sparticuz/chromium's auto-detection only handles Node ≤22).
 
-import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
 import { renderProposal, mapNotionPayload } from '../../lib/proposal_template.js';
 import { uploadBlob } from '../../lib/blob.js';
 
@@ -12,6 +14,30 @@ export const config = {
 };
 
 export const maxDuration = 60;
+
+// Lazily loaded — called once per cold start
+let _chromium = null;
+let _puppeteer = null;
+
+async function getChromium() {
+  if (_chromium) return { chromium: _chromium, puppeteer: _puppeteer };
+
+  // Trick @sparticuz/chromium into treating this runtime as Node 22/AL2023.
+  // Without this, the package skips extracting the AL2023 shared libs bundle
+  // (al2023.tar.br) and never sets LD_LIBRARY_PATH — causing libnss3.so errors
+  // on Vercel's Node 24 runtime.
+  if (!process.env.CODEBUILD_BUILD_IMAGE) {
+    process.env.CODEBUILD_BUILD_IMAGE = 'nodejs22';
+  }
+
+  const chromiumMod = await import('@sparticuz/chromium');
+  const puppeteerMod = await import('puppeteer-core');
+
+  _chromium = chromiumMod.default;
+  _puppeteer = puppeteerMod.default;
+
+  return { chromium: _chromium, puppeteer: _puppeteer };
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -40,17 +66,10 @@ export default async function handler(req, res) {
 
     const html = renderProposal(proposalData);
 
-    // Resolve chromium executable path first (this extracts the binary + libs to /tmp)
-    const executablePath = await chromium.executablePath();
+    // Load chromium + puppeteer with env fix applied
+    const { chromium, puppeteer } = await getChromium();
 
-    // Fix for Node.js 24+: @sparticuz/chromium@131 only auto-configures LD_LIBRARY_PATH
-    // for Node 20/22. Manually add the AL2023 lib path for newer Node versions.
-    const al2023LibPath = '/tmp/al2023/lib';
-    if (!process.env.LD_LIBRARY_PATH?.includes(al2023LibPath)) {
-      process.env.LD_LIBRARY_PATH = [al2023LibPath, process.env.LD_LIBRARY_PATH]
-        .filter(Boolean)
-        .join(':');
-    }
+    const executablePath = await chromium.executablePath();
 
     const browser = await puppeteer.launch({
       args: chromium.args,
