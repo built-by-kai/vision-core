@@ -202,7 +202,7 @@ export default function handler(req, res) {
   const type   = detectType(req)
 
   // ── Respond immediately so Notion's button doesn't time out ──────────────
-  res.status(200).json({ status: "accepted", type, page_id: pageId })
+  res.status(200).json({ status: "accepted", type, page_id: pageId, v: "puppeteer-v1" })
 
   // ── waitUntil: Vercel keeps the function alive until this Promise settles ─
   // This is the ONLY reliable way to do post-response work in Vercel serverless.
