@@ -109,11 +109,11 @@ async function process(payload) {
     try { await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, process.env.NOTION_API_KEY) } catch {}
   }
 
-  // ── 3. Advance Lead → "Won – Pending Deposit" ─────────────────────────
+  // ── 3. Advance Deal → "Deposit Due" ───────────────────────────────────
   if (leadId) {
     try {
       await patchPage(leadId, {
-        "Stage": { status: { name: "Won – Pending Deposit" } }
+        "Stage": { status: { name: "Deposit Due" } }
       }, process.env.NOTION_API_KEY)
     } catch (e) {
       console.warn("[create_invoice] Lead stage:", e.message)

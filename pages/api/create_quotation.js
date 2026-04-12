@@ -507,9 +507,9 @@ export default async function handler(req, res) {
       console.log("[create_quotation] fallback: created new quotation:", quotId)
     }
 
-    // ── 4. Advance Lead stage → Proposed ────────────────────────────────────
+    // ── 4. Advance Deal stage → Proposal Sent ───────────────────────────────
     if (leadId) {
-      patchPage(leadId, { "Stage": { status: { name: "Proposed" } } }, process.env.NOTION_API_KEY).catch(() => {})
+      patchPage(leadId, { "Stage": { status: { name: "Proposal Sent" } } }, process.env.NOTION_API_KEY).catch(() => {})
     }
 
     const keyPrefix = (process.env.NOTION_API_KEY || "").slice(0, 12)

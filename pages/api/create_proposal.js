@@ -253,6 +253,54 @@ async function createLineItem(dbId, product) {
   }
 }
 
+// ─── Convert Lead → Deal ──────────────────────────────────────────────────────
+// Called by ?type=deal  (Notion "Convert to Deal" button on Leads page)
+async function handleConvertToDeal(leadId, res) {
+  const lead      = await getPage(leadId, process.env.NOTION_API_KEY)
+  const lp        = lead.properties
+
+  const companyIds = (lp.Company?.relation  || []).map(r => r.id.replace(/-/g, ""))
+  const picIds     = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+  const osInterest = lp["OS Interest"]?.select?.name || ""
+  const addons     = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
+  const situation  = plain(lp.Situation?.rich_text || [])
+  const notes      = plain(lp.Notes?.rich_text || [])
+
+  // Map OS Interest → Package Type for Deals DB
+  const packageType = osInterest
+
+  const today = new Date().toISOString().split("T")[0]
+
+  // Create Deal page in Deals DB
+  const dealProps = {
+    "Lead Name":    { title: [{ text: { content: lp["Lead Name"]?.title?.[0]?.plain_text || "" } }] },
+    "Stage":        { status: { name: "Discovery Done" } },
+    "Lead Source":  { relation: [{ id: leadId }] },
+    ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(picIds.length     ? { "PIC Name":     { relation: [{ id: picIds[0]     }] } } : {}),
+    ...(packageType       ? { "Package Type": { select: { name: packageType } } } : {}),
+    ...(addons.length     ? { "Add-ons":      { multi_select: addons.map(n => ({ name: n })) } } : {}),
+    ...(situation         ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
+    ...(notes             ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
+  }
+
+  const dealPage = await createPage({
+    parent: { database_id: DB.DEALS },
+    properties: dealProps,
+  }, process.env.NOTION_API_KEY)
+
+  const dealId = dealPage.id.replace(/-/g, "")
+
+  // Update Lead: set Deal relation + advance Stage → Converted
+  await patchPage(leadId, {
+    "Deal":  { relation: [{ id: dealId }] },
+    "Stage": { status: { name: "Converted" } },
+  }, process.env.NOTION_API_KEY)
+
+  console.log(`[convert_to_deal] lead ${leadId} → deal ${dealId}`)
+  return res.status(200).json({ status: "ok", leadId, dealId, dealUrl: dealPage.url })
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method === "GET") return res.json({ service: "Opxio — Create Proposal", status: "ready" })
@@ -262,6 +310,14 @@ export default async function handler(req, res) {
   const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
   if (!rawId) return res.status(400).json({ error: "Missing page_id" })
   const leadId = rawId.replace(/-/g, "")
+
+  // Route to Convert to Deal handler if type=deal
+  if ((body.type || req.query.type) === "deal") {
+    return handleConvertToDeal(leadId, res).catch(e => {
+      console.error("[convert_to_deal] error:", e.message)
+      return res.status(500).json({ error: e.message })
+    })
+  }
 
   try {
     // ── 1. Get Lead info ─────────────────────────────────────────────────────

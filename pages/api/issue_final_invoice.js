@@ -118,7 +118,7 @@ async function process(payload) {
   // ── Advance Lead stage ─────────────────────────────────────────────────
   if (leadId) {
     try {
-      await patchPage(leadId, { "Stage": { status: { name: "Pending Final Payment" } } }, process.env.NOTION_API_KEY)
+      await patchPage(leadId, { "Stage": { status: { name: "Balance Due" } } }, process.env.NOTION_API_KEY)
     } catch {}
   }
 
