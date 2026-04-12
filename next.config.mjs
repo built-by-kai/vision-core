@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   // Prevent webpack from bundling binary-dependent packages
   // Required for @sparticuz/chromium + puppeteer-core to work in serverless functions
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core', 'pdfkit', 'fontkit', 'qrcode'],
   async rewrites() {
     const widgets = [
       // Revenue OS
