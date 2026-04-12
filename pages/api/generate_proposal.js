@@ -6,7 +6,7 @@
 // trick is applied BEFORE the module is first loaded (required for Node 24+
 // on Vercel, where @sparticuz/chromium's auto-detection only handles Node ≤22).
 
-import { renderProposal, mapNotionPayload, getPrefillPayload } from '../../lib/proposal_template.js';
+import { renderProposal, mapNotionPayload, getPrefillPayload, OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from '../../lib/proposal_template.js';
 import { uploadBlob } from '../../lib/blob.js';
 
 export const config = {
@@ -87,6 +87,38 @@ export default async function handler(req, res) {
       proposalData = mapNotionPayload(req.body);
     } else {
       proposalData = req.body;
+    }
+
+    // ─── AUTO-PREFILL (Notion mode only) ─────────────────────────────────────
+    // If module fields are empty, automatically apply OS-type defaults so the
+    // PDF always renders with full content. Also patches the Notion page in the
+    // background so the fields appear populated for the user to review later.
+    if (isNotionMode && notionPageId) {
+      const rawProps = req.body.data?.properties || req.body.properties || {};
+      const osType = rawProps['OS Type']?.select?.name || proposalData.os_type || '';
+
+      const hasModules = proposalData.modules &&
+        Object.values(proposalData.modules).some(arr => Array.isArray(arr) && arr.length > 0);
+
+      if (!hasModules && osType && OS_DEFAULT_MODULES[osType]) {
+        proposalData.modules = OS_DEFAULT_MODULES[osType];
+
+        if (!proposalData.addons_later?.length && OS_DEFAULT_ADDONS_LATER[osType]) {
+          proposalData.addons_later = OS_DEFAULT_ADDONS_LATER[osType];
+        }
+
+        // Fire-and-forget: patch the Notion page so fields show populated
+        const patchProperties = getPrefillPayload(osType);
+        fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${process.env.NOTION_API_KEY}`,
+            'Notion-Version': '2022-06-28',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ properties: patchProperties }),
+        }).catch(err => console.error('Auto-prefill Notion patch error:', err));
+      }
     }
 
     // Validate required fields
