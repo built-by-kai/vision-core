@@ -89,26 +89,12 @@ async function handleProposal(pageId) {
     addons_later:  addonsLater,
   }
 
-  let html, pdfBuf, pdfUrl
-  try {
-    html   = renderProposal(templateData)
-    console.log("[generate:proposal] HTML rendered, launching Puppeteer...")
-    pdfBuf = await htmlToPdf(html)
-    console.log("[generate:proposal] PDF generated, uploading...")
-  } catch (puppeteerErr) {
-    // Write error to Notion page so we can see what's failing
-    const errMsg = puppeteerErr?.message || String(puppeteerErr)
-    console.error("[generate:proposal] Puppeteer error:", errMsg)
-    await patchPage(pageId, {
-      "Status": { select: { name: "Draft" } },
-      "PDF":    { url: `https://opxio.io?err=${encodeURIComponent(errMsg.slice(0, 200))}` },
-    }, process.env.NOTION_API_KEY).catch(() => {})
-    throw puppeteerErr
-  }
+  const html   = renderProposal(templateData)
+  const pdfBuf = await htmlToPdf(html)
 
   const filename = `proposals/${data.proposal_no || pageId}.pdf`
   const { url }  = await uploadBlob(filename, pdfBuf)
-  pdfUrl = `${url}?v=${Date.now()}`
+  const pdfUrl   = `${url}?v=${Date.now()}`
 
   await patchPage(pageId, {
     "PDF":    { url: pdfUrl },
@@ -202,7 +188,7 @@ export default function handler(req, res) {
   const type   = detectType(req)
 
   // ── Respond immediately so Notion's button doesn't time out ──────────────
-  res.status(200).json({ status: "accepted", type, page_id: pageId, v: "puppeteer-v1" })
+  res.status(200).json({ status: "accepted", type, page_id: pageId })
 
   // ── waitUntil: Vercel keeps the function alive until this Promise settles ─
   // This is the ONLY reliable way to do post-response work in Vercel serverless.
