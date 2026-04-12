@@ -127,7 +127,8 @@ async function handleProposal(pageId) {
     timeline:      "3–4 weeks",
     fee,
     retainer:      "maintenance",
-    situation:     [],         // stripped from simplified DB — left blank
+    // Build situation paragraphs from the three context fields on the Proposal page
+    situation: [data.situation, data.problems_solved, data.goals].filter(Boolean),
     modules,
     addons_now:    addonNowItems,
     addons_later:  addonsLater,
