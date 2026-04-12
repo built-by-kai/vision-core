@@ -24,11 +24,9 @@ export default async function handler(req, res) {
     const isNotionMode = req.query.source === 'notion';
 
     if (isNotionMode) {
-      // Notion webhook mode: map payload from Notion
       notionPageId = req.body.data?.id || req.body.id;
       proposalData = mapNotionPayload(req.body);
     } else {
-      // Direct POST mode: use provided data
       proposalData = req.body;
     }
 
@@ -40,14 +38,24 @@ export default async function handler(req, res) {
       }
     }
 
-    // Generate HTML from proposal data
     const html = renderProposal(proposalData);
 
-    // Generate PDF using Puppeteer + Chromium
+    // Resolve chromium executable path first (this extracts the binary + libs to /tmp)
+    const executablePath = await chromium.executablePath();
+
+    // Fix for Node.js 24+: @sparticuz/chromium@131 only auto-configures LD_LIBRARY_PATH
+    // for Node 20/22. Manually add the AL2023 lib path for newer Node versions.
+    const al2023LibPath = '/tmp/al2023/lib';
+    if (!process.env.LD_LIBRARY_PATH?.includes(al2023LibPath)) {
+      process.env.LD_LIBRARY_PATH = [al2023LibPath, process.env.LD_LIBRARY_PATH]
+        .filter(Boolean)
+        .join(':');
+    }
+
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: chromium.headless,
     });
 
@@ -67,7 +75,7 @@ export default async function handler(req, res) {
       const filename = `proposal-${proposalData.ref_number || 'draft'}.pdf`;
       const { url: pdfUrl } = await uploadBlob(filename, pdfBuffer);
 
-      // Patch the Notion page PDF property with the blob URL
+      // Patch Notion page PDF property with the blob URL
       const notionApiKey = process.env.NOTION_API_KEY;
       await fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
         method: 'PATCH',
@@ -77,19 +85,12 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          properties: {
-            'PDF': { url: pdfUrl }
-          }
+          properties: { 'PDF': { url: pdfUrl } }
         })
       });
 
-      return res.status(200).json({
-        success: true,
-        filename,
-        pdf_url: pdfUrl
-      });
+      return res.status(200).json({ success: true, filename, pdf_url: pdfUrl });
     } else {
-      // Direct mode: return PDF as download
       const filename = `proposal-${proposalData.ref_number || 'draft'}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
