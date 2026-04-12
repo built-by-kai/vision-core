@@ -2,6 +2,9 @@
 // GET /api/generate?page_id=<id>&type=quotation|invoice|receipt
 // Generates PDF, uploads to Vercel Blob, writes URL back to Notion page.
 // Triggered by Notion button "Generate PDF".
+//
+// IMPORTANT: Responds 200 IMMEDIATELY then processes in background.
+// This prevents Notion's button timeout from triggering "failed to execute".
 
 import {
   fetchQuotationData, fetchInvoiceData,
@@ -19,7 +22,7 @@ function detectType(req) {
   return "quotation"
 }
 
-async function handleQuotation(pageId, res) {
+async function handleQuotation(pageId) {
   const data     = await fetchQuotationData(pageId, process.env.NOTION_API_KEY)
   const pdfBuf   = await generateQuotationPdf(data)
   const filename = `quotations/${data.quotation_no || pageId}.pdf`
@@ -38,16 +41,11 @@ async function handleQuotation(pageId, res) {
       : {}),
   }, process.env.NOTION_API_KEY)
 
-  return res.json({
-    status:       "success",
-    type:         "quotation",
-    quotation_no: data.quotation_no,
-    pdf_url:      pdfUrl,
-    total,
-  })
+  console.log(`[generate:quotation] done — ${data.quotation_no} — ${pdfUrl}`)
+  return { type: "quotation", quotation_no: data.quotation_no, pdf_url: pdfUrl, total }
 }
 
-async function handleInvoice(pageId, res) {
+async function handleInvoice(pageId) {
   const data   = await fetchInvoiceData(pageId, process.env.NOTION_API_KEY)
   const pdfBuf = await generateInvoicePdf(data)
   const suffix = data.invoice_type === "Deposit" ? "-D" : data.invoice_type === "Final Payment" ? "-F" : ""
@@ -59,16 +57,11 @@ async function handleInvoice(pageId, res) {
     "Invoice No.": { title: [{ text: { content: data.invoice_no } }] },
   }, process.env.NOTION_API_KEY)
 
-  return res.json({
-    status:       "success",
-    type:         "invoice",
-    invoice_no:   data.invoice_no,
-    invoice_type: data.invoice_type,
-    pdf_url:      url,
-  })
+  console.log(`[generate:invoice] done — ${data.invoice_no} — ${url}`)
+  return { type: "invoice", invoice_no: data.invoice_no, invoice_type: data.invoice_type, pdf_url: url }
 }
 
-async function handleReceipt(pageId, res) {
+async function handleReceipt(pageId) {
   const page  = await getPage(pageId, process.env.NOTION_API_KEY)
   const props = page.properties
 
@@ -118,7 +111,8 @@ async function handleReceipt(pageId, res) {
 
   await patchPage(pageId, { "PDF": { url } }, process.env.NOTION_API_KEY)
 
-  return res.json({ status: "success", type: "receipt", receipt_no: data.receipt_no, pdf_url: url })
+  console.log(`[generate:receipt] done — ${data.receipt_no} — ${url}`)
+  return { type: "receipt", receipt_no: data.receipt_no, pdf_url: url }
 }
 
 export default async function handler(req, res) {
@@ -132,12 +126,20 @@ export default async function handler(req, res) {
   const pageId = rawId.replace(/-/g, "")
   const type   = detectType(req)
 
+  // ── Respond immediately so Notion's button doesn't time out ──────────────
+  // The function continues executing after res.json() is called.
+  res.status(200).json({ status: "accepted", type, page_id: pageId })
+
+  // ── Background processing ────────────────────────────────────────────────
   try {
-    if (type === "invoice")  return await handleInvoice(pageId, res)
-    if (type === "receipt")  return await handleReceipt(pageId, res)
-    return await handleQuotation(pageId, res)
+    if (type === "invoice") {
+      await handleInvoice(pageId)
+    } else if (type === "receipt") {
+      await handleReceipt(pageId)
+    } else {
+      await handleQuotation(pageId)
+    }
   } catch (e) {
-    console.error(`[generate:${type}]`, e)
-    return res.status(500).json({ error: e.message })
+    console.error(`[generate:${type}] background error:`, e.message, e.stack)
   }
 }

@@ -1,5 +1,6 @@
-import fs from "fs"
-import path from "path"
+// debug_request.js — echoes back request details for debugging Notion button webhooks
+// Set your Notion button URL to: https://dashboard.opxio.io/api/debug_request?page_id={{id}}
+// Then check Vercel function logs at: https://vercel.com/opxio-io/opxio-dashboard/logs
 
 export default async function handler(req, res) {
   const entry = {
@@ -9,11 +10,8 @@ export default async function handler(req, res) {
     body: req.body,
     ua: req.headers["user-agent"],
     ct: req.headers["content-type"],
+    all_headers: req.headers,
   }
-  // Write to /tmp so we can read it
-  try {
-    fs.writeFileSync("/tmp/last_notion_req.json", JSON.stringify(entry, null, 2))
-  } catch {}
   console.log("[debug_request]", JSON.stringify(entry))
   return res.status(200).json({ ok: true, received: entry })
 }
