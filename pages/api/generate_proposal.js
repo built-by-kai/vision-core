@@ -90,17 +90,19 @@ export default async function handler(req, res) {
     }
 
     // ─── AUTO-PREFILL (Notion mode only) ─────────────────────────────────────
-    // If module fields are empty, automatically apply OS-type defaults so the
-    // PDF always renders with full content. Also patches the Notion page in the
-    // background so the fields appear populated for the user to review later.
+    // Apply OS-type defaults if the module fields are empty OR look like stale
+    // test data (avg ≤ 1 module per group). Patches Notion in the background
+    // so the user sees full content on the page after generating.
     if (isNotionMode && notionPageId) {
       const rawProps = req.body.data?.properties || req.body.properties || {};
       const osType = rawProps['OS Type']?.select?.name || proposalData.os_type || '';
 
-      const hasModules = proposalData.modules &&
-        Object.values(proposalData.modules).some(arr => Array.isArray(arr) && arr.length > 0);
+      const modGroups = proposalData.modules ? Object.values(proposalData.modules) : [];
+      const totalMods = modGroups.reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+      // "stale" = every group has exactly 1 module (test data) or everything is empty
+      const looksStale = totalMods === 0 || (modGroups.length > 0 && totalMods <= modGroups.length);
 
-      if (!hasModules && osType && OS_DEFAULT_MODULES[osType]) {
+      if (looksStale && osType && OS_DEFAULT_MODULES[osType]) {
         proposalData.modules = OS_DEFAULT_MODULES[osType];
 
         if (!proposalData.addons_later?.length && OS_DEFAULT_ADDONS_LATER[osType]) {
