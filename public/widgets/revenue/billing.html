@@ -36,8 +36,7 @@ body.light .sec-lbl{color:rgba(0,0,0,.28);}
 .money-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 @media(max-width:640px){.money-strip{grid-template-columns:repeat(2,1fr);}}
 .m-card{padding:16px 18px;position:relative;overflow:hidden;}
-.m-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--accent,var(--g));border-radius:99px 0 0 99px;opacity:.8;}
-.m-card:hover::before{opacity:1;}
+
 .m-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.42);margin-bottom:9px;display:block;}
 body.light .m-lbl{color:rgba(0,0,0,.38);}
 .m-val{font-size:24px;font-weight:900;letter-spacing:-1.2px;line-height:1;color:var(--accent,var(--g));}
@@ -65,8 +64,8 @@ body.light .doc-table td:first-child{color:rgba(0,0,0,.45);}
 body.light .pill-draft{background:rgba(0,0,0,.06);color:rgba(0,0,0,.4);}
 .pill-issued{background:rgba(170,255,0,.1);color:#AAFF00;border:1px solid rgba(170,255,0,.18);}
 body.light .pill-issued{background:rgba(92,153,0,.1);color:#5C9900;border-color:rgba(92,153,0,.2);}
-.pill-approved{background:rgba(52,211,153,.12);color:#34D399;border:1px solid rgba(52,211,153,.2);}
-body.light .pill-approved{background:rgba(16,160,96,.1);color:#10A060;border-color:rgba(16,160,96,.18);}
+.pill-approved{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+body.light .pill-approved{background:rgba(92,153,0,.1);color:#5C9900;border-color:rgba(92,153,0,.2);}
 .pill-rejected{background:rgba(255,107,107,.1);color:#FF6B6B;border:1px solid rgba(255,107,107,.18);}
 body.light .pill-rejected{background:rgba(200,50,50,.08);color:#C83232;border-color:rgba(200,50,50,.14);}
 
