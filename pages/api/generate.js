@@ -127,8 +127,12 @@ async function handleProposal(pageId) {
     timeline:      "3–4 weeks",
     fee,
     retainer:      "maintenance",
-    // Build situation paragraphs from the three context fields on the Proposal page
-    situation: [data.situation, data.problems_solved, data.goals].filter(Boolean),
+    // Build situation blocks with labels from the three context fields on the Proposal page
+    situation: [
+      data.situation       ? { label: "Situation",       text: data.situation }       : null,
+      data.problems_solved ? { label: "Problems Solved", text: data.problems_solved } : null,
+      data.goals           ? { label: "Goals",           text: data.goals }           : null,
+    ].filter(Boolean),
     modules,
     addons_now:    addonNowItems,
     addons_later:  addonsLater,
