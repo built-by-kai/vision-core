@@ -45,7 +45,7 @@ import requests
 QUOTATIONS_DB = "b54fe60097f683e1930d012d635b14d5"
 LEADS_DB      = "caafe60097f683398df40197eeedbffe"
 COMPANIES_DB  = "725fe60097f682c09be901fe6ebb6b41"
-PRODUCTS_DB   = "9d61639072364fb09eeccece94d082a7"  # Catalogue DB (rebuilt Apr 2026)
+PRODUCTS_DB   = "0acfe60097f682568935013f42a876f9"  # Catalogue DB (confirmed Apr 2026)
 
 # Exact match: Package Type select value → Product slug in Products DB
 # These match the option names set on Leads CRM Package Type field exactly.
@@ -595,7 +595,7 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=N
     props = {
         # Title left blank — Notion unique_id auto-generates Quotation No.
         "Quotation No.": {"title": [{"text": {"content": ""}}]},
-        "Status":        {"status": {"name": "Draft"}},
+        "Status":        {"select": {"name": "Draft"}},   # DB uses select, not status type
         "Issue Date":    {"date": {"start": today}},
         "Payment Terms": {"select": {"name": "50% Deposit"}},
     }
@@ -604,9 +604,6 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=N
 
     if company_ids:
         props["Company"] = {"relation": [{"id": cid} for cid in company_ids[:1]]}
-
-    if pic_ids:
-        props["PIC"] = {"relation": [{"id": pid} for pid in pic_ids[:1]]}
 
     body = {
         "parent":     {"database_id": QUOTATIONS_DB},
@@ -663,20 +660,22 @@ def create_quotation_page(lead_id, company_ids, quote_type, hdrs, package_name=N
 
 def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
     """
-    Query the Quotations DB for the most recently created page whose
-    Deal Source relation includes `lead_id`, created within the last
-    `max_age_seconds` seconds (default 2 minutes).
+    Find the Notion-created quotation page so we can patch its properties.
 
-    Retries up to 4 times with increasing back-off to handle the brief
-    delay between the Notion button creating the page and the webhook
-    arriving.
+    Strategy A — filter by Deal Source relation (works when Notion button
+    pre-sets the relation on the new page). Tried twice with a short wait.
+
+    Strategy B — fallback: grab the most-recently created page in the DB
+    and accept it if it's ≤ 60 s old. Covers the common case where the
+    Notion button creates the page WITHOUT pre-setting Deal Source.
 
     Returns (page_id_no_dashes, notion_url) or (None, None).
     """
     import time
     from datetime import datetime, timezone
 
-    for attempt in range(4):
+    # ── Strategy A: filter by Deal Source relation ────────────────────────────
+    for attempt in range(2):
         try:
             r = requests.post(
                 f"https://api.notion.com/v1/databases/{QUOTATIONS_DB}/query",
@@ -699,22 +698,61 @@ def find_recent_quotation(lead_id, hdrs, max_age_seconds=120):
                         page["created_time"].replace("Z", "+00:00")
                     )
                     age = (datetime.now(timezone.utc) - created_dt).total_seconds()
-                    print(f"[INFO] Candidate quotation age: {age:.1f}s (limit {max_age_seconds}s)", file=sys.stderr)
+                    print(f"[INFO] Strategy A candidate age: {age:.1f}s", file=sys.stderr)
                     if age <= max_age_seconds:
                         pid = page["id"].replace("-", "")
                         url = page.get("url", f"https://notion.so/{pid}")
-                        print(f"[INFO] Found recent Notion-created quotation: {pid}", file=sys.stderr)
+                        print(f"[INFO] Strategy A found: {pid}", file=sys.stderr)
                         return pid, url
                     else:
-                        print(f"[INFO] Quotation too old ({age:.0f}s), will create new", file=sys.stderr)
-                        return None, None
+                        print(f"[INFO] Strategy A page too old ({age:.0f}s)", file=sys.stderr)
+                        break  # Old page found → Notion button didn't create one this time
             else:
-                print(f"[WARN] find_recent_quotation query {r.status_code}: {r.text[:200]}", file=sys.stderr)
+                print(f"[WARN] Strategy A query {r.status_code}: {r.text[:200]}", file=sys.stderr)
         except Exception as e:
-            print(f"[WARN] find_recent_quotation attempt {attempt+1}: {e}", file=sys.stderr)
+            print(f"[WARN] Strategy A attempt {attempt+1}: {e}", file=sys.stderr)
 
-        if attempt < 3:
-            time.sleep(2 * (attempt + 1))   # 2s, 4s, 6s
+        if attempt == 0:
+            time.sleep(2)
+
+    # ── Strategy B: most-recently created page (60 s window) ─────────────────
+    # The Notion button creates the page then immediately fires the webhook.
+    # If ≤ 60 s have passed, the newest quotation is almost certainly the one
+    # we need to patch — even without Deal Source pre-set.
+    print(f"[INFO] Strategy B: checking most-recently created quotation", file=sys.stderr)
+    for attempt in range(3):
+        try:
+            r = requests.post(
+                f"https://api.notion.com/v1/databases/{QUOTATIONS_DB}/query",
+                headers=hdrs,
+                json={
+                    "sorts": [{"timestamp": "created_time", "direction": "descending"}],
+                    "page_size": 1,
+                },
+                timeout=10,
+            )
+            if r.ok:
+                results = r.json().get("results", [])
+                if results:
+                    page = results[0]
+                    created_dt = datetime.fromisoformat(
+                        page["created_time"].replace("Z", "+00:00")
+                    )
+                    age = (datetime.now(timezone.utc) - created_dt).total_seconds()
+                    print(f"[INFO] Strategy B newest page age: {age:.1f}s", file=sys.stderr)
+                    if age <= 60:
+                        pid = page["id"].replace("-", "")
+                        url = page.get("url", f"https://notion.so/{pid}")
+                        print(f"[INFO] Strategy B found: {pid}", file=sys.stderr)
+                        return pid, url
+                    else:
+                        print(f"[INFO] Strategy B page too old ({age:.0f}s) — will create new", file=sys.stderr)
+                        return None, None
+        except Exception as e:
+            print(f"[WARN] Strategy B attempt {attempt+1}: {e}", file=sys.stderr)
+
+        if attempt < 2:
+            time.sleep(2)
 
     return None, None
 
@@ -741,6 +779,10 @@ def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs,
     """
     Patch properties of an existing quotation page one field at a time so a
     single bad property name/type cannot block all the others.
+
+    Note: PIC is a ROLLUP on the Quotation DB (derived from Company relation),
+    not a direct relation — it cannot be patched via the API. It auto-updates
+    when Company is linked.
     """
     today = date.today().isoformat()
 
@@ -750,22 +792,9 @@ def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs,
     _patch_prop(page_id, "Payment Terms",
                 {"Payment Terms": {"select": {"name": "50% Deposit"}}}, hdrs)
 
-    # Status — try both status type and select type (DB may vary)
-    r = requests.patch(
-        f"https://api.notion.com/v1/pages/{page_id}",
-        headers=hdrs,
-        json={"properties": {"Status": {"status": {"name": "Draft"}}}},
-        timeout=10,
-    )
-    if not r.ok:
-        # fallback: some DBs use select for Status
-        requests.patch(
-            f"https://api.notion.com/v1/pages/{page_id}",
-            headers=hdrs,
-            json={"properties": {"Status": {"select": {"name": "Draft"}}}},
-            timeout=10,
-        )
-    print(f"[INFO] Status patch attempted on {page_id[:8]}", file=sys.stderr)
+    # Status — Quotation DB uses select type for Status
+    _patch_prop(page_id, "Status",
+                {"Status": {"select": {"name": "Draft"}}}, hdrs)
 
     # Quote Type
     if quote_type:
@@ -782,10 +811,7 @@ def patch_quotation_props(page_id, company_ids, quote_type, lead_id, hdrs,
         _patch_prop(page_id, "Company",
                     {"Company": {"relation": [{"id": cid} for cid in company_ids[:1]]}}, hdrs)
 
-    # PIC relation
-    if pic_ids:
-        _patch_prop(page_id, "PIC",
-                    {"PIC": {"relation": [{"id": pid} for pid in pic_ids[:1]]}}, hdrs)
+    # PIC is a rollup — SKIP, it auto-resolves from Company relation
 
     # Deal Source relation (idempotent — already set by Notion button but patch to be safe)
     if lead_id:
