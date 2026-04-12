@@ -30,7 +30,7 @@ async function mapQuotationPayload(body) {
     if (p.select)  return p.select?.name || '';
     if (p.number !== undefined) return p.number ?? '';
     if (p.phone_number) return p.phone_number;
-    if (p.formula) return p.formula?.string || p.formula?.number ?? '';
+    if (p.formula) return (p.formula?.string || p.formula?.number) ?? '';
     if (p.date)    return p.date?.start || '';
     return '';
   };
