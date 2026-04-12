@@ -122,22 +122,6 @@ body.light body.light body.light body.light ::-webkit-scrollbar{width:5px;}::-we
   </div>
 </div>
 
-    <div class="f-val" id="f-active">—</div>
-  </div>
-  <div class="foot-item">
-    <div class="f-lbl">Balance Pending</div>
-    <div class="f-val amber" id="f-balance">—</div>
-  </div>
-  <div class="foot-item">
-    <div class="f-lbl">Delivered This Month</div>
-    <div class="f-val" id="f-delivered">—</div>
-  </div>
-  <div class="foot-item">
-    <div class="f-lbl">Won This Month</div>
-    <div class="f-val" id="f-won">—</div>
-  </div>
-</div>
-
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
 function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
