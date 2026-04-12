@@ -475,8 +475,12 @@ export default async function handler(req, res) {
             lineItems.push({ ...product, description: buildModuleDescription(product.slug) || product.description })
             lineItems.push(...addons)
 
-            // Create all line items in parallel
-            await Promise.allSettled(lineItems.map(item => createLineItem(dbId, item)))
+            // Create line items SEQUENTIALLY to preserve order:
+            // Base OS → Main product → Add-ons
+            // (Promise.allSettled fires in parallel and Notion creates out of order)
+            for (const item of lineItems) {
+              await createLineItem(dbId, item)
+            }
             console.log(`[create_quotation] ${lineItems.length} line items created`)
           } catch (e) {
             console.warn("[create_quotation] line items error:", e.message)
