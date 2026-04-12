@@ -234,36 +234,10 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
           <th class="th-pct">Sales</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td><span class="prod-num">1</span></td>
-          <td><span class="prod-name">Business OS</span><span class="prod-sub">Full system · Ops + Sales</span></td>
-          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:46%"></div></div></div></td>
-          <td><span class="prod-pct">46%</span></td>
-        </tr>
-        <tr>
-          <td><span class="prod-num">2</span></td>
-          <td><span class="prod-name">Operations OS</span><span class="prod-sub">Workflow & delivery</span></td>
-          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:27%"></div></div></div></td>
-          <td><span class="prod-pct">27%</span></td>
-        </tr>
-        <tr>
-          <td><span class="prod-num">3</span></td>
-          <td><span class="prod-name">Sales OS</span><span class="prod-sub">Pipeline & revenue</span></td>
-          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:15%"></div></div></div></td>
-          <td><span class="prod-pct">15%</span></td>
-        </tr>
-        <tr>
-          <td><span class="prod-num">4</span></td>
-          <td><span class="prod-name">Starter OS</span><span class="prod-sub">Entry system</span></td>
-          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:8%"></div></div></div></td>
-          <td><span class="prod-pct">8%</span></td>
-        </tr>
-        <tr>
-          <td><span class="prod-num">5</span></td>
-          <td><span class="prod-name">Marketing OS</span><span class="prod-sub">Campaigns & content</span></td>
-          <td><div class="prod-bar-wrap"><div class="prod-bar-track"><div class="prod-bar-fill" style="width:4%"></div></div></div></td>
-          <td><span class="prod-pct">4%</span></td>
+      <tbody id="prod-tbody">
+        <!-- Populated dynamically from API topProducts data -->
+        <tr id="prod-placeholder">
+          <td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">Loading…</td>
         </tr>
       </tbody>
     </table>
@@ -375,6 +349,9 @@ let collected = 0;
 function fmtRM(n) {
   if (n >= 1000) return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/, '') + 'K';
   return 'RM ' + Math.round(n).toLocaleString();
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function renderRing(col, tgt) {
@@ -636,6 +613,32 @@ async function loadData() {
 
     const monthly = j.monthly || [];
     animBars(monthly);
+
+    // ── Render top products dynamically ──────────────────────────────────
+    const tbody = document.getElementById('prod-tbody');
+    if (tbody) {
+      const prods = j.topProducts || [];
+      if (prods.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">No approved quotations yet</td></tr>';
+      } else {
+        tbody.innerHTML = prods.map((p, i) => `
+          <tr>
+            <td><span class="prod-num">${i + 1}</span></td>
+            <td>
+              <span class="prod-name">${esc(p.name)}</span>
+              <span class="prod-sub">${esc(p.sub || '')}</span>
+            </td>
+            <td>
+              <div class="prod-bar-wrap">
+                <div class="prod-bar-track">
+                  <div class="prod-bar-fill" style="width:${p.barPct || p.pct || 0}%"></div>
+                </div>
+              </div>
+            </td>
+            <td><span class="prod-pct">${p.pct || 0}%</span></td>
+          </tr>`).join('');
+      }
+    }
 
     // Build revData from monthly paid (lost = 0, no lost-deal revenue data yet)
     revData = monthly.map(m => ({ m: m.m.split(' ')[0], col: m.v, lost: 0 }));

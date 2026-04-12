@@ -21,15 +21,17 @@ export default async function handler(req, res) {
     const notionToken  = getNotionToken(client)
     const QUOTATIONS_DB = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
     const INVOICE_DB    = resolveDB(client, "INVOICE",    DB.INVOICE)
+    const PROPOSALS_DB  = resolveDB(client, "PROPOSALS",  DB.PROPOSALS)
 
     const now   = new Date()
     const year  = now.getFullYear()
     const month = now.getMonth()
 
     // ── Fetch ────────────────────────────────────────────────────────────────
-    const [quotes, invoices] = await Promise.all([
+    const [quotes, invoices, proposals] = await Promise.all([
       queryDB(QUOTATIONS_DB, null, notionToken),
       queryDB(INVOICE_DB,    null, notionToken),
+      queryDB(PROPOSALS_DB,  null, notionToken).catch(() => []),
     ])
 
     // ── Quotations by status ─────────────────────────────────────────────────
@@ -96,10 +98,32 @@ export default async function handler(req, res) {
       .map(([name, count]) => ({
         name, sub: pkgSubtitle(name), count,
         pct: Math.round((count / totalApproved) * 100),
+        barPct: 0, // set below after normalization
       }))
+    // Normalize bar widths so the top product = 100%
+    if (topProducts.length > 0) {
+      const maxPct = topProducts[0].pct || 1
+      topProducts.forEach(p => { p.barPct = Math.round((p.pct / maxPct) * 100) })
+    }
+
+    // ── Proposals CRM by status ───────────────────────────────────────────────
+    const propStatus = { Draft: 0, Sent: 0, Accepted: 0, Rejected: 0 }
+    let propTotal = 0, propValue = 0
+    for (const pr of proposals) {
+      const p = pr.properties
+      const s = p.Status?.select?.name || ""
+      propTotal++
+      const fee = p.Fee?.number || 0
+      propValue += fee
+      if (s === "Draft" || s === "Send Proposal") propStatus.Draft++
+      else if (s === "Sent") propStatus.Sent++
+      else if (s === "Accepted") propStatus.Accepted++
+      else if (s === "Rejected") propStatus.Rejected++
+    }
 
     res.status(200).json({
       quotations: qStatus,
+      proposals: { ...propStatus, total: propTotal, pipelineValue: propValue },
       invoices: {
         depositPending: { count: depositPendingCount, total: depositPendingAmt },
         balancePending: { count: balancePendingCount, total: balancePendingAmt },
@@ -121,10 +145,19 @@ export default async function handler(req, res) {
 
 function pkgSubtitle(name) {
   const map = {
-    "Business OS": "Operations + Sales", "Operations OS": "Full ops system",
-    "Sales OS": "Revenue pipeline",      "Starter OS": "Entry package",
-    "Marketing OS": "Campaigns & content","Intelligence OS": "Prospect intelligence",
+    "Business OS":    "Revenue + Operations",
+    "Agency OS":      "Revenue + Operations + Marketing",
+    "Revenue OS":     "Pipeline & revenue",
+    "Operations OS":  "Workflow & delivery",
+    "Marketing OS":   "Campaigns & content",
+    "Team OS":        "People & performance",
+    "Retention OS":   "Health & renewals",
+    "Intelligence OS":"Prospect intelligence",
+    "Micro Install":  "Entry point · 1–3 modules",
+    "Micro Install — 1 Module": "Entry point",
+    "Micro Install — 2 Modules": "Entry point",
+    "Micro Install — 3 Modules": "Entry point",
   }
-  return map[name] || "Add-on / Custom"
+  return map[name] || "Custom install"
 }
 // cache bust Sat Apr 11 12:34:03 +08 2026

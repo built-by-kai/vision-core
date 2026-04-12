@@ -54,6 +54,8 @@ body.light .inv-lbl{color:rgba(0,0,0,.4);}
 .inv-val{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;color:var(--g);}
 .inv-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);margin-top:6px;}
 body.light .inv-count{color:rgba(0,0,0,.3);}
+.expense{color:#FF6B6B !important;}
+.s-dot.orange{background:#FF9500;}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
@@ -100,6 +102,39 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   </div>
 </div>
 
+<!-- PROPOSALS CRM BY STATUS -->
+<div class="sec-lbl">Proposals</div>
+<div class="g4">
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <span class="s-lbl">Draft</span>
+    <div class="s-val" id="p-draft">0</div>
+    <div class="s-sub">In progress</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <span class="s-lbl">Sent</span>
+    <div class="s-val" id="p-sent">0</div>
+    <div class="s-sub">Awaiting decision</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
+    <span class="s-lbl">Accepted</span>
+    <div class="s-val" id="p-accepted">0</div>
+    <div class="s-sub">Client signed off</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot orange"></div>
+    <span class="s-lbl">Rejected</span>
+    <div class="s-val expense" id="p-rejected">0</div>
+    <div class="s-sub">Declined</div>
+  </div>
+</div>
+<div class="card stat" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;">
+  <span class="s-lbl" style="margin-bottom:0;">Pipeline Value</span>
+  <span style="font-size:20px;font-weight:900;letter-spacing:-1px;color:var(--g);" id="p-value">RM 0</span>
+</div>
+
 <!-- INVOICES BY STATUS -->
 <div class="sec-lbl">Invoices</div>
 <div class="g3">
@@ -143,6 +178,12 @@ function render(d){
   document.getElementById('q-approved').textContent = d.qApproved;
   document.getElementById('q-rejected').textContent = d.qRejected;
 
+  document.getElementById('p-draft').textContent    = d.pDraft;
+  document.getElementById('p-sent').textContent     = d.pSent;
+  document.getElementById('p-accepted').textContent = d.pAccepted;
+  document.getElementById('p-rejected').textContent = d.pRejected;
+  document.getElementById('p-value').textContent    = fmtRM(d.pValue);
+
   document.getElementById('i-deposit').textContent       = fmtRM(d.iDepositAmt);
   document.getElementById('i-deposit-count').textContent = d.iDepositCount + ' invoice' + (d.iDepositCount!==1?'s':'');
   document.getElementById('i-balance').textContent       = fmtRM(d.iBalanceAmt);
@@ -155,12 +196,17 @@ async function loadData(){
   try {
     const r = await fetch(apiUrl('/api/data/finance'));
     const j = await r.json();
-    const q = j.quotations || {}, inv = j.invoices || {};
+    const q = j.quotations || {}, inv = j.invoices || {}, pr = j.proposals || {};
     render({
       qDraft:    q.Draft    || 0,
       qIssued:   q.Issued   || 0,
       qApproved: q.Approved || 0,
       qRejected: q.Rejected || 0,
+      pDraft:    pr.Draft    || 0,
+      pSent:     pr.Sent     || 0,
+      pAccepted: pr.Accepted || 0,
+      pRejected: pr.Rejected || 0,
+      pValue:    pr.pipelineValue || 0,
       iDepositAmt:   inv.depositPending?.total || 0,
       iDepositCount: inv.depositPending?.count || 0,
       iBalanceAmt:   inv.balancePending?.total || 0,
