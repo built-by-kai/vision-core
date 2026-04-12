@@ -19,6 +19,15 @@ EXPANSIONS_DB = "7c6fe60097f682fbbe9b81f828f6d3f8"  # Expansions (active client 
 CONTACTS_SOURCES = {"Threads", "LinkedIn", "WhatsApp", "Email", "Instagram", "TikTok", "Internal Staff", "Referral"}
 LEADS_SOURCES    = {"Threads", "Linkedin", "WhatsApp", "Email", "Instagram", "TikTok", "Referral", "Existing Client"}
 
+# Valid Interest options for Deals CRM (must match Notion multi_select exactly)
+VALID_INTERESTS = {
+    "Revenue OS", "Operations OS", "Business OS", "Marketing OS", "Agency OS",
+    "Intelligence OS", "Starter OS", "People OS", "Client Success OS",
+    "Additional Module", "Automation", "Advanced Dashboard", "Custom Widget",
+    "API / External Integration", "Automation & Workflow Integration",
+    "Lead Capture System", "Client Portal View", "AI Agent Integration",
+}
+
 # Valid Industry options for Companies
 VALID_INDUSTRIES = {
     "Marketing & Creative Agency", "Consulting & Advisory", "Media & Content Production",
@@ -166,6 +175,7 @@ def process_booking(payload):
     team_size    = rv(responses, "team_size", "teamSize")
     challenge    = rv(responses, "notes", "challenge", "operationalChallenge")
     referral_raw = rv(responses, "source", "referral", "whereDidYouFindMe", default=[])
+    interest_raw = rv(responses, "interest", default=[])
     notion_exp   = rv(responses, "notion_familiarity", "notionExperience", "notion")
 
     # Cal.com guests field — additional attendees who added their emails
@@ -401,6 +411,12 @@ def process_booking(payload):
             lead_src = [{"name": "Existing Client"}]
         if lead_src:
             lead_props["Source"] = {"multi_select": lead_src}
+
+        # Interest — what OS/product the prospect is looking for
+        interest_list = interest_raw if isinstance(interest_raw, list) else ([interest_raw] if interest_raw else [])
+        interest_values = [{"name": v} for v in interest_list if v in VALID_INTERESTS]
+        if interest_values:
+            lead_props["Interest"] = {"multi_select": interest_values}
 
         # Discovery Call date
         if start_time:
