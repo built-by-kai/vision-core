@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Leads</title><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.1);}
+body.light{--g:#5C9900;--gb:rgba(92,153,0,.22);--lost:#D94F1E;}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.07);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;letter-spacing:-.03em;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* stat cards */
+.stat{padding:16px 18px;position:relative;}
+.stat-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.5;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;border-radius:14px 14px 0 0;}
+.stat:hover::before,.stat.hover-on::before{opacity:1;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-bottom:10px;}
+body.light .s-lbl{color:rgba(0,0,0,.38);}
+.s-val{font-size:32px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.2);margin-top:7px;}
+body.light .s-sub{color:rgba(0,0,0,.28);}
+
+/* lost styling */
+.stat.is-lost::before{background:linear-gradient(90deg,var(--lost),transparent);}
+.stat.is-lost .stat-dot{background:var(--lost);}
+.stat.is-lost .s-val{color:var(--lost);}
+.stat.is-lost:hover{border-color:rgba(255,107,53,.18);}
+
+/* converted styling */
+.stat.is-converted .s-val{color:var(--g);}
+
+/* grid */
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:700px){.grid5{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:420px){.grid5{grid-template-columns:repeat(2,1fr);}}
+
+/* footer */
+.foot{display:flex;align-items:center;gap:0;margin-top:10px;background:#1E1E1E;border:1px solid rgba(255,255,255,.04);border-radius:10px;overflow:hidden;}
+body.light .foot{background:#fff;border-color:rgba(0,0,0,.06);}
+.foot-item{flex:1;padding:9px 14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);border-right:1px solid rgba(255,255,255,.05);}
+body.light .foot-item{color:rgba(0,0,0,.32);border-color:rgba(0,0,0,.05);}
+.foot-item:last-child{border-right:none;}
+.foot-item span{display:block;font-size:15px;font-weight:900;color:var(--g);letter-spacing:-.5px;margin-top:1px;}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+</style></head><body>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  <div><p class="eyebrow">Opxio · Revenue OS</p><h1 class="h-title">Leads</h1></div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="grid5">
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Incoming</div>
+    <div class="s-val" id="v-incoming">—</div>
+    <div class="s-sub">New enquiries</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Contacted</div>
+    <div class="s-val" id="v-contacted">—</div>
+    <div class="s-sub">First touch done</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Qualified</div>
+    <div class="s-val" id="v-qualified">—</div>
+    <div class="s-sub">Fit confirmed</div>
+  </div>
+  <div class="card stat is-converted">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Converted</div>
+    <div class="s-val" id="v-converted">—</div>
+    <div class="s-sub">Moved to deal</div>
+  </div>
+  <div class="card stat is-lost">
+    <div class="stat-dot"></div>
+    <div class="s-lbl">Lost</div>
+    <div class="s-val" id="v-lost">—</div>
+    <div class="s-sub">Did not proceed</div>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="foot-item">Active Leads<span id="f-active">—</span></div>
+  <div class="foot-item">New This Month<span id="f-monthly">—</span></div>
+  <div class="foot-item">Converted This Month<span id="f-converted">—</span></div>
+  <div class="foot-item" id="f-src-wrap">Top Source<span id="f-src">—</span></div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
+let light = false;
+function toggleMode(){ light=!light; document.body.classList.toggle('light',light); document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light'; }
+function setTs(){ document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+async function loadData(){
+  try {
+    const r = await fetch(apiUrl('/api/data/pipeline'));
+    const j = await r.json();
+    const s = j.stages || {};
+    document.getElementById('v-incoming').textContent  = s['Incoming']  ?? 0;
+    document.getElementById('v-contacted').textContent = s['Contacted'] ?? 0;
+    document.getElementById('v-qualified').textContent = s['Qualified'] ?? 0;
+    document.getElementById('v-converted').textContent = s['Converted'] ?? 0;
+    document.getElementById('v-lost').textContent      = s['Lost']      ?? 0;
+    document.getElementById('f-active').textContent    = j.totalActive  ?? 0;
+    document.getElementById('f-monthly').textContent   = j.thisMonthLeads   ?? 0;
+    document.getElementById('f-converted').textContent = j.thisMonthConverted ?? 0;
+    if (j.sources && j.sources.length) {
+      document.getElementById('f-src').textContent = j.sources[0].label;
+    }
+    setTs();
+  } catch(e) { console.error('leads widget:', e); }
+}
+loadData();
+function doRefresh(){ const b=document.getElementById('rb'); b.textContent='↻'; b.style.opacity='.4'; loadData().then(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; }); }
+setInterval(loadData, 5*60*1000);
+</script></body></html>
