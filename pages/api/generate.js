@@ -11,7 +11,8 @@ import {
   fetchQuotationData, fetchInvoiceData, fetchProposalData,
   generateQuotationPdf, generateInvoicePdf, generateReceiptPdf
 } from "../../lib/pdf"
-import { renderProposal, OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from "../../lib/proposal_template"
+import { OS_DEFAULT_MODULES, OS_DEFAULT_ADDONS_LATER } from "../../lib/proposal_template"
+import { generateProposalDocx } from "../../lib/proposal_docx"
 import { htmlToPdf } from "../../lib/puppeteer"
 import { uploadBlob } from "../../lib/blob"
 import { patchPage, getPage, queryDB, plain, fetchCompanyDetails, DB } from "../../lib/notion"
@@ -138,15 +139,14 @@ async function handleProposal(pageId) {
     addons_later:  addonsLater,
   }
 
-  const html   = renderProposal(templateData)
-  const pdfBuf = await htmlToPdf(html)
+  const docxBuf = await generateProposalDocx(templateData)
 
-  const filename = `proposals/${proposalNo || pageId}.pdf`
-  const { url }  = await uploadBlob(filename, pdfBuf)
-  const pdfUrl   = `${url}?v=${Date.now()}`
+  const filename  = `proposals/${proposalNo || pageId}.docx`
+  const { url }   = await uploadBlob(filename, docxBuf, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  const docxUrl   = `${url}?v=${Date.now()}`
 
   await patchPage(pageId, {
-    "PDF":    { url: pdfUrl },
+    "PDF":    { url: docxUrl },
     "Status": { select: { name: "Send Proposal" } },
     "Date":   { date: { start: new Date().toISOString().split("T")[0] } },
     // Write the ref number back to the title field
@@ -155,8 +155,8 @@ async function handleProposal(pageId) {
       : {}),
   }, process.env.NOTION_API_KEY)
 
-  console.log(`[generate:proposal] done — ${proposalNo} — ${pdfUrl}`)
-  return { type: "proposal", proposal_no: proposalNo, pdf_url: pdfUrl }
+  console.log(`[generate:proposal] done — ${proposalNo} — ${docxUrl}`)
+  return { type: "proposal", proposal_no: proposalNo, pdf_url: docxUrl }
 }
 
 async function handleInvoice(pageId) {
