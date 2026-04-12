@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         boardGroups[stage].push({ name, value, pkg })
       }
       if (WON_STAGES.includes(stage)) buildingValue += value
-      if (isThisMonth && stage === "Awaiting Deposit") wonThisMonth++
+      if (isThisMonth && stage === "Building") wonThisMonth++
       if (isThisMonth && stage === "Delivered")   deliveredThisMonth++
     }
 
