@@ -111,7 +111,7 @@ export default function AdminPage() {
       notion_token: c.notion_token || "",
       status:       c.status,
       databases:    Object.fromEntries(Object.entries(c.databases||{}).filter(([,v]) => v?.trim())),
-      field_map:    c.field_map?.STAGE_FIELD ? { STAGE_FIELD: c.field_map.STAGE_FIELD } : {},
+      field_map:    Object.fromEntries(["STAGE_FIELD","STATUS_FIELD","PACKAGE_FIELD","TYPE_FIELD","INVOICE_TYPE_FIELD"].filter(k => c.field_map?.[k]?.trim()).map(k => [k, c.field_map[k].trim()])),
       labels: {
         ...(c.labels?.stages?.trim()       ? { stages:       c.labels.stages.split(",").map(s=>s.trim()).filter(Boolean) } : {}),
         ...(c.labels?.activeStages?.trim() ? { activeStages: c.labels.activeStages.split(",").map(s=>s.trim()).filter(Boolean) } : {}),
