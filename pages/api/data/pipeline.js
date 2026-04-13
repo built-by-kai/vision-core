@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     if (!client) return res.status(403).json({ error: "Invalid token" })
 
     const notionToken = getNotionToken(client)
-    const LEADS_DB    = resolveDB(client, "LEADS", DB.LEADS)
+    // Resolve LEADS DB — try uppercase key first, then lowercase fallback
+    const LEADS_DB    = client?.databases?.["LEADS"] || client?.databases?.["leads"] || resolveDB(client, "LEADS", DB.LEADS)
     const stageField  = resolveField(client, "STAGE_FIELD", "Stage")
 
     // Stage config — from client labels or Opxio defaults
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
       const p     = lead.properties
       const stage = p[stageField]?.status?.name || p[stageField]?.select?.name || "Unknown"
       const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
-      const pkg   = p["OS Interest"]?.select?.name || ""
+      const pkg   = p["OS Interest"]?.select?.name || p["Interested In"]?.multi_select?.map(x => x.name).join(", ") || ""
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
 
@@ -73,7 +74,8 @@ export default async function handler(req, res) {
       const mDate = new Date(year, month - 5, 1)
       if (created >= mDate && mKey in monthly) monthly[mKey]++
 
-      const srcs = p.Source?.multi_select || []
+      // Handle both multi_select and select Source field types
+      const srcs = p.Source?.multi_select || (p.Source?.select ? [p.Source.select] : [])
       if (srcs.length) {
         for (const s of srcs) sourceCounts[s.name] = (sourceCounts[s.name] || 0) + 1
       } else {
