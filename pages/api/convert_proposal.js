@@ -204,19 +204,10 @@ export default async function handler(req, res) {
       "Status": { select: { name: "Converted" } },
     }, process.env.NOTION_API_KEY)
 
-    // ── 7. Link Quotation back to Lead/Deal source ────────────────────────────
-    // Lead stage is NOT advanced here. Proposal and Quotation statuses are
-    // tracked on their documents. Lead stage advances to "Awaiting Deposit"
-    // only when create_invoice fires (quotation approved → invoice created).
+    // ── 7. Deal Source already linked above in createPage ────────────────────
+    // Lead stage advances to "Awaiting Deposit" only when deposit invoice is created.
     if (leadIds.length) {
-      try {
-        await patchPage(quotId, {
-          "Deal Source": { relation: [{ id: leadIds[0] }] },
-        }, process.env.NOTION_API_KEY)
-        console.log("[convert_proposal] quotation linked to source:", leadIds[0])
-      } catch (e) {
-        console.warn("[convert_proposal] could not link quotation to source:", e.message)
-      }
+      console.log("[convert_proposal] quotation linked to deal:", leadIds[0])
     }
 
     console.log("[convert_proposal] done →", quotId)
