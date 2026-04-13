@@ -3,7 +3,7 @@
 // Called by widgets: revenue.html, earnings.html, monthly.html, topproducts.html
 
 import { queryDB, plain, DB } from "../../../lib/notion"
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
@@ -19,9 +19,12 @@ export default async function handler(req, res) {
     if (!client) return res.status(403).json({ error: "Invalid token" })
 
     const notionToken  = getNotionToken(client)
-    const QUOTATIONS_DB = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
-    const INVOICE_DB    = resolveDB(client, "INVOICE",    DB.INVOICE)
-    const PROPOSALS_DB  = resolveDB(client, "PROPOSALS",  DB.PROPOSALS)
+    const QUOTATIONS_DB    = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
+    const INVOICE_DB       = resolveDB(client, "INVOICE",    DB.INVOICE)
+    const PROPOSALS_DB     = resolveDB(client, "PROPOSALS",  DB.PROPOSALS)
+    const statusField      = resolveField(client, "STATUS_FIELD",       "Status")
+    const packageField     = resolveField(client, "PACKAGE_FIELD",      "Package Type")
+    const invoiceTypeField = resolveField(client, "INVOICE_TYPE_FIELD", "Invoice Type")
 
     const now   = new Date()
     const year  = now.getFullYear()
@@ -40,10 +43,10 @@ export default async function handler(req, res) {
 
     for (const q of quotes) {
       const p = q.properties
-      const s = p.Status?.status?.name || p.Status?.select?.name || ""
+      const s = p[statusField]?.status?.name || p[statusField]?.select?.name || ""
       if (s in qStatus) qStatus[s]++
       if (s === "Approved") {
-        const pkg = plain(p["Package Type"]) || "Other"
+        const pkg = plain(p[packageField]) || "Other"
         pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
       }
     }
@@ -65,9 +68,9 @@ export default async function handler(req, res) {
 
     for (const inv of invoices) {
       const p   = inv.properties
-      const s   = p.Status?.select?.name || ""
+      const s   = p[statusField]?.select?.name || ""
       const amt = p["Total Amount"]?.number || 0
-      const typ = p["Invoice Type"]?.select?.name || ""
+      const typ = p[invoiceTypeField]?.select?.name || ""
       const d   = new Date(inv.created_time)
       const cm  = d.getMonth(), cy = d.getFullYear()
       const lm  = month === 0 ? 11 : month - 1
@@ -111,7 +114,7 @@ export default async function handler(req, res) {
     let propTotal = 0, propValue = 0
     for (const pr of proposals) {
       const p = pr.properties
-      const s = p.Status?.select?.name || ""
+      const s = p[statusField]?.select?.name || ""
       propTotal++
       const fee = p.Fee?.number || 0
       propValue += fee
