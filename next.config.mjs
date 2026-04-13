@@ -2,12 +2,8 @@
 const nextConfig = {
   turbopack: {},
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
-  async rewrites() {
-    return []
-  },
   async redirects() {
     return [
-      // Block /onboarding on dashboard subdomain — redirect to main domain
       {
         source: '/onboarding',
         has: [{ type: 'host', value: 'dashboard.opxio.io' }],
