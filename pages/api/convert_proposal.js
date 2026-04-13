@@ -188,6 +188,16 @@ export default async function handler(req, res) {
     const quotUrl = quotPage.url || `https://notion.so/${quotId}`
     console.log("[convert_proposal] created quotation:", quotId)
 
+    // ── Link Quotation back to Proposal via Quotation relation ───────────────
+    try {
+      await patchPage(propId, {
+        "Quotation": { relation: [{ id: quotId }] },
+      }, process.env.NOTION_API_KEY)
+      console.log("[convert_proposal] proposal linked to quotation:", quotId)
+    } catch (e) {
+      console.warn("[convert_proposal] could not link proposal to quotation:", e.message)
+    }
+
     // ── 4. Create inline Products & Services on Quotation ───────────────────
     let quotDbId = await findLineItemsDB(quotId)
     if (!quotDbId) {
