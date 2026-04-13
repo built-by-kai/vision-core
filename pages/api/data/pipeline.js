@@ -1,9 +1,9 @@
 // /api/data/pipeline — token-authenticated
-// Queries the Leads DB (new client funnel)
-// Simplified stages: Incoming → Contacted → Discovery Done → Awaiting Deposit → Converted → Lost
+// Queries the Leads DB (client funnel)
+// Stages are fully dynamic — driven by client.labels in Supabase
 
 import { queryDB, plain, DB } from "../../../lib/notion"
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
@@ -19,6 +19,11 @@ export default async function handler(req, res) {
 
     const notionToken = getNotionToken(client)
     const LEADS_DB    = resolveDB(client, "LEADS", DB.LEADS)
+    const stageField  = resolveField(client, "STAGE_FIELD", "Stage")
+
+    // Stage config — from client labels or Opxio defaults
+    const ALL_STAGES    = client.labels?.stages    || ["Incoming","Contacted","Discovery Done","Awaiting Deposit","Converted","Lost"]
+    const ACTIVE_STAGES = client.labels?.activeStages || ["Incoming","Contacted","Discovery Done","Awaiting Deposit"]
 
     const now   = new Date()
     const year  = now.getFullYear()
@@ -26,16 +31,7 @@ export default async function handler(req, res) {
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
-    // Active pre-conversion stages
-    const ACTIVE_STAGES = ["Incoming", "Contacted", "Discovery Done", "Awaiting Deposit"]
-    const stages = {
-      "Incoming":         0,
-      "Contacted":        0,
-      "Discovery Done":   0,
-      "Awaiting Deposit": 0,
-      "Converted":        0,
-      "Lost":             0,
-    }
+    const stages = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
     const boardGroups   = {}
     const monthly       = {}
     for (let i = 5; i >= 0; i--) {
@@ -48,9 +44,13 @@ export default async function handler(req, res) {
     let thisMonthLost      = 0
     const sourceCounts     = {}
 
+    // Determine "converted" and "lost" labels — last two stages if not explicitly named
+    const wonLabel  = ALL_STAGES.find(s => /won|convert/i.test(s))  || ALL_STAGES[ALL_STAGES.length - 2] || "Converted"
+    const lostLabel = ALL_STAGES.find(s => /lost/i.test(s))         || ALL_STAGES[ALL_STAGES.length - 1] || "Lost"
+
     for (const lead of leads) {
       const p     = lead.properties
-      const stage = p.Stage?.status?.name || p.Stage?.select?.name || "Unknown"
+      const stage = p[stageField]?.status?.name || p[stageField]?.select?.name || "Unknown"
       const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
       const pkg   = p["OS Interest"]?.select?.name || ""
       const created = new Date(lead.created_time)
@@ -65,8 +65,8 @@ export default async function handler(req, res) {
 
       if (isThisMonth) {
         thisMonthLeads++
-        if (stage === "Converted") thisMonthConverted++
-        if (stage === "Lost")      thisMonthLost++
+        if (stage === wonLabel)  thisMonthConverted++
+        if (stage === lostLabel) thisMonthLost++
       }
 
       const mKey  = created.toLocaleString("default", { month: "short" })
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
       .map(s => ({ stage: s, leads: boardGroups[s] }))
 
     const totalActive = leads.filter(l => {
-      const s = l.properties.Stage?.status?.name || l.properties.Stage?.select?.name || ""
+      const s = l.properties[stageField]?.status?.name || l.properties[stageField]?.select?.name || ""
       return ACTIVE_STAGES.includes(s)
     }).length
 
@@ -95,6 +95,8 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       stages,
+      stageOrder:   ALL_STAGES,
+      activeStages: ACTIVE_STAGES,
       board,
       monthly:             Object.entries(monthly).map(([m, v]) => ({ m, v })),
       totalActive,
