@@ -185,13 +185,34 @@ export default async function handler(req, res) {
 
   const body = req.body || {}
 
-  // ── MODE A: Notion webhook sends both proposal_id + quotation_id ──────────
-  // Set up in Notion: button creates page first, then fires webhook to this endpoint
-  // Webhook payload: { "proposal_id": "...", "quotation_id": "..." }
-  const proposalId  = (body.proposal_id  || body.source?.page_id || body.data?.page_id || "").replace(/-/g, "")
-  const quotationId = (body.quotation_id || body.data?.quotation_id || "").replace(/-/g, "")
+  // Log raw payload to help debug Notion automation format
+  console.log("[convert_proposal] raw payload:", JSON.stringify(body).slice(0, 500))
 
-  if (!proposalId) return res.status(400).json({ error: "Missing proposal_id" })
+  // ── Extract proposal ID from any Notion webhook/automation payload format ──
+  // Format 1 (button webhook): { proposal_id: "...", quotation_id: "..." }
+  // Format 2 (automation):     { source: { page_id: "..." }, data: { ... } }
+  // Format 3 (automation v2):  { page: { id: "..." }, properties: { ... } }
+  // Format 4 (legacy):         { page_id: "..." }
+  const proposalId = (
+    body.proposal_id ||
+    body.source?.page_id ||
+    body.page?.id ||
+    body.data?.page_id ||
+    body.page_id ||
+    ""
+  ).replace(/-/g, "")
+
+  // Quotation ID — only present in Mode A (button webhook with custom payload)
+  const quotationId = (
+    body.quotation_id ||
+    body.data?.quotation_id ||
+    ""
+  ).replace(/-/g, "")
+
+  if (!proposalId) {
+    console.error("[convert_proposal] could not find proposal ID in payload:", JSON.stringify(body))
+    return res.status(400).json({ error: "Missing proposal ID", received: body })
+  }
 
   try {
     if (quotationId) {
