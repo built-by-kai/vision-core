@@ -202,7 +202,7 @@ export default async function handler(req, res) {
 
     // ── 6. Mark Proposal as Converted ────────────────────────────────────────
     await patchPage(propId, {
-      "Status": { select: { name: "Converted" } },
+      "Status": { select: { name: "Quotation Issued" } },
     }, process.env.NOTION_API_KEY)
 
     // ── 7. Deal Source already linked above in createPage ────────────────────
