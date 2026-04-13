@@ -201,7 +201,7 @@ export default async function handler(req, res) {
       // Use raw page ID with dashes for relation (Notion requires UUID format)
       const quotPageId = quotPage.id  // has dashes e.g. "xxxx-xxxx-xxxx-xxxx"
       await patchPage(propId, {
-        "Quotation": { relation: [{ id: quotPageId }] },
+        "Converted Quotation": { relation: [{ id: quotPageId }] },
       }, process.env.NOTION_API_KEY)
       console.log("[convert_proposal] proposal linked to quotation:", quotPageId)
     } catch (e) {
