@@ -10,10 +10,45 @@
 // WHATSAPP_API_URL
 // WHATSAPP_API_TOKEN
 
-import { Client } from '@notionhq/client';
-
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
+// Uses Notion REST API directly — no npm package required
+const NOTION_TOKEN = process.env.NOTION_API_KEY;
 const DB = process.env.NOTION_CLIENT_INTAKE_DB || 'b6167b39-b1b4-40a7-bd98-cd74e2d95458';
+
+const notionHeaders = {
+  'Authorization': `Bearer ${NOTION_TOKEN}`,
+  'Content-Type': 'application/json',
+  'Notion-Version': '2022-06-28',
+};
+
+const notion = {
+  pages: {
+    create: async (body) => {
+      const res = await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST', headers: notionHeaders, body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(`Notion create failed: ${JSON.stringify(err)}`);
+      }
+      return res.json();
+    },
+    retrieve: async ({ page_id }) => {
+      const res = await fetch(`https://api.notion.com/v1/pages/${page_id}`, {
+        headers: notionHeaders,
+      });
+      if (!res.ok) throw new Error(`Notion retrieve failed: ${res.status}`);
+      return res.json();
+    },
+    update: async ({ page_id, properties }) => {
+      const res = await fetch(`https://api.notion.com/v1/pages/${page_id}`, {
+        method: 'PATCH', headers: notionHeaders,
+        body: JSON.stringify({ properties }),
+      });
+      if (!res.ok) throw new Error(`Notion update failed: ${res.status}`);
+      return res.json();
+    },
+  },
+};
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 

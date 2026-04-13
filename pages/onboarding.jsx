@@ -893,11 +893,11 @@ export default function Onboarding() {
 
                 <div className="divider" />
 
-                <Field label="Are there repetitive tasks you wish happened automatically?" hint='e.g. "When a new lead fills a form it appears in our system." "When a payment is overdue a reminder goes out."'>
+                <Field label="Are there repetitive tasks you wish happened automatically?" hint="e.g. When a new lead fills a form, it appears in your system. When a payment is overdue, a reminder goes out.">
                   <textarea value={form.automationWishes} onChange={e => set('automationWishes', e.target.value)} placeholder="e.g. When a client signs, their project is created automatically..." rows={3} />
                 </Field>
 
-                <Field label="Specific terms your business uses" hint='We\'ll use your language in the system. e.g. "We call our clients Partners. We call proposals Decks."'>
+                <Field label="Specific terms your business uses" hint="We'll use your language in the system. e.g. 'We call our clients Partners. We call proposals Decks.'">
                   <input type="text" value={form.businessTerms} onChange={e => set('businessTerms', e.target.value)} placeholder="e.g. We call leads Enquiries. We call projects Campaigns." />
                 </Field>
 
