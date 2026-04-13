@@ -1,6 +1,6 @@
 // /api/data/projects — token-authenticated
 import { queryDB, getPage, plain, DB, hdrs } from "../../../lib/notion"
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 // Fetch a single page title from Notion (for company name lookup)
 async function fetchPageTitle(pageId, token) {
@@ -37,6 +37,8 @@ export default async function handler(req, res) {
     const notionToken  = getNotionToken(client)
     const PROJECTS_DB  = resolveDB(client, "PROJECTS", DB.PROJECTS)
     const PHASES_DB    = resolveDB(client, "PHASES",   DB.PHASES)
+    const statusField  = resolveField(client, "STATUS_FIELD",  "Status")
+    const packageField = resolveField(client, "PACKAGE_FIELD", "Package Type")
 
     const [projects, phases] = await Promise.all([
       queryDB(PROJECTS_DB, null, notionToken),
@@ -52,7 +54,7 @@ export default async function handler(req, res) {
       const phaseName = plain(p["Phase Name"]?.title || p.Name?.title || p.Title?.title || []) || ""
       const rollup    = p["Task Progress"]?.rollup
       const pct       = rollup?.type === "number" ? (rollup.number ?? 0) : (p["Progress"]?.number ?? 0)
-      const status    = p.Status?.select?.name || p.Status?.status?.name || ""
+      const status    = p[statusField]?.select?.name || p[statusField]?.status?.name || ""
       if (!phaseMap[projRel] || status === "In Progress") {
         phaseMap[projRel] = { name: phaseName, pct: Math.round(pct * 100) || pct }
       }
@@ -79,7 +81,7 @@ export default async function handler(req, res) {
       const progress = p["Overall Progress"]?.rollup?.number ?? 0
       const compRel  = p.Company?.relation?.[0]?.id?.replace(/-/g, "")
       const company  = compRel ? (companyNames[compRel] || "") : ""
-      const pkg      = p["Package"]?.select?.name || p["Package Type"]?.select?.name || ""
+      const pkg      = p[packageField]?.select?.name || ""
       const projId   = proj.id.replace(/-/g, "")
       const phase    = phaseMap[projId] || { name: "—", pct: Math.round(progress * 100) || progress }
 
