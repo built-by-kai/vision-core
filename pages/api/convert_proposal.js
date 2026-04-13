@@ -149,13 +149,14 @@ export default async function handler(req, res) {
     const proposal = await getPage(propId, process.env.NOTION_API_KEY)
     const pp       = proposal.properties
 
-    const companyIds = (pp.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
-    const picIds     = (pp.PIC?.relation || []).map(r => r.id.replace(/-/g, ""))
-    const osType     = pp["OS Type"]?.select?.name || ""
-    const payTerms   = pp["Payment Terms"]?.select?.name || "50% Deposit"
-    const quoteType  = pp["Quote Type"]?.select?.name || "New Business"
-    const proposalNo = plain(pp["Ref Number"]?.title || [])
-    const leadIds    = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const companyIds    = (pp.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const picIds        = (pp.PIC?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const osType        = pp["OS Type"]?.select?.name || ""
+    const payTerms      = pp["Payment Terms"]?.select?.name || "50% Deposit"
+    const quoteType     = pp["Quote Type"]?.select?.name || "New Business"
+    const proposalNo    = plain(pp["Ref Number"]?.title || [])
+    const leadIds       = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const leadSourceIds = (pp["Lead Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
 
     // Company name for package type field (rich text in Quotations)
     let packageName = osType
@@ -178,7 +179,8 @@ export default async function handler(req, res) {
         "Payment Terms": { select: { name: payTerms } },
         ...(quoteType     ? { "Quote Type":   { select: { name: quoteType } } } : {}),
         ...(companyIds.length ? { "Company":    { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(leadIds.length    ? { "Deal Source": { relation: [{ id: leadIds[0] }] } } : {}),
+        ...(leadIds.length       ? { "Deal Source":  { relation: [{ id: leadIds[0] }] } } : {}),
+        ...(leadSourceIds.length ? { "Lead Source":  { relation: [{ id: leadSourceIds[0] }] } } : {}),
       }
     }, process.env.NOTION_API_KEY)
 
