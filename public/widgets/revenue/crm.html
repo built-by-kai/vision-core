@@ -254,50 +254,23 @@ function renderDonut(sources) {
   ).join('');
 }
 
-// ── Leads funnel ─────────────────────────────────────────────────────────────
-function renderLeadsFunnel(stages) {
-  const order = [
-    { l: 'Incoming',       key: 'Incoming',         cls: 'lm'      },
-    { l: 'Contacted',      key: 'Contacted',         cls: 'lm'      },
-    { l: 'Discovery Done', key: 'Discovery Done',    cls: 'lm'      },
-    { l: 'Await. Deposit', key: 'Awaiting Deposit',  cls: 'lm'      },
-    { l: 'Converted',      key: 'Converted',         cls: 'lm-won'  },
-    { l: 'Lost',           key: 'Lost',              cls: 'lm-lost' },
-  ];
-  const maxN = Math.max(...order.map(r => stages[r.key] || 0), 1);
-  const total = order.reduce((s,r) => s + (stages[r.key] || 0), 0);
-  document.getElementById('fb').textContent = total + ' leads';
-  document.getElementById('funnel').innerHTML = order.map(r => {
-    const n = stages[r.key] || 0;
+// ── Dynamic funnel — renders whatever stageOrder the API returns ─────────────
+function renderDynamicFunnel(stages, stageOrder, label) {
+  if (!stageOrder || !stageOrder.length) stageOrder = Object.keys(stages);
+  const lastIdx  = stageOrder.length - 1;
+  const lastIdx2 = stageOrder.length - 2;
+  const maxN  = Math.max(...stageOrder.map(k => stages[k] || 0), 1);
+  const total = stageOrder.reduce((s, k) => s + (stages[k] || 0), 0);
+  document.getElementById('fb').textContent = total + ' ' + (label || 'leads');
+  document.getElementById('funnel').innerHTML = stageOrder.map((key, i) => {
+    const n   = stages[key] || 0;
     const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
+    const cls = i === lastIdx  ? 'lm-lost'
+              : i === lastIdx2 ? 'lm-won'
+              : 'lm';
     return `<div class="f-row">
-      <span class="f-lbl">${r.l}</span>
-      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;"></div></div>
-      <span class="f-n">${n || ''}</span>
-    </div>`;
-  }).join('');
-}
-
-// ── Deals funnel — actual stages only ────────────────────────────────────────
-function renderDealsFunnel(stages) {
-  const order = [
-    { l: 'Incoming',       key: 'Incoming',         cls: 'dm'           },
-    { l: 'Discovery Done', key: 'Discovery Done',    cls: 'dm'           },
-    { l: 'Await. Deposit', key: 'Awaiting Deposit',  cls: 'dm'           },
-    { l: 'Building',       key: 'Building',          cls: 'dm'           },
-    { l: 'Balance Due',    key: 'Balance Due',        cls: 'dm'           },
-    { l: 'Delivered',      key: 'Delivered',          cls: 'dm-delivered' },
-    { l: 'Lost',           key: 'Lost',               cls: 'dm-lost'      },
-  ];
-  const maxN = Math.max(...order.map(r => stages[r.key] || 0), 1);
-  const total = order.reduce((s,r) => s + (stages[r.key] || 0), 0);
-  document.getElementById('fb').textContent = total + ' deals';
-  document.getElementById('funnel').innerHTML = order.map(r => {
-    const n = stages[r.key] || 0;
-    const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
-    return `<div class="f-row">
-      <span class="f-lbl">${r.l}</span>
-      <div class="f-bg"><div class="f-fill ${r.cls}" style="width:${pct}%;"></div></div>
+      <span class="f-lbl">${key}</span>
+      <div class="f-bg"><div class="f-fill ${cls}" style="width:${pct}%;"></div></div>
       <span class="f-n">${n || ''}</span>
     </div>`;
   }).join('');
@@ -305,9 +278,17 @@ function renderDealsFunnel(stages) {
 
 function renderFunnel() {
   if (funnelMode === 'leads') {
-    renderLeadsFunnel((pipeData && pipeData.stages) || {});
+    renderDynamicFunnel(
+      (pipeData && pipeData.stages) || {},
+      (pipeData && pipeData.stageOrder) || null,
+      'leads'
+    );
   } else {
-    renderDealsFunnel((dealsData && dealsData.stages) || {});
+    renderDynamicFunnel(
+      (dealsData && dealsData.stages) || {},
+      (dealsData && dealsData.stageOrder) || null,
+      'deals'
+    );
   }
 }
 
