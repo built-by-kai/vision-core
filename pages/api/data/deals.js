@@ -3,7 +3,7 @@
 // Used by: potential.html (pre-won stages), won.html (Building → Delivered)
 
 import { queryDB, plain, DB } from "../../../lib/notion"
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
@@ -21,6 +21,8 @@ export default async function handler(req, res) {
     const DEALS_DB      = resolveDB(client, "DEALS",      DB.DEALS)
     const PROPOSALS_DB  = resolveDB(client, "PROPOSALS",  DB.PROPOSALS)
     const QUOTATIONS_DB = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
+    const stageField    = resolveField(client, "STAGE_FIELD",   "Stage")
+    const packageField  = resolveField(client, "PACKAGE_FIELD", "Package Type")
 
     const now   = new Date()
     const year  = now.getFullYear()
@@ -56,10 +58,10 @@ export default async function handler(req, res) {
 
     for (const deal of deals) {
       const p     = deal.properties
-      const stage = p.Stage?.status?.name || p.Stage?.select?.name || "Unknown"
+      const stage = p[stageField]?.status?.name || p[stageField]?.select?.name || "Unknown"
       const name  = plain(p["Deal Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
       const value = p["Total Value"]?.number || p["Estimated Value"]?.number || 0
-      const pkg   = p["Package Type"]?.select?.name || ""
+      const pkg   = p[packageField]?.select?.name || ""
       const d     = new Date(deal.created_time)
       const isThisMonth = d.getMonth() === month && d.getFullYear() === year
 
