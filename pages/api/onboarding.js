@@ -1,331 +1,357 @@
 // pages/api/onboarding.js
-// Receives onboarding form submission
-// Writes to Notion Client Implementation Form database
-// Updates the linked Deal row with Client Intake relation
-// Sends WhatsApp notification to Opxio team
+// Receives onboarding form submission → writes to Notion Client Implementation Form database
+// Fully mapped against actual DB schema b6167b39-b1b4-40a7-bd98-cd74e2d95458
 
-// ── ENV VARS NEEDED IN .env.local + Vercel dashboard ──────────────────────
-// NOTION_API_KEY=ntn_...
-// NOTION_CLIENT_INTAKE_DB=b6167b39-b1b4-40a7-bd98-cd74e2d95458
-// NOTION_DEALS_DB=088fe600-97f6-8307-9c70-87cfbfe6dab7
-// WHATSAPP_API_URL=https://... (your WA Business API or Wati/Twilio endpoint)
-// WHATSAPP_API_TOKEN=...
-// OPXIO_NOTIFY_NUMBER=60... (your number to receive notification)
+// ENV VARS NEEDED:
+// NOTION_API_KEY
+// NOTION_CLIENT_INTAKE_DB  (default: b6167b39-b1b4-40a7-bd98-cd74e2d95458)
+// NOTION_DEALS_DB          (default: 088fe600-97f6-8307-9c70-87cfbfe6dab7)
+// OPXIO_NOTIFY_NUMBER      (e.g. 601xxxxxxxx)
+// WHATSAPP_API_URL
+// WHATSAPP_API_TOKEN
 
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
-
 const DB = process.env.NOTION_CLIENT_INTAKE_DB || 'b6167b39-b1b4-40a7-bd98-cd74e2d95458';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 
-function richText(str) {
-  return [{ type: 'text', text: { content: String(str || '').slice(0, 2000) } }];
-}
-
-function selectProp(val) {
-  if (!val) return null;
-  return { select: { name: String(val) } };
-}
-
-function multiSelectProp(arr) {
-  if (!arr || !arr.length) return null;
-  const options = arr.filter(Boolean).map(v => ({ name: String(v).slice(0, 100) }));
-  return options.length ? { multi_select: options } : null;
-}
-
-function textProp(val) {
-  if (!val) return null;
-  return { rich_text: richText(val) };
-}
-
-function urlProp(val) {
+const rt = (str) => [{ type: 'text', text: { content: String(str || '').slice(0, 2000) } }];
+const sel = (val) => val ? { select: { name: String(val) } } : null;
+const msel = (arr) => {
+  const opts = (arr || []).filter(Boolean).map(v => ({ name: String(v).slice(0, 100) }));
+  return opts.length ? { multi_select: opts } : null;
+};
+const txt = (val) => val ? { rich_text: rt(val) } : null;
+const url = (val) => {
   if (!val) return null;
   try { new URL(val); return { url: val }; } catch { return null; }
-}
+};
+const steps = (items) => (items || []).map((it, i) => `${i + 1}. ${it.value || ''}`).filter(s => s.trim().length > 3).join('\n');
+const stages = (items) => (items || []).map(i => i.value || '').filter(Boolean).join(' → ');
 
-function buildSteps(items) {
-  if (!items || !items.length) return '';
-  return items
-    .map((item, i) => `${i + 1}. ${item.value || ''}`)
-    .filter(s => s.trim() !== `${s[0]}.`)
-    .join('\n');
-}
-
-function buildStages(items) {
-  if (!items || !items.length) return '';
-  return items.map(i => i.value || '').filter(Boolean).join(' → ');
-}
-
-// ── NOTION PROPERTY MAP ────────────────────────────────────────────────────
-function buildNotionProperties(data) {
-  const {
-    clientName, osPackage, addons, dealId,
-    businessDesc, teamSize, teamMembers, industry,
-    notionUrl, notionPlan, notionUsage,
-    notionAccess, notionPermissions, existingData, existingDataLinks, comms,
-    leadSources, leadTracking, leadVolume, leadInfo,
-    pipelineStages, customStages, salesSteps, activeDeals,
-    dealTracking, dealStuck, dealCurrency,
-    proposalMethod, proposalTracking, contractType,
-    invoiceMethod, paymentTerms, paymentTermsOther, paymentMethods,
-    invoiceTracking, paymentProblems, paymentWhatsapp, paymentWhatsappType, invoiceOwner,
-    projectTypes, deliverySteps, projectStages, customProjectStages, activeProjects, projectStuck,
-    taskTracking, taskStages, taskStagesCustom, taskFields, taskProblems, taskOwner,
-    onboardingSteps, onboardingCollect, onboardingProblems,
-    existingChecklist, checklistLinks, onboardingConsistency,
-    existingSOPs, sopLinks, prioritySOPs,
-    dashboardViewers, dashboardKPIs, dashboardKPIother,
-    addonLeadSources, addonLeadFields, leadAlertMethod, leadAlertNumber, leadAlertType,
-    brandKit, brandKitLink, brandColor1, brandColor1Name, brandColor2, brandColor2Name, brandFonts, logoLink,
-    setupLinks, automationWishes, businessTerms, anythingElse,
-  } = data;
-
-  const props = {
-    'Client Name': { title: richText(clientName || 'Unknown') },
-    'Intake Status': { select: { name: 'Submitted' } },
+// ── TEAM SIZE: map form options to DB options ──────────────────────────────
+// DB options: "1–5", "6–10", "10–20", "20+"
+// Form options: "Just me", "2–5", "6–10", "11–15", "15+"
+function mapTeamSize(val) {
+  const map = {
+    'Just me': '1–5',
+    '2–5': '1–5',
+    '6–10': '6–10',
+    '11–15': '10–20',
+    '15+': '20+',
   };
-
-  // OS Package
-  if (osPackage) props['OS Package'] = selectProp(osPackage);
-  // Add-ons
-  if (addons?.length) props['Add-ons'] = multiSelectProp(addons);
-  // Deal relation
-  if (dealId) props['Deal'] = { relation: [{ id: dealId }] };
-
-  // Business
-  if (teamSize) props['Team Size'] = selectProp(teamSize);
-  if (industry) props['Main User'] = textProp(
-    teamMembers?.filter(m => m.name).map(m => `${m.name} — ${m.role}`).join(', ')
-  );
-  if (notionUrl) props['Notion Workspace URL'] = urlProp(notionUrl);
-  if (notionPlan) props['Notion Plan'] = selectProp(notionPlan);
-  if (notionUsage) props['Uses Notion'] = selectProp(
-    notionUsage === 'Daily' ? 'Daily' :
-    notionUsage === 'Sometimes' ? 'Sometimes' : 'New to it'
-  );
-  if (existingData) props['Has Existing Data'] = selectProp(
-    existingData === 'Yes — I have data' ? 'Yes' : 'No'
-  );
-  if (comms) props['Comms Preference'] = selectProp(comms);
-
-  // Revenue OS
-  if (leadSources?.length) props['Lead Sources'] = multiSelectProp(leadSources);
-  if (leadTracking) props['Pipeline Tracked How'] = selectProp(
-    leadTracking === 'WhatsApp threads' ? 'WhatsApp' :
-    leadTracking === 'A CRM tool' ? 'CRM tool' :
-    leadTracking === 'Notion already' ? 'CRM tool' : leadTracking
-  );
-  if (activeDeals) props['Active Leads Volume'] = selectProp(
-    activeDeals === '1–3' ? 'Under 10' :
-    activeDeals === '3–10' ? '10–30' :
-    activeDeals === '10–20' ? '30–50' : '50+'
-  );
-  if (dealCurrency) props['Invoice Currency'] = selectProp(
-    dealCurrency === 'MYR' ? 'MYR' :
-    dealCurrency === 'USD' ? 'USD' :
-    dealCurrency === 'SGD' ? 'SGD' : 'Other'
-  );
-
-  // Pipeline stages
-  if (pipelineStages === 'I have my own stages' && customStages?.length) {
-    props['Custom Pipeline Stages'] = textProp(buildStages(customStages));
-    props['Pipeline Stages'] = selectProp('Custom');
-  } else {
-    props['Pipeline Stages'] = selectProp('Use default');
-  }
-
-  // Sales stages as delivery process
-  if (salesSteps?.length) props['Delivery Process'] = textProp(buildSteps(salesSteps));
-
-  // Proposals
-  if (proposalMethod) props['Has Document Template'] = selectProp(
-    ['PDF via WhatsApp', 'Email attachment', 'Google Docs link', 'Notion page'].includes(proposalMethod)
-      ? 'Yes — will share PDF' : 'No — design for me'
-  );
-  if (contractType) props['Payment Terms Default'] = selectProp(
-    contractType === 'Standard template always' ? '50% Deposit' : 'Custom'
-  );
-
-  // Invoices
-  if (paymentTerms) {
-    const termMap = {
-      '50% deposit, 50% on delivery': '50% Deposit',
-      'Full upfront': 'Full Upfront',
-      'Other': 'Custom',
-    };
-    props['Payment Terms Default'] = selectProp(termMap[paymentTerms] || 'Custom');
-  }
-  if (paymentMethods?.length) props['Invoice Payment Terms'] = textProp(
-    `Methods: ${paymentMethods.join(', ')}${paymentTermsOther ? ` | Notes: ${paymentTermsOther}` : ''}`
-  );
-  if (invoiceOwner) props['Sales Owner'] = textProp(invoiceOwner);
-  if (paymentWhatsapp) props['Kickoff Notification Number'] = textProp(
-    `${paymentWhatsapp} (${paymentWhatsappType || 'Personal'})`
-  );
-
-  // Operations OS
-  if (projectTypes?.length) props['Project Types'] = multiSelectProp(projectTypes.map(p => {
-    const map = { 'Monthly retainer': 'Retainer', 'One-off project': 'One-off', 'Campaign-based': 'Campaign-based' };
-    return map[p] || 'Other';
-  }));
-
-  if (deliverySteps?.length) props['Project Kickoff Tasks'] = textProp(buildSteps(deliverySteps));
-
-  if (projectStages === 'I have my own stages' && customProjectStages?.length) {
-    props['Custom Pipeline Stages'] = textProp(buildStages(customProjectStages));
-  }
-  if (activeProjects) props['Active Campaigns Volume'] = selectProp(
-    activeProjects === '1–5' ? '1–3' :
-    activeProjects === '5–15' ? '4–10' : '10+'
-  );
-  if (taskTracking) props['Task Tracking Method'] = selectProp(
-    taskTracking === 'ClickUp / Asana' ? 'Other tool' :
-    taskTracking === 'Nothing formal' ? 'Nothing' : taskTracking
-  );
-  if (taskOwner) props['Delivery Owner'] = textProp(taskOwner);
-  if (onboardingSteps?.length) props['Onboarding Kickoff Tasks'] = textProp(buildSteps(onboardingSteps));
-
-  // Checklist / SOPs
-  if (existingChecklist) props['Has Onboarding Checklist'] = selectProp(
-    existingChecklist === "Yes — I'll share it" ? 'Yes — will share' : 'No'
-  );
-  if (existingSOPs) props['Has SOPs'] = selectProp(
-    existingSOPs === "Yes — I'll share them" ? 'Yes — will share' : 'No'
-  );
-  if (prioritySOPs?.length) props['Priority SOPs'] = textProp(prioritySOPs.join(', '));
-  if (onboardingConsistency) props['Client Issue Channel'] = textProp(onboardingConsistency);
-
-  // Dashboard add-on
-  if (dashboardViewers) props['Dashboard Viewers'] = selectProp(
-    dashboardViewers === 'Founder only' ? 'Founder only' :
-    dashboardViewers === 'Management only' ? 'Management only' : 'Whole team'
-  );
-  const kpis = [...(dashboardKPIs || [])];
-  if (dashboardKPIother) kpis.push(dashboardKPIother);
-  if (kpis.length) props['Key KPIs'] = textProp(kpis.join(', '));
-
-  // Lead Capture add-on
-  if (addonLeadSources?.length) props['Lead Sources'] = multiSelectProp(addonLeadSources);
-  if (addonLeadFields?.length) props['Lead Capture Fields'] = multiSelectProp(addonLeadFields);
-  if (leadAlertMethod) props['Lead Notification Method'] = selectProp(
-    leadAlertMethod === 'Both' ? 'Both' : leadAlertMethod
-  );
-  if (leadAlertNumber) props['Lead Notification Number'] = textProp(
-    `${leadAlertNumber} (${leadAlertType || 'Personal'})`
-  );
-
-  // Brand Assets
-  if (brandKit) props['Has Brand Kit'] = selectProp(
-    brandKit === "Yes — I'll share a link" ? 'Yes — will share link' : 'No — design for me'
-  );
-  if (brandKitLink) props['Logo URL'] = urlProp(brandKitLink);
-  if (logoLink) props['Logo URL'] = urlProp(logoLink);
-  const colors = [brandColor1Name, brandColor2Name].filter(Boolean);
-  if (colors.length) props['Brand Colors'] = textProp(
-    `${brandColor1} ${brandColor1Name ? `(${brandColor1Name})` : ''}, ${brandColor2} ${brandColor2Name ? `(${brandColor2Name})` : ''}`.trim()
-  );
-  if (brandFonts) props['Fonts'] = textProp(brandFonts);
-
-  // Preferences
-  const allSetupLinks = (setupLinks || []).filter(Boolean);
-  if (allSetupLinks.length) props['Notion Workspace URL'] = urlProp(allSetupLinks[0]);
-  if (automationWishes) props['Notes'] = textProp(
-    `AUTOMATION WISHES:\n${automationWishes}\n\nBUSINESS TERMS:\n${businessTerms || 'N/A'}\n\nANYTHING ELSE:\n${anythingElse || 'N/A'}\n\nSETUP LINKS:\n${allSetupLinks.join('\n')}`
-  );
-
-  // Clean up nulls
-  Object.keys(props).forEach(k => props[k] === null && delete props[k]);
-
-  return props;
+  return map[val] || null;
 }
 
-// ── WHATSAPP NOTIFICATION ──────────────────────────────────────────────────
-async function sendWhatsApp(to, message) {
-  const url = process.env.WHATSAPP_API_URL;
-  const token = process.env.WHATSAPP_API_TOKEN;
-  if (!url || !token) {
-    console.log('[onboarding] WhatsApp not configured, skipping notification');
-    return;
+// ── LEAD SOURCES: map form options to DB options ───────────────────────────
+// DB: Instagram DM, WhatsApp, Form, Website, Ads, Other
+// Form has extra: Referral, LinkedIn, Existing client, Cold outreach, Events → all map to Other or filter
+function mapLeadSources(arr) {
+  const direct = new Set(['Instagram DM', 'WhatsApp', 'Form', 'Website', 'Ads', 'Other']);
+  const toOther = new Set(['Referral', 'LinkedIn', 'Existing client', 'Cold outreach', 'Events']);
+  const result = new Set();
+  (arr || []).forEach(s => {
+    if (direct.has(s)) result.add(s);
+    else if (toOther.has(s)) result.add('Other');
+  });
+  return [...result];
+}
+
+// ── LEAD CAPTURE FIELDS: map form options to DB options ────────────────────
+// DB: Name, Phone, Email, Interest, Budget, Other
+// Form: "What they need" → Interest, "Company name" → Other
+function mapLeadFields(arr) {
+  const map = {
+    'Name': 'Name',
+    'Phone': 'Phone',
+    'Email': 'Email',
+    'What they need': 'Interest',
+    'Budget': 'Budget',
+    'Company name': 'Other',
+  };
+  const result = new Set();
+  (arr || []).forEach(f => { if (map[f]) result.add(map[f]); });
+  return [...result];
+}
+
+// ── MAIN PROPERTY BUILDER ──────────────────────────────────────────────────
+function buildProps(d) {
+  const p = {};
+
+  // ── CORE ──
+  p['Client Name'] = { title: rt(d.clientName || 'Unknown') };
+  p['Intake Status'] = { select: { name: 'Submitted' } };
+  if (d.osPackage) p['OS Package'] = sel(d.osPackage);
+  if (d.addons?.length) p['Add-ons'] = msel(d.addons);
+  if (d.dealId) p['Deal'] = { relation: [{ id: d.dealId }] };
+
+  // ── BUSINESS / WORKSPACE ──
+  const tsize = mapTeamSize(d.teamSize);
+  if (tsize) p['Team Size'] = sel(tsize);
+
+  // Main user = first team member
+  const mainMember = d.teamMembers?.find(m => m.name);
+  if (mainMember) p['Main User'] = txt(`${mainMember.name}${mainMember.role ? ` — ${mainMember.role}` : ''}`);
+
+  // Other users = rest
+  const otherMembers = (d.teamMembers || []).slice(1).filter(m => m.name);
+  if (otherMembers.length) p['Other Users'] = txt(otherMembers.map(m => `${m.name}${m.role ? ` — ${m.role}` : ''}`).join(', '));
+
+  if (d.notionUrl) p['Notion Workspace URL'] = url(d.notionUrl);
+  if (d.notionPlan) p['Notion Plan'] = sel(d.notionPlan);
+  if (d.notionUsage) p['Uses Notion'] = sel(
+    d.notionUsage === "We're new to it" ? 'New to it' : d.notionUsage
+  );
+  if (d.existingData) p['Has Existing Data'] = sel(
+    d.existingData === 'Yes — I have data' ? 'Yes' : 'No'
+  );
+  if (d.comms) p['Comms Preference'] = sel(d.comms);
+
+  // ── REVENUE OS ──
+  const mappedSources = mapLeadSources(d.leadSources);
+  if (mappedSources.length) p['Lead Sources'] = msel(mappedSources);
+
+  if (d.leadTracking) p['Pipeline Tracked How'] = sel(
+    d.leadTracking === 'WhatsApp threads' ? 'WhatsApp' :
+    d.leadTracking === 'A CRM tool' || d.leadTracking === 'Notion already' ? 'CRM tool' :
+    d.leadTracking === 'Nothing formal' ? 'Nothing' : d.leadTracking
+  );
+
+  // leadVolume (leads per month) → Active Leads Volume
+  // DB options: Under 10, 10–30, 30–50, 50+
+  if (d.leadVolume) p['Active Leads Volume'] = sel(
+    d.leadVolume === 'Under 5' ? 'Under 10' :
+    d.leadVolume === '5–15' ? '10–30' :
+    d.leadVolume === '15–30' ? '30–50' :
+    d.leadVolume === '30+' ? '50+' : null
+  );
+
+  if (d.pipelineStages) p['Pipeline Stages'] = sel(
+    d.pipelineStages === 'I have my own stages' ? 'Custom' : 'Use default'
+  );
+  if (d.pipelineStages === 'I have my own stages' && d.customStages?.length) {
+    p['Custom Pipeline Stages'] = txt(stages(d.customStages));
   }
 
+  // Sales steps → Delivery Process
+  if (d.salesSteps?.length) p['Delivery Process'] = txt(steps(d.salesSteps));
+
+  if (d.dealCurrency) p['Invoice Currency'] = sel(
+    ['MYR', 'USD', 'SGD'].includes(d.dealCurrency) ? d.dealCurrency : 'Other'
+  );
+
+  // Payment terms
+  if (d.paymentTerms) p['Payment Terms Default'] = sel(
+    d.paymentTerms === '50% deposit, 50% on delivery' ? '50% Deposit' :
+    d.paymentTerms === 'Full upfront' ? 'Full Upfront' : 'Custom'
+  );
+
+  const paymentNotes = [
+    d.paymentMethods?.length ? `Methods: ${d.paymentMethods.join(', ')}` : '',
+    d.paymentTermsOther ? `Terms: ${d.paymentTermsOther}` : '',
+  ].filter(Boolean).join(' | ');
+  if (paymentNotes) p['Invoice Payment Terms'] = txt(paymentNotes);
+
+  // Sales owner (who manages sales) vs invoice owner
+  // Form field: sales is managed by the sales team member (from team members)
+  // invoiceOwner field from form → Sales Owner in DB (closest match)
+  if (d.invoiceOwner) p['Sales Owner'] = txt(d.invoiceOwner);
+
+  if (d.paymentWhatsapp) p['Kickoff Notification Number'] = txt(
+    `${d.paymentWhatsapp}${d.paymentWhatsappType ? ` (${d.paymentWhatsappType})` : ''}`
+  );
+
+  // Pricing model
+  if (d.dealTracking?.includes('Deal value')) {
+    // Infer from context — or map from proposalMethod
+  }
+  // Direct pricing model mapping if we have it
+  // Form has: Fixed prices / Sometimes negotiated / Always custom per client
+  // DB has: Fixed / Sometimes negotiated / Always custom
+  // proposalMethod is the closest proxy — but these don't overlap
+  // We store via Notes instead
+
+  // ── OPERATIONS OS ──
+  if (d.projectTypes?.length) p['Project Types'] = msel(
+    d.projectTypes.map(t =>
+      t === 'Monthly retainer' ? 'Retainer' :
+      t === 'One-off project' ? 'One-off' :
+      t === 'Campaign-based' ? 'Campaign-based' : 'Other'
+    )
+  );
+
+  if (d.deliverySteps?.length) p['Project Kickoff Tasks'] = txt(steps(d.deliverySteps));
+
+  if (d.projectStages === 'I have my own stages' && d.customProjectStages?.length) {
+    p['Custom Pipeline Stages'] = txt(stages(d.customProjectStages));
+  }
+
+  // Active projects → Active Campaigns Volume (closest field)
+  // DB: 1–3, 4–10, 10+
+  if (d.activeProjects) p['Active Campaigns Volume'] = sel(
+    d.activeProjects === '1–5' ? '1–3' :
+    d.activeProjects === '5–15' ? '4–10' : '10+'
+  );
+
+  if (d.taskTracking) p['Task Tracking Method'] = sel(
+    d.taskTracking === 'ClickUp / Asana' ? 'Other tool' :
+    d.taskTracking === 'Nothing formal' ? 'Nothing' : d.taskTracking
+  );
+
+  if (d.taskOwner) p['Delivery Owner'] = txt(d.taskOwner);
+
+  if (d.typicalProjectLength) p['Typical Project Length'] = sel(
+    d.typicalProjectLength === 'Under 2 weeks' ? 'Under 2 weeks' :
+    d.typicalProjectLength === '2–4 weeks' ? '2–4 weeks' :
+    d.typicalProjectLength === '1–3 months' ? '1–3 months' : '3+ months'
+  );
+
+  if (d.onboardingSteps?.length) p['Onboarding Kickoff Tasks'] = txt(steps(d.onboardingSteps));
+
+  if (d.onboardingCollect?.length) {
+    // Store as text since no direct field
+    p['Document Header Info'] = txt(d.onboardingCollect.join(', '));
+  }
+
+  // Has Onboarding Checklist — DB expects exact: "Yes — will share" or "No"
+  if (d.existingChecklist) p['Has Onboarding Checklist'] = sel(
+    d.existingChecklist.startsWith('Yes') ? 'Yes — will share' : 'No'
+  );
+
+  // Has SOPs — DB expects exact: "Yes — will share" or "No"
+  if (d.existingSOPs) p['Has SOPs'] = sel(
+    d.existingSOPs.startsWith('Yes') ? 'Yes — will share' : 'No'
+  );
+
+  if (d.prioritySOPs?.length) p['Priority SOPs'] = txt(d.prioritySOPs.join(', '));
+
+  // Onboarding consistency → stored in Notes (no matching field)
+  // Services list
+  if (d.servicesList) p['Services List'] = txt(d.servicesList);
+
+  // ── ADD-ONS: ENHANCED DASHBOARD ──
+  if (d.dashboardViewers) p['Dashboard Viewers'] = sel(d.dashboardViewers);
+  const kpis = [...(d.dashboardKPIs || [])].filter(k => k !== 'Something else');
+  if (d.dashboardKPIother) kpis.push(d.dashboardKPIother);
+  if (kpis.length) p['Key KPIs'] = txt(kpis.join(', '));
+
+  // ── ADD-ONS: LEAD CAPTURE ──
+  const addonSources = mapLeadSources(d.addonLeadSources);
+  if (addonSources.length) p['Lead Sources'] = msel(addonSources); // overrides if set
+  const addonFields = mapLeadFields(d.addonLeadFields);
+  if (addonFields.length) p['Lead Capture Fields'] = msel(addonFields);
+  if (d.leadAlertMethod) p['Lead Notification Method'] = sel(
+    d.leadAlertMethod === 'Both' ? 'Both' : d.leadAlertMethod
+  );
+  if (d.leadAlertNumber) p['Lead Notification Number'] = txt(
+    `${d.leadAlertNumber}${d.leadAlertType ? ` (${d.leadAlertType})` : ''}`
+  );
+
+  // ── ADD-ONS: BRAND ASSETS ──
+  // DB expects exact: "Yes — will share link" or "No — design for me"
+  if (d.brandKit) p['Has Brand Kit'] = sel(
+    d.brandKit.startsWith('Yes') ? 'Yes — will share link' : 'No — design for me'
+  );
+  if (d.brandKitLink) p['Logo URL'] = url(d.brandKitLink);
+  if (d.logoLink) p['Logo URL'] = url(d.logoLink);
+  const colorParts = [
+    d.brandColor1 && d.brandColor1 !== '#000000' ? `${d.brandColor1}${d.brandColor1Name ? ` (${d.brandColor1Name})` : ''}` : null,
+    d.brandColor2 && d.brandColor2 !== '#C6F135' ? `${d.brandColor2}${d.brandColor2Name ? ` (${d.brandColor2Name})` : ''}` : null,
+  ].filter(Boolean);
+  if (colorParts.length) p['Brand Colors'] = txt(colorParts.join(', '));
+  if (d.brandFonts) p['Fonts'] = txt(d.brandFonts);
+
+  // ── PREFERENCES ──
+  const setupLinks = (d.setupLinks || []).filter(Boolean);
+  if (setupLinks.length) {
+    // First link goes to Notion Workspace URL if not already set
+    if (!d.notionUrl && setupLinks[0]) p['Notion Workspace URL'] = url(setupLinks[0]);
+  }
+
+  // Build comprehensive Notes field
+  const notesParts = [
+    d.automationWishes ? `AUTOMATION WISHES:\n${d.automationWishes}` : '',
+    d.businessTerms ? `BUSINESS TERMINOLOGY:\n${d.businessTerms}` : '',
+    d.onboardingConsistency ? `ONBOARDING CONSISTENCY: ${d.onboardingConsistency}` : '',
+    d.taskStagesCustom ? `CUSTOM TASK STAGES: ${d.taskStagesCustom}` : '',
+    d.anythingElse ? `ANYTHING ELSE:\n${d.anythingElse}` : '',
+    setupLinks.length ? `SETUP LINKS:\n${setupLinks.join('\n')}` : '',
+    d.existingDataLinks?.filter(Boolean).length ? `EXISTING DATA LINKS:\n${d.existingDataLinks.filter(Boolean).join('\n')}` : '',
+    d.checklistLinks?.filter(Boolean).length ? `ONBOARDING CHECKLIST LINKS:\n${d.checklistLinks.filter(Boolean).join('\n')}` : '',
+    d.sopLinks?.filter(Boolean).length ? `SOP LINKS:\n${d.sopLinks.filter(Boolean).join('\n')}` : '',
+  ].filter(Boolean);
+  if (notesParts.length) p['Notes'] = txt(notesParts.join('\n\n').slice(0, 2000));
+
+  // Remove nulls
+  Object.keys(p).forEach(k => p[k] === null && delete p[k]);
+
+  return p;
+}
+
+// ── WHATSAPP ───────────────────────────────────────────────────────────────
+async function sendWhatsApp(to, message) {
+  const apiUrl = process.env.WHATSAPP_API_URL;
+  const token = process.env.WHATSAPP_API_TOKEN;
+  if (!apiUrl || !token) return;
   try {
-    await fetch(url, {
+    await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ to, message }),
     });
   } catch (err) {
-    console.error('[onboarding] WhatsApp notification failed:', err.message);
+    console.error('[onboarding] WhatsApp failed:', err.message);
   }
 }
 
 // ── HANDLER ────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const data = req.body;
-
-  if (!data?.clientName) {
-    return res.status(400).json({ error: 'Missing client name' });
-  }
+  if (!data?.clientName) return res.status(400).json({ error: 'Missing clientName' });
 
   try {
-    // 1. Build Notion properties
-    const properties = buildNotionProperties(data);
+    const properties = buildProps(data);
 
-    // 2. Create Notion page in Client Implementation Form database
+    // Create intake page in Notion
     const page = await notion.pages.create({
       parent: { database_id: DB },
       properties,
     });
 
-    console.log(`[onboarding] Created intake page: ${page.id} for ${data.clientName}`);
+    console.log(`[onboarding] Created ${page.id} for ${data.clientName}`);
 
-    // 3. Update the Deal row with Client Intake relation (if dealId provided)
+    // Link back to Deal row
     if (data.dealId) {
       try {
-        const dealPage = await notion.pages.retrieve({ page_id: data.dealId });
-        const existingIntake = dealPage.properties['Client Intake']?.relation || [];
+        const deal = await notion.pages.retrieve({ page_id: data.dealId });
+        const existing = deal.properties['Client Intake']?.relation || [];
         await notion.pages.update({
           page_id: data.dealId,
-          properties: {
-            'Client Intake': {
-              relation: [...existingIntake, { id: page.id }],
-            },
-          },
+          properties: { 'Client Intake': { relation: [...existing, { id: page.id }] } },
         });
-        console.log(`[onboarding] Updated deal ${data.dealId} with intake ${page.id}`);
       } catch (err) {
-        // Non-fatal — log but don't fail the submission
-        console.error('[onboarding] Failed to update deal relation:', err.message);
+        console.error('[onboarding] Deal link failed:', err.message);
       }
     }
 
-    // 4. Send WhatsApp notification to Opxio team
-    const notifyNumber = process.env.OPXIO_NOTIFY_NUMBER;
-    if (notifyNumber) {
-      const addonList = data.addons?.length ? ` + ${data.addons.join(', ')}` : '';
-      const notionLink = `https://notion.so/${page.id.replace(/-/g, '')}`;
-      await sendWhatsApp(
-        notifyNumber,
-        `✅ Intake received\n\nClient: ${data.clientName}\nPackage: ${data.osPackage || 'N/A'}${addonList}\n\nReview: ${notionLink}`
-      );
+    // Notify team via WhatsApp
+    const notify = process.env.OPXIO_NOTIFY_NUMBER;
+    if (notify) {
+      const addons = data.addons?.length ? ` + ${data.addons.join(', ')}` : '';
+      const link = `https://notion.so/${page.id.replace(/-/g, '')}`;
+      await sendWhatsApp(notify, `✅ Intake received\n\nClient: ${data.clientName}\nPackage: ${data.osPackage || 'N/A'}${addons}\n\nReview: ${link}`);
     }
 
-    return res.status(200).json({
-      success: true,
-      pageId: page.id,
-      pageUrl: `https://notion.so/${page.id.replace(/-/g, '')}`,
-    });
+    return res.status(200).json({ success: true, pageId: page.id });
 
   } catch (err) {
     console.error('[onboarding] Error:', err);
     return res.status(500).json({
-      error: 'Failed to submit form',
+      error: 'Submission failed',
       detail: process.env.NODE_ENV === 'development' ? err.message : undefined,
     });
   }
