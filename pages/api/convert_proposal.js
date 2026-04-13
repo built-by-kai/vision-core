@@ -234,6 +234,7 @@ export default async function handler(req, res) {
       const quoteType     = pp["Quote Type"]?.select?.name || "New Business"
       const today         = new Date().toISOString().split("T")[0]
 
+      // Create quotation page WITHOUT a template so we control the inline DB
       const quotPage = await createPage({
         parent: { database_id: DB.QUOTATIONS },
         properties: {
@@ -241,31 +242,32 @@ export default async function handler(req, res) {
           "Status":        { select: { name: "Draft" } },
           "Issue Date":    { date: { start: today } },
           "Payment Terms": { select: { name: payTerms } },
-          ...(quoteType        ? { "Quote Type":   { select: { name: quoteType } } } : {}),
-          ...(companyIds.length ? { "Company":     { relation: [{ id: companyIds[0] }] } } : {}),
-          ...(leadIds.length    ? { "Deal Source": { relation: [{ id: leadIds[0] }] } } : {}),
-          ...(leadSourceIds.length ? { "Lead Source": { relation: [{ id: leadSourceIds[0] }] } } : {}),
+          ...(quoteType           ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+          ...(companyIds.length   ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
+          ...(leadIds.length      ? { "Deal Source":  { relation: [{ id: leadIds[0] }] } } : {}),
+          ...(leadSourceIds.length? { "Lead Source":  { relation: [{ id: leadSourceIds[0] }] } } : {}),
         }
       }, process.env.NOTION_API_KEY)
 
       const newQuotId = quotPage.id.replace(/-/g, "")
+      console.log("[convert_proposal] created quotation page:", newQuotId)
 
-      // Poll for inline DB
-      let quotDbId = null
-      for (let i = 0; i < 6; i++) {
-        await new Promise(r => setTimeout(r, 2500))
-        quotDbId = await findLineItemsDB(newQuotId)
-        if (quotDbId) break
-      }
-      if (!quotDbId) {
-        quotDbId = await createLineItemsDB(newQuotId)
-        await new Promise(r => setTimeout(r, 1500))
-      }
-
+      // Read proposal line items FIRST (parallel with page creation warmup)
       const propDbId  = await findLineItemsDB(proposalId)
       const lineItems = propDbId ? await readLineItems(propDbId) : []
-      for (const item of lineItems) await createLineItem(quotDbId, item)
+      console.log("[convert_proposal] found", lineItems.length, "line items from proposal")
 
+      // Create inline Products & Services DB directly — no template, no polling, no race
+      const quotDbId = await createLineItemsDB(newQuotId)
+      console.log("[convert_proposal] created inline DB:", quotDbId)
+
+      // Write line items sequentially
+      for (const item of lineItems) {
+        await createLineItem(quotDbId, item)
+      }
+      console.log("[convert_proposal] wrote", lineItems.length, "line items")
+
+      // Mark proposal done + link relation
       await patchPage(proposalId, {
         "Status": { select: { name: "Quotation Issued" } },
       }, process.env.NOTION_API_KEY)
