@@ -1,15 +1,17 @@
 // ─── convert_proposal.js ───────────────────────────────────────────────────
-// POST /api/convert_proposal  { "page_id": "<proposal_page_id>" }
-// Triggered by "Convert to Quotation" button on an approved Proposal page.
+// Supports TWO modes:
 //
-// What this does:
-//   1. Reads Proposal fields (Company, PIC, OS Type, Payment Terms, etc.)
-//   2. Reads Proposal's inline Products & Services line items
-//   3. Creates a new Quotation page in the Quotations DB
-//   4. Creates/finds inline Products & Services DB on new Quotation page
-//   5. Copies all line items from Proposal → Quotation (preserving order)
-//   6. Marks Proposal status → "Converted"
-//   7. Advances Lead stage → "Quotation Issued" (if Lead linked)
+// MODE A — Notion button sends webhook AFTER manually creating a quotation page:
+//   POST { "proposal_id": "<proposal_page_id>", "quotation_id": "<new_quotation_page_id>" }
+//   → Reads proposal line items + metadata
+//   → Fills existing quotation page (already created by Notion button)
+//   → Populates inline Products & Services DB on the quotation
+//   → Links Proposal → Converted Quotation relation
+//   → Sets Proposal status → "Quotation Issued"
+//
+// MODE B — Legacy: API creates the quotation page itself (fallback)
+//   POST { "page_id": "<proposal_page_id>" }
+//   → Creates new Quotation page, fills it, links it back
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
@@ -33,7 +35,7 @@ async function findLineItemsDB(pageId) {
     if (directDb) return directDb.id.replace(/-/g, "")
 
     // Second: check inside callouts and other container blocks
-    const containers = blocks.filter(b => ["callout", "column", "column_list", "toggle", "bulleted_list_item"].includes(b.type))
+    const containers = blocks.filter(b => ["callout", "column", "column_list", "toggle"].includes(b.type))
     const inner = await Promise.all(
       containers.map(async b => {
         try {
@@ -42,8 +44,7 @@ async function findLineItemsDB(pageId) {
         } catch { return [] }
       })
     )
-    const innerBlocks = inner.flat()
-    const innerDb = innerBlocks.find(b => b.type === "child_database")
+    const innerDb = inner.flat().find(b => b.type === "child_database")
     if (innerDb) return innerDb.id.replace(/-/g, "")
 
     return null
@@ -58,14 +59,10 @@ async function readLineItems(dbId) {
   try {
     const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
       method: "POST", headers: hdrs(),
-      body: JSON.stringify({
-        sorts: [{ property: "No", direction: "ascending" }],
-        page_size: 50,
-      }),
+      body: JSON.stringify({ sorts: [{ property: "No", direction: "ascending" }], page_size: 50 }),
     })
     if (!r.ok) return []
-    const data = await r.json()
-    return (data.results || []).map(row => {
+    return (await r.json()).results.map(row => {
       const p = row.properties
       const productRels = p.Product?.relation || []
       return {
@@ -84,16 +81,6 @@ async function readLineItems(dbId) {
 
 // ── Create inline Products & Services DB on quotation page ────────────────
 async function createLineItemsDB(pageId) {
-  await fetch(`https://api.notion.com/v1/blocks/${pageId}/children`, {
-    method: "PATCH", headers: hdrs(),
-    body: JSON.stringify({ children: [{
-      type: "callout",
-      callout: {
-        rich_text: [{ type: "text", text: { content: "Products & Services" }, annotations: { bold: true } }],
-        icon: null, color: "default_background",
-      },
-    }] }),
-  })
   const r = await fetch("https://api.notion.com/v1/databases", {
     method: "POST", headers: hdrs(),
     body: JSON.stringify({
@@ -111,35 +98,84 @@ async function createLineItemsDB(pageId) {
     }),
   })
   if (!r.ok) throw new Error(`Create DB: ${r.status} ${(await r.text()).slice(0, 150)}`)
-  const db = await r.json()
-  return db.id.replace(/-/g, "")
+  return (await r.json()).id.replace(/-/g, "")
 }
 
-// ── Create a single line item in the quotation DB ─────────────────────────
+// ── Write a single line item into the quotation DB ────────────────────────
 async function createLineItem(dbId, item) {
   const props = {
     "Notes": { title: [] },
     "Qty":   { number: item.qty || 1 },
-    ...(item.product_id   ? { "Product":   { relation: [{ id: item.product_id }] } } : {}),
+    ...(item.product_id  ? { "Product":   { relation: [{ id: item.product_id }] } } : {}),
     ...(item.unit_price != null ? { "Unit Price": { number: Number(item.unit_price) } } : {}),
-    ...(item.description  ? { "Product Description": { rich_text: [{ text: { content: item.description.slice(0, 2000) } }] } } : {}),
+    ...(item.description ? { "Product Description": { rich_text: [{ text: { content: item.description.slice(0, 2000) } }] } } : {}),
   }
   const r = await fetch("https://api.notion.com/v1/pages", {
     method: "POST", headers: hdrs(),
     body:   JSON.stringify({ parent: { database_id: dbId }, properties: props }),
   })
-  if (!r.ok) {
-    // Fallback without description
-    await fetch("https://api.notion.com/v1/pages", {
-      method: "POST", headers: hdrs(),
-      body: JSON.stringify({ parent: { database_id: dbId }, properties: {
-        "Notes": { title: [] },
-        "Qty":   { number: item.qty || 1 },
-        ...(item.product_id   ? { "Product":   { relation: [{ id: item.product_id }] } } : {}),
-        ...(item.unit_price != null ? { "Unit Price": { number: Number(item.unit_price) } } : {}),
-      }}),
-    })
+  if (!r.ok) console.warn("[createLineItem] failed:", r.status)
+}
+
+// ── Fill an existing quotation page with proposal data ────────────────────
+async function fillQuotation(quotId, propId) {
+  // 1. Read proposal
+  const proposal = await getPage(propId, process.env.NOTION_API_KEY)
+  const pp = proposal.properties
+
+  const companyIds    = (pp.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+  const leadSourceIds = (pp["Lead Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+  const payTerms      = pp["Payment Terms"]?.select?.name || "50% Deposit"
+  const quoteType     = pp["Quote Type"]?.select?.name || "New Business"
+  const leadIds       = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+
+  console.log("[convert_proposal] proposal:", propId, "→ quotation:", quotId)
+
+  // 2. Read line items from proposal inline DB
+  const propDbId  = await findLineItemsDB(propId)
+  const lineItems = propDbId ? await readLineItems(propDbId) : []
+  console.log("[convert_proposal] line items:", lineItems.length)
+
+  // 3. Patch quotation page properties
+  const today = new Date().toISOString().split("T")[0]
+  await patchPage(quotId, {
+    "Issue Date":    { date: { start: today } },
+    "Payment Terms": { select: { name: payTerms } },
+    ...(quoteType        ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+    ...(companyIds.length ? { "Company":     { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(leadIds.length    ? { "Deal Source": { relation: [{ id: leadIds[0] }] } } : {}),
+    ...(leadSourceIds.length ? { "Lead Source": { relation: [{ id: leadSourceIds[0] }] } } : {}),
+  }, process.env.NOTION_API_KEY)
+
+  // 4. Find existing inline DB (already there from template) or create one
+  let quotDbId = await findLineItemsDB(quotId)
+  if (!quotDbId) {
+    console.log("[convert_proposal] no inline DB found — creating")
+    quotDbId = await createLineItemsDB(quotId)
+    await new Promise(r => setTimeout(r, 1500))
   }
+  console.log("[convert_proposal] inline DB:", quotDbId)
+
+  // 5. Write line items sequentially
+  for (const item of lineItems) {
+    await createLineItem(quotDbId, item)
+  }
+  console.log("[convert_proposal] wrote", lineItems.length, "line items")
+
+  // 6. Mark proposal as Quotation Issued + link relation
+  await patchPage(propId, {
+    "Status": { select: { name: "Quotation Issued" } },
+  }, process.env.NOTION_API_KEY)
+
+  try {
+    await patchPage(propId, {
+      "Converted Quotation": { relation: [{ id: quotId }] },
+    }, process.env.NOTION_API_KEY)
+  } catch (e) {
+    console.warn("[convert_proposal] relation link failed:", e.message)
+  }
+
+  return { lineItemsCopied: lineItems.length }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -147,111 +183,85 @@ export default async function handler(req, res) {
   if (req.method === "GET") return res.json({ service: "Opxio — Convert Proposal", status: "ready" })
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
-  const body  = req.body || {}
-  const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
-  if (!rawId) return res.status(400).json({ error: "Missing page_id" })
-  const propId = rawId.replace(/-/g, "")
+  const body = req.body || {}
+
+  // ── MODE A: Notion webhook sends both proposal_id + quotation_id ──────────
+  // Set up in Notion: button creates page first, then fires webhook to this endpoint
+  // Webhook payload: { "proposal_id": "...", "quotation_id": "..." }
+  const proposalId  = (body.proposal_id  || body.source?.page_id || body.data?.page_id || "").replace(/-/g, "")
+  const quotationId = (body.quotation_id || body.data?.quotation_id || "").replace(/-/g, "")
+
+  if (!proposalId) return res.status(400).json({ error: "Missing proposal_id" })
 
   try {
-    // ── 1. Read Proposal page ────────────────────────────────────────────────
-    const proposal = await getPage(propId, process.env.NOTION_API_KEY)
-    const pp       = proposal.properties
+    if (quotationId) {
+      // ── MODE A: quotation page already exists, just fill it ───────────────
+      console.log("[convert_proposal] MODE A — filling existing quotation:", quotationId)
+      const result = await fillQuotation(quotationId, proposalId)
+      return res.status(200).json({ status: "ok", mode: "fill", proposalId, quotationId, ...result })
 
-    const companyIds    = (pp.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
-    const picIds        = (pp.PIC?.relation || []).map(r => r.id.replace(/-/g, ""))
-    const osType        = pp["OS Type"]?.select?.name || ""
-    const payTerms      = pp["Payment Terms"]?.select?.name || "50% Deposit"
-    const quoteType     = pp["Quote Type"]?.select?.name || "New Business"
-    const proposalNo    = plain(pp["Ref Number"]?.title || [])
-    const leadIds       = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
-    const leadSourceIds = (pp["Lead Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+    } else {
+      // ── MODE B: legacy — create the quotation page ourselves ──────────────
+      console.log("[convert_proposal] MODE B — creating new quotation page")
 
-    // Company name for package type field (rich text in Quotations)
-    let packageName = osType
+      const proposal = await getPage(proposalId, process.env.NOTION_API_KEY)
+      const pp = proposal.properties
+      const companyIds    = (pp.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+      const leadSourceIds = (pp["Lead Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+      const leadIds       = (pp["Deal Source"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+      const payTerms      = pp["Payment Terms"]?.select?.name || "50% Deposit"
+      const quoteType     = pp["Quote Type"]?.select?.name || "New Business"
+      const today         = new Date().toISOString().split("T")[0]
 
-    console.log("[convert_proposal] proposal:", propId, "OS:", osType, "company:", companyIds[0] || "none")
-
-    // ── 2. Read line items from Proposal's inline DB ─────────────────────────
-    const propDbId  = await findLineItemsDB(propId)
-    const lineItems = propDbId ? await readLineItems(propDbId) : []
-    console.log("[convert_proposal] line items from proposal:", lineItems.length)
-
-    // ── 3. Create new Quotation page ─────────────────────────────────────────
-    const today = new Date().toISOString().split("T")[0]
-    const quotPage = await createPage({
-      parent: { database_id: DB.QUOTATIONS },
-      properties: {
-        "Quotation No.": { title: [{ text: { content: "" } }] },
-        "Status":        { select: { name: "Draft" } },
-        "Issue Date":    { date: { start: today } },
-        "Payment Terms": { select: { name: payTerms } },
-        ...(quoteType     ? { "Quote Type":   { select: { name: quoteType } } } : {}),
-        ...(companyIds.length ? { "Company":    { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(leadIds.length       ? { "Deal Source":  { relation: [{ id: leadIds[0] }] } } : {}),
-        ...(leadSourceIds.length ? { "Lead Source":  { relation: [{ id: leadSourceIds[0] }] } } : {}),
-      }
-    }, process.env.NOTION_API_KEY)
-
-    const quotId  = quotPage.id.replace(/-/g, "")
-    const quotUrl = quotPage.url || `https://notion.so/${quotId}`
-    console.log("[convert_proposal] created quotation:", quotId)
-
-    // ── Link Quotation back to Proposal via Quotation relation ───────────────
-    try {
-      // Use raw page ID with dashes for relation (Notion requires UUID format)
-      const quotPageId = quotPage.id  // has dashes e.g. "xxxx-xxxx-xxxx-xxxx"
-      await patchPage(propId, {
-        "Converted Quotation": { relation: [{ id: quotPageId }] },
+      const quotPage = await createPage({
+        parent: { database_id: DB.QUOTATIONS },
+        properties: {
+          "Quotation No.": { title: [{ text: { content: "" } }] },
+          "Status":        { select: { name: "Draft" } },
+          "Issue Date":    { date: { start: today } },
+          "Payment Terms": { select: { name: payTerms } },
+          ...(quoteType        ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+          ...(companyIds.length ? { "Company":     { relation: [{ id: companyIds[0] }] } } : {}),
+          ...(leadIds.length    ? { "Deal Source": { relation: [{ id: leadIds[0] }] } } : {}),
+          ...(leadSourceIds.length ? { "Lead Source": { relation: [{ id: leadSourceIds[0] }] } } : {}),
+        }
       }, process.env.NOTION_API_KEY)
-      console.log("[convert_proposal] proposal linked to quotation:", quotPageId)
-    } catch (e) {
-      console.error("[convert_proposal] FAILED to link proposal to quotation:", e.message)
-    }
 
-    // ── 4. Find the existing inline Products & Services DB (template-applied) ─
-    // Poll with retries — Notion applies templates asynchronously, so we wait
-    // up to 15s for the inline DB to appear before falling back to creating one
-    let quotDbId = null
-    for (let attempt = 0; attempt < 6; attempt++) {
-      await new Promise(r => setTimeout(r, 2500))
-      quotDbId = await findLineItemsDB(quotId)
-      if (quotDbId) {
-        console.log(`[convert_proposal] found inline DB on attempt ${attempt + 1}:`, quotDbId)
-        break
+      const newQuotId = quotPage.id.replace(/-/g, "")
+
+      // Poll for inline DB
+      let quotDbId = null
+      for (let i = 0; i < 6; i++) {
+        await new Promise(r => setTimeout(r, 2500))
+        quotDbId = await findLineItemsDB(newQuotId)
+        if (quotDbId) break
       }
-    }
-    if (!quotDbId) {
-      console.log("[convert_proposal] inline DB not found after retries — creating new one")
-      quotDbId = await createLineItemsDB(quotId)
-      await new Promise(r => setTimeout(r, 1500))
-    }
-    console.log("[convert_proposal] using inline DB:", quotDbId)
+      if (!quotDbId) {
+        quotDbId = await createLineItemsDB(newQuotId)
+        await new Promise(r => setTimeout(r, 1500))
+      }
 
-    // ── 5. Copy line items from Proposal → Quotation (sequential = preserve order) ─
-    for (const item of lineItems) {
-      await createLineItem(quotDbId, item)
+      const propDbId  = await findLineItemsDB(proposalId)
+      const lineItems = propDbId ? await readLineItems(propDbId) : []
+      for (const item of lineItems) await createLineItem(quotDbId, item)
+
+      await patchPage(proposalId, {
+        "Status": { select: { name: "Quotation Issued" } },
+      }, process.env.NOTION_API_KEY)
+      try {
+        await patchPage(proposalId, {
+          "Converted Quotation": { relation: [{ id: quotPage.id }] },
+        }, process.env.NOTION_API_KEY)
+      } catch (e) {
+        console.warn("[convert_proposal] relation link failed:", e.message)
+      }
+
+      return res.status(200).json({
+        status: "ok", mode: "create",
+        proposalId, quotationId: newQuotId,
+        lineItemsCopied: lineItems.length,
+      })
     }
-    console.log(`[convert_proposal] copied ${lineItems.length} line items to quotation`)
-
-    // ── 6. Mark Proposal as Converted ────────────────────────────────────────
-    await patchPage(propId, {
-      "Status": { select: { name: "Quotation Issued" } },
-    }, process.env.NOTION_API_KEY)
-
-    // ── 7. Deal Source already linked above in createPage ────────────────────
-    // Lead stage advances to "Awaiting Deposit" only when deposit invoice is created.
-    if (leadIds.length) {
-      console.log("[convert_proposal] quotation linked to deal:", leadIds[0])
-    }
-
-    console.log("[convert_proposal] done →", quotId)
-    return res.status(200).json({
-      status: "ok",
-      propId,
-      quotId,
-      quotUrl,
-      lineItemsCopied: lineItems.length,
-    })
   } catch (e) {
     console.error("[convert_proposal] error:", e.message, e.stack)
     return res.status(500).json({ error: e.message })
