@@ -177,9 +177,8 @@ export default async function handler(req, res) {
         "Issue Date":    { date: { start: today } },
         "Payment Terms": { select: { name: payTerms } },
         ...(quoteType     ? { "Quote Type":   { select: { name: quoteType } } } : {}),
-        ...(companyIds.length ? { "Company":  { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(picIds.length     ? { "PIC Name": { relation: [{ id: picIds[0] }] } } : {}),
-        ...(packageName       ? { "Package Type": { rich_text: [{ text: { content: packageName } }] } } : {}),
+        ...(companyIds.length ? { "Company":    { relation: [{ id: companyIds[0] }] } } : {}),
+        ...(leadIds.length    ? { "Deal Source": { relation: [{ id: leadIds[0] }] } } : {}),
       }
     }, process.env.NOTION_API_KEY)
 
