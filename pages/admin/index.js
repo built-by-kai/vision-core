@@ -27,7 +27,8 @@ const OS_TYPES = ["business","sales","operations","marketing","intelligence"]
 
 const EMPTY_CLIENT = {
   client_name: "", slug: "", os_type: [], notion_token: "", status: "active",
-  databases: {}, field_map: { STAGE_FIELD: "" },
+  databases: {},
+  field_map: { STAGE_FIELD: "", STATUS_FIELD: "", PACKAGE_FIELD: "", TYPE_FIELD: "", INVOICE_TYPE_FIELD: "" },
   labels: { stages: "", activeStages: "" },
   monthly_fee: 0, next_renewal: "",
   custom_widgets: [],
@@ -136,7 +137,13 @@ export default function AdminPage() {
       notion_token: c.notion_token || "",
       status:       c.status || "active",
       databases:    { ...(c.databases||{}) },
-      field_map:    { STAGE_FIELD: c.field_map?.STAGE_FIELD || "" },
+      field_map: {
+        STAGE_FIELD:        c.field_map?.STAGE_FIELD        || "",
+        STATUS_FIELD:       c.field_map?.STATUS_FIELD       || "",
+        PACKAGE_FIELD:      c.field_map?.PACKAGE_FIELD      || "",
+        TYPE_FIELD:         c.field_map?.TYPE_FIELD         || "",
+        INVOICE_TYPE_FIELD: c.field_map?.INVOICE_TYPE_FIELD || "",
+      },
       labels: {
         stages:       (c.labels?.stages||[]).join(", "),
         activeStages: (c.labels?.activeStages||[]).join(", "),
@@ -395,18 +402,57 @@ export default function AdminPage() {
                   </div>
                 ))}
 
-                {/* ── Pipeline config ── */}
-                <span style={s.secLabel}>Pipeline Config<span style={s.secNote}>— CRM widget only</span></span>
-                <div style={s.fieldWrap}>
-                  <label style={s.lbl}>Stage Field Name<span style={{ ...s.secNote, fontSize:10 }}> default: Stage</span></label>
-                  <input style={s.input} value={form.field_map.STAGE_FIELD||""} onChange={e=>setFM("STAGE_FIELD",e.target.value)} placeholder="Stage" />
+                {/* ── Field Mappings ── */}
+                <span style={s.secLabel}>Field Mappings<span style={s.secNote}>— only fill if client uses different field names in Notion</span></span>
+
+                {/* CRM + Deals */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>CRM &amp; Deals — Stage field</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>STAGE_FIELD<span style={{ ...s.secNote, fontSize:10 }}> default: Stage</span></label>
+                    <input style={s.input} value={form.field_map.STAGE_FIELD||""} onChange={e=>setFM("STAGE_FIELD",e.target.value)} placeholder="Stage" />
+                  </div>
                 </div>
+
+                {/* Projects */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>Projects widget</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>STATUS_FIELD<span style={{ ...s.secNote, fontSize:10 }}> default: Status</span></label>
+                    <input style={s.input} value={form.field_map.STATUS_FIELD||""} onChange={e=>setFM("STATUS_FIELD",e.target.value)} placeholder="Status" />
+                  </div>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>PACKAGE_FIELD<span style={{ ...s.secNote, fontSize:10 }}> default: Package Type</span></label>
+                    <input style={s.input} value={form.field_map.PACKAGE_FIELD||""} onChange={e=>setFM("PACKAGE_FIELD",e.target.value)} placeholder="Package Type" />
+                  </div>
+                </div>
+
+                {/* Meetings */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>Schedule / Meetings widget</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>TYPE_FIELD<span style={{ ...s.secNote, fontSize:10 }}> default: Type</span></label>
+                    <input style={s.input} value={form.field_map.TYPE_FIELD||""} onChange={e=>setFM("TYPE_FIELD",e.target.value)} placeholder="Type" />
+                  </div>
+                </div>
+
+                {/* Finance */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>Finance widget</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>INVOICE_TYPE_FIELD<span style={{ ...s.secNote, fontSize:10 }}> default: Invoice Type</span></label>
+                    <input style={s.input} value={form.field_map.INVOICE_TYPE_FIELD||""} onChange={e=>setFM("INVOICE_TYPE_FIELD",e.target.value)} placeholder="Invoice Type" />
+                  </div>
+                </div>
+
+                {/* Pipeline stages */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>CRM Pipeline — stage order</div>
                 <div style={s.fieldWrap}>
                   <label style={s.lbl}>All Stages<span style={{ ...s.secNote, fontSize:10 }}> comma-separated — last two = won / lost</span></label>
                   <input style={s.input} value={form.labels.stages||""} onChange={e=>setLbl("stages",e.target.value)} placeholder="Lead, Contacted, Qualified, Closed-Won, Closed-Lost" />
                 </div>
                 <div style={s.fieldWrap}>
-                  <label style={s.lbl}>Active Stages<span style={{ ...s.secNote, fontSize:10 }}> pre-close stages shown on board</span></label>
+                  <label style={s.lbl}>Active Stages<span style={{ ...s.secNote, fontSize:10 }}> pre-close stages shown on funnel board</span></label>
                   <input style={s.input} value={form.labels.activeStages||""} onChange={e=>setLbl("activeStages",e.target.value)} placeholder="Lead, Contacted, Qualified" />
                 </div>
 
