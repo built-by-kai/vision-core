@@ -1,5 +1,9 @@
 {
   "framework": "nextjs",
+  "alias": [
+    "opxio.io",
+    "www.opxio.io"
+  ],
   "functions": {
     "pages/api/generate.js": {
       "memory": 1024,
