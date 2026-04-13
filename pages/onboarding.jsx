@@ -1018,12 +1018,12 @@ export default function Onboarding() {
         .ibox p{font-size:13.5px;color:rgba(255,255,255,.6);font-weight:300;line-height:1.7;}
         .ibox strong{color:var(--white);font-weight:500;}
 
-        .fs{display:flex;flex-direction:column;gap:22px;margin-bottom:28px;}
+        .fs{display:flex;flex-direction:column;gap:20px;margin-bottom:24px;}
         .field{display:flex;flex-direction:column;gap:7px;}
         .fr{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
         label.fl,.fl{font-size:14.5px;font-weight:500;color:var(--text);}
         .fh{font-size:13px;color:var(--text-sub);font-weight:300;line-height:1.55;margin-top:-2px;}
-        .divider{height:1px;background:var(--border);margin:20px 0;}
+        .divider{height:1px;background:var(--border);margin:8px 0;}
 
         input[type=text],input[type=url],input[type=tel],input[type=email],textarea,select{
           background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:7px;
