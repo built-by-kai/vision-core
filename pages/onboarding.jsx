@@ -504,7 +504,7 @@ export default function Onboarding() {
                   <ChipGroup name="ind" options={['Marketing / Creative Agency', 'Consulting / Advisory', 'Education / Coaching', 'Events / Entertainment', 'F&B / Retail', 'Tech / Software', 'Property / Real Estate', 'Other']} value={form.industry} onChange={v => set('industry', v)} />
                 </Field>
 
-                <div className="divider" />
+                <div style={{height:"1px",background:"rgba(255,255,255,0.09)",margin:"-8px 0"}} />
 
                 <Field label="Notion workspace URL" hint="Settings → Members → Copy invite link">
                   <input type="url" value={form.notionUrl} onChange={e => set('notionUrl', e.target.value)} placeholder="https://notion.so/invite/..." />
@@ -891,7 +891,7 @@ export default function Onboarding() {
                   <LinkBuilder links={form.setupLinks} onChange={v => set('setupLinks', v)} placeholder="https://notion.so/... or any link" />
                 </Field>
 
-                <div className="divider" />
+                <div style={{height:"1px",background:"rgba(255,255,255,0.09)",margin:"-8px 0"}} />
 
                 <Field label="Are there repetitive tasks you wish happened automatically?" hint="e.g. When a new lead fills a form, it appears in your system. When a payment is overdue, a reminder goes out.">
                   <textarea value={form.automationWishes} onChange={e => set('automationWishes', e.target.value)} placeholder="e.g. When a client signs, their project is created automatically..." rows={3} />
