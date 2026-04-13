@@ -21,7 +21,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,x-admin-key")
   if (req.method === "OPTIONS") return res.status(200).end()
-
   if (!isAuthorized(req)) return res.status(401).json({ error: "Unauthorized" })
 
   const sb = getSupabase()
@@ -39,16 +38,19 @@ export default async function handler(req, res) {
     if (!body.client_name || !body.slug) return res.status(400).json({ error: "client_name and slug required" })
     const token = body.access_token || crypto.randomBytes(32).toString("hex")
     const { data, error } = await sb.from("clients").insert({
-      client_name:  body.client_name,
-      slug:         body.slug,
-      os_type:      body.os_type      || [],
-      access_token: token,
-      notion_token: body.notion_token || process.env.NOTION_API_KEY,
-      databases:    body.databases    || {},
-      field_map:    body.field_map    || {},
-      labels:       body.labels       || {},
-      status:       body.status       || "active",
-      monthly_fee:  body.monthly_fee  || 0,
+      client_name:    body.client_name,
+      slug:           body.slug,
+      os_type:        body.os_type        || [],
+      access_token:   token,
+      notion_token:   body.notion_token   || process.env.NOTION_API_KEY,
+      databases:      body.databases      || {},
+      field_map:      body.field_map      || {},
+      labels:         body.labels         || {},
+      custom_widgets: body.custom_widgets || [],
+      installed_os:   body.installed_os   || {},
+      status:         body.status         || "active",
+      monthly_fee:    body.monthly_fee    || 0,
+      next_renewal:   body.next_renewal   || null,
     }).select().single()
     if (error) return res.status(500).json({ error: error.message })
     return res.status(201).json(data)
@@ -60,7 +62,11 @@ export default async function handler(req, res) {
     if (!slug) return res.status(400).json({ error: "slug required" })
     const body = req.body
     const updates = {}
-    const allowed = ["client_name","os_type","notion_token","databases","field_map","labels","status","monthly_fee","next_renewal","notion_workspace_id"]
+    const allowed = [
+      "client_name","os_type","notion_token","databases","field_map","labels",
+      "status","monthly_fee","next_renewal","notion_workspace_id",
+      "custom_widgets","installed_os","access_token"
+    ]
     for (const k of allowed) if (k in body) updates[k] = body[k]
     updates.updated_at = new Date().toISOString()
     const { data, error } = await sb.from("clients").update(updates).eq("slug", slug).select().single()
