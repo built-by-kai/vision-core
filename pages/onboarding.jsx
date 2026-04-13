@@ -296,6 +296,17 @@ export default function Onboarding() {
   const [dealId, setDealId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [isLight, setIsLight] = useState(false);
+
+  const toggleTheme = useCallback(() => {
+    setIsLight(prev => {
+      const next = !prev;
+      if (typeof document !== 'undefined') {
+        document.body.classList.toggle('light', next);
+      }
+      return next;
+    });
+  }, []);
 
   // Parse URL params on mount
   useEffect(() => {
@@ -374,6 +385,10 @@ export default function Onboarding() {
           <span className="logo-name">Opxio</span>
         </a>
         <div className="nav-right">Client Implementation · opxio.io/onboarding</div>
+        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark mode">
+          <div className="toggle-track"><div className="toggle-thumb" /></div>
+          {isLight ? 'Light' : 'Dark'}
+        </button>
       </nav>
 
       {/* MOBILE PROGRESS BAR */}
@@ -969,6 +984,63 @@ export default function Onboarding() {
           --chip-border:rgba(255,255,255,0.18);--chip-bg:rgba(255,255,255,0.05);
           --input-bg:#111110;--input-border:rgba(255,255,255,0.13);
         }
+        /* LIGHT MODE */
+        body.light{
+          --black:#F5F5F2;--surface:#FFFFFF;--surface2:#F0F0EC;--surface3:#E8E8E4;
+          --border:rgba(0,0,0,0.09);--border-md:rgba(0,0,0,0.15);
+          --lime:#5A9000;--lime-dim:#4A7800;--lime-bg:rgba(90,144,0,0.08);--lime-border:rgba(90,144,0,0.3);
+          --white:#0A0A0A;--text:#1A1A18;--text-sub:#4A4A44;--text-muted:#888880;
+          --chip-border:rgba(0,0,0,0.18);--chip-bg:rgba(0,0,0,0.04);
+          --input-bg:#FFFFFF;--input-border:rgba(0,0,0,0.15);
+        }
+        body.light nav{background:rgba(245,245,242,0.97);}
+        body.light .sidebar{background:var(--surface);}
+        body.light .chip.on{color:#3A6800;border-color:rgba(90,144,0,0.5);background:rgba(90,144,0,0.1);}
+        body.light .btn-p{color:#FFFFFF;background:#5A9000;}
+        body.light .btn-p:hover:not(:disabled){background:#4A7800;}
+        body.light .pb{color:#3A6800;}
+        body.light .logo-name{color:#5A9000;}
+        body.light .logo-mark{background:#5A9000;}
+        body.light .ey{color:#4A7800;}
+        body.light .si.active{background:rgba(90,144,0,0.08);border-color:rgba(90,144,0,0.3);}
+        body.light .si.active .sn{border-color:#5A9000;color:#5A9000;}
+        body.light .si.done .sn{background:#5A9000;border-color:#5A9000;color:#fff;}
+        body.light .si.active .ss{color:#4A7800;}
+        body.light .pkg-tag.p{background:rgba(90,144,0,0.08);border-color:rgba(90,144,0,0.3);color:#3A6800;}
+        body.light .ibox{border-color:#5A9000;background:rgba(90,144,0,0.06);}
+        body.light .b-os{background:#EEF4FF;color:#1E5FCC;border-color:rgba(30,95,204,0.25);}
+        body.light .b-addon{background:#FFF4EE;color:#CC5A00;border-color:rgba(204,90,0,0.25);}
+        body.light .b-brand{background:#F4EEFF;color:#7A3ABF;border-color:rgba(122,58,191,0.25);}
+        body.light .mod-badge.b-os{background:#EEF4FF;color:#1E5FCC;}
+        body.light input:focus,body.light textarea:focus,body.light select:focus{border-color:#5A9000;box-shadow:0 0 0 3px rgba(90,144,0,0.1);}
+        body.light .ps.done{background:#5A9000;}
+        body.light .ps.active{background:linear-gradient(90deg,#5A9000 40%,var(--surface3) 100%);}
+        body.light .ns-n{background:#5A9000;color:#fff;}
+        body.light .prog-badge{color:#3A6800;}
+
+        /* TOGGLE BUTTON */
+        .theme-toggle{
+          display:flex;align-items:center;gap:8px;
+          background:var(--surface2);border:1.5px solid var(--border);
+          border-radius:20px;padding:5px 12px 5px 8px;
+          cursor:pointer;transition:all .15s;
+          font-size:12px;font-weight:500;color:var(--text-sub);
+          font-family:'DM Mono',monospace;letter-spacing:.04em;
+        }
+        .theme-toggle:hover{border-color:var(--border-md);color:var(--text);}
+        .toggle-track{
+          width:32px;height:18px;border-radius:9px;
+          background:var(--surface3);border:1.5px solid var(--border);
+          position:relative;transition:background .2s;flex-shrink:0;
+        }
+        .toggle-thumb{
+          width:12px;height:12px;border-radius:50%;
+          background:var(--text-muted);
+          position:absolute;top:2px;left:2px;
+          transition:transform .2s,background .2s;
+        }
+        body.light .toggle-track{background:rgba(90,144,0,0.15);border-color:rgba(90,144,0,0.3);}
+        body.light .toggle-thumb{background:#5A9000;transform:translateX(14px);}
         html{font-size:15px;background:var(--black)}
         body{font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
 
