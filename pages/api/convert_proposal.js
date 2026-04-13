@@ -198,12 +198,14 @@ export default async function handler(req, res) {
 
     // ── Link Quotation back to Proposal via Quotation relation ───────────────
     try {
+      // Use raw page ID with dashes for relation (Notion requires UUID format)
+      const quotPageId = quotPage.id  // has dashes e.g. "xxxx-xxxx-xxxx-xxxx"
       await patchPage(propId, {
-        "Quotation": { relation: [{ id: quotId }] },
+        "Quotation": { relation: [{ id: quotPageId }] },
       }, process.env.NOTION_API_KEY)
-      console.log("[convert_proposal] proposal linked to quotation:", quotId)
+      console.log("[convert_proposal] proposal linked to quotation:", quotPageId)
     } catch (e) {
-      console.warn("[convert_proposal] could not link proposal to quotation:", e.message)
+      console.error("[convert_proposal] FAILED to link proposal to quotation:", e.message)
     }
 
     // ── 4. Find or create inline Products & Services on Quotation ──────────
