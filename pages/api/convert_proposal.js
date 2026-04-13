@@ -208,15 +208,22 @@ export default async function handler(req, res) {
       console.error("[convert_proposal] FAILED to link proposal to quotation:", e.message)
     }
 
-    // ── 4. Find or create inline Products & Services on Quotation ──────────
-    // Wait briefly for Notion to finish creating the page and applying any template
-    await new Promise(r => setTimeout(r, 2000))
-    let quotDbId = await findLineItemsDB(quotId)
+    // ── 4. Find the existing inline Products & Services DB (template-applied) ─
+    // Poll with retries — Notion applies templates asynchronously, so we wait
+    // up to 15s for the inline DB to appear before falling back to creating one
+    let quotDbId = null
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await new Promise(r => setTimeout(r, 2500))
+      quotDbId = await findLineItemsDB(quotId)
+      if (quotDbId) {
+        console.log(`[convert_proposal] found inline DB on attempt ${attempt + 1}:`, quotDbId)
+        break
+      }
+    }
     if (!quotDbId) {
-      // No existing inline DB found — create one
+      console.log("[convert_proposal] inline DB not found after retries — creating new one")
       quotDbId = await createLineItemsDB(quotId)
-      // Wait for it to be ready
-      await new Promise(r => setTimeout(r, 1000))
+      await new Promise(r => setTimeout(r, 1500))
     }
     console.log("[convert_proposal] using inline DB:", quotDbId)
 
