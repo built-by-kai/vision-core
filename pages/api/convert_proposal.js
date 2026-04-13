@@ -24,21 +24,29 @@ function hdrs() {
 // ── Find inline Products & Services DB on a page ──────────────────────────
 async function findLineItemsDB(pageId) {
   try {
-    const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=50`, { headers: hdrs() })
+    const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=100`, { headers: hdrs() })
     if (!r.ok) return null
     const blocks = (await r.json()).results || []
-    const callouts = blocks.filter(b => b.type === "callout")
+
+    // First: check direct children for child_database
+    const directDb = blocks.find(b => b.type === "child_database")
+    if (directDb) return directDb.id.replace(/-/g, "")
+
+    // Second: check inside callouts and other container blocks
+    const containers = blocks.filter(b => ["callout", "column", "column_list", "toggle", "bulleted_list_item"].includes(b.type))
     const inner = await Promise.all(
-      callouts.map(async b => {
+      containers.map(async b => {
         try {
-          const nb = await fetch(`https://api.notion.com/v1/blocks/${b.id}/children`, { headers: hdrs() })
+          const nb = await fetch(`https://api.notion.com/v1/blocks/${b.id}/children?page_size=50`, { headers: hdrs() })
           return nb.ok ? (await nb.json()).results || [] : []
         } catch { return [] }
       })
     )
-    const allBlocks = [...blocks, ...inner.flat()]
-    const dbBlock = allBlocks.find(b => b.type === "child_database")
-    return dbBlock ? dbBlock.id.replace(/-/g, "") : null
+    const innerBlocks = inner.flat()
+    const innerDb = innerBlocks.find(b => b.type === "child_database")
+    if (innerDb) return innerDb.id.replace(/-/g, "")
+
+    return null
   } catch (e) {
     console.warn("[findLineItemsDB]", e.message)
     return null
@@ -198,11 +206,17 @@ export default async function handler(req, res) {
       console.warn("[convert_proposal] could not link proposal to quotation:", e.message)
     }
 
-    // ── 4. Create inline Products & Services on Quotation ───────────────────
+    // ── 4. Find or create inline Products & Services on Quotation ──────────
+    // Wait briefly for Notion to finish creating the page and applying any template
+    await new Promise(r => setTimeout(r, 2000))
     let quotDbId = await findLineItemsDB(quotId)
     if (!quotDbId) {
+      // No existing inline DB found — create one
       quotDbId = await createLineItemsDB(quotId)
+      // Wait for it to be ready
+      await new Promise(r => setTimeout(r, 1000))
     }
+    console.log("[convert_proposal] using inline DB:", quotDbId)
 
     // ── 5. Copy line items from Proposal → Quotation (sequential = preserve order) ─
     for (const item of lineItems) {
