@@ -86,6 +86,8 @@ const defaultForm = {
 
   // Operations OS
   projectTypes: [],
+  servicesList: '',
+  typicalProjectLength: '',
   deliverySteps: [{ value: '' }, { value: '' }, { value: '' }, { value: '' }],
   projectStages: 'default',
   customProjectStages: [{ value: '' }],
@@ -507,6 +509,10 @@ export default function Onboarding() {
                   <textarea value={form.businessDesc} onChange={e => set('businessDesc', e.target.value)} placeholder="We are a..." rows={3} />
                 </Field>
 
+                <Field label="What services or products do you offer?" hint="List your main offerings — used to scope your build.">
+                  <textarea value={form.servicesList} onChange={e => set('servicesList', e.target.value)} placeholder="e.g. Social media management, branding, paid ads" rows={2} />
+                </Field>
+
                 <Field label="Team size">
                   <ChipGroup name="size" options={['Just me', '2–5', '6–10', '11–15', '15+']} value={form.teamSize} onChange={v => set('teamSize', v)} />
                 </Field>
@@ -737,6 +743,9 @@ export default function Onboarding() {
                   </Field>
                   <Field label="Active projects at any time">
                     <ChipGroup name="ap" options={['1–5', '5–15', '15–30', '30+']} value={form.activeProjects} onChange={v => set('activeProjects', v)} />
+                  </Field>
+                  <Field label="How long does a typical project take?" hint="This sets your build timeline in the system.">
+                    <ChipGroup name="tpl" options={['Under 2 weeks', '2–4 weeks', '1–3 months', '3+ months']} value={form.typicalProjectLength} onChange={v => set('typicalProjectLength', v)} />
                   </Field>
                   <Field label="Where do projects usually get stuck?">
                     <ChipGroup multi name="pstuck" options={['Waiting for client feedback', 'Unclear brief', 'Handover between team members', 'No clear deadline', 'Scope creep']} value={form.projectStuck} onChange={v => set('projectStuck', v)} />
@@ -1212,3 +1221,4 @@ export default function Onboarding() {
     </>
   );
 }
+
