@@ -251,8 +251,10 @@ export default async function handler(req, res) {
   console.log("[convert_proposal] payload:", JSON.stringify(body).slice(0, 300))
 
   // Extract proposal page ID — handle all Notion webhook/button payload formats
+  // Notion automation sends: { source: {...}, data: { object: "page", id: "...", properties: {...} } }
   const proposalId = (
-    body.proposal_id  ||
+    body.proposal_id    ||
+    body.data?.id       ||   // ← Notion automation format (primary)
     body.source?.page_id ||
     body.page?.id ||
     body.data?.page_id ||
@@ -267,7 +269,11 @@ export default async function handler(req, res) {
 
   try {
     // ── 1. Read proposal ────────────────────────────────────────────────────
-    const proposal = await getPage(proposalId, process.env.NOTION_API_KEY)
+    // Notion automation embeds the full page object in body.data — use it directly
+    // to avoid an extra API round-trip. Fall back to getPage if not present.
+    const proposal = (body.data?.object === "page" && body.data?.properties)
+      ? body.data
+      : await getPage(proposalId, process.env.NOTION_API_KEY)
     const pp = proposal.properties
 
     const osTypeRaw    = pp["OS Type"]?.select?.name || ""
