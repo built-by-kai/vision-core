@@ -79,6 +79,7 @@ async function run(payload) {
 
   // Linked IDs
   const companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const picId     = props.PIC?.relation?.[0]?.id?.replace(/-/g, "") || null
   const leadId    = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "")
                     || props["Lead Source"]?.relation?.[0]?.id?.replace(/-/g, "")
                     || props.Lead?.relation?.[0]?.id?.replace(/-/g, "")
@@ -105,6 +106,7 @@ async function run(payload) {
     "Quotation":     { relation: [{ id: quotId }] },
     ...(deposit50  ? { "Deposit (50%)": { number: deposit50 } } : {}),
     ...(companyId  ? { "Company":       { relation: [{ id: companyId }] } } : {}),
+    ...(picId      ? { "PIC":           { relation: [{ id: picId }] } } : {}),
     ...(leadId     ? { "Deal Source":   { relation: [{ id: leadId }] } } : {}),
   }
 
