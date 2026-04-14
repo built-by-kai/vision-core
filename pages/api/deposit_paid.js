@@ -4,20 +4,6 @@
 
 import { getPage, patchPage, createPage, queryDB, plain, DB, createLedgerEntry } from "../../lib/notion"
 
-const QUOTE_TYPE_TO_SLUG = {
-  "full agency os":  "full-agency-os",
-  "business os":     "full-agency-os",
-  "workflow os":     "workflow-os",
-  "operations os":   "workflow-os",
-  "sales os":        "sales-crm",
-  "sales crm":       "sales-crm",
-  "revenue os":      "revenue-os",
-  "modular os":      "modular-os",
-  "starter os":      "modular-os",
-  "complete os":     "complete-os",
-  "custom os":       "custom-os",
-}
-
 function cleanPhone(phone = "") {
   const digits = phone.replace(/\D/g, "")
   return digits.startsWith("0") ? "6" + digits : digits
@@ -125,7 +111,10 @@ async function process(payload) {
   // "Deal Source" on Invoice can point to a Lead (new client) or Deal (existing client).
   // • Lead  → mark Lead "Converted", spin up a new Deal at "Building"
   // • Deal  → advance Deal to "Building" directly
-  let dealId = null // will be set if we create or find a Deal
+  let dealId      = null  // will be set if we create or find a Deal
+  let formPackage = ""    // OS package name for onboarding form URL
+  let formAddons  = []    // add-on names for onboarding form URL
+
   if (leadId) {
     try {
       const sourcePage  = await getPage(leadId, token)
@@ -143,6 +132,10 @@ async function process(payload) {
         const situation     = plain(lp.Situation?.rich_text || [])
         const notes         = plain(lp.Notes?.rich_text     || [])
         const discoveryCall = lp["Discovery Call"]?.date?.start || null
+
+        // Capture for onboarding form URL
+        formPackage = osInterest
+        formAddons  = addons.map(a => a.name)
 
         // Create Deal in Deals DB starting at Building
         const dealPage = await createPage({
@@ -181,6 +174,10 @@ async function process(payload) {
           await patchPage(dealId, { "Stage": { status: { name: "Building" } } }, token)
           console.log(`[deposit_paid] deal stage → Building: ${dealId}`)
         }
+
+        // Capture for onboarding form URL
+        formPackage = sourcePage.properties["Package Type"]?.select?.name || ""
+        formAddons  = (sourcePage.properties["Add-ons"]?.multi_select || []).map(a => a.name)
       }
     } catch (e) {
       console.warn("[deposit_paid] stage advance:", e.message)
@@ -212,17 +209,6 @@ async function process(payload) {
     ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
   }
 
-  let pkgSlug = "full-agency-os"
-  if (projectId) {
-    try {
-      const pp    = await getPage(projectId, token)
-      const pkgRaw = (pp.properties.Package?.select?.name || "").toLowerCase()
-      for (const [key, slug] of Object.entries(QUOTE_TYPE_TO_SLUG)) {
-        if (pkgRaw.includes(key)) { pkgSlug = slug; break }
-      }
-    } catch {}
-  }
-
   let companyName = ""
   if (companyId) {
     try {
@@ -233,10 +219,19 @@ async function process(payload) {
     } catch {}
   }
 
-  const implFormBase = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}/api/implementation_form`
-    : "https://dashboard.opxio.io/api/implementation_form"
-  const formUrl  = `${implFormBase}?c=${companyId || ""}&pkg=${pkgSlug}`
+  // ── Build onboarding form URL ──────────────────────────────────────────────
+  // Form lives at /onboarding and uses these params to conditionally show/hide steps:
+  //   client=  — company name (pre-fills sidebar label)
+  //   package= — OS package e.g. "Business OS", "Revenue OS" (controls which OS steps appear)
+  //   addons=  — comma-separated add-on names (controls Add-ons step content)
+  //   deal=    — Notion Deal page ID (linked on form submission)
+  const baseUrl = "https://dashboard.opxio.io"
+  const onboardingParams = new URLSearchParams()
+  if (companyName)       onboardingParams.set("client",  companyName)
+  if (formPackage)       onboardingParams.set("package", formPackage)
+  if (formAddons.length) onboardingParams.set("addons",  formAddons.join(","))
+  if (dealId)            onboardingParams.set("deal",    dealId)
+  const formUrl  = `${baseUrl}/onboarding?${onboardingParams.toString()}`
   const picPhone = companyId ? await getPicPhone(companyId, token) : ""
   const waUrl    = buildWaUrl(picPhone, companyName || "there", formUrl)
 
@@ -263,11 +258,13 @@ async function process(payload) {
     status:         "success",
     invoice_id:     pageId,
     lead_id:        leadId,
+    deal_id:        dealId,
     project_id:     projectId,
     company_id:     companyId,
     form_url:       formUrl,
     wa_url:         waUrl || null,
-    pkg_slug:       pkgSlug,
+    form_package:   formPackage,
+    form_addons:    formAddons,
     phases_created: phasesCount,
     tasks_created:  tasksCount,
   }
@@ -286,4 +283,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
+
 
