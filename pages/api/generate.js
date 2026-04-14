@@ -162,17 +162,29 @@ async function handleProposal(pageId) {
 async function handleInvoice(pageId) {
   const data   = await fetchInvoiceData(pageId, process.env.NOTION_API_KEY)
   const pdfBuf = await generateInvoicePdf(data)
-  const suffix = data.invoice_type === "Deposit" ? "-D" : data.invoice_type === "Final Payment" ? "-F" : ""
-  const filename = `invoices/${data.invoice_no || pageId}${suffix}.pdf`
+  // Note: invoice_no already contains the type suffix (e.g. -D, -F) from formatInvoiceNumber
+  const filename = `invoices/${data.invoice_no || pageId}.pdf`
   const { url }  = await uploadBlob(filename, pdfBuf)
+  // Append timestamp so Notion always opens a fresh PDF (Vercel Blob caches 1 year by default)
+  const pdfUrl = `${url}?v=${Date.now()}`
 
+  // Write PDF URL first — critical path. Separate from Invoice No. so one can't block the other.
+  // Invoice DB field is "Invoice PDF" (URL property), NOT "PDF"
   await patchPage(pageId, {
-    "PDF":         { url },
-    "Invoice No.": { title: [{ text: { content: data.invoice_no } }] },
+    "Invoice PDF": { url: pdfUrl },
   }, process.env.NOTION_API_KEY)
 
-  console.log(`[generate:invoice] done — ${data.invoice_no} — ${url}`)
-  return { type: "invoice", invoice_no: data.invoice_no, invoice_type: data.invoice_type, pdf_url: url }
+  // Write Invoice No. back (fetchInvoiceData already assigned it, this confirms it)
+  if (data.invoice_no) {
+    patchPage(pageId, {
+      "Invoice No.": { title: [{ text: { content: data.invoice_no } }] },
+    }, process.env.NOTION_API_KEY).catch(e =>
+      console.warn("[generate:invoice] invoice_no patch:", e.message)
+    )
+  }
+
+  console.log(`[generate:invoice] done — ${data.invoice_no} — ${pdfUrl}`)
+  return { type: "invoice", invoice_no: data.invoice_no, invoice_type: data.invoice_type, pdf_url: pdfUrl }
 }
 
 async function handleReceipt(pageId) {

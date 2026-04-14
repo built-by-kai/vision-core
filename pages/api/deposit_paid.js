@@ -67,9 +67,13 @@ async function triggerSetupProject(projectId) {
   return [0, 0]
 }
 
-async function process(payload) {
+async function run(payload) {
   const token  = process.env.NOTION_API_KEY
-  const rawId  = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  const rawId  = payload.page_id
+    || payload.data?.id           // Notion automation format
+    || payload.data?.page_id
+    || payload.source?.page_id
+    || payload.source?.id
   if (!rawId) throw new Error("No page_id in payload")
   const pageId = rawId.replace(/-/g, "")
 
@@ -276,7 +280,7 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
   try {
-    const result = await process(req.body || {})
+    const result = await run(req.body || {})
     return res.json(result)
   } catch (e) {
     console.error("[deposit_paid]", e)

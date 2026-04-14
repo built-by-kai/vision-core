@@ -11,9 +11,14 @@
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
+const API_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://dashboard.opxio.io"
 
-async function process(payload) {
-  const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
+async function run(payload) {
+  const rawId = payload.page_id
+    || payload.data?.id           // Notion automation format
+    || payload.data?.page_id
+    || payload.source?.page_id
+    || payload.source?.id
   if (!rawId) throw new Error("No page_id in payload")
   const expansionId = rawId.replace(/-/g, "")
 
@@ -108,7 +113,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
   try {
-    const result = await process(req.body || {})
+    const result = await run(req.body || {})
     return res.json(result)
   } catch (e) {
     console.error("[expansion_invoice]", e)
