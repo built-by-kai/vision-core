@@ -124,7 +124,7 @@ async function fetchTemplateTasks(osTypes) {
 // ── RATE-LIMITED BATCH CREATE ──────────────────────────────────────────────
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function createInBatches(items, fn, batchSize = 3, delayMs = 380) {
+async function createInBatches(items, fn, batchSize = 5, delayMs = 300) {
   const results = [];
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
@@ -260,12 +260,6 @@ async function createProjectWithTasks(d, intakePageId) {
     }
     return res.ok;
   });
-
-  // 7. Link Project → Intake form
-  await fetch(`https://api.notion.com/v1/pages/${intakePageId}`, {
-    method: 'PATCH', headers: notionHeaders,
-    body: JSON.stringify({ properties: {} }), // Intake DB has no Project relation field — skip
-  }).catch(() => {});
 
   console.log(`[onboarding] Project setup complete: ${taskDefs.length} tasks created for ${projectName}`);
 }
@@ -601,16 +595,16 @@ export default async function handler(req, res) {
       await sendWhatsApp(notify, `✅ Intake received\n\nClient: ${data.clientName}\nPackage: ${data.osPackage || 'N/A'}${addons}\n\nReview: ${link}`);
     }
 
-    // Send response to client immediately — project + task creation happens in background
-    res.status(200).json({ success: true, pageId: page.id });
-
-    // Background: create Project in Projects DB + prefill tasks from templates
-    // (Lambda continues executing after res.json() until maxDuration)
+    // Create Project in Projects DB + prefill all tasks from templates
+    // (runs before response — Lambda stays alive, ~10-15 seconds for full task set)
     try {
       await createProjectWithTasks(data, page.id);
-    } catch (bgErr) {
-      console.error('[onboarding] Background project creation failed:', bgErr.message);
+    } catch (projErr) {
+      // Non-fatal — intake form was already saved, log and continue
+      console.error('[onboarding] Project creation failed (non-fatal):', projErr.message);
     }
+
+    return res.status(200).json({ success: true, pageId: page.id });
 
   } catch (err) {
     console.error('[onboarding] Error:', err);
