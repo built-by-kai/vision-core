@@ -1050,8 +1050,8 @@ export default function Onboarding() {
         }
         body.light .toggle-track{background:rgba(90,144,0,0.15);border-color:rgba(90,144,0,0.3);}
         body.light .toggle-thumb{background:#5A9000;transform:translateX(14px);}
-        html{font-size:15px;background:var(--black)}
-        body{font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+        html{font-size:15px;}
+        body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--black);min-height:100vh;-webkit-font-smoothing:antialiased;}
 
         nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:58px;border-bottom:1px solid var(--border);background:rgba(10,10,10,0.97);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100;}
         .logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
@@ -1098,6 +1098,8 @@ export default function Onboarding() {
         .ibox{border-left:3px solid var(--lime);background:var(--lime-bg);padding:14px 18px;border-radius:0 7px 7px 0;margin-bottom:22px;}
         .ibox p{font-size:13.5px;color:rgba(255,255,255,.6);font-weight:300;line-height:1.7;}
         .ibox strong{color:var(--white);font-weight:500;}
+        body.light .ibox p{color:var(--text-sub);}
+        body.light .ibox strong{color:var(--text);}
 
         .fs{display:flex;flex-direction:column;gap:20px;margin-bottom:24px;}
         .field{display:flex;flex-direction:column;gap:7px;}
