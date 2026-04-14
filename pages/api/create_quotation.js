@@ -249,9 +249,8 @@ async function findQuotationFromLead(leadProps, maxAgeSeconds = 180) {
 }
 
 // ── Patch quotation properties (parallel) ─────────────────────────────────
-// PIC is a ROLLUP — auto-resolves from Company. Never patch PIC directly.
 // All patches run in parallel via Promise.allSettled for speed.
-async function patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName }) {
+async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, packageName }) {
   const today = new Date().toISOString().split("T")[0]
   const token = process.env.NOTION_API_KEY
 
@@ -262,6 +261,7 @@ async function patchQuotationProps(quotId, { companyIds, quoteType, leadId, pack
     "Status":        { select: { name: "Draft" } },
     ...(quoteType   ? { "Quote Type":   { select: { name: quoteType } } } : {}),
     ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(picIds?.length    ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
   }
 
   // Patch all core props + Deal Source in parallel — fast and no blocking waits
@@ -417,16 +417,17 @@ export default async function handler(req, res) {
     const { type: sourceType, props } = await detectSource(pageId)
     console.log("[create_quotation] source:", sourceType, pageId)
 
-    let leadId = null, companyIds = [], product = null, addons = [], quoteType = "New Business"
+    let leadId = null, companyIds = [], picIds = [], product = null, addons = [], quoteType = "New Business"
 
     if (sourceType === "lead") {
       leadId = pageId
       const info = await extractLeadInfo(props)
       companyIds = info.companyIds
+      picIds     = info.picIds
       product    = info.product
       addons     = info.addons
       quoteType  = product?.quote_type || "New Business"
-      console.log("[create_quotation] lead info:", { companyIds, product: product?.name, addons: addons.length })
+      console.log("[create_quotation] lead info:", { companyIds, picIds: picIds.length, product: product?.name, addons: addons.length })
     } else {
       companyIds = [pageId]
     }
@@ -455,7 +456,7 @@ export default async function handler(req, res) {
         console.log("[create_quotation] found quotation via lead relation:", quotId)
         // Patch props in parallel with finding the line items DB (saves ~1s)
         const [, liDbId] = await Promise.all([
-          patchQuotationProps(quotId, { companyIds, quoteType, leadId, packageName: product?.name }),
+          patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, packageName: product?.name }),
           findLineItemsDB(quotId),
         ])
         // ── 3. Line items ──────────────────────────────────────────────────
