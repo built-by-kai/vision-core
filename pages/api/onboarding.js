@@ -12,7 +12,7 @@
 
 // Uses Notion REST API directly — no npm package required
 const NOTION_TOKEN = process.env.NOTION_API_KEY;
-const DB = process.env.NOTION_CLIENT_INTAKE_DB || 'b6167b39-b1b4-40a7-bd98-cd74e2d95458';
+const DB = process.env.NOTION_CLIENT_INTAKE_DB || 'b4fb844d-9433-492b-bafe-63841bea913a';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
