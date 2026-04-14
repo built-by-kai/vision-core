@@ -239,8 +239,16 @@ async function run(payload) {
   const picPhone = companyId ? await getPicPhone(companyId, token) : ""
   const waUrl    = buildWaUrl(picPhone, companyName || "there", formUrl)
 
-  if (waUrl) {
-    try { await patchPage(pageId, { "WA Link": { url: waUrl } }, token) } catch {}
+  // Save form link + WA message to the Deal page (Onboarding Form & WA Link fields)
+  // These fields live on the Deal, not the Invoice — that's where the team manages the client
+  if (dealId) {
+    const dealPatches = {
+      "Onboarding Form": { url: formUrl },
+      ...(waUrl ? { "WA Link": { url: waUrl } } : {}),
+    }
+    await patchPage(dealId, dealPatches, token).catch(e =>
+      console.warn("[deposit_paid] deal form link patch:", e.message)
+    )
   }
 
   // ── Finance Ledger — auto-create Deposit entry ───────────────────────────
