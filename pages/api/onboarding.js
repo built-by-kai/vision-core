@@ -1,20 +1,18 @@
 // pages/api/onboarding.js
-// Receives onboarding form submission → writes to Notion Client Implementation Form database
-// Fully mapped against actual DB schema b6167b39-b1b4-40a7-bd98-cd74e2d95458
-
-// ENV VARS NEEDED:
-// NOTION_API_KEY
-// NOTION_CLIENT_INTAKE_DB  (default: b6167b39-b1b4-40a7-bd98-cd74e2d95458)
-// NOTION_DEALS_DB          (default: 088fe600-97f6-8307-9c70-87cfbfe6dab7)
-// OPXIO_NOTIFY_NUMBER      (e.g. 601xxxxxxxx)
-// WHATSAPP_API_URL
-// WHATSAPP_API_TOKEN
+// Receives onboarding form submission →
+//   1. Writes to Notion Client Implementation Form (Intake) database
+//   2. Creates a Project in Projects DB (Status: Awaiting Build)
+//   3. Prefills Tasks from Phase Template Tasks DB + conditional tasks from form data
 
 // Uses Notion REST API directly — no npm package required
 const NOTION_TOKEN = process.env.NOTION_API_KEY;
-// b4fb844d = Client Implementation Form (Client Intake) DB
-// IMPORTANT: do not use env var here — old value in Vercel causes 404
+
+// ── DB IDs (hardcoded — do not use env vars, stale values in Vercel) ────────
+// b4fb844d = Client Implementation Form (Intake)
 const DB = 'b4fb844d-9433-492b-bafe-63841bea913a';
+const PROJECTS_DB      = '842fe600-97f6-8303-b34e-01a5432d24cc';
+const TASKS_DB         = 'f6bfe600-97f6-82b9-a283-010bfefd4acf';
+const PHASE_TMPL_DB    = '88efe600-97f6-831a-b071-81cc2215eeb7';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -51,6 +49,226 @@ const notion = {
     },
   },
 };
+
+// ── PROJECT / TASK CONSTANTS ───────────────────────────────────────────────
+
+// Phase Template Tasks: phase number → Phase Stage select value in Tasks DB
+const PHASE_STAGE = {
+  0: 'Phase 0 — Pre-Build',
+  1: 'Phase 1',
+  2: 'Phase 2',
+  3: 'Phase 3',
+  4: 'Phase 4',
+  5: 'Phase 5',
+};
+
+// Package name → which template OS Types to pull tasks from
+// Business OS = shared phases from "Business OS" + build phases from Revenue + Operations
+const PACKAGE_TEMPLATE_SPECS = {
+  'Revenue OS':    [{ type: 'Revenue OS',    phases: null }],
+  'Operations OS': [{ type: 'Operations OS', phases: null }],
+  'Business OS':   [
+    { type: 'Business OS',   phases: null    },  // P0, P1, P4, P5 (shared)
+    { type: 'Revenue OS',    phases: [2, 3]  },  // Revenue build phases
+    { type: 'Operations OS', phases: [2, 3]  },  // Ops build phases
+  ],
+  'Agency OS':     [{ type: 'Agency OS',     phases: null }],
+  'Marketing OS':  [{ type: 'Marketing OS',  phases: null }],
+  'Team OS':       [{ type: 'Team OS',       phases: null }],
+  'Retention OS':  [{ type: 'Retention OS',  phases: null }],
+  'Micro Install': [{ type: 'Micro Install', phases: null }],
+};
+
+// Add-on display name → Phase Template OS Type
+function addonToTemplateType(addon) {
+  if (addon === 'Enhanced Dashboard') return 'Enhanced Dashboard';
+  const kickoffs = [
+    'Project Kickoff Automation', 'Campaign Kickoff Automation',
+    'Client Onboarding Kickoff',  'Renewal Kickoff Automation',
+    'Hiring Kickoff Automation',
+  ];
+  if (kickoffs.includes(addon)) return 'Kickoff Automation';
+  return 'Server Add-On'; // Client Portal View, Lead Capture, Custom Widget, API Integration, AI Agent, etc.
+}
+
+// ── FETCH TEMPLATE TASKS (paginated Notion query) ──────────────────────────
+async function fetchTemplateTasks(osTypes) {
+  const unique = [...new Set(osTypes)];
+  const typeFilters = unique.map(t => ({ property: 'OS Type', select: { equals: t } }));
+  const filter = typeFilters.length === 1 ? typeFilters[0] : { or: typeFilters };
+
+  const all = [];
+  let cursor;
+  do {
+    const body = {
+      filter,
+      sorts: [
+        { property: 'Phase No.',   direction: 'ascending' },
+        { property: 'Task Order',  direction: 'ascending' },
+      ],
+      page_size: 100,
+      ...(cursor ? { start_cursor: cursor } : {}),
+    };
+    const res = await fetch(`https://api.notion.com/v1/databases/${PHASE_TMPL_DB}/query`, {
+      method: 'POST', headers: notionHeaders, body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Template fetch failed: ${res.status}`);
+    const data = await res.json();
+    all.push(...data.results);
+    cursor = data.has_more ? data.next_cursor : null;
+  } while (cursor);
+
+  return all;
+}
+
+// ── RATE-LIMITED BATCH CREATE ──────────────────────────────────────────────
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function createInBatches(items, fn, batchSize = 3, delayMs = 380) {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(fn));
+    results.push(...batchResults);
+    if (i + batchSize < items.length) await sleep(delayMs);
+  }
+  return results;
+}
+
+// ── CONDITIONAL TASKS FROM FORM DATA ──────────────────────────────────────
+// Returns extra tasks to prepend/inject based on what client told us in the form
+function getConditionalTasks(d) {
+  const extras = [];
+  if (d.notionUrl) {
+    extras.push({ name: "Request access to client's existing Notion workspace", phase: 0, priority: 'High' });
+  }
+  if (d.existingData && d.existingData !== 'No') {
+    extras.push({ name: "Migrate client's existing data into Notion databases", phase: 1, priority: 'High',
+      notes: 'Client confirmed they have existing data to migrate.' });
+  }
+  if (d.existingSOPs && d.existingSOPs.startsWith('Yes')) {
+    extras.push({ name: "Receive SOPs from client and upload to SOP Library", phase: 1, priority: 'High',
+      notes: 'Client has existing SOPs — will share.' });
+  }
+  if (d.existingChecklist && d.existingChecklist.startsWith('Yes')) {
+    extras.push({ name: "Receive and configure client's onboarding checklist template", phase: 1, priority: 'High',
+      notes: 'Client has existing onboarding checklist — will share.' });
+  }
+  if (d.brandKit && d.brandKit.startsWith('Yes')) {
+    extras.push({ name: "Receive and review client's brand kit assets", phase: 0, priority: 'Medium',
+      notes: d.brandKitLink ? `Brand kit: ${d.brandKitLink}` : 'Client will share brand kit link.' });
+  }
+  return extras;
+}
+
+// ── CREATE PROJECT + TASKS (background, runs after response is sent) ───────
+async function createProjectWithTasks(d, intakePageId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const packageName = d.osPackage || 'Business OS';
+  const projectName = `${d.clientName || 'Unknown Client'} — ${packageName}`;
+
+  // 1. Determine which template types to fetch
+  const specs = PACKAGE_TEMPLATE_SPECS[packageName] || [{ type: packageName, phases: null }];
+  const allOsTypes = [
+    ...specs.map(s => s.type),
+    ...(d.addons || []).map(addonToTemplateType),
+  ];
+
+  // 2. Fetch all template tasks in one query
+  const templatePages = await fetchTemplateTasks(allOsTypes);
+
+  // 3. Build task list from templates, applying phase filters for secondary types
+  const taskDefs = [];
+  const seen = new Set();
+
+  for (const page of templatePages) {
+    const p = page.properties;
+    const osType   = p['OS Type']?.select?.name || '';
+    const phaseNo  = p['Phase No.']?.number ?? 0;
+    const taskName = (p['Task Name']?.title || []).map(t => t.plain_text).join('');
+    const priority = p['Priority']?.select?.name || 'Medium';
+
+    if (!taskName) continue;
+
+    // For secondary types (e.g., Revenue OS / Ops OS for Business OS), only include specified phases
+    const spec = specs.find(s => s.type === osType);
+    if (spec && spec.phases && !spec.phases.includes(phaseNo)) continue;
+
+    // Deduplicate by task name (same task might appear in Revenue OS + Business OS)
+    const key = taskName.toLowerCase().trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    taskDefs.push({ name: taskName, phase: phaseNo, priority, notes: '' });
+  }
+
+  // 4. Append conditional tasks from form data (deduped)
+  for (const extra of getConditionalTasks(d)) {
+    const key = extra.name.toLowerCase().trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      taskDefs.push(extra);
+    }
+  }
+
+  // 5. Create Project page
+  const projectRes = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST', headers: notionHeaders,
+    body: JSON.stringify({
+      parent: { database_id: PROJECTS_DB },
+      properties: {
+        'Project Name': { title: [{ type: 'text', text: { content: projectName } }] },
+        'Status':       { select: { name: 'Awaiting Build' } },
+        'Phase':        { select: { name: 'Phase 0 — Pre-Build' } },
+        'Package':      { select: { name: packageName } },
+        'Start Date':   { date: { start: today } },
+        ...(d.dealId ? { 'Deals': { relation: [{ id: d.dealId }] } } : {}),
+      },
+    }),
+  });
+  if (!projectRes.ok) {
+    const err = await projectRes.json();
+    throw new Error(`Project create failed: ${JSON.stringify(err)}`);
+  }
+  const project = await projectRes.json();
+  const projectId = project.id;
+
+  console.log(`[onboarding] Created project ${projectId} "${projectName}" with ${taskDefs.length} tasks to create`);
+
+  // 6. Create Task pages in batches (3/sec to stay within Notion rate limit)
+  let taskNo = 1;
+  await createInBatches(taskDefs, async (task) => {
+    const phaseStage = PHASE_STAGE[task.phase] || `Phase ${task.phase}`;
+    const body = {
+      parent: { database_id: TASKS_DB },
+      properties: {
+        'Task Name':   { title: [{ type: 'text', text: { content: task.name } }] },
+        'Status':      { select: { name: 'Not Started' } },
+        'Priority':    { select: { name: task.priority || 'Medium' } },
+        'Phase Stage': { select: { name: phaseStage } },
+        'Project':     { relation: [{ id: projectId }] },
+        'Task No.':    { number: taskNo++ },
+        ...(task.notes ? { 'Notes': { rich_text: [{ type: 'text', text: { content: task.notes } }] } } : {}),
+      },
+    };
+    const res = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST', headers: notionHeaders, body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      console.error(`[onboarding] Task create failed (${task.name}):`, JSON.stringify(err));
+    }
+    return res.ok;
+  });
+
+  // 7. Link Project → Intake form
+  await fetch(`https://api.notion.com/v1/pages/${intakePageId}`, {
+    method: 'PATCH', headers: notionHeaders,
+    body: JSON.stringify({ properties: {} }), // Intake DB has no Project relation field — skip
+  }).catch(() => {});
+
+  console.log(`[onboarding] Project setup complete: ${taskDefs.length} tasks created for ${projectName}`);
+}
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -383,7 +601,16 @@ export default async function handler(req, res) {
       await sendWhatsApp(notify, `✅ Intake received\n\nClient: ${data.clientName}\nPackage: ${data.osPackage || 'N/A'}${addons}\n\nReview: ${link}`);
     }
 
-    return res.status(200).json({ success: true, pageId: page.id });
+    // Send response to client immediately — project + task creation happens in background
+    res.status(200).json({ success: true, pageId: page.id });
+
+    // Background: create Project in Projects DB + prefill tasks from templates
+    // (Lambda continues executing after res.json() until maxDuration)
+    try {
+      await createProjectWithTasks(data, page.id);
+    } catch (bgErr) {
+      console.error('[onboarding] Background project creation failed:', bgErr.message);
+    }
 
   } catch (err) {
     console.error('[onboarding] Error:', err);
