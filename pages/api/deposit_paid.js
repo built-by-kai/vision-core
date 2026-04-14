@@ -94,20 +94,30 @@ async function run(payload) {
 
   const companyId   = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
   let   quotationId = props.Quotation?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const implIdRaw   = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
   let   leadId      = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
 
+  // ── Fallback 1: Check Quotation's "Deal Source" ──────────────────────────
   if (!leadId && quotationId) {
     try {
       const qp = await getPage(quotationId, token)
       leadId   = qp.properties["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
     } catch {}
   }
+  // ── Fallback 2: Query Leads DB for Lead linked to this Quotation ─────────
   if (!leadId && quotationId) {
     try {
       const rows = await queryDB(DB.LEADS, {
         property: "Quotation", relation: { contains: quotationId }
       }, token)
       if (rows.length) leadId = rows[0].id.replace(/-/g, "")
+    } catch {}
+  }
+  // ── Fallback 3: Check Project's "Deal Source" (for manually-created invoices)
+  if (!leadId && implIdRaw) {
+    try {
+      const pj = await getPage(implIdRaw, token)
+      leadId   = pj.properties["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
     } catch {}
   }
 
@@ -141,33 +151,65 @@ async function run(payload) {
         formPackage = osInterest
         formAddons  = addons.map(a => a.name)
 
-        // Create Deal in Deals DB starting at Building
-        const dealPage = await createPage({
-          parent: { database_id: DB.DEALS },
-          properties: {
-            "Lead Name":   { title: [{ text: { content: leadName } }] },
-            "Stage":       { status: { name: "Building" } },
-            "Lead Source": { relation: [{ id: leadId }] },
-            ...(compIds.length ? { "Company":      { relation: [{ id: compIds[0] }] } } : {}),
-            ...(picIds.length  ? { "PIC Name":     { relation: [{ id: picIds[0]  }] } } : {}),
-            ...(osInterest     ? { "Package Type": { select: { name: osInterest } } } : {}),
-            ...(addons.length  ? { "Add-ons":      { multi_select: addons } } : {}),
-            ...(situation      ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
-            ...(notes          ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
-            ...(discoveryCall  ? { "Discovery Call": { date: { start: discoveryCall } } } : {}),
-          },
-        }, token)
-        dealId = dealPage.id.replace(/-/g, "")
-        console.log(`[deposit_paid] lead converted → new deal: ${dealId}`)
+        // ── Check if a Deal was already created (e.g., via "Convert to Deal") ──
+        // If so, reuse it instead of creating a duplicate.
+        const existingDealId = lp.Deal?.relation?.[0]?.id?.replace(/-/g, "") || null
 
-        // Mark Lead as Converted (was "Awaiting Deposit") + link Deal
-        await patchPage(leadId, {
-          "Stage": { status: { name: "Converted" } },
-          "Deal":  { relation: [{ id: dealId }] },
-        }, token)
+        if (existingDealId) {
+          // Deal already exists — advance its stage to Building
+          dealId = existingDealId
+          try {
+            const existingDeal = await getPage(existingDealId, token)
+            const currentStage = existingDeal.properties.Stage?.status?.name || ""
+            const doneStages   = ["Building", "Balance Due", "Delivered"]
+            if (!doneStages.includes(currentStage)) {
+              await patchPage(dealId, { "Stage": { status: { name: "Building" } } }, token)
+            }
+            // Capture package info from the existing Deal for onboarding form
+            if (!formPackage) formPackage = existingDeal.properties["Package Type"]?.select?.name || ""
+            if (!formAddons.length) formAddons = (existingDeal.properties["Add-ons"]?.multi_select || []).map(a => a.name)
+          } catch (e) {
+            console.warn("[deposit_paid] existing deal advance:", e.message)
+          }
+          console.log(`[deposit_paid] lead has existing deal → advancing to Building: ${dealId}`)
 
-        // Re-point Invoice and Project Deal Source to the new Deal
-        await patchPage(pageId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {})
+          // Ensure Lead is marked Converted
+          const leadStage = lp.Stage?.status?.name || ""
+          if (leadStage !== "Converted") {
+            await patchPage(leadId, { "Stage": { status: { name: "Converted" } } }, token).catch(() => {})
+          }
+          // Re-point Invoice Deal Source to the Deal (not the Lead)
+          await patchPage(pageId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {})
+
+        } else {
+          // No existing Deal — create a new one at Building
+          const dealPage = await createPage({
+            parent: { database_id: DB.DEALS },
+            properties: {
+              "Lead Name":   { title: [{ text: { content: leadName } }] },
+              "Stage":       { status: { name: "Building" } },
+              "Lead Source": { relation: [{ id: leadId }] },
+              ...(compIds.length ? { "Company":      { relation: [{ id: compIds[0] }] } } : {}),
+              ...(picIds.length  ? { "PIC Name":     { relation: [{ id: picIds[0]  }] } } : {}),
+              ...(osInterest     ? { "Package Type": { select: { name: osInterest } } } : {}),
+              ...(addons.length  ? { "Add-ons":      { multi_select: addons } } : {}),
+              ...(situation      ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
+              ...(notes          ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
+              ...(discoveryCall  ? { "Discovery Call": { date: { start: discoveryCall } } } : {}),
+            },
+          }, token)
+          dealId = dealPage.id.replace(/-/g, "")
+          console.log(`[deposit_paid] lead converted → new deal: ${dealId}`)
+
+          // Mark Lead as Converted + link Deal
+          await patchPage(leadId, {
+            "Stage": { status: { name: "Converted" } },
+            "Deal":  { relation: [{ id: dealId }] },
+          }, token)
+
+          // Re-point Invoice Deal Source to the new Deal
+          await patchPage(pageId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {})
+        }
 
       } else {
         // ── Existing client: Deal → Building ─────────────────────────────────
