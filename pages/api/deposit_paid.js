@@ -105,10 +105,11 @@ async function run(payload) {
     } catch {}
   }
   // ── Fallback 2: Query Leads DB for Lead linked to this Quotation ─────────
+  // NOTE: Leads DB uses "Quotations" (plural) as the relation field name
   if (!leadId && quotationId) {
     try {
       const rows = await queryDB(DB.LEADS, {
-        property: "Quotation", relation: { contains: quotationId }
+        property: "Quotations", relation: { contains: quotationId }
       }, token)
       if (rows.length) leadId = rows[0].id.replace(/-/g, "")
     } catch {}
