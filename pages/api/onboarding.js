@@ -12,7 +12,9 @@
 
 // Uses Notion REST API directly — no npm package required
 const NOTION_TOKEN = process.env.NOTION_API_KEY;
-const DB = process.env.NOTION_CLIENT_INTAKE_DB || 'b4fb844d-9433-492b-bafe-63841bea913a';
+// b4fb844d = Client Implementation Form (Client Intake) DB
+// IMPORTANT: do not use env var here — old value in Vercel causes 404
+const DB = 'b4fb844d-9433-492b-bafe-63841bea913a';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -387,7 +389,7 @@ export default async function handler(req, res) {
     console.error('[onboarding] Error:', err);
     return res.status(500).json({
       error: 'Submission failed',
-      detail: err.message,
+      detail: process.env.NODE_ENV === 'development' ? err.message : undefined,
     });
   }
 }
