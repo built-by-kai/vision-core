@@ -3,7 +3,7 @@
 // Pre-fills from URL params: ?client=Creaitors+Official&package=Business+OS&addons=Enhanced+Dashboard,Lead+Capture+System&deal=DEAL_ID
 // On submit: POSTs to /api/onboarding which writes to Notion
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -298,17 +298,6 @@ export default function Onboarding() {
   const [dealId, setDealId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [isLight, setIsLight] = useState(false);
-
-  const toggleTheme = useCallback(() => {
-    setIsLight(prev => {
-      const next = !prev;
-      if (typeof document !== 'undefined') {
-        document.body.classList.toggle('light', next);
-      }
-      return next;
-    });
-  }, []);
 
   // Parse URL params on mount
   useEffect(() => {
@@ -387,10 +376,6 @@ export default function Onboarding() {
           <span className="logo-name">Opxio</span>
         </a>
         <div className="nav-right">Client Implementation · opxio.io/onboarding</div>
-        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark mode">
-          <div className="toggle-track"><div className="toggle-thumb" /></div>
-          {isLight ? 'Light' : 'Dark'}
-        </button>
       </nav>
 
       {/* MOBILE PROGRESS BAR */}
@@ -525,7 +510,7 @@ export default function Onboarding() {
                   <ChipGroup name="ind" options={['Marketing / Creative Agency', 'Consulting / Advisory', 'Education / Coaching', 'Events / Entertainment', 'F&B / Retail', 'Tech / Software', 'Property / Real Estate', 'Other']} value={form.industry} onChange={v => set('industry', v)} />
                 </Field>
 
-                <div style={{height:"1px",background:"rgba(255,255,255,0.09)",margin:"-8px 0"}} />
+                <div className="divider" style={{margin:"-8px 0"}} />
 
                 <Field label="Notion workspace URL" hint="Settings → Members → Copy invite link">
                   <input type="url" value={form.notionUrl} onChange={e => set('notionUrl', e.target.value)} placeholder="https://notion.so/invite/..." />
@@ -915,7 +900,7 @@ export default function Onboarding() {
                   <LinkBuilder links={form.setupLinks} onChange={v => set('setupLinks', v)} placeholder="https://notion.so/... or any link" />
                 </Field>
 
-                <div style={{height:"1px",background:"rgba(255,255,255,0.09)",margin:"-8px 0"}} />
+                <div className="divider" style={{margin:"-8px 0"}} />
 
                 <Field label="Are there repetitive tasks you wish happened automatically?" hint="e.g. When a new lead fills a form, it appears in your system. When a payment is overdue, a reminder goes out.">
                   <textarea value={form.automationWishes} onChange={e => set('automationWishes', e.target.value)} placeholder="e.g. When a client signs, their project is created automatically..." rows={3} />
@@ -986,81 +971,24 @@ export default function Onboarding() {
       <style jsx global>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
-          --black:#0A0A0A;--surface:#161614;--surface2:#1C1C19;--surface3:#222220;
-          --border:rgba(255,255,255,0.09);--border-md:rgba(255,255,255,0.15);
-          --lime:#C6F135;--lime-dim:#A8D420;--lime-bg:rgba(198,241,53,0.07);--lime-border:rgba(198,241,53,0.28);
-          --white:#FFFFFF;--text:#E6E6DF;--text-sub:#A0A098;--text-muted:#606058;
-          --chip-border:rgba(255,255,255,0.18);--chip-bg:rgba(255,255,255,0.05);
-          --input-bg:#111110;--input-border:rgba(255,255,255,0.13);
+          --black:#080808;--surface:#161614;--surface2:#1F1F1D;--surface3:#2A2A27;
+          --border:rgba(255,255,255,0.10);--border-md:rgba(255,255,255,0.18);
+          --lime:#C6F135;--lime-dim:#A8D420;--lime-bg:rgba(198,241,53,0.06);--lime-border:rgba(198,241,53,0.32);
+          --white:#FFFFFF;--text:#E8E8E1;--text-sub:#A8A8A0;--text-muted:#66665E;
+          --chip-border:rgba(255,255,255,0.16);--chip-bg:rgba(255,255,255,0.05);
+          --input-bg:#0E0E0C;--input-border:rgba(255,255,255,0.12);
         }
-        /* LIGHT MODE */
-        body.light{
-          --black:#F5F5F2;--surface:#FFFFFF;--surface2:#F0F0EC;--surface3:#E8E8E4;
-          --border:rgba(0,0,0,0.09);--border-md:rgba(0,0,0,0.15);
-          --lime:#5A9000;--lime-dim:#4A7800;--lime-bg:rgba(90,144,0,0.08);--lime-border:rgba(90,144,0,0.3);
-          --white:#0A0A0A;--text:#1A1A18;--text-sub:#4A4A44;--text-muted:#888880;
-          --chip-border:rgba(0,0,0,0.18);--chip-bg:rgba(0,0,0,0.04);
-          --input-bg:#FFFFFF;--input-border:rgba(0,0,0,0.15);
-        }
-        body.light nav{background:rgba(245,245,242,0.97);}
-        body.light .sidebar{background:var(--surface);}
-        body.light .chip.on{color:#3A6800;border-color:rgba(90,144,0,0.5);background:rgba(90,144,0,0.1);}
-        body.light .btn-p{color:#FFFFFF;background:#5A9000;}
-        body.light .btn-p:hover:not(:disabled){background:#4A7800;}
-        body.light .pb{color:#3A6800;}
-        body.light .logo-name{color:#5A9000;}
-        body.light .logo-mark{background:#5A9000;}
-        body.light .ey{color:#4A7800;}
-        body.light .si.active{background:rgba(90,144,0,0.08);border-color:rgba(90,144,0,0.3);}
-        body.light .si.active .sn{border-color:#5A9000;color:#5A9000;}
-        body.light .si.done .sn{background:#5A9000;border-color:#5A9000;color:#fff;}
-        body.light .si.active .ss{color:#4A7800;}
-        body.light .pkg-tag.p{background:rgba(90,144,0,0.08);border-color:rgba(90,144,0,0.3);color:#3A6800;}
-        body.light .ibox{border-color:#5A9000;background:rgba(90,144,0,0.06);}
-        body.light .b-os{background:#EEF4FF;color:#1E5FCC;border-color:rgba(30,95,204,0.25);}
-        body.light .b-addon{background:#FFF4EE;color:#CC5A00;border-color:rgba(204,90,0,0.25);}
-        body.light .b-brand{background:#F4EEFF;color:#7A3ABF;border-color:rgba(122,58,191,0.25);}
-        body.light .mod-badge.b-os{background:#EEF4FF;color:#1E5FCC;}
-        body.light input:focus,body.light textarea:focus,body.light select:focus{border-color:#5A9000;box-shadow:0 0 0 3px rgba(90,144,0,0.1);}
-        body.light .ps.done{background:#5A9000;}
-        body.light .ps.active{background:linear-gradient(90deg,#5A9000 40%,var(--surface3) 100%);}
-        body.light .ns-n{background:#5A9000;color:#fff;}
-        body.light .prog-badge{color:#3A6800;}
-
-        /* TOGGLE BUTTON */
-        .theme-toggle{
-          display:flex;align-items:center;gap:8px;
-          background:var(--surface2);border:1.5px solid var(--border);
-          border-radius:20px;padding:5px 12px 5px 8px;
-          cursor:pointer;transition:all .15s;
-          font-size:12px;font-weight:500;color:var(--text-sub);
-          font-family:'DM Mono',monospace;letter-spacing:.04em;
-        }
-        .theme-toggle:hover{border-color:var(--border-md);color:var(--text);}
-        .toggle-track{
-          width:32px;height:18px;border-radius:9px;
-          background:var(--surface3);border:1.5px solid var(--border);
-          position:relative;transition:background .2s;flex-shrink:0;
-        }
-        .toggle-thumb{
-          width:12px;height:12px;border-radius:50%;
-          background:var(--text-muted);
-          position:absolute;top:2px;left:2px;
-          transition:transform .2s,background .2s;
-        }
-        body.light .toggle-track{background:rgba(90,144,0,0.15);border-color:rgba(90,144,0,0.3);}
-        body.light .toggle-thumb{background:#5A9000;transform:translateX(14px);}
         html{font-size:15px;}
         body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--black);min-height:100vh;-webkit-font-smoothing:antialiased;}
 
-        nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:58px;border-bottom:1px solid var(--border);background:rgba(10,10,10,0.97);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100;}
+        nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:58px;border-bottom:1px solid var(--border);background:rgba(8,8,8,0.96);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;}
         .logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
         .logo-mark{width:32px;height:32px;background:var(--lime);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--black);font-family:'DM Mono',monospace;}
         .logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);}
         .nav-right{font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.04em;}
 
         .layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 58px);}
-        .sidebar{border-right:1px solid var(--border);padding:32px 24px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;background:var(--surface);}
+        .sidebar{border-right:1px solid var(--border);padding:32px 24px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;background:var(--surface);box-shadow:1px 0 0 rgba(255,255,255,0.03);}
         .sidebar-client{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);}
         .client-tag{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--lime-dim);margin-bottom:7px;font-family:'DM Mono',monospace;}
         .client-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--white);margin-bottom:10px;}
@@ -1096,10 +1024,8 @@ export default function Onboarding() {
         .sec-lead{font-size:14px;color:var(--text-sub);font-weight:300;line-height:1.75;max-width:520px;margin-bottom:32px;}
 
         .ibox{border-left:3px solid var(--lime);background:var(--lime-bg);padding:14px 18px;border-radius:0 7px 7px 0;margin-bottom:22px;}
-        .ibox p{font-size:13.5px;color:rgba(255,255,255,.6);font-weight:300;line-height:1.7;}
+        .ibox p{font-size:13.5px;color:var(--text-sub);font-weight:300;line-height:1.7;}
         .ibox strong{color:var(--white);font-weight:500;}
-        body.light .ibox p{color:var(--text-sub);}
-        body.light .ibox strong{color:var(--text);}
 
         .fs{display:flex;flex-direction:column;gap:20px;margin-bottom:24px;}
         .field{display:flex;flex-direction:column;gap:7px;}
@@ -1118,9 +1044,9 @@ export default function Onboarding() {
         textarea{resize:vertical;line-height:1.65;}
 
         .chip-group{display:flex;flex-wrap:wrap;gap:7px;}
-        .chip{font-size:13.5px;font-weight:400;color:#C8C8BE;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.05);padding:9px 16px;border-radius:6px;cursor:pointer;transition:all .12s;line-height:1;user-select:none;}
-        .chip:hover{border-color:rgba(255,255,255,.3);color:var(--white);background:rgba(255,255,255,0.09);}
-        .chip.on{color:var(--lime);border-color:rgba(198,241,53,0.5);background:rgba(198,241,53,0.1);font-weight:500;}
+        .chip{font-size:13.5px;font-weight:400;color:var(--text-sub);border:1.5px solid var(--chip-border);background:var(--chip-bg);padding:9px 16px;border-radius:6px;cursor:pointer;transition:all .12s;line-height:1;user-select:none;}
+        .chip:hover{border-color:var(--border-md);color:var(--white);background:rgba(255,255,255,0.08);}
+        .chip.on{color:var(--lime);border-color:rgba(198,241,53,0.5);background:rgba(198,241,53,0.08);font-weight:500;}
 
         .pf{background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:11px 14px;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:12px;}
         .pb{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);background:var(--lime-bg);border:1px solid var(--lime-border);padding:3px 8px;border-radius:3px;font-family:'DM Mono',monospace;white-space:nowrap;}
