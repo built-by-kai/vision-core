@@ -93,6 +93,10 @@ async function run(payload) {
   const invType   = isDeposit ? "Deposit" : "Full Payment"
   const deposit50 = isDeposit ? Math.round(amount * 0.5 * 100) / 100 : 0
 
+  // Due date: 7 days from today
+  const dueDateObj = new Date(); dueDateObj.setDate(dueDateObj.getDate() + 7)
+  const dueDate = dueDateObj.toISOString().split("T")[0]
+
   console.log("[create_invoice] quotId:", quotId, "| amount:", amount, "| terms:", paymentTerms, "| package:", packageName)
 
   // ── 1. Create Invoice ─────────────────────────────────────────────────────
@@ -105,6 +109,7 @@ async function run(payload) {
     "Payment Terms": { select: { name: paymentTerms } },
     "Quotation":     { relation: [{ id: quotId }] },
     ...(deposit50  ? { "Deposit (50%)": { number: deposit50 } } : {}),
+    ...(isDeposit  ? { "Deposit Due":   { date: { start: dueDate } } } : {}),
     ...(companyId  ? { "Company":       { relation: [{ id: companyId }] } } : {}),
     ...(picId      ? { "PIC":           { relation: [{ id: picId }] } } : {}),
     ...(leadId     ? { "Deal Source":   { relation: [{ id: leadId }] } } : {}),
