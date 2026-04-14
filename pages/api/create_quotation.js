@@ -271,10 +271,11 @@ async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, lead
     )
   )
 
-  // Deal Source — button already sets this, but patch anyway to be safe
+  // Lead Source — links Quotation back to the Lead (Quotation.Lead Source → Leads DB)
+  // NOTE: "Deal Source" on Quotations points to Deals DB, so use "Lead Source" for Leads.
   if (leadId) {
     patches.push(
-      patchPage(quotId, { "Deal Source": { relation: [{ id: leadId }] } }, token)
+      patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token)
         .catch(() => {})
     )
   }

@@ -290,14 +290,24 @@ async function handleConvertToDeal(leadId, res) {
   const picIds        = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
   const osInterest    = lp["OS Interest"]?.select?.name || ""
   const addons        = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
+  const sourcedFrom   = (lp.Source?.multi_select || []).map(s => ({ name: s.name }))
   const situation     = plain(lp.Situation?.rich_text || [])
   const notes         = plain(lp.Notes?.rich_text     || [])
   const leadName      = plain(lp["Lead Name"]?.title   || [])
   const discoveryCall = lp["Discovery Call"]?.date?.start || null
 
+  // ── Fetch quotation amount for Deal Value ─────────────────────────────────
+  const quotationIds = (lp.Quotations?.relation || []).map(r => r.id.replace(/-/g, ""))
+  let quotationId    = quotationIds[0] || null
+  let dealValue      = 0
+  if (quotationId) {
+    try {
+      const qp  = await getPage(quotationId, token)
+      dealValue = qp.properties.Amount?.number || 0
+    } catch {}
+  }
+
   // ── Find or create the Deal page ──────────────────────────────────────────
-  // If Action 1 already created it (two-action button), find it via Lead.Deal relation
-  // and just patch it. Otherwise create it fresh.
   let dealPage = await findDealFromLead(lp)
   let dealId
 
@@ -305,12 +315,12 @@ async function handleConvertToDeal(leadId, res) {
     dealId = dealPage.id.replace(/-/g, "")
     console.log(`[convert_to_deal] found existing deal page: ${dealId}`)
   } else {
-    // Fallback: create the Deal page (single-action button or webhook-only setup)
     dealPage = await createPage({
       parent: { database_id: DB.DEALS },
       properties: {
         "Lead Name":   { title: [{ text: { content: leadName } }] },
         "Stage":       { status: { name: "Discovery Done" } },
+        "Client Type": { select: { name: "New Client" } },
         "Lead Source": { relation: [{ id: leadId }] },
       },
     }, token)
@@ -321,16 +331,25 @@ async function handleConvertToDeal(leadId, res) {
   // ── Patch all Lead data into the Deal ─────────────────────────────────────
   await patchPage(dealId, {
     "Stage":       { status: { name: "Discovery Done" } },
+    "Client Type": { select: { name: "New Client" } },
     "Lead Source": { relation: [{ id: leadId }] },
-    ...(leadName          ? { "Lead Name":     { title: [{ text: { content: leadName } }] } } : {}),
-    ...(companyIds.length ? { "Company":       { relation: [{ id: companyIds[0] }] } } : {}),
-    ...(picIds.length     ? { "PIC Name":      { relation: [{ id: picIds[0]     }] } } : {}),
-    ...(osInterest        ? { "Package Type":  { select: { name: osInterest } } } : {}),
-    ...(addons.length     ? { "Add-ons":       { multi_select: addons.map(n => ({ name: n })) } } : {}),
-    ...(situation         ? { "Situation":     { rich_text: [{ text: { content: situation } }] } } : {}),
-    ...(notes             ? { "Notes":         { rich_text: [{ text: { content: notes } }] } } : {}),
+    ...(leadName          ? { "Lead Name":    { title: [{ text: { content: leadName } }] } } : {}),
+    ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(picIds.length     ? { "PIC Name":     { relation: [{ id: picIds[0]     }] } } : {}),
+    ...(osInterest        ? { "Package Type": { select: { name: osInterest } } } : {}),
+    ...(addons.length     ? { "Add-ons":      { multi_select: addons.map(n => ({ name: n })) } } : {}),
+    ...(sourcedFrom.length? { "Source":       { multi_select: sourcedFrom } } : {}),
+    ...(dealValue         ? { "Deal Value":   { number: dealValue } } : {}),
+    ...(quotationId       ? { "Quotation":    { relation: [{ id: quotationId }] } } : {}),
+    ...(situation         ? { "Situation":    { rich_text: [{ text: { content: situation } }] } } : {}),
+    ...(notes             ? { "Notes":        { rich_text: [{ text: { content: notes } }] } } : {}),
     ...(discoveryCall     ? { "Discovery Call":{ date: { start: discoveryCall } } } : {}),
   }, token)
+
+  // ── Link Quotation's Deal Source → new Deal ───────────────────────────────
+  if (quotationId) {
+    await patchPage(quotationId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {})
+  }
 
   // ── Update Lead: link Deal + advance Stage → Converted ────────────────────
   await patchPage(leadId, {

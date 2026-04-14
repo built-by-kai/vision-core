@@ -78,12 +78,15 @@ async function run(payload) {
   const packageName  = derivePackage(props) || quoteType
 
   // Linked IDs
+  // Quotation has two separate relation fields:
+  //   "Lead Source"  → Leads DB   (set by create_quotation.js when source is a Lead)
+  //   "Deal Source"  → Deals DB   (set after Lead → Deal conversion)
   const companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
   const picId     = props.PIC?.relation?.[0]?.id?.replace(/-/g, "") || null
-  const leadId    = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "")
-                    || props["Lead Source"]?.relation?.[0]?.id?.replace(/-/g, "")
-                    || props.Lead?.relation?.[0]?.id?.replace(/-/g, "")
-                    || null
+  const leadId    = props["Lead Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const dealId    = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+  // sourceId: the Lead or Deal to advance stage on
+  const sourceId  = dealId || leadId
 
   // Check if project already exists (add-on quotation)
   const existingProjectId = props.Project?.relation?.[0]?.id?.replace(/-/g, "") || null
@@ -110,9 +113,10 @@ async function run(payload) {
     "Quotation":     { relation: [{ id: quotId }] },
     ...(deposit50  ? { "Deposit (50%)": { number: deposit50 } } : {}),
     ...(isDeposit  ? { "Deposit Due":   { date: { start: dueDate } } } : {}),
-    ...(companyId  ? { "Company":       { relation: [{ id: companyId }] } } : {}),
-    ...(picId      ? { "PIC":           { relation: [{ id: picId }] } } : {}),
-    ...(leadId     ? { "Deal Source":   { relation: [{ id: leadId }] } } : {}),
+    ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
+    ...(picId     ? { "PIC":     { relation: [{ id: picId }] } } : {}),
+    // Invoice.Deal Source → Deals DB only (not Leads). Only write if we have a Deal.
+    ...(dealId    ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
   }
 
   const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, token)
@@ -141,9 +145,10 @@ async function run(payload) {
       "Status":       { select: { name: "Pending Start" } },
       "Quotation":    { relation: [{ id: quotId }] },
       "Invoice":      { relation: [{ id: invId }] },
-      ...(packageName ? { "Package": { select: { name: packageName } } } : {}),
-      ...(companyId   ? { "Company": { relation: [{ id: companyId }] } } : {}),
-      ...(leadId      ? { "Deal Source": { relation: [{ id: leadId }] } } : {}),
+      ...(packageName ? { "Package":     { select:   { name: packageName } } } : {}),
+      ...(companyId   ? { "Company":     { relation: [{ id: companyId }] } } : {}),
+      // Project.Deal Source → Deals DB. Only write if Deal already exists.
+      ...(dealId      ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
     }
 
     const projPage = await createPage({ parent: { database_id: DB.PROJECTS }, properties: projProps }, token)
@@ -168,10 +173,24 @@ async function run(payload) {
     console.log("[create_invoice] Linked supplementary invoice to existing project:", projectId)
   }
 
-  // ── 3. Advance Lead/Deal → "Awaiting Deposit" ─────────────────────────────
-  if (leadId) {
-    await patchPage(leadId, { "Stage": { status: { name: "Awaiting Deposit" } } }, token)
+  // ── 3. Advance Lead/Deal → "Awaiting Deposit" and populate Deal Value ───────
+  if (sourceId) {
+    // Advance stage to Awaiting Deposit (works on both Lead and Deal)
+    await patchPage(sourceId, { "Stage": { status: { name: "Awaiting Deposit" } } }, token)
       .catch(e => console.warn("[create_invoice] stage advance:", e.message))
+  }
+  if (dealId && amount) {
+    // Quotation approved → update Deal Value on the linked Deal
+    await patchPage(dealId, {
+      "Deal Value": { number: amount },
+      "Quotation":  { relation: [{ id: quotId }] },
+      "Invoices":   { relation: [{ id: invId }] },
+    }, token).catch(e => console.warn("[create_invoice] deal value patch:", e.message))
+  }
+  if (leadId && !dealId) {
+    // Lead not yet converted — link Quotation back to Invoice on Lead's Quotations rollup
+    // (no Deal yet; Deal Value will be set in deposit_paid.js when deposit is received)
+    await patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {})
   }
 
   // ── 4. Mark Quotation → Approved ─────────────────────────────────────────
@@ -184,6 +203,8 @@ async function run(payload) {
     invoice_type: invType,
     project_id:   projectId,
     lead_id:      leadId,
+    deal_id:      dealId,
+    source_id:    sourceId,
     company_id:   companyId,
     package:      packageName,
     amount,
