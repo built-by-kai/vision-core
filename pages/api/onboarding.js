@@ -387,7 +387,7 @@ export default async function handler(req, res) {
     console.error('[onboarding] Error:', err);
     return res.status(500).json({
       error: 'Submission failed',
-      detail: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      detail: err.message,
     });
   }
 }
