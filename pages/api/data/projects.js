@@ -63,17 +63,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // Task map: taskId → { status, priority, phaseId, due, name }
+    // Task map: taskId → { status, priority, phaseId, phaseStage, due, name }
     const taskMap = {}
     for (const t of tasks) {
       const p = t.properties
       const id = strip(t.id)
       taskMap[id] = {
-        name:     plain(p["Task Name"]?.title || []) || "",
-        status:   p.Status?.status?.name || p.Status?.select?.name || "Not Started",
-        priority: p.Priority?.select?.name || "",
-        phaseId:  strip(p.Phase?.relation?.[0]?.id || ""),
-        due:      p["Due Date"]?.date?.start || null,
+        name:       plain(p["Task Name"]?.title || []) || "",
+        status:     p.Status?.status?.name || p.Status?.select?.name || "Not Started",
+        priority:   p.Priority?.select?.name || "",
+        phaseId:    strip(p.Phase?.relation?.[0]?.id || ""),
+        phaseStage: p["Phase Stage"]?.select?.name || "",  // fallback when Phase relation is empty
+        due:        p["Due Date"]?.date?.start || null,
       }
     }
 
@@ -108,7 +109,9 @@ export default async function handler(req, res) {
       const projTaskIds = new Set((p.Tasks?.relation || []).map(r => strip(r.id)))
 
       // Build per-phase breakdown from tasks
-      const phaseTaskMap = {}  // phaseId → { done, inProgress, blocked, notStarted }
+      // Two modes: phase relation IDs (phaseTaskMap) OR Phase Stage select (stageTaskMap)
+      const phaseTaskMap = {}   // phaseId → counts
+      const stageTaskMap = {}   // "Phase 1" → counts
       let taskSummary = { total: 0, done: 0, inProgress: 0, blocked: 0, notStarted: 0 }
 
       for (const tid of projTaskIds) {
@@ -122,37 +125,59 @@ export default async function handler(req, res) {
           task.status === "Blocked" ? "blocked" : "notStarted"
         taskSummary[bucket]++
 
-        // Group by phase
+        // Group by phase relation (preferred) or Phase Stage select (fallback)
         const phId = task.phaseId
         if (phId) {
           if (!phaseTaskMap[phId]) phaseTaskMap[phId] = { done: 0, inProgress: 0, blocked: 0, notStarted: 0, total: 0 }
           phaseTaskMap[phId].total++
           phaseTaskMap[phId][bucket]++
+        } else if (task.phaseStage) {
+          if (!stageTaskMap[task.phaseStage]) stageTaskMap[task.phaseStage] = { done: 0, inProgress: 0, blocked: 0, notStarted: 0, total: 0 }
+          stageTaskMap[task.phaseStage].total++
+          stageTaskMap[task.phaseStage][bucket]++
         }
       }
 
       // Build phases array with task counts
       const projectPhases = []
-      // Collect phase IDs from tasks + from project's Phases relation
-      const projPhaseIds = new Set([
-        ...(p.Phases?.relation || []).map(r => strip(r.id)),
-        ...Object.keys(phaseTaskMap),
-      ])
+      const hasPhaseRelations = Object.keys(phaseTaskMap).length > 0
 
-      for (const phId of projPhaseIds) {
-        const ph = phaseMap[phId]
-        if (!ph) continue
-        const tc = phaseTaskMap[phId] || { done: 0, inProgress: 0, blocked: 0, notStarted: 0, total: 0 }
-        const pct = tc.total > 0 ? Math.round((tc.done / tc.total) * 100) : 0
-        projectPhases.push({
-          id: phId,
-          name: ph.name,
-          no: ph.no,
-          status: ph.status,
-          due: ph.due,
-          tasks: tc,
-          pct,
-        })
+      if (hasPhaseRelations) {
+        // Mode 1: real Phase relations exist — use phaseMap for details
+        const projPhaseIds = new Set([
+          ...(p.Phases?.relation || []).map(r => strip(r.id)),
+          ...Object.keys(phaseTaskMap),
+        ])
+        for (const phId of projPhaseIds) {
+          const ph = phaseMap[phId]
+          if (!ph) continue
+          const tc = phaseTaskMap[phId] || { done: 0, inProgress: 0, blocked: 0, notStarted: 0, total: 0 }
+          const pct = tc.total > 0 ? Math.round((tc.done / tc.total) * 100) : 0
+          projectPhases.push({
+            id: phId, name: ph.name, no: ph.no, status: ph.status, due: ph.due, tasks: tc, pct,
+          })
+        }
+      } else {
+        // Mode 2: no Phase relations — synthesise from Phase Stage select
+        const stageOrder = {}
+        let idx = 0
+        for (const stage of Object.keys(stageTaskMap).sort()) {
+          const noMatch = stage.match(/Phase\s*(\d+)/)
+          const no = noMatch ? parseInt(noMatch[1]) : idx
+          const tc = stageTaskMap[stage]
+          const pct = tc.total > 0 ? Math.round((tc.done / tc.total) * 100) : 0
+          // Infer status: if any task is in-progress → In Progress, all done → Done, else Not Started
+          let phStatus = "Not Started"
+          if (tc.done === tc.total && tc.total > 0) phStatus = "Done"
+          else if (tc.inProgress > 0 || tc.blocked > 0) phStatus = "In Progress"
+          // Check if this matches the project's current Phase select to mark as In Progress
+          if (curPhase && stage.includes(curPhase.replace(/Phase\s*/, "Phase "))) phStatus = "In Progress"
+
+          projectPhases.push({
+            id: stage, name: stage, no, status: phStatus, due: null, tasks: tc, pct,
+          })
+          idx++
+        }
       }
       projectPhases.sort((a, b) => a.no - b.no)
 
