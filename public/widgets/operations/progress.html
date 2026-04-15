@@ -86,7 +86,6 @@ body.light .task-row{background:rgba(0,0,0,.015);border-color:rgba(0,0,0,.04);}
 body.light .t-name{color:#111;}
 .t-meta{font-size:12px;font-weight:600;color:rgba(255,255,255,.3);margin-top:3px;display:flex;align-items:center;gap:8px;}
 body.light .t-meta{color:rgba(0,0,0,.3);}
-.t-meta .overdue{color:var(--red);font-weight:700;}
 .t-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .t-assignee{display:flex;align-items:center;gap:6px;}
 .avatar{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.08);object-fit:cover;}
@@ -96,12 +95,10 @@ body.light .avatar-placeholder{background:rgba(0,0,0,.05);color:rgba(0,0,0,.3);b
 .t-assignee-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.45);max-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 body.light .t-assignee-name{color:rgba(0,0,0,.4);}
 .t-due-box{text-align:right;}
-.t-due-date{font-size:12px;font-weight:700;color:rgba(255,255,255,.35);white-space:nowrap;}
-body.light .t-due-date{color:rgba(0,0,0,.3);}
-.t-due-rel{font-size:11px;font-weight:600;white-space:nowrap;}
+.t-due-rel{font-size:12px;font-weight:600;white-space:nowrap;}
 .t-due-rel.soon{color:var(--amber);}
 .t-due-rel.overdue{color:var(--red);}
-.t-due-rel.ok{color:rgba(255,255,255,.2);}
+.t-due-rel.ok{color:rgba(255,255,255,.25);}
 body.light .t-due-rel.ok{color:rgba(0,0,0,.2);}
 .empty-msg{font-size:13px;color:rgba(255,255,255,.2);text-align:center;padding:20px 12px;}
 body.light .empty-msg{color:rgba(0,0,0,.2);}
@@ -111,46 +108,55 @@ body.light .empty-msg{color:rgba(0,0,0,.2);}
 body.light .sec-lbl{color:rgba(0,0,0,.25);}
 
 /* ── Timeline Phases ── */
-.timeline{position:relative;padding-left:28px;margin-left:16px;}
-.timeline::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:rgba(255,255,255,.06);border-radius:1px;}
-body.light .timeline::before{background:rgba(0,0,0,.06);}
-.tl-item{position:relative;padding:12px 20px 12px 24px;margin-bottom:6px;display:flex;align-items:center;gap:14px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);transition:all .2s;}
+.timeline{position:relative;padding-left:32px;margin-left:12px;}
+.timeline::before{content:'';position:absolute;left:9px;top:24px;bottom:24px;width:2px;background:rgba(255,255,255,.06);border-radius:1px;}
+body.light .timeline::before{background:rgba(0,0,0,.08);}
+
+.tl-item{position:relative;padding:14px 20px;margin-bottom:6px;display:flex;align-items:center;gap:14px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);transition:all .2s;}
 .tl-item:hover{border-color:rgba(255,255,255,.08);}
 body.light .tl-item{background:rgba(0,0,0,.015);border-color:rgba(0,0,0,.04);}
 .tl-item.active{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.15);}
 .tl-item.done{background:rgba(170,255,0,.03);border-color:rgba(170,255,0,.1);}
 
-/* Timeline dot */
-.tl-dot{position:absolute;left:-25px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.1);background:#191919;z-index:1;display:flex;align-items:center;justify-content:center;}
+/* Timeline dot — properly centered */
+.tl-dot{position:absolute;left:-23px;top:50%;width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.1);background:#191919;z-index:1;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 body.light .tl-dot{background:#F5F5F5;border-color:rgba(0,0,0,.1);}
-.tl-dot.done{border-color:var(--g);background:var(--gm);}
-.tl-dot.done::after{content:'✓';font-size:8px;font-weight:900;color:var(--g);}
-.tl-dot.active{border-color:var(--amber);background:var(--amberm);box-shadow:0 0 8px rgba(251,191,36,.25);}
-.tl-dot.active::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--amber);}
+.tl-dot.done{border-color:var(--g);background:var(--g);}
+.tl-dot.done::after{content:'';display:block;width:6px;height:3px;border-left:2px solid #191919;border-bottom:2px solid #191919;transform:rotate(-45deg) translateY(-1px);}
+body.light .tl-dot.done::after{border-color:#F5F5F5;}
+.tl-dot.active{border-color:var(--amber);background:var(--amberm);box-shadow:0 0 10px rgba(251,191,36,.3);}
+.tl-dot.active::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--amber);}
 
-.tl-no{font-size:12px;font-weight:900;color:rgba(255,255,255,.2);min-width:18px;flex-shrink:0;}
-body.light .tl-no{color:rgba(0,0,0,.2);}
+/* Phase number */
+.tl-no{font-size:13px;font-weight:900;color:rgba(255,255,255,.15);min-width:20px;text-align:center;flex-shrink:0;}
+body.light .tl-no{color:rgba(0,0,0,.15);}
 .tl-item.active .tl-no{color:var(--amber);}
 .tl-item.done .tl-no{color:var(--g);}
+
+/* Phase info */
 .tl-info{flex:1;min-width:0;}
-.tl-name{font-size:14px;font-weight:700;color:#fff;}
+.tl-name{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;}
 body.light .tl-name{color:#111;}
 .tl-item.done .tl-name{color:var(--g);}
 .tl-item.active .tl-name{color:var(--amber);}
-.tl-bar-wrap{margin-top:5px;display:flex;align-items:center;gap:8px;}
-.tl-bar-track{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
-body.light .tl-bar-track{background:rgba(0,0,0,.05);}
-.tl-bar-fill{height:4px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.tl-bar-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+body.light .tl-bar-track{background:rgba(0,0,0,.06);}
+.tl-bar-fill{height:6px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
 .bar-done{background:var(--g);}
 .bar-active{background:var(--amber);}
-.bar-ns{background:rgba(255,255,255,.08);}
-body.light .bar-ns{background:rgba(0,0,0,.08);}
-.tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;min-width:60px;}
-.tl-count{font-size:14px;font-weight:800;color:var(--muted);}
-.tl-count .dn{color:var(--g);}
+.bar-ns{background:rgba(255,255,255,.06);}
+body.light .bar-ns{background:rgba(0,0,0,.06);}
+
+/* Phase right stats */
+.tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;min-width:90px;}
+.tl-count{font-size:13px;font-weight:700;color:rgba(255,255,255,.35);}
+body.light .tl-count{color:rgba(0,0,0,.3);}
+.tl-count .dn{font-weight:900;color:var(--g);}
 .tl-item.active .tl-count .dn{color:var(--amber);}
-.tl-pct{font-size:11px;font-weight:700;color:rgba(255,255,255,.15);}
-body.light .tl-pct{color:rgba(0,0,0,.15);}
+.tl-pct{font-size:16px;font-weight:900;color:var(--g);letter-spacing:-.5px;}
+.tl-item.active .tl-pct{color:var(--amber);}
+.tl-pct.zero{font-size:12px;font-weight:700;color:rgba(255,255,255,.12);}
+body.light .tl-pct.zero{color:rgba(0,0,0,.1);}
 
 /* ── Footer ── */
 .ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.15);text-align:right;margin-top:12px;}
@@ -165,6 +171,7 @@ body.light .loading{color:rgba(0,0,0,.25);}
 <script>
 const params = new URLSearchParams(location.search);
 const projectId = params.get('project') || '';
+const viewMode = params.get('view') || 'main'; // 'main' or 'phases'
 
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
   document.body.classList.add('light');
@@ -225,39 +232,8 @@ function renderTaskRow(t) {
   </div>`;
 }
 
-function render(data) {
-  const { project: p, phases, activeTasks, upcomingTasks, overall: o } = data;
-
-  const r = 50, circ = 2 * Math.PI * r;
-  const offset = circ - (circ * o.pct / 100);
-
-  // Current phase info
-  const activePhase = phases.find(ph => ph.status === 'In Progress') || phases.find(ph => ph.status !== 'Done') || phases[0];
-  const activePhaseShort = activePhase ? (activePhase.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '') : '';
-  const activePhaseRel = activePhase?.dueDate ? relativeDate(activePhase.dueDate) : null;
-  const activePhaseTasks = activePhase?.tasks || {};
-
-  // Dates
-  let datesHTML = '';
-  if (p.startDate || p.targetDate) {
-    datesHTML = '<div class="dates-row">';
-    if (p.startDate) datesHTML += `<span class="date-tag"><strong>Started</strong>${fmtDate(p.startDate)}</span>`;
-    if (p.targetDate) datesHTML += `<span class="date-tag"><strong>Target</strong>${fmtDate(p.targetDate)}</span>`;
-    datesHTML += '</div>';
-  }
-
-  // Active tasks
-  const activeHTML = activeTasks.length
-    ? activeTasks.map(t => renderTaskRow(t)).join('')
-    : '<div class="empty-msg">No tasks in progress yet</div>';
-
-  // Upcoming tasks
-  const upcomingHTML = upcomingTasks.length
-    ? upcomingTasks.map(t => renderTaskRow(t)).join('')
-    : '';
-
-  // Timeline phase rows
-  const timelineHTML = phases.map(ph => {
+function renderTimeline(phases) {
+  return phases.map(ph => {
     const t = ph.tasks || {};
     const isDone = ph.status === 'Done';
     const isActive = ph.status === 'In Progress';
@@ -266,22 +242,74 @@ function render(data) {
     const barCls = isDone ? 'bar-done' : isActive ? 'bar-active' : 'bar-ns';
     const barW = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
     const shortName = (ph.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '');
+    const rel = relativeDate(ph.dueDate);
 
     return `<div class="tl-item ${itemCls}">
       <div class="tl-dot ${dotCls}"></div>
       <span class="tl-no">${ph.no ?? '?'}</span>
       <div class="tl-info">
         <div class="tl-name">${esc(shortName || ph.name)}</div>
-        <div class="tl-bar-wrap">
-          <div class="tl-bar-track"><div class="tl-bar-fill ${barCls}" style="width:${barW}%"></div></div>
-        </div>
+        <div class="tl-bar-track"><div class="tl-bar-fill ${barCls}" style="width:${barW}%"></div></div>
       </div>
       <div class="tl-right">
-        <span class="tl-count"><span class="dn">${t.done || 0}</span> / ${t.total || 0}</span>
-        ${barW > 0 ? `<span class="tl-pct">${barW}%</span>` : ''}
+        <span class="tl-pct ${barW === 0 ? 'zero' : ''}">${barW}%</span>
+        <span class="tl-count"><span class="dn">${t.done || 0}</span> / ${t.total || 0} tasks</span>
       </div>
     </div>`;
   }).join('');
+}
+
+// ── PHASES-ONLY VIEW ────────────────────────────────────────────────────────
+function renderPhasesView(data) {
+  const { project: p, phases, overall: o } = data;
+
+  const activePhase = phases.find(ph => ph.status === 'In Progress') || phases.find(ph => ph.status !== 'Done') || phases[0];
+  const activePhaseShort = activePhase ? (activePhase.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '') : '';
+  const activePhaseTasks = activePhase?.tasks || {};
+  const activePhaseRel = activePhase?.dueDate ? relativeDate(activePhase.dueDate) : null;
+
+  document.getElementById('app').innerHTML = `
+    <div class="card phase-banner" style="margin-bottom:14px;">
+      <div class="pb-icon">${activePhase?.no ?? '?'}</div>
+      <div class="pb-text">
+        <div class="pb-label">Current Phase</div>
+        <div class="pb-name">${esc(activePhaseShort || 'Not started')}</div>
+        <div class="pb-meta">${activePhaseTasks.done || 0} of ${activePhaseTasks.total || 0} tasks complete${activePhaseRel ? ` · <span style="color:${activePhaseRel.cls === 'overdue' ? 'var(--red)' : activePhaseRel.cls === 'soon' ? 'var(--amber)' : 'inherit'}">${activePhaseRel.text}</span>` : ''}</div>
+      </div>
+    </div>
+
+    <div class="timeline">${renderTimeline(phases)}</div>
+    <div class="ts">Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+  `;
+}
+
+// ── MAIN VIEW ───────────────────────────────────────────────────────────────
+function renderMainView(data) {
+  const { project: p, phases, activeTasks, upcomingTasks, overall: o } = data;
+
+  const r = 50, circ = 2 * Math.PI * r;
+  const offset = circ - (circ * o.pct / 100);
+
+  const activePhase = phases.find(ph => ph.status === 'In Progress') || phases.find(ph => ph.status !== 'Done') || phases[0];
+  const activePhaseShort = activePhase ? (activePhase.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '') : '';
+  const activePhaseRel = activePhase?.dueDate ? relativeDate(activePhase.dueDate) : null;
+  const activePhaseTasks = activePhase?.tasks || {};
+
+  let datesHTML = '';
+  if (p.startDate || p.targetDate) {
+    datesHTML = '<div class="dates-row">';
+    if (p.startDate) datesHTML += `<span class="date-tag"><strong>Started</strong>${fmtDate(p.startDate)}</span>`;
+    if (p.targetDate) datesHTML += `<span class="date-tag"><strong>Target</strong>${fmtDate(p.targetDate)}</span>`;
+    datesHTML += '</div>';
+  }
+
+  const activeHTML = activeTasks.length
+    ? activeTasks.map(t => renderTaskRow(t)).join('')
+    : '<div class="empty-msg">No tasks in progress yet</div>';
+
+  const upcomingHTML = upcomingTasks.length
+    ? upcomingTasks.map(t => renderTaskRow(t)).join('')
+    : '';
 
   document.getElementById('app').innerHTML = `
     <div class="header">
@@ -339,8 +367,6 @@ function render(data) {
       <div class="task-list">${upcomingHTML}</div>
     </div>` : ''}
 
-    <div class="sec-lbl">Phases</div>
-    <div class="timeline">${timelineHTML || '<div class="loading">No phases yet</div>'}</div>
     <div class="ts">Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
   `;
 }
@@ -354,7 +380,12 @@ async function loadData() {
     const r = await fetch('/api/data/progress?project=' + encodeURIComponent(projectId));
     const j = await r.json();
     if (j.error) { document.getElementById('app').innerHTML = `<div class="error">${esc(j.error)}</div>`; return; }
-    render(j);
+
+    if (viewMode === 'phases') {
+      renderPhasesView(j);
+    } else {
+      renderMainView(j);
+    }
   } catch (e) {
     document.getElementById('app').innerHTML = `<div class="error">Failed to load: ${esc(e.message)}</div>`;
   }
