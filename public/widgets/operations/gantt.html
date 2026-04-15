@@ -179,7 +179,7 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
 <div class="phase-tabs" id="phase-tabs"></div>
 
 <div class="legend">
-  <div class="leg-i"><div class="leg-bar" style="background:rgba(255,255,255,.06)"></div><span class="leg-l">Track</span></div>
+  <div class="leg-i"><div class="leg-bar" style="background:rgba(255,255,255,.06)"></div><span class="leg-l">Planned</span></div>
   <div class="leg-i"><div class="leg-bar" style="background:var(--g);opacity:.9"></div><span class="leg-l">Done</span></div>
   <div class="leg-i"><div class="leg-bar" style="background:var(--amber)"></div><span class="leg-l">In Progress</span></div>
   <div class="leg-i"><div class="leg-bar" style="background:var(--red);opacity:.9"></div><span class="leg-l">Blocked</span></div>
@@ -360,26 +360,28 @@ function renderGantt(){
     const phStart=addDays(projStart,pi*daysPerPhase);
     const phTasks=phaseGroups[ph];
     phTasks.forEach((t,ti)=>{
-      const sd=toDate(t.startDate), cd=toDate(t.completedDate), cr=t.created;
-      // Track bar: created → due (or estimated end)
-      const estEnd=t.due||addDays(phStart,Math.min(ti+3,daysPerPhase));
-      t._trackStart=cr||addDays(phStart,ti);
-      t._trackEnd=t.due||cd||estEnd;
+      const sd=toDate(t.startDate), cd=toDate(t.completedDate);
+      // Track = planned window: startDate → due date
+      // If no startDate, estimate from phase position
+      const estStart=addDays(phStart,Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase));
+      const estEnd=t.due||addDays(estStart,3);
+      t._trackStart=sd||estStart;
+      t._trackEnd=t.due||estEnd;
       if(t._trackStart>t._trackEnd) t._trackEnd=t._trackStart;
-      // Fill bar: startDate → completedDate (or today)
+      // Fill = actual work: started → completed (or today)
       t._fillStart=null; t._fillEnd=null;
       if(t.status==='Done'){
-        t._fillStart=sd||cr||t._trackStart;
+        t._fillStart=sd||t._trackStart;
         t._fillEnd=cd||today;
       } else if(t.status==='In Progress'){
-        t._fillStart=sd||cr||today;
+        t._fillStart=sd||t._trackStart;
         t._fillEnd=today;
       } else if(t.status==='Blocked'){
-        t._fillStart=sd||cr||today;
+        t._fillStart=sd||t._trackStart;
         t._fillEnd=today;
       }
-      // extend track to cover fill if needed
-      if(t._fillStart&&t._fillStart<t._trackStart) t._trackStart=t._fillStart;
+      // Not Started: no fill, just the track (planned window)
+      // Extend track if actual work overran the plan
       if(t._fillEnd&&t._fillEnd>t._trackEnd) t._trackEnd=t._fillEnd;
     });
   });
@@ -471,7 +473,7 @@ function renderGantt(){
         dueHTML=`<div class="g-due-dot" style="left:${dueX}px" title="Due: ${fmtShort(t.due)}"></div>`;
       }
 
-      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.created?'\nCreated: '+fmtShort(t.created):''}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}${t.due?'\nDue: '+fmtShort(t.due):''}`;
+      const tooltip=`${esc(t.name)}\nStatus: ${t.status}\nPlanned: ${fmtShort(t._trackStart)} → ${fmtShort(t._trackEnd)}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}${t.due?'\nDue: '+fmtShort(t.due):''}`;
       rowsHTML+=`<div class="gr-row">${makeCells()}
         <div class="g-track" style="left:${trackLeft}px;width:${trackWidth}px;" title="${tooltip}"></div>
         ${fillHTML}
