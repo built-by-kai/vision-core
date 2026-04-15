@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Opxio — Project Kanban</title>
+<title>Opxio — Project Board</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow:hidden;height:100%;transition:background .3s,color .3s;}
+*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow:hidden;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;--cyan:#22D3EE;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
-::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
-body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.08);}
 
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
@@ -25,69 +25,76 @@ body.light .h-title{color:#111;}
 .ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
 
-/* ── KANBAN BOARD ── */
-.kb-board{display:flex;gap:12px;height:calc(100vh - 80px);overflow-x:auto;overflow-y:hidden;padding-bottom:12px;}
+/* ── BOARD ── */
+.board{display:flex;gap:10px;height:calc(100vh - 72px);overflow-x:auto;overflow-y:hidden;padding-bottom:8px;}
 
-/* Column */
-.kb-col{min-width:260px;width:260px;flex-shrink:0;display:flex;flex-direction:column;border-radius:14px;background:#1E1E1E;border:1px solid rgba(255,255,255,.06);overflow:hidden;}
-body.light .kb-col{background:#fff;border-color:rgba(0,0,0,.06);}
+/* ── COLUMN ── */
+.col{min-width:248px;width:248px;flex-shrink:0;display:flex;flex-direction:column;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);overflow:hidden;}
+body.light .col{background:rgba(0,0,0,.015);border-color:rgba(0,0,0,.04);}
 
-.kb-col-hdr{padding:14px 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;}
-body.light .kb-col-hdr{border-bottom-color:rgba(0,0,0,.04);}
-.kb-col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.kb-col-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.6);flex:1;}
-body.light .kb-col-title{color:rgba(0,0,0,.5);}
-.kb-col-count{font-size:11px;font-weight:800;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);padding:2px 8px;border-radius:999px;}
-body.light .kb-col-count{color:rgba(0,0,0,.2);background:rgba(0,0,0,.04);}
+.col-hdr{padding:14px 14px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.03);}
+body.light .col-hdr{border-bottom-color:rgba(0,0,0,.04);}
+.col-stripe{width:3px;height:20px;border-radius:999px;flex-shrink:0;}
+.col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);flex:1;}
+body.light .col-title{color:rgba(0,0,0,.4);}
+.col-count{font-size:10px;font-weight:800;color:rgba(255,255,255,.18);padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);}
+body.light .col-count{color:rgba(0,0,0,.16);background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.04);}
 
-.kb-col-body{flex:1;overflow-y:auto;padding:10px 10px 16px;display:flex;flex-direction:column;gap:8px;}
+.col-body{flex:1;overflow-y:auto;padding:8px 8px 14px;display:flex;flex-direction:column;gap:6px;}
 
-/* Card */
-.kb-card{background:#252525;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;cursor:default;transition:border-color .2s,transform .15s;}
-.kb-card:hover{border-color:rgba(170,255,0,.15);transform:translateY(-1px);}
-body.light .kb-card{background:#F8F8F8;border-color:rgba(0,0,0,.06);}
-body.light .kb-card:hover{border-color:rgba(92,153,0,.2);}
+/* ── CARD ── */
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;cursor:default;transition:border-color .2s,box-shadow .2s;}
+.card:hover{border-color:rgba(170,255,0,.12);box-shadow:0 2px 12px rgba(0,0,0,.2);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.05);box-shadow:0 1px 3px rgba(0,0,0,.03);}
+body.light .card:hover{border-color:rgba(92,153,0,.18);box-shadow:0 2px 12px rgba(0,0,0,.06);}
 
-.kb-card-top{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
-.kb-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;}
-.kb-client{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
-body.light .kb-client{color:rgba(0,0,0,.3);}
+/* Card top row */
+.c-top{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.c-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;border:1px solid transparent;}
+.c-client{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;}
+body.light .c-client{color:rgba(0,0,0,.25);}
 
-.kb-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.3;display:block;text-decoration:none;}
-.kb-name:hover{text-decoration:underline;text-decoration-color:var(--g);text-underline-offset:2px;}
-body.light .kb-name{color:#111;}
+/* Project name */
+.c-name{font-size:12.5px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.35;display:block;text-decoration:none;}
+.c-name:hover{text-decoration:underline;text-decoration-color:var(--g);text-underline-offset:2px;}
+body.light .c-name{color:#111;}
 
-/* Progress bar */
-.kb-progress{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.kb-track{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.06);}
-body.light .kb-track{background:rgba(0,0,0,.06);}
-.kb-fill{height:4px;border-radius:999px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
-.kb-pct{font-size:11px;font-weight:800;color:var(--g);width:32px;text-align:right;flex-shrink:0;}
-.kb-pct.zero{color:rgba(255,255,255,.15);}
-body.light .kb-pct.zero{color:rgba(0,0,0,.12);}
+/* Progress ring + percentage */
+.c-progress{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ring-wrap{width:28px;height:28px;flex-shrink:0;position:relative;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:3;}
+body.light .ring-bg{stroke:rgba(0,0,0,.06);}
+.ring-fill{fill:none;stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
+.c-pct{font-size:11px;font-weight:800;color:var(--g);}
+.c-pct.zero{color:rgba(255,255,255,.12);}
+body.light .c-pct.zero{color:rgba(0,0,0,.1);}
+.c-pct-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);margin-left:-4px;}
+body.light .c-pct-label{color:rgba(0,0,0,.18);}
 
-/* Task summary chips */
-.kb-tasks{display:flex;gap:6px;flex-wrap:wrap;}
-.kb-chip{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:rgba(255,255,255,.35);padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.03);}
-body.light .kb-chip{color:rgba(0,0,0,.3);background:rgba(0,0,0,.03);}
-.kb-chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+/* Task chips */
+.c-tasks{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+.c-chip{display:flex;align-items:center;gap:3px;font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.025);}
+body.light .c-chip{color:rgba(0,0,0,.28);background:rgba(0,0,0,.025);}
+.c-chip-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;}
 
-/* Dates */
-.kb-dates{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;}
-.kb-date{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);}
-body.light .kb-date{color:rgba(0,0,0,.2);}
-.kb-date strong{font-weight:700;color:rgba(255,255,255,.35);}
-body.light .kb-date strong{color:rgba(0,0,0,.3);}
+/* Meta row (dates + phase) */
+.c-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.c-date{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.18);}
+body.light .c-date{color:rgba(0,0,0,.18);}
+.c-date b{font-weight:700;color:rgba(255,255,255,.28);}
+body.light .c-date b{color:rgba(0,0,0,.28);}
+.c-phase{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:4px;margin-left:auto;}
+body.light .c-phase{color:rgba(0,0,0,.18);}
+.c-phase-dot{width:5px;height:5px;border-radius:50%;background:var(--g);flex-shrink:0;}
 
-/* Phase indicator */
-.kb-phase{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);margin-top:8px;display:flex;align-items:center;gap:5px;}
-body.light .kb-phase{color:rgba(0,0,0,.22);}
-.kb-phase-dot{width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;}
+/* Empty state */
+.col-empty{display:flex;align-items:center;justify-content:center;flex:1;font-size:10px;color:rgba(255,255,255,.1);padding:20px 0;}
+body.light .col-empty{color:rgba(0,0,0,.08);}
 
-.empty{display:flex;align-items:center;justify-content:center;height:100%;width:100%;font-size:13px;color:rgba(255,255,255,.18);}
-body.light .empty{color:rgba(0,0,0,.18);}
-.kb-empty{padding:20px;text-align:center;font-size:11px;color:rgba(255,255,255,.12);}
-body.light .kb-empty{color:rgba(0,0,0,.1);}
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:rgba(255,255,255,.15);}
+body.light .loading{color:rgba(0,0,0,.12);}
 </style></head><body>
 
 <div class="header">
@@ -99,7 +106,7 @@ body.light .kb-empty{color:rgba(0,0,0,.1);}
   </div>
 </div>
 
-<div class="kb-board" id="board"><div class="empty">Loading…</div></div>
+<div class="board" id="board"><div class="loading">Loading…</div></div>
 
 <script>
 const _tok=new URLSearchParams(location.search).get('token')||'';
@@ -111,69 +118,73 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
 
 const COLUMNS=[
-  {key:'awaiting',label:'Awaiting',color:'var(--blue)',dot:'#60A5FA'},
-  {key:'active',label:'Active',color:'var(--g)',dot:'#AAFF00'},
-  {key:'review',label:'In Review',color:'var(--amber)',dot:'#FBBF24'},
-  {key:'hold',label:'On Hold',color:'rgba(255,255,255,.25)',dot:'rgba(255,255,255,.25)'},
-  {key:'done',label:'Completed',color:'var(--purple)',dot:'#A78BFA'},
+  {key:'awaiting',label:'Awaiting',color:'var(--blue)',hex:'#60A5FA'},
+  {key:'active',label:'Active',color:'var(--g)',hex:'#AAFF00'},
+  {key:'review',label:'In Review',color:'var(--amber)',hex:'#FBBF24'},
+  {key:'hold',label:'On Hold',color:'rgba(255,255,255,.2)',hex:'#666'},
+  {key:'done',label:'Completed',color:'var(--purple)',hex:'#A78BFA'},
 ];
 
-// Distinct type colors
-const TYPE_COLORS=['var(--g)','var(--amber)','#60A5FA','#A78BFA','#22D3EE','var(--red)'];
-const typeColorMap={};
-let typeIdx=0;
-function getTypeColor(t){
-  if(!t)return'rgba(255,255,255,.1)';
-  if(!typeColorMap[t])typeColorMap[t]=TYPE_COLORS[typeIdx++%TYPE_COLORS.length];
-  return typeColorMap[t];
+const TYPE_COLORS={};
+const PALETTE=['var(--g)','var(--amber)','#60A5FA','#A78BFA','#22D3EE','var(--red)'];
+let _tIdx=0;
+function typeColor(t){
+  if(!t)return'rgba(255,255,255,.08)';
+  if(!TYPE_COLORS[t])TYPE_COLORS[t]=PALETTE[_tIdx++%PALETTE.length];
+  return TYPE_COLORS[t];
 }
 
-function renderCard(proj){
+function ringSVG(pct,color){
+  const r=11,circ=2*Math.PI*r;
+  const offset=circ-(pct/100)*circ;
+  return`<svg width="28" height="28" viewBox="0 0 28 28"><circle class="ring-bg" cx="14" cy="14" r="${r}"/><circle class="ring-fill" cx="14" cy="14" r="${r}" stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg>`;
+}
+
+function renderCard(proj,colColor){
   const pct=proj.overallPct||0;
   const ts=proj.taskSummary||{};
-  const typeColor=getTypeColor(proj.type);
+  const tc=typeColor(proj.type);
 
   let typeHTML='';
   if(proj.type){
-    typeHTML=`<span class="kb-type" style="background:${typeColor}18;color:${typeColor};border:1px solid ${typeColor}30;">${esc(proj.type)}</span>`;
+    typeHTML=`<span class="c-type" style="background:${tc}10;color:${tc};border-color:${tc}25;">${esc(proj.type)}</span>`;
   }
 
-  let chipHTML='';
   const chips=[
     {val:ts.done||0,lbl:'Done',color:'var(--g)'},
-    {val:ts.inProgress||0,lbl:'In Progress',color:'var(--amber)'},
+    {val:ts.inProgress||0,lbl:'Active',color:'var(--amber)'},
     {val:ts.blocked||0,lbl:'Blocked',color:'var(--red)'},
-    {val:ts.notStarted||0,lbl:'Not Started',color:'rgba(255,255,255,.15)'},
+    {val:ts.notStarted||0,lbl:'Pending',color:'rgba(255,255,255,.12)'},
   ];
-  chipHTML=chips.filter(c=>c.val>0).map(c=>`<div class="kb-chip"><div class="kb-chip-dot" style="background:${c.color}"></div>${c.val} ${c.lbl}</div>`).join('');
+  const chipHTML=chips.filter(c=>c.val>0).map(c=>`<div class="c-chip"><div class="c-chip-dot" style="background:${c.color}"></div>${c.val} ${c.lbl}</div>`).join('');
 
   let datesHTML='';
   if(proj.startDate||proj.targetDate||proj.completedDate){
-    datesHTML='<div class="kb-dates">';
-    if(proj.startDate) datesHTML+=`<span class="kb-date"><strong>Start:</strong> ${fmtDate(proj.startDate)}</span>`;
-    if(proj.completedDate) datesHTML+=`<span class="kb-date"><strong>Done:</strong> ${fmtDate(proj.completedDate)}</span>`;
-    else if(proj.targetDate) datesHTML+=`<span class="kb-date"><strong>Target:</strong> ${fmtDate(proj.targetDate)}</span>`;
-    datesHTML+='</div>';
+    datesHTML='';
+    if(proj.startDate) datesHTML+=`<span class="c-date"><b>Start</b> ${fmtDate(proj.startDate)}</span>`;
+    if(proj.completedDate) datesHTML+=`<span class="c-date"><b>Done</b> ${fmtDate(proj.completedDate)}</span>`;
+    else if(proj.targetDate) datesHTML+=`<span class="c-date"><b>Target</b> ${fmtDate(proj.targetDate)}</span>`;
   }
 
   let phaseHTML='';
   if(proj.phase&&proj.phase!=='—'){
-    phaseHTML=`<div class="kb-phase"><div class="kb-phase-dot"></div>${esc(proj.phase)}</div>`;
+    phaseHTML=`<span class="c-phase"><span class="c-phase-dot"></span>${esc(proj.phase)}</span>`;
   }
 
-  return`<div class="kb-card">
-    <div class="kb-card-top">
-      ${typeHTML}
-      ${proj.client?`<span class="kb-client">${esc(proj.client)}</span>`:''}
+  const nameTag=proj.notionUrl
+    ?`<a class="c-name" href="${proj.notionUrl}" target="_blank" rel="noopener">${esc(proj.name)}</a>`
+    :`<div class="c-name">${esc(proj.name)}</div>`;
+
+  return`<div class="card">
+    <div class="c-top">${typeHTML}<span class="c-client">${proj.client?esc(proj.client):''}</span></div>
+    ${nameTag}
+    <div class="c-progress">
+      <div class="ring-wrap">${ringSVG(pct,colColor)}</div>
+      <span class="c-pct${pct===0?' zero':''}">${pct}%</span>
+      <span class="c-pct-label">complete</span>
     </div>
-    ${proj.notionUrl?`<a class="kb-name" href="${proj.notionUrl}" target="_blank" rel="noopener">${esc(proj.name)}</a>`:`<div class="kb-name">${esc(proj.name)}</div>`}
-    <div class="kb-progress">
-      <div class="kb-track"><div class="kb-fill" style="width:${pct}%"></div></div>
-      <span class="kb-pct${pct===0?' zero':''}">${pct}%</span>
-    </div>
-    <div class="kb-tasks">${chipHTML}</div>
-    ${datesHTML}
-    ${phaseHTML}
+    <div class="c-tasks">${chipHTML}</div>
+    <div class="c-meta">${datesHTML}${phaseHTML}</div>
   </div>`;
 }
 
@@ -182,25 +193,26 @@ function render(data){
   const completed=data.completed||[];
   const all=[...builds,...completed];
 
-  // Bucket by status
   const buckets={};
   COLUMNS.forEach(c=>buckets[c.key]=[]);
   for(const p of all){
     const s=p.status||'';
-    if(buckets[s]) buckets[s].push(p);
+    if(buckets[s])buckets[s].push(p);
   }
 
   const board=document.getElementById('board');
   board.innerHTML=COLUMNS.map(col=>{
     const items=buckets[col.key]||[];
-    const cardsHTML=items.length?items.map(renderCard).join(''):`<div class="kb-empty">No projects</div>`;
-    return`<div class="kb-col">
-      <div class="kb-col-hdr">
-        <div class="kb-col-dot" style="background:${col.dot}"></div>
-        <span class="kb-col-title">${col.label}</span>
-        <span class="kb-col-count">${items.length}</span>
+    const cardsHTML=items.length
+      ?items.map(p=>renderCard(p,col.hex)).join('')
+      :`<div class="col-empty">No projects</div>`;
+    return`<div class="col">
+      <div class="col-hdr">
+        <div class="col-stripe" style="background:${col.hex}"></div>
+        <span class="col-title">${col.label}</span>
+        <span class="col-count">${items.length}</span>
       </div>
-      <div class="kb-col-body">${cardsHTML}</div>
+      <div class="col-body">${cardsHTML}</div>
     </div>`;
   }).join('');
 }
