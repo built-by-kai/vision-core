@@ -82,12 +82,12 @@ body.light .p-None{background:rgba(0,0,0,.05);}
 body.light .gl-name{color:rgba(0,0,0,.65);}
 .gl-name.s-Done{text-decoration:line-through;opacity:.35;}
 
-/* Start Task button */
-.gl-start{background:var(--gm);border:1px solid var(--gb);color:var(--g);font-family:'Satoshi',sans-serif;font-size:9px;font-weight:800;padding:3px 8px;border-radius:5px;cursor:pointer;flex-shrink:0;transition:all .15s;text-transform:uppercase;letter-spacing:.04em;}
-.gl-start:hover{background:var(--g);color:#111;}
+/* Start Task icon button */
+.gl-start{background:var(--gm);border:1px solid var(--gb);color:var(--g);width:26px;height:26px;border-radius:50%;cursor:pointer;flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;padding:0;}
+.gl-start:hover{background:var(--g);color:#111;transform:scale(1.1);}
 .gl-start.loading{opacity:.4;pointer-events:none;}
-.gl-complete{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber);font-family:'Satoshi',sans-serif;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;cursor:pointer;flex-shrink:0;transition:all .15s;text-transform:uppercase;letter-spacing:.04em;}
-.gl-complete:hover{background:var(--amber);color:#111;}
+.gl-complete{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber);width:26px;height:26px;border-radius:50%;cursor:pointer;flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;padding:0;}
+.gl-complete:hover{background:var(--amber);color:#111;transform:scale(1.1);}
 .gl-complete.loading{opacity:.4;pointer-events:none;}
 .gl-started{font-size:8px;font-weight:700;color:rgba(170,255,0,.35);flex-shrink:0;}
 
@@ -148,6 +148,9 @@ body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 .b-Blocked{background:var(--red);opacity:.85;}
 .b-NotStarted{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);}
 body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04);}
+
+/* Completed marker */
+.g-done-mark{position:absolute;top:10px;width:22px;height:22px;border-radius:50%;background:var(--g);color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;z-index:2;box-shadow:0 1px 6px rgba(170,255,0,.3);}
 
 /* Due label outside bar */
 .g-due{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
@@ -267,12 +270,12 @@ async function startTask(taskId, btnEl){
     } else {
       showToast('Error: '+(j.error||'Unknown'));
       btnEl.classList.remove('loading');
-      btnEl.textContent='Start';
+      btnEl.textContent='▶';
     }
   }catch(e){
     showToast('Error: '+e.message);
     btnEl.classList.remove('loading');
-    btnEl.textContent='Start';
+    btnEl.textContent='▶';
   }
 }
 async function completeTask(taskId, btnEl){
@@ -296,12 +299,12 @@ async function completeTask(taskId, btnEl){
     } else {
       showToast('Error: '+(j.error||'Unknown'));
       btnEl.classList.remove('loading');
-      btnEl.textContent='Complete';
+      btnEl.textContent='✓';
     }
   }catch(e){
     showToast('Error: '+e.message);
     btnEl.classList.remove('loading');
-    btnEl.textContent='Complete';
+    btnEl.textContent='✓';
   }
 }
 window.startTask=startTask;
@@ -400,9 +403,9 @@ function renderGantt(){
       const isIP=t.status==='In Progress';
       let actionHTML='';
       if(isNS&&!t.startDate){
-        actionHTML=`<button class="gl-start" onclick="startTask('${t.id}',this)">Start</button>`;
+        actionHTML=`<button class="gl-start" onclick="startTask('${t.id}',this)" title="Start Task">▶</button>`;
       } else if(isIP||t.status==='Blocked'){
-        actionHTML=`<button class="gl-complete" onclick="completeTask('${t.id}',this)">Complete</button>`;
+        actionHTML=`<button class="gl-complete" onclick="completeTask('${t.id}',this)" title="Mark Complete">✓</button>`;
       }
       leftHTML+=`<div class="gl-task">
         <div class="gl-pri p-${(t.priority||'None').replace(/\s/g,'')}"></div>
@@ -442,10 +445,17 @@ function renderGantt(){
         dueHTML=`<div class="g-due${isOverdue?' overdue':''}" style="left:${dueX}px">${fmtShort(t.due)}</div>`;
       }
 
-      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtShort(t.startDate):''}`;
+      // Completed marker at completion date
+      let doneHTML='';
+      if(t.status==='Done'&&t.completedDate&&dayIdx[t.completedDate]!=null){
+        const doneX=dayIdx[t.completedDate]*DAY_W+DAY_W/2-11;
+        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtShort(t.completedDate)}">✓</div>`;
+      }
+
+      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtShort(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtShort(t.completedDate):''}`;
       rowsHTML+=`<div class="gr-row">${makeCells()}
         <div class="g-bar ${barCls(t.status)}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
-        ${dueHTML}
+        ${doneHTML}${dueHTML}
       </div>`;
     }
   }
