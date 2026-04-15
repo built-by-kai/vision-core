@@ -39,16 +39,38 @@ export default async function handler(req, res) {
 
     // ── Quotations by status ─────────────────────────────────────────────────
     const qStatus  = { Draft: 0, Issued: 0, Approved: 0, Rejected: 0 }
-    const pkgCount = {}
 
     for (const q of quotes) {
       const p = q.properties
       const s = p[statusField]?.status?.name || p[statusField]?.select?.name || ""
       if (s in qStatus) qStatus[s]++
-      if (s === "Approved") {
-        const raw = plain(p[packageField]) || ""
+    }
+
+    // ── Top products from Proposals (has OS Type) + Quotation fallback ────────
+    const pkgCount = {}
+    const osTypeField = resolveField(client, "OS_TYPE_FIELD", "OS Type")
+
+    // Primary: count from proposals (Accepted, Quotation Issued, etc.)
+    for (const pr of proposals) {
+      const p = pr.properties
+      const s = p[statusField]?.select?.name || ""
+      // Count proposals that converted (Accepted, Quotation Issued, or any non-Draft/Rejected)
+      if (s === "Accepted" || s === "Quotation Issued" || s === "Won") {
+        const raw = plain(p[osTypeField]) || plain(p[packageField]) || ""
         const pkg = normalisePkg(raw)
         if (pkg) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
+      }
+    }
+
+    // Fallback: if quotations DB has Package Type, count Approved quotes too
+    for (const q of quotes) {
+      const p = q.properties
+      const s = p[statusField]?.status?.name || p[statusField]?.select?.name || ""
+      if (s === "Approved") {
+        const raw = plain(p[packageField]) || plain(p[osTypeField]) || ""
+        const pkg = normalisePkg(raw)
+        if (pkg && !pkgCount[pkg]) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
+        else if (pkg) pkgCount[pkg]++
       }
     }
 
