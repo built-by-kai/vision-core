@@ -70,13 +70,18 @@ export default async function handler(req, res) {
     for (const t of tasks) {
       const p = t.properties
       const id = strip(t.id)
+      // Assignee: pick from "Assigned To" or "Assignee" people field
+      const assignees = (p["Assigned To"]?.people || p.Assignee?.people || [])
+        .map(u => u.name || u.person?.email?.split("@")[0] || "")
+        .filter(Boolean)
       taskMap[id] = {
         name:       plain(p["Task Name"]?.title || []) || "",
         status:     p.Status?.status?.name || p.Status?.select?.name || "Not Started",
         priority:   p.Priority?.select?.name || "",
         phaseId:    strip(p.Phase?.relation?.[0]?.id || ""),
-        phaseStage: p["Phase Stage"]?.select?.name || "",  // fallback when Phase relation is empty
+        phaseStage: p["Phase Stage"]?.select?.name || "",
         due:        p["Due Date"]?.date?.start || null,
+        assignees,
       }
       // Build reverse project → tasks map from task's Project relation
       for (const rel of (p.Project?.relation || [])) {
@@ -312,6 +317,7 @@ export default async function handler(req, res) {
             priority: t.priority,
             phase: t.phaseStage || "",
             due: t.due,
+            assignees: t.assignees || [],
             created: null, // filled below
           })
         }
