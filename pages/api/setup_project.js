@@ -36,6 +36,10 @@ const ADDON_NAMES = Object.fromEntries(
   Object.entries(ADDON_SLUGS).map(([slug, name]) => [name, slug])
 )
 
+// ─── Page icons ──────────────────────────────────────────────────────────────
+const PHASE_ICON  = { type: "icon", icon: { name: "pin",           color: "gray" } }
+const TASK_ICON   = { type: "icon", icon: { name: "circle-dashed", color: "gray" } }
+
 // ─── Date helpers ────────────────────────────────────────────────────────────
 const LENGTH_DAYS = {
   "Under 2 weeks": 14,
@@ -327,9 +331,10 @@ async function setup(payload) {
     let phaseId = existingPhaseMap[phaseNo] || null
 
     if (!phaseId) {
-      // Create new phase
+      // Create new phase (with pin icon)
       const created = await createPage({
         parent: { database_id: DB.PHASES },
+        icon: PHASE_ICON,
         properties: {
           "Phase Name":   { title: [{ text: { content: phaseName } }] },
           "Phase No.":    { number: phaseNo },
@@ -343,13 +348,23 @@ async function setup(payload) {
       phaseId = created.id.replace(/-/g, "")
       console.log(`[setup_project] Created ${phaseName} → ${phaseId}`)
     } else {
-      // Reuse existing — update name, dates, deliverables to match template
-      await patchPage(phaseId, {
+      // Reuse existing — update name, dates, deliverables, icon to match template
+      const patchBody = {
         "Phase Name":   { title: [{ text: { content: phaseName } }] },
         "Start Date":   { date: { start: phStart } },
         "Due Date":     { date: { start: phEnd } },
         ...(deliverables ? { "Deliverables": { rich_text: [{ text: { content: deliverables } }] } } : {}),
-      }, token).catch(() => {})
+      }
+      // patchPage only sends properties — also set icon via raw fetch
+      const res = await fetch(`https://api.notion.com/v1/pages/${phaseId}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization":  `Bearer ${token}`,
+          "Notion-Version": "2022-06-28",
+          "Content-Type":   "application/json",
+        },
+        body: JSON.stringify({ icon: PHASE_ICON, properties: patchBody }),
+      }).catch(() => {})
       console.log(`[setup_project] Reusing ${phaseName} → ${phaseId}`)
     }
 
@@ -359,6 +374,17 @@ async function setup(payload) {
   const resolvedPhases = await Promise.all(phasePromises)
   resolvedPhases.sort((a, b) => a.no - b.no)
 
+  // ── Build phase date lookup (for task due date calculation) ──
+  const phaseDates = {}
+  for (const phase of resolvedPhases) {
+    const pt = phaseTemplates.find(t => (t.properties["Phase No."]?.number) === phase.no)
+    const idx = pt ? phaseTemplates.indexOf(pt) : 0
+    phaseDates[phase.no] = {
+      start: addDays(startDate, Math.round(totalDays * (idx / totalPhases))),
+      end:   addDays(startDate, Math.round(totalDays * ((idx + 1) / totalPhases))),
+    }
+  }
+
   // ── Build sub-item task bodies ────────────────────────────────────────────
   const allTaskBodies = []
   const taskBreakdown = {}
@@ -367,13 +393,23 @@ async function setup(payload) {
     const tasks = taskMap[phase.no] || []
     taskBreakdown[`phase_${phase.no}`] = tasks.length
 
-    for (const task of tasks) {
+    const pd = phaseDates[phase.no] || { start: startDate, end: targetDate }
+    const phaseDays = Math.max(1, Math.round(
+      (new Date(pd.end) - new Date(pd.start)) / (1000 * 60 * 60 * 24)
+    ))
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i]
+      // Spread task due dates evenly across the phase's time window
+      const taskDueDate = addDays(pd.start, Math.round(phaseDays * ((i + 1) / tasks.length)))
+
       const props = {
         "Phase Name":   { title: [{ text: { content: task.name } }] },
         "Status":       { select: { name: "Not Started" } },
         "Phase No.":    { number: phase.no },
         "Project":      { relation: [{ id: projectId }] },
         "Parent item":  { relation: [{ id: phase.id }] },
+        "Due Date":     { date: { start: taskDueDate } },
       }
       // Store deliverables / priority info in Notes if present
       const noteParts = []
@@ -383,7 +419,11 @@ async function setup(payload) {
         props["Notes"] = { rich_text: [{ text: { content: noteParts.join(" · ") } }] }
       }
 
-      allTaskBodies.push({ parent: { database_id: DB.PHASES }, properties: props })
+      allTaskBodies.push({
+        parent: { database_id: DB.PHASES },
+        icon: TASK_ICON,
+        properties: props,
+      })
     }
   }
 
