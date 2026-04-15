@@ -676,8 +676,57 @@ async function detectAction(payload) {
   return "setup"
 }
 
+// ─── HTML result page (for browser-based advance via URL click) ─────────────
+function resultHTML(result) {
+  const ok = result.status === "advanced"
+  const blocked = result.status === "blocked"
+  const bg = ok ? "#0a0a0a" : blocked ? "#0a0a0a" : "#1a0a0a"
+  const accent = ok ? "#AAFF00" : blocked ? "#FBBF24" : "#FF4444"
+  const icon = ok ? "✓" : blocked ? "⚠" : "—"
+
+  let title = "", msg = ""
+  if (ok) {
+    title = `${result.task}`
+    msg = `${result.from} → <strong style="color:${accent}">${result.to}</strong>`
+    if (result.phase_update) msg += `<br><span style="opacity:.5">Phase → ${result.phase_update}</span>`
+  } else if (blocked) {
+    title = "Blocked"
+    const blockerList = (result.blockers || []).map(b => `<li>${b.name} <span style="opacity:.4">(${b.status})</span></li>`).join("")
+    msg = `<strong>${result.task}</strong> can't be completed yet.<br><ul style="text-align:left;margin-top:8px;padding-left:18px;list-style:disc">${blockerList}</ul>`
+  } else {
+    title = result.task || "No change"
+    msg = result.message || "Task is already complete or has no next step."
+  }
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Satoshi',sans-serif;background:${bg};color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.card{background:#191919;border:1px solid ${accent}22;border-radius:16px;padding:40px;max-width:420px;text-align:center;width:100%}
+.icon{width:56px;height:56px;border-radius:50%;background:${accent}18;color:${accent};display:inline-flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;margin-bottom:16px}
+h1{font-size:18px;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
+p{font-size:14px;color:rgba(255,255,255,.6);line-height:1.6}
+ul{color:rgba(255,255,255,.5);font-size:13px;line-height:1.8}
+.hint{margin-top:20px;font-size:12px;color:rgba(255,255,255,.25)}
+</style></head>
+<body><div class="card"><div class="icon">${icon}</div><h1>${title}</h1><p>${msg}</p><p class="hint">You can close this tab and return to Notion.</p></div></body></html>`
+}
+
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  // GET with ?advance=<page_id> → browser-based advance (URL formula click)
+  if (req.method === "GET" && req.query.advance) {
+    try {
+      const result = await advanceTask({ page_id: req.query.advance })
+      return res.setHeader("Content-Type", "text/html").status(200).send(resultHTML(result))
+    } catch (e) {
+      console.error("[setup_project] GET advance:", e)
+      return res.setHeader("Content-Type", "text/html").status(200).send(
+        resultHTML({ status: "error", task: "Error", message: e.message })
+      )
+    }
+  }
+
+  // GET without params → health check
   if (req.method === "GET") {
     return res.json({ service: "Opxio — Setup Project (template-driven)", status: "ready" })
   }
