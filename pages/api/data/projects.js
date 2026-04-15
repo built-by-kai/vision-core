@@ -1,6 +1,7 @@
 // /api/data/projects — token-authenticated
-// Returns project counts, active builds with per-phase task breakdowns
-import { queryDB, plain, hdrs, DB } from "../../../lib/notion"
+// GET: Returns project counts, active builds with per-phase task breakdowns
+// POST: Task actions (start_task, complete_task)
+import { queryDB, plain, hdrs, patchPage, DB } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 async function fetchPageTitle(pageId, token) {
@@ -23,6 +24,49 @@ async function fetchPageTitle(pageId, token) {
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
   res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-widget-token")
+
+  // ── POST: Task actions (start_task, complete_task) ────────────────────────
+  if (req.method === "POST") {
+    try {
+      const accessToken = req.query.token || req.headers["x-widget-token"]
+      if (!accessToken) return res.status(401).json({ error: "Missing token" })
+      const client = await getClientByToken(accessToken)
+      if (!client) return res.status(403).json({ error: "Invalid token" })
+      const notionToken = getNotionToken(client)
+
+      const { action, taskId } = req.body || {}
+      if (!action || !taskId) return res.status(400).json({ error: "Missing action or taskId" })
+
+      const todayISO = new Date().toISOString().split("T")[0]
+
+      if (action === "start_task") {
+        // Set Start Date + Status → In Progress
+        await patchPage(taskId, {
+          "Start Date": { date: { start: todayISO } },
+          "Status":     { status: { name: "In Progress" } },
+        }, notionToken)
+        return res.status(200).json({ ok: true, action: "start_task", date: todayISO })
+      }
+
+      if (action === "complete_task") {
+        // Set Completed Date + Status → Done
+        await patchPage(taskId, {
+          "Completed Date": { date: { start: todayISO } },
+          "Status":         { status: { name: "Done" } },
+        }, notionToken)
+        return res.status(200).json({ ok: true, action: "complete_task", date: todayISO })
+      }
+
+      return res.status(400).json({ error: "Unknown action: " + action })
+    } catch (err) {
+      console.error("projects POST:", err)
+      return res.status(500).json({ error: err.message })
+    }
+  }
+
+  // ── GET: Project data ─────────────────────────────────────────────────────
   res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120")
 
   try {
@@ -85,6 +129,8 @@ export default async function handler(req, res) {
         phaseId:    strip(p.Phase?.relation?.[0]?.id || ""),
         phaseStage: p["Phase Stage"]?.select?.name || "",
         due:        p["Due Date"]?.date?.start || null,
+        startDate:  p["Start Date"]?.date?.start || null,
+        completedDate: p["Completed Date"]?.date?.start || null,
         assignees,
       }
       // Build reverse project → tasks map from task's Project relation
@@ -321,6 +367,8 @@ export default async function handler(req, res) {
             priority: t.priority,
             phase: t.phaseStage || "",
             due: t.due,
+            startDate: t.startDate || null,
+            completedDate: t.completedDate || null,
             assignees: t.assignees || [],
             created: null, // filled below
           })
