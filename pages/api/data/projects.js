@@ -226,6 +226,8 @@ export default async function handler(req, res) {
         plannedStart: p["Planned Start"]?.date?.start || null,
         startDate:  p["Start Date"]?.date?.start || null,
         completedDate: p["Completed Date"]?.date?.start || null,
+        milestone:  p["Milestone"]?.checkbox || false,
+        blockedBy:  (p["Blocked by"]?.relation || []).map(r => strip(r.id)),
         assignees,
       }
       // Build reverse project → tasks map from task's Project relation
@@ -484,6 +486,8 @@ export default async function handler(req, res) {
             plannedStart: t.plannedStart || null,
             startDate: t.startDate || null,
             completedDate: t.completedDate || null,
+            milestone: t.milestone || false,
+            blockedBy: t.blockedBy || [],
             assignees: t.assignees || [],
             created: null, // filled below
           })

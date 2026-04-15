@@ -151,6 +151,21 @@ body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04)
 /* Overdue — task past due date and not done */
 .b-Overdue{background:linear-gradient(90deg,var(--amber),var(--red));}
 
+/* ── Milestone diamond ── */
+.g-ms{position:absolute;top:11px;width:20px;height:20px;z-index:3;cursor:default;}
+.g-ms-inner{width:12px;height:12px;transform:rotate(45deg);margin:4px auto 0;border-radius:2px;}
+.ms-Done{background:var(--g);}
+.ms-InProgress{background:var(--amber);}
+.ms-Blocked{background:var(--red);}
+.ms-NotStarted{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.1);}
+body.light .ms-NotStarted{background:rgba(0,0,0,.1);border-color:rgba(0,0,0,.08);}
+.ms-Overdue{background:var(--red);}
+
+/* ── Dependency connector lines ── */
+.g-dep-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;}
+.g-dep-line{fill:none;stroke:rgba(255,255,255,.12);stroke-width:1.5;marker-end:url(#arrow);}
+body.light .g-dep-line{stroke:rgba(0,0,0,.1);}
+
 .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.4;z-index:2;pointer-events:none;}
 
 .empty{display:flex;align-items:center;justify-content:center;height:100%;width:100%;font-size:13px;color:rgba(255,255,255,.18);}
@@ -180,6 +195,8 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
   <div class="leg-i"><div class="leg-bar b-Blocked"></div><span class="leg-l">Blocked</span></div>
   <div class="leg-i"><div class="leg-bar b-NotStarted" style="border:1px solid rgba(255,255,255,.06)"></div><span class="leg-l">Not Started</span></div>
   <div class="leg-i"><div class="leg-bar b-Overdue"></div><span class="leg-l">Overdue</span></div>
+  <div class="leg-i"><div style="width:12px;height:12px;transform:rotate(45deg);border-radius:2px;background:var(--g);"></div><span class="leg-l">Milestone</span></div>
+  <div class="leg-i"><svg width="18" height="10"><path d="M0 5 L14 5" stroke="rgba(255,255,255,.25)" stroke-width="1.5" fill="none"/><polygon points="14,2 18,5 14,8" fill="rgba(255,255,255,.25)"/></svg><span class="leg-l">Dependency</span></div>
 </div>
 
 <div class="gantt-outer">
@@ -420,8 +437,10 @@ function renderGantt(){
       } else if(isIP||t.status==='Blocked'){
         actionHTML=`<button class="gl-complete" onclick="completeTask('${t.id}',this)" title="Mark Complete">✓</button>`;
       }
+      const msIcon=t.milestone?'<div style="width:8px;height:8px;transform:rotate(45deg);border-radius:1px;background:var(--g);flex-shrink:0;margin-right:2px;"></div>':'';
       leftHTML+=`<div class="gl-task">
         <div class="gl-pri p-${(t.priority||'None').replace(/\s/g,'')}"></div>
+        ${msIcon}
         <div class="gl-name${isDone?' s-Done':''}" title="${esc(t.name)}">${esc(t.name)}</div>
         ${actionHTML}
         ${avatarHTML(t.assignees)}
@@ -439,25 +458,75 @@ function renderGantt(){
     return days.map(iso=>{const d=new Date(iso+'T00:00:00');return`<div class="gr-cell${iso===today?' today-col':''}${d.getDay()%6===0?' wknd-col':''}"></div>`;}).join('');
   }
 
+  // Build row index map for dependency lines
+  const ROW_H=42, PH_H=32;
   let rowsHTML='';
+  let rowIdx=0;
+  const taskRowMap={}; // taskId → {row, barMidX, barEndX}
   for(const row of flatRows){
     if(row.type==='phase'){
       rowsHTML+=`<div class="gr-phase-row">${makeCells()}</div>`;
+      rowIdx++;
     } else {
       const t=row.data;
-      // Single bar: Planned Start → Due Date
       let si=dayIdx[t._barStart]??0, ei=dayIdx[t._barEnd]??(si+1);
       if(ei<si) ei=si;
-      const barLeft=si*DAY_W+3;
-      const barWidth=Math.max((ei-si+1)*DAY_W-6,18);
       const cls=barCls(t.status,t._overdue);
+      const tooltip=`${esc(t.name)}${t.milestone?' ◆ Milestone':''}\nStatus: ${t.status}${t._overdue?'  ⚠ OVERDUE':''}${t.plannedStart?'\nPlanned Start: '+fmtShort(t.plannedStart):''}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nActual Start: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
 
-      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t._overdue?'  ⚠ OVERDUE':''}${t.plannedStart?'\nPlanned Start: '+fmtShort(t.plannedStart):''}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nActual Start: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
-      rowsHTML+=`<div class="gr-row">${makeCells()}
-        <div class="g-bar ${cls}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
-      </div>`;
+      if(t.milestone){
+        // Diamond at the due date (or bar end)
+        const msX=ei*DAY_W+DAY_W/2-10;
+        rowsHTML+=`<div class="gr-row">${makeCells()}
+          <div class="g-ms" style="left:${msX}px;" title="${tooltip}"><div class="g-ms-inner ms-${t._overdue?'Overdue':t.status.replace(/\s/g,'')}"></div></div>
+        </div>`;
+        taskRowMap[t.id]={row:rowIdx,x:msX+10};
+      } else {
+        const barLeft=si*DAY_W+3;
+        const barWidth=Math.max((ei-si+1)*DAY_W-6,18);
+        rowsHTML+=`<div class="gr-row">${makeCells()}
+          <div class="g-bar ${cls}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
+        </div>`;
+        taskRowMap[t.id]={row:rowIdx,x:barLeft+barWidth};
+      }
+      rowIdx++;
     }
   }
+
+  // Dependency connector SVG lines
+  let depPaths='';
+  // Count phase rows before each task row for accurate Y calc
+  let phaseRowsBefore=0;
+  const rowYMap={};
+  let ri=0;
+  for(const row of flatRows){
+    if(row.type==='phase'){rowYMap[ri]=phaseRowsBefore*PH_H+(ri-phaseRowsBefore)*ROW_H+PH_H/2;phaseRowsBefore++;ri++;continue;}
+    rowYMap[ri]=phaseRowsBefore*PH_H+(ri-phaseRowsBefore)*ROW_H+ROW_H/2;
+    ri++;
+  }
+  for(const row of flatRows){
+    if(row.type!=='task') continue;
+    const t=row.data;
+    if(!t.blockedBy||!t.blockedBy.length) continue;
+    const toInfo=taskRowMap[t.id];
+    if(!toInfo) continue;
+    const toY=rowYMap[toInfo.row]||0;
+    // Bar start X for this task
+    const tsi=dayIdx[t._barStart]??0;
+    const toX=tsi*DAY_W+3;
+    for(const depId of t.blockedBy){
+      const fromInfo=taskRowMap[depId];
+      if(!fromInfo) continue;
+      const fromY=rowYMap[fromInfo.row]||0;
+      const fromX=fromInfo.x;
+      // Draw an L-shaped connector: horizontal from bar end, then vertical, then horizontal to bar start
+      const midX=fromX+12;
+      depPaths+=`<path class="g-dep-line" d="M${fromX},${fromY} L${midX},${fromY} L${midX},${toY} L${toX},${toY}"/>`;
+    }
+  }
+  const depSVG=depPaths?`<svg class="g-dep-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arrow" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><polygon points="0,0 6,3 0,6" fill="rgba(255,255,255,.2)"/></marker></defs>
+    ${depPaths}</svg>`:'';
 
   const todayI=dayIdx[today];
   const todayLine=todayI!=null?`<div class="today-line" style="left:${todayI*DAY_W+DAY_W/2}px;"></div>`:'';
@@ -468,7 +537,7 @@ function renderGantt(){
       <div style="min-width:${totalW}px;">
         <div class="gr-month-row">${monthHTML}</div>
         <div class="gr-day-row">${dayHTML}</div>
-        <div style="position:relative;">${rowsHTML}${todayLine}</div>
+        <div style="position:relative;">${rowsHTML}${depSVG}${todayLine}</div>
       </div>
     </div>`;
 
