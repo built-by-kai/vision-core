@@ -70,7 +70,7 @@ body.light .pc-track{background:rgba(0,0,0,.08);}
 .pc-pct{font-size:13px;font-weight:900;color:var(--g);width:36px;text-align:right;flex-shrink:0;}
 
 /* ── MID: TASK SUMMARY ── */
-.pc-tasks{display:flex;gap:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
+.pc-tasks{display:flex;gap:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:14px;flex-wrap:wrap;}
 body.light .pc-tasks{border-bottom-color:rgba(0,0,0,.06);}
 .tk{display:flex;align-items:center;gap:5px;}
 .tk-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
@@ -82,17 +82,15 @@ body.light .pc-tasks{border-bottom-color:rgba(0,0,0,.06);}
 .tk-lbl{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.3);}body.light .tk-lbl{color:rgba(0,0,0,.3);}
 .tk-total{margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);}body.light .tk-total{color:rgba(0,0,0,.2);}
 
-/* ── PHASE TIMELINE ── */
-.ph-timeline{display:flex;align-items:stretch;gap:0;position:relative;}
-.ph-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;min-width:0;padding:0 4px;}
+/* ── PHASE LIST (Vertical) ── */
+.ph-list{display:flex;flex-direction:column;gap:0;}
+.ph-row{display:flex;align-items:center;gap:12px;padding:10px 0;position:relative;}
+.ph-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04);}
+body.light .ph-row:not(:last-child){border-bottom-color:rgba(0,0,0,.05);}
 
-/* Connector line between steps */
-.ph-step:not(:last-child)::after{content:'';position:absolute;top:11px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:rgba(255,255,255,.06);}
-body.light .ph-step:not(:last-child)::after{background:rgba(0,0,0,.07);}
-.ph-step.done:not(:last-child)::after{background:var(--g);}
-.ph-step.active:not(:last-child)::after{background:linear-gradient(90deg, var(--g) 40%, rgba(255,255,255,.06) 100%);}
-
-.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;}
+/* Vertical connector line */
+.ph-left{display:flex;flex-direction:column;align-items:center;position:relative;width:28px;flex-shrink:0;}
+.ph-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;}
 .phd-done{background:var(--g);color:#111;}
 .phd-active{background:#191919;color:var(--g);border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
 body.light .phd-active{background:#fff;}
@@ -102,19 +100,46 @@ body.light .phd-review{background:#fff;}
 body.light .phd-ns{background:rgba(0,0,0,.02);color:rgba(0,0,0,.18);border-color:rgba(0,0,0,.08);}
 .phd-hold{background:rgba(255,255,255,.04);color:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.12);}
 
-.ph-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-body.light .ph-label{color:rgba(0,0,0,.45);}
-.ph-step.active .ph-label{color:var(--g);}
-.ph-step.done .ph-label{color:rgba(255,255,255,.3);}
-body.light .ph-step.done .ph-label{color:rgba(0,0,0,.25);}
+.ph-body{flex:1;min-width:0;}
+.ph-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.ph-name{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .ph-name{color:#111;}
+.ph-row.done .ph-name{color:rgba(255,255,255,.35);}
+body.light .ph-row.done .ph-name{color:rgba(0,0,0,.3);}
+.ph-row.active .ph-name{color:var(--g);}
 
-.ph-count{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.25);margin-top:2px;}
-body.light .ph-count{color:rgba(0,0,0,.2);}
-.ph-step.active .ph-count{color:var(--g);}
+.ph-badge{font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase;flex-shrink:0;}
+.badge-done{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.badge-active{background:var(--gm);color:var(--g);border:1px solid var(--gb);box-shadow:0 0 4px rgba(170,255,0,.15);}
+.badge-review{background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
+.badge-ns{background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.06);}
+body.light .badge-ns{background:rgba(0,0,0,.03);color:rgba(0,0,0,.2);border-color:rgba(0,0,0,.06);}
+.badge-hold{background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);border:1px dashed rgba(255,255,255,.1);}
 
-.ph-due{font-size:8px;font-weight:600;color:rgba(255,255,255,.18);margin-top:1px;}
-body.light .ph-due{color:rgba(0,0,0,.15);}
+.ph-due{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.2);margin-left:4px;}
+body.light .ph-due{color:rgba(0,0,0,.18);}
 .ph-due.overdue{color:var(--red);}
+
+/* Task bar inside phase row */
+.ph-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:3px;}
+.ph-bar{flex:1;max-width:220px;height:4px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;display:flex;}
+body.light .ph-bar{background:rgba(0,0,0,.06);}
+.bar-done{height:4px;background:var(--g);transition:width .6s;}
+.bar-ip{height:4px;background:var(--amber);transition:width .6s;}
+.bar-blocked{height:4px;background:var(--red);transition:width .6s;}
+.bar-ns{height:4px;background:rgba(255,255,255,.08);transition:width .6s;}
+body.light .bar-ns{background:rgba(0,0,0,.06);}
+
+.ph-counts{font-size:9px;font-weight:700;color:rgba(255,255,255,.25);white-space:nowrap;}
+body.light .ph-counts{color:rgba(0,0,0,.22);}
+.ph-row.active .ph-counts{color:rgba(255,255,255,.45);}
+body.light .ph-row.active .ph-counts{color:rgba(0,0,0,.4);}
+
+.ph-right{flex-shrink:0;text-align:right;min-width:40px;}
+.ph-pct{font-size:12px;font-weight:900;color:rgba(255,255,255,.18);}
+body.light .ph-pct{color:rgba(0,0,0,.15);}
+.ph-row.active .ph-pct{color:var(--g);}
+.ph-row.done .ph-pct{color:rgba(170,255,0,.4);}
 
 /* No phases fallback */
 .no-phases{padding:8px 0;text-align:center;font-size:10px;color:rgba(255,255,255,.15);}
@@ -172,11 +197,35 @@ function phDotClass(status){
   if(status==='On Hold')    return 'phd-hold';
   return 'phd-ns';
 }
-function phStepClass(status){
+function phRowClass(status){
   if(status==='Done')       return 'done';
   if(status==='In Progress')return 'active';
   if(status==='Review')     return 'review';
   return '';
+}
+function badgeClass(status){
+  if(status==='Done')       return 'badge-done';
+  if(status==='In Progress')return 'badge-active';
+  if(status==='Review')     return 'badge-review';
+  if(status==='On Hold')    return 'badge-hold';
+  return 'badge-ns';
+}
+function badgeLabel(status){
+  if(status==='Done')       return 'Done';
+  if(status==='In Progress')return 'Active';
+  if(status==='Review')     return 'Review';
+  if(status==='On Hold')    return 'Hold';
+  return 'Pending';
+}
+
+function taskBar(tc){
+  if(!tc||!tc.total) return '';
+  const t=tc.total;
+  const dW=(tc.done/t*100).toFixed(1);
+  const ipW=(tc.inProgress/t*100).toFixed(1);
+  const bW=(tc.blocked/t*100).toFixed(1);
+  const nsW=(tc.notStarted/t*100).toFixed(1);
+  return `<div class="ph-bar"><div class="bar-done" style="width:${dW}%"></div><div class="bar-ip" style="width:${ipW}%"></div><div class="bar-blocked" style="width:${bW}%"></div><div class="bar-ns" style="width:${nsW}%"></div></div>`;
 }
 
 function renderCard(b){
@@ -188,22 +237,30 @@ function renderCard(b){
   if(b.client) subParts.push(esc(b.client));
   if(b.type) subParts.push(esc(b.type));
 
-  // Phase timeline
+  // Phase list (vertical rows)
   let phHTML='';
   if(b.phases&&b.phases.length>0){
-    phHTML='<div class="ph-timeline">'+b.phases.map(ph=>{
+    phHTML='<div class="ph-list">'+b.phases.map(ph=>{
       const tc=ph.tasks||{};
-      const cls=phStepClass(ph.status);
+      const cls=phRowClass(ph.status);
       const dotCls=phDotClass(ph.status);
+      const bgCls=badgeClass(ph.status);
+      const bgLbl=badgeLabel(ph.status);
       const ov=isOverdue(ph.due)&&ph.status!=='Done';
-      const dueStr=ph.due?(ov?'Overdue':'Due '+fmtDate(ph.due)):'';
-      // Short label: strip "Phase N — " prefix for cleaner display
-      const shortName=(ph.name||'').replace(/^Phase\s*\d+\s*[—–-]\s*/,'');
-      return`<div class="ph-step ${cls}">
-        <div class="ph-dot ${dotCls}">${ph.no??'?'}</div>
-        <div class="ph-label">${esc(shortName||ph.name)}</div>
-        <div class="ph-count">${tc.done||0}/${tc.total||0}</div>
-        ${dueStr?`<div class="ph-due${ov?' overdue':''}">${dueStr}</div>`:''}
+      const dueStr=ph.due?fmtDate(ph.due):'';
+      const phPct=tc.total>0?Math.round((tc.done/tc.total)*100):0;
+
+      return`<div class="ph-row ${cls}">
+        <div class="ph-left"><div class="ph-dot ${dotCls}">${ph.no??'?'}</div></div>
+        <div class="ph-body">
+          <div class="ph-head">
+            <span class="ph-name">${esc(ph.name)}</span>
+            <span class="ph-badge ${bgCls}">${bgLbl}</span>
+            ${dueStr?`<span class="ph-due${ov?' overdue':''}">${ov?'Overdue · ':''}${dueStr}</span>`:''}
+          </div>
+          ${tc.total>0?`<div class="ph-bar-wrap">${taskBar(tc)}<span class="ph-counts">${tc.done}/${tc.total} tasks</span></div>`:''}
+        </div>
+        <div class="ph-right"><span class="ph-pct">${phPct}%</span></div>
       </div>`;
     }).join('')+'</div>';
   } else {
