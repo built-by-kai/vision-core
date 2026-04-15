@@ -187,7 +187,7 @@ async function run(payload) {
   // Quotation has two separate relation fields:
   //   "Lead Source"  → Leads DB   (set by create_quotation.js when source is a Lead)
   //   "Deal Source"  → Deals DB   (set after Lead → Deal conversion)
-  const companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
+  let companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
   const picId     = props.PIC?.relation?.[0]?.id?.replace(/-/g, "") || null
   const leadId    = props["Lead Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   const dealId    = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
@@ -243,14 +243,34 @@ async function run(payload) {
   let projectId = existingProjectId
 
   if (!projectId) {
-    // Build project name: "Company — Package" (company first, more readable)
+    // Fallback: pull Company from Lead if Quotation doesn't have one
+    if (!companyId && leadId) {
+      try {
+        const lead = await getPage(leadId, token)
+        companyId = lead.properties.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
+      } catch {}
+    }
+    // Also try pulling Company from Lead Name (format: "CompanyName — ...")
     let companyName = ""
     if (companyId) {
       try {
         const co = await getPage(companyId, token)
-        // Companies DB title field is "Company"
         for (const v of Object.values(co.properties || {})) {
           if (v.type === "title") { companyName = plain(v.title); break }
+        }
+      } catch {}
+    }
+    // Last resort: extract company name from Lead Name if it has " — " separator
+    if (!companyName && leadId) {
+      try {
+        const lead = await getPage(leadId, token)
+        for (const v of Object.values(lead.properties || {})) {
+          if (v.type === "title") {
+            const leadTitle = plain(v.title)
+            if (leadTitle.includes(" — ")) companyName = leadTitle.split(" — ")[0].trim()
+            else if (leadTitle.includes(" - ")) companyName = leadTitle.split(" - ")[0].trim()
+            break
+          }
         }
       } catch {}
     }

@@ -361,9 +361,10 @@ async function setup(payload) {
   // Services list → store in project Notes if not already set
   const servicesList = intakeProps ? plain(intakeProps["Services List"]?.rich_text || []) : ""
 
-  // ── Update project with target date + notes ──
+  // ── Update project with target date, current phase, + notes ──
   const projectUpdates = {
     "Targeted Completion": { date: { start: projectTargetDate } },
+    "Phase":               { select: { name: "Phase 1 — Discovery & Setup" } },
   }
   if (servicesList) {
     const existingNotes = plain(projectProps.Notes?.rich_text || [])
