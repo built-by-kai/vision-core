@@ -664,7 +664,9 @@ async function advanceTask(payload) {
           if (t.properties.Status?.status?.name === "Done") doneT++
         }
         overallPct = totalT > 0 ? Math.round((doneT / totalT) * 100) : 0
+        const pctDecimal = totalT > 0 ? Math.round((doneT / totalT) * 100) / 100 : 0
         await patchPage(projectId, {
+          "Completion": { number: pctDecimal },
           "Overall Progress": { rich_text: [{ text: { content: `${overallPct}% (${doneT}/${totalT} tasks)` } }] },
         }, token).catch(() => {})
       }

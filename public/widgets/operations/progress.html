@@ -4,129 +4,100 @@
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:20px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;overflow-x:hidden;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;overflow-x:hidden;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--red:#FF6B6B;--muted:rgba(255,255,255,.4);}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--red:#FF6B6B;--muted:rgba(255,255,255,.4);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);--muted:rgba(0,0,0,.4);}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
 body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 
-.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:16px;transition:border-color .2s;}
-.card:hover{border-color:rgba(170,255,0,.08);}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:12px;}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
 
 /* ── Header ── */
-.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
-.h-left{display:flex;flex-direction:column;gap:2px;}
-.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);}
-body.light .eyebrow{color:rgba(0,0,0,.3);}
-.h-title{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;}
+.h-title{font-size:17px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 body.light .h-title{color:#111;}
-.h-right{display:flex;align-items:center;gap:8px;}
-.pill{font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.pill{font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;}
 .pill-green{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 .pill-muted{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid rgba(255,255,255,.07);}
 body.light .pill-muted{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.07);}
 
-/* ── Top Row: Ring + Active Tasks ── */
-.top-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-@media(max-width:600px){.top-row{grid-template-columns:1fr;}}
-
-/* Ring Card */
-.ring-card{padding:28px;display:flex;align-items:center;gap:24px;}
+/* ── Summary Row ── */
+.summary{display:flex;align-items:center;gap:16px;padding:16px 20px;margin-bottom:10px;}
 .ring-wrap{position:relative;flex-shrink:0;}
 .ring-svg{transform:rotate(-90deg);overflow:visible;}
-.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:8;}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:7;}
 body.light .ring-bg{stroke:rgba(0,0,0,.06);}
-.ring-fill{fill:none;stroke:var(--g);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);}
+.ring-fill{fill:none;stroke:var(--g);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);}
 .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
-.ring-pct{font-size:32px;font-weight:900;color:var(--g);letter-spacing:-1.5px;line-height:1;}
-.ring-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-top:3px;}
-body.light .ring-sub{color:rgba(0,0,0,.25);}
-.ring-stats{display:flex;flex-direction:column;gap:12px;flex:1;}
-.rs-row{display:flex;align-items:center;gap:10px;}
-.rs-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.rs-lbl{font-size:14px;font-weight:600;color:var(--muted);flex:1;}
-.rs-val{font-size:18px;font-weight:900;color:#fff;}
-body.light .rs-val{color:#111;}
-.dates-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:4px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);}
-body.light .dates-row{border-color:rgba(0,0,0,.06);}
-.date-tag{font-size:12px;font-weight:600;color:rgba(255,255,255,.3);}
+.ring-pct{font-size:22px;font-weight:900;color:var(--g);letter-spacing:-1px;line-height:1;}
+.ring-sub{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.2);margin-top:2px;}
+body.light .ring-sub{color:rgba(0,0,0,.2);}
+.stats{display:flex;flex:1;gap:12px;flex-wrap:wrap;align-items:center;}
+.stat{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:48px;}
+.stat-val{font-size:18px;font-weight:900;color:#fff;}
+body.light .stat-val{color:#111;}
+.stat-val.green{color:var(--g);}
+.stat-val.amber{color:var(--amber);}
+.stat-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;}
+body.light .stat-lbl{color:rgba(0,0,0,.3);}
+.stat-sep{width:1px;height:28px;background:rgba(255,255,255,.06);flex-shrink:0;}
+body.light .stat-sep{background:rgba(0,0,0,.06);}
+.dates{display:flex;gap:14px;margin-left:auto;flex-shrink:0;}
+.date-tag{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);}
 body.light .date-tag{color:rgba(0,0,0,.3);}
-.date-tag strong{color:rgba(255,255,255,.55);margin-right:4px;}
-body.light .date-tag strong{color:rgba(0,0,0,.45);}
+.date-tag strong{color:rgba(255,255,255,.45);margin-right:3px;}
+body.light .date-tag strong{color:rgba(0,0,0,.4);}
 
-/* ── Active Tasks Card ── */
-.tasks-card{padding:22px 24px;}
-.tc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.tc-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);}
-body.light .tc-title{color:rgba(0,0,0,.3);}
-.tc-badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;}
-
-/* ── Task Rows ── */
-.task-list{display:flex;flex-direction:column;gap:8px;}
-.task-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:12px;transition:border-color .2s;}
-.task-row:hover{border-color:rgba(170,255,0,.1);}
+/* ── Active Tasks (compact) ── */
+.active-section{margin-bottom:10px;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:0 4px;margin-bottom:6px;}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);}
+body.light .sec-lbl{color:rgba(0,0,0,.25);}
+.sec-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px;background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
+.task-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:10px;margin-bottom:4px;}
 body.light .task-row{background:rgba(0,0,0,.015);border-color:rgba(0,0,0,.04);}
-.t-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.t-info{flex:1;min-width:0;}
-.t-name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.t-name{font-size:13px;font-weight:700;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 body.light .t-name{color:#111;}
-.t-meta{font-size:12px;font-weight:600;color:rgba(255,255,255,.3);margin-top:3px;display:flex;align-items:center;gap:8px;}
-body.light .t-meta{color:rgba(0,0,0,.3);}
-.t-meta .overdue{color:var(--red);font-weight:700;}
-.t-phase-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);}
-body.light .t-phase-tag{background:rgba(0,0,0,.04);color:rgba(0,0,0,.3);}
-.t-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.avatar{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.08);object-fit:cover;}
-body.light .avatar{border-color:rgba(0,0,0,.08);}
-.avatar-placeholder{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.04);}
-body.light .avatar-placeholder{background:rgba(0,0,0,.05);color:rgba(0,0,0,.3);border-color:rgba(0,0,0,.04);}
-.t-due{font-size:12px;font-weight:700;color:rgba(255,255,255,.25);white-space:nowrap;}
+.t-due{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);white-space:nowrap;flex-shrink:0;}
 body.light .t-due{color:rgba(0,0,0,.25);}
 .t-due.overdue{color:var(--red);}
-.empty-msg{font-size:13px;color:rgba(255,255,255,.2);text-align:center;padding:20px 12px;}
+.avatar{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.08);object-fit:cover;flex-shrink:0;}
+body.light .avatar{border-color:rgba(0,0,0,.08);}
+.avatar-placeholder{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.04);flex-shrink:0;}
+body.light .avatar-placeholder{background:rgba(0,0,0,.05);color:rgba(0,0,0,.3);}
+.empty-msg{font-size:12px;color:rgba(255,255,255,.2);text-align:center;padding:12px;}
 body.light .empty-msg{color:rgba(0,0,0,.2);}
 
-/* ── Section Labels ── */
-.sec-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.22);margin:18px 0 10px;padding:0 4px;}
-body.light .sec-lbl{color:rgba(0,0,0,.25);}
-
-/* ── Phase Rows ── */
-.phases{display:flex;flex-direction:column;gap:8px;}
-.ph{padding:16px 20px;display:flex;align-items:center;gap:16px;}
-.ph-no{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;border:2.5px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);transition:all .3s;}
+/* ── Phase Rows (compact) ── */
+.phases{display:flex;flex-direction:column;gap:4px;}
+.ph{padding:10px 14px;display:flex;align-items:center;gap:12px;}
+.ph-no{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
 body.light .ph-no{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
 .ph-no.done{border-color:var(--g);color:var(--g);background:var(--gm);}
 .ph-no.active{border-color:var(--amber);color:var(--amber);background:var(--amberm);}
 .ph-info{flex:1;min-width:0;}
-.ph-name{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;}
+.ph-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;}
 body.light .ph-name{color:#111;}
-.ph-bar-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+.ph-bar-track{width:100%;height:4px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
 body.light .ph-bar-track{background:rgba(0,0,0,.05);}
-.ph-bar-fill{height:6px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.ph-bar-fill{height:4px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
 .bar-done{background:var(--g);}
 .bar-active{background:var(--amber);}
 .bar-ns{background:rgba(255,255,255,.08);}
 body.light .bar-ns{background:rgba(0,0,0,.08);}
-.ph-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;min-width:70px;}
-.ph-count{font-size:14px;font-weight:800;color:var(--muted);}
+.ph-count{font-size:12px;font-weight:800;color:var(--muted);flex-shrink:0;min-width:44px;text-align:right;}
 .ph-count .dn{color:var(--g);}
-.ph-pct{font-size:11px;font-weight:700;color:rgba(255,255,255,.2);}
-body.light .ph-pct{color:rgba(0,0,0,.2);}
-.ph-due{font-size:11px;font-weight:600;color:rgba(255,255,255,.2);margin-top:1px;}
-body.light .ph-due{color:rgba(0,0,0,.2);}
-.ph-due.overdue{color:var(--red);}
 
-/* ── Footer ── */
-.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.15);text-align:right;margin-top:12px;}
-body.light .ts{color:rgba(0,0,0,.15);}
-
-/* ── Loading / Error ── */
-.loading{text-align:center;padding:48px;color:rgba(255,255,255,.25);font-size:14px;font-weight:600;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.12);text-align:right;margin-top:8px;}
+body.light .ts{color:rgba(0,0,0,.12);}
+.loading{text-align:center;padding:40px;color:rgba(255,255,255,.25);font-size:13px;font-weight:600;}
 body.light .loading{color:rgba(0,0,0,.25);}
-.error{text-align:center;padding:48px;color:var(--red);font-size:14px;font-weight:600;}
+.error{text-align:center;padding:40px;color:var(--red);font-size:13px;font-weight:600;}
 </style></head>
 <body>
 <div id="app"><div class="loading">Loading progress…</div></div>
@@ -151,59 +122,30 @@ function fmtDateFull(iso) {
   catch { return iso; }
 }
 function isOverdue(d) { return d && new Date(d) < new Date(new Date().toISOString().split('T')[0]); }
-function initials(name) { return (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2); }
 
 function renderAvatar(a) {
   if (a.avatar) return `<img class="avatar" src="${esc(a.avatar)}" alt="${esc(a.name)}" title="${esc(a.name)}"/>`;
-  return `<div class="avatar-placeholder" title="${esc(a.name)}">${initials(a.name)}</div>`;
-}
-
-function renderTaskRow(t) {
-  const ov = isOverdue(t.dueDate) && t.status !== 'Done';
-  const dotColor = t.status === 'In Progress' ? 'var(--amber)' : t.status === 'Done' ? 'var(--g)' : 'rgba(255,255,255,.12)';
-  const avatars = (t.assignees || []).map(renderAvatar).join('');
-  const dueText = t.dueDate ? (ov ? `Overdue · ${fmtDate(t.dueDate)}` : fmtDate(t.dueDate)) : '';
-
-  return `<div class="task-row">
-    <div class="t-dot" style="background:${dotColor}"></div>
-    <div class="t-info">
-      <div class="t-name">${esc(t.name)}</div>
-      <div class="t-meta">
-        <span class="t-phase-tag">Phase ${t.phaseNo}</span>
-        ${dueText ? `<span${ov ? ' class="overdue"' : ''}>${dueText}</span>` : ''}
-      </div>
-    </div>
-    <div class="t-right">
-      ${dueText ? `<span class="t-due${ov ? ' overdue' : ''}">${dueText}</span>` : ''}
-      ${avatars || '<div class="avatar-placeholder">—</div>'}
-    </div>
-  </div>`;
+  return `<div class="avatar-placeholder" title="${esc(a.name)}">${(a.name||'?')[0]}</div>`;
 }
 
 function render(data) {
-  const { project: p, phases, activeTasks, upcomingTasks, overall: o } = data;
+  const { project: p, phases, activeTasks, overall: o } = data;
 
-  const r = 50, circ = 2 * Math.PI * r;
+  const r = 38, circ = 2 * Math.PI * r;
   const offset = circ - (circ * o.pct / 100);
 
-  // Dates
-  let datesHTML = '';
-  if (p.startDate || p.targetDate) {
-    datesHTML = '<div class="dates-row">';
-    if (p.startDate) datesHTML += `<span class="date-tag"><strong>Started</strong>${fmtDateFull(p.startDate)}</span>`;
-    if (p.targetDate) datesHTML += `<span class="date-tag"><strong>Target</strong>${fmtDateFull(p.targetDate)}</span>`;
-    datesHTML += '</div>';
-  }
-
-  // Active tasks
-  const activeHTML = activeTasks.length
-    ? activeTasks.map(t => renderTaskRow(t)).join('')
-    : '<div class="empty-msg">No tasks in progress yet</div>';
-
-  // Upcoming tasks
-  const upcomingHTML = upcomingTasks.length
-    ? upcomingTasks.map(t => renderTaskRow(t)).join('')
-    : '';
+  // Active tasks (max 3)
+  const activeSlice = activeTasks.slice(0, 3);
+  const activeHTML = activeSlice.length ? activeSlice.map(t => {
+    const ov = isOverdue(t.dueDate) && t.status !== 'Done';
+    const avatars = (t.assignees || []).slice(0,2).map(renderAvatar).join('');
+    return `<div class="task-row">
+      <div class="t-dot" style="background:var(--amber)"></div>
+      <div class="t-name">${esc(t.name)}</div>
+      <span class="t-due${ov ? ' overdue' : ''}">${t.dueDate ? fmtDate(t.dueDate) : ''}</span>
+      ${avatars || ''}
+    </div>`;
+  }).join('') : '';
 
   // Phase rows
   const phaseHTML = phases.map(ph => {
@@ -214,8 +156,6 @@ function render(data) {
     const barCls = isDone ? 'bar-done' : isActive ? 'bar-active' : 'bar-ns';
     const barW = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
     const shortName = (ph.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '');
-    const ov = isOverdue(ph.dueDate) && !isDone;
-    const dueText = ph.dueDate ? (ov ? `Overdue` : `Due ${fmtDate(ph.dueDate)}`) : '';
 
     return `<div class="card ph">
       <div class="ph-no ${noCls}">${ph.no ?? '?'}</div>
@@ -223,62 +163,54 @@ function render(data) {
         <div class="ph-name">${esc(shortName || ph.name)}</div>
         <div class="ph-bar-track"><div class="ph-bar-fill ${barCls}" style="width:${barW}%"></div></div>
       </div>
-      <div class="ph-right">
-        <span class="ph-count"><span class="dn">${t.done || 0}</span> / ${t.total || 0}</span>
-        ${dueText ? `<span class="ph-due${ov ? ' overdue' : ''}">${dueText}</span>` : ''}
-      </div>
+      <span class="ph-count"><span class="dn">${t.done || 0}</span> / ${t.total || 0}</span>
     </div>`;
   }).join('');
 
   document.getElementById('app').innerHTML = `
     <div class="header">
-      <div class="h-left">
-        <div class="eyebrow">Project Progress</div>
-        <div class="h-title">${esc(p.name || 'Project')}</div>
-      </div>
+      <div class="h-title">${esc(p.name || 'Project')}</div>
       <div class="h-right">
         ${p.package ? `<span class="pill pill-muted">${esc(p.package)}</span>` : ''}
         <span class="pill pill-green">${esc(p.currentPhase || p.status || 'Active')}</span>
       </div>
     </div>
 
-    <div class="top-row">
-      <div class="card ring-card">
-        <div class="ring-wrap">
-          <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
-            <circle class="ring-bg" cx="60" cy="60" r="${r}"/>
-            <circle class="ring-fill" cx="60" cy="60" r="${r}"
-              stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-pct">${o.pct}%</div>
-            <div class="ring-sub">Complete</div>
-          </div>
-        </div>
-        <div class="ring-stats">
-          <div class="rs-row"><div class="rs-dot" style="background:var(--g)"></div><span class="rs-lbl">Done</span><span class="rs-val">${o.done}</span></div>
-          <div class="rs-row"><div class="rs-dot" style="background:var(--amber)"></div><span class="rs-lbl">In Progress</span><span class="rs-val">${o.inProgress}</span></div>
-          <div class="rs-row"><div class="rs-dot" style="background:rgba(255,255,255,.1)"></div><span class="rs-lbl">Total</span><span class="rs-val">${o.total}</span></div>
-          ${datesHTML}
+    <div class="card summary">
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="86" height="86" viewBox="0 0 86 86">
+          <circle class="ring-bg" cx="43" cy="43" r="${r}"/>
+          <circle class="ring-fill" cx="43" cy="43" r="${r}"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct">${o.pct}%</div>
+          <div class="ring-sub">Done</div>
         </div>
       </div>
-
-      <div class="card tasks-card">
-        <div class="tc-hdr">
-          <span class="tc-title">Active Tasks</span>
-          <span class="tc-badge pill-green">${activeTasks.length}</span>
-        </div>
-        <div class="task-list">${activeHTML}</div>
+      <div class="stats">
+        <div class="stat"><span class="stat-val green">${o.done}</span><span class="stat-lbl">Done</span></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><span class="stat-val amber">${o.inProgress}</span><span class="stat-lbl">Active</span></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><span class="stat-val">${o.total}</span><span class="stat-lbl">Total</span></div>
+      </div>
+      <div class="dates">
+        ${p.startDate ? `<span class="date-tag"><strong>Start</strong>${fmtDateFull(p.startDate)}</span>` : ''}
+        ${p.targetDate ? `<span class="date-tag"><strong>Target</strong>${fmtDateFull(p.targetDate)}</span>` : ''}
       </div>
     </div>
 
-    ${upcomingHTML ? `
-    <div class="sec-lbl">Up Next</div>
-    <div class="card tasks-card">
-      <div class="task-list">${upcomingHTML}</div>
+    ${activeHTML ? `
+    <div class="active-section">
+      <div class="sec-hdr">
+        <span class="sec-lbl">Active Tasks</span>
+        <span class="sec-badge">${activeTasks.length}</span>
+      </div>
+      ${activeHTML}
     </div>` : ''}
 
-    <div class="sec-lbl">Phases</div>
+    <div class="sec-hdr" style="margin-bottom:6px"><span class="sec-lbl">Phases</span></div>
     <div class="phases">${phaseHTML || '<div class="loading">No phases yet</div>'}</div>
     <div class="ts">Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
   `;
