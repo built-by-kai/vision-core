@@ -151,11 +151,7 @@ body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04)
 
 /* Due date dot marker */
 .g-due-dot{position:absolute;top:16px;width:8px;height:8px;border-radius:50%;background:var(--red);z-index:2;box-shadow:0 0 6px rgba(255,107,107,.4);transform:translateX(-4px);}
-.g-due-dot.on-time{background:rgba(255,255,255,.2);box-shadow:none;}
-body.light .g-due-dot.on-time{background:rgba(0,0,0,.12);}
-.g-due-label{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
-body.light .g-due-label{color:rgba(0,0,0,.25);}
-.g-due-label.overdue{color:var(--red);}
+/* removed on-time grey variant — all due dots are red */
 
 .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.4;z-index:2;pointer-events:none;}
 
@@ -185,8 +181,7 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
   <div class="leg-i"><div class="leg-bar b-InProgress"></div><span class="leg-l">In Progress</span></div>
   <div class="leg-i"><div class="leg-bar b-Blocked"></div><span class="leg-l">Blocked</span></div>
   <div class="leg-i"><div class="leg-bar b-NotStarted" style="border:1px solid rgba(255,255,255,.06);"></div><span class="leg-l">Not Started</span></div>
-  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div><span class="leg-l">Overdue</span></div>
-  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);"></div><span class="leg-l">Due Date</span></div>
+  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(255,107,107,.4);"></div><span class="leg-l">Due Date</span></div>
 </div>
 
 <div class="gantt-outer">
@@ -407,15 +402,16 @@ function renderGantt(){
   const flatRows=[];
   for(const ph of phaseNames){
     const phTasks=sortTasks(phaseGroups[ph]);
-    if(showPhaseHeaders) flatRows.push({type:'phase',name:ph,count:phTasks.length});
+    if(showPhaseHeaders){const phDone=phTasks.filter(t=>t.status==='Done').length;flatRows.push({type:'phase',name:ph,count:phTasks.length,done:phDone});}
     for(const t of phTasks) flatRows.push({type:'task',data:t});
   }
 
   // LEFT PANEL
-  let leftHTML=`<div class="gl-hdr">Tasks · ${tasks.length}</div>`;
+  const doneCount=tasks.filter(t=>t.status==='Done').length;
+  let leftHTML=`<div class="gl-hdr">Tasks · ${doneCount}/${tasks.length} done</div>`;
   for(const row of flatRows){
     if(row.type==='phase'){
-      leftHTML+=`<div class="gl-phase"><span class="gl-phase-name">${esc(row.name)}</span><span class="gl-phase-cnt">${row.count} tasks</span></div>`;
+      leftHTML+=`<div class="gl-phase"><span class="gl-phase-name">${esc(row.name)}</span><span class="gl-phase-cnt">${row.done}/${row.count} done</span></div>`;
     } else {
       const t=row.data;
       const isDone=t.status==='Done';
@@ -457,17 +453,11 @@ function renderGantt(){
       const barLeft=si*DAY_W+3;
       const barWidth=Math.max((ei-si+1)*DAY_W-6,18);
 
-      // Due date dot marker (red if overdue, grey if on time)
+      // Due date dot marker — always red
       let dueHTML='';
       if(t.due&&dayIdx[t.due]!=null){
         const dueX=dayIdx[t.due]*DAY_W+DAY_W/2;
-        const isOverdue=t.status!=='Done'&&t.due<today;
-        const onTime=t.status==='Done'||t.due>=today;
-        dueHTML=`<div class="g-due-dot${onTime?' on-time':''}" style="left:${dueX}px" title="Due: ${fmtShort(t.due)}"></div>`;
-        // Show date label only for overdue or next upcoming
-        if(isOverdue){
-          dueHTML+=`<div class="g-due-label overdue" style="left:${dueX+8}px">${fmtShort(t.due)}</div>`;
-        }
+        dueHTML=`<div class="g-due-dot" style="left:${dueX}px" title="Due: ${fmtShort(t.due)}"></div>`;
       }
 
       const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
