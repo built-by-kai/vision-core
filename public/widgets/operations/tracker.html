@@ -108,11 +108,11 @@ body.light .pc-tasks{border-bottom-color:rgba(0,0,0,.06);}
 .ph-timeline{display:flex;align-items:stretch;gap:0;position:relative;}
 .ph-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;min-width:0;padding:0 4px;}
 
-/* Connector line between steps */
+/* Connector line between steps — color set via inline style by JS based on task completion */
 .ph-step:not(:last-child)::after{content:'';position:absolute;top:11px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:rgba(255,255,255,.06);}
 body.light .ph-step:not(:last-child)::after{background:rgba(0,0,0,.07);}
-.ph-step.done:not(:last-child)::after{background:var(--g);}
-.ph-step.active:not(:last-child)::after{background:linear-gradient(90deg, var(--g) 40%, rgba(255,255,255,.06) 100%);}
+.ph-step.conn-full:not(:last-child)::after{background:var(--g);}
+.ph-step.conn-partial:not(:last-child)::after{background:linear-gradient(90deg, var(--g) var(--conn-pct), rgba(255,255,255,.06) var(--conn-pct));}
 
 .ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;color:var(--g);}
 .phd-done{background:var(--g);color:#111;}
@@ -242,9 +242,18 @@ function renderCard(b){
       const dotCls=phDotClass(ph._state);
       const ov=isOverdue(ph.due)&&ph.status!=='Done';
       const dueStr=ph.due?(ov?'Overdue':'Due '+fmtDate(ph.due)):'';
+      // Connector: only fill green based on actual task completion
+      let connCls='';
+      let connStyle='';
+      if(ph._state==='done'){connCls='conn-full';}
+      else if(tc.total>0&&tc.done>0){
+        const pct=Math.round((tc.done/tc.total)*100);
+        connCls='conn-partial';
+        connStyle=`--conn-pct:${pct}%`;
+      }
       // Short label: strip "Phase N — " prefix for cleaner display
       const shortName=(ph.name||'').replace(/^Phase\s*\d+\s*[—–-]\s*/,'');
-      return`<div class="ph-step ${cls}">
+      return`<div class="ph-step ${cls} ${connCls}" style="${connStyle}">
         <div class="ph-dot ${dotCls}">${ph.no??'?'}</div>
         <div class="ph-label">${esc(shortName||ph.name)}</div>
         <div class="ph-count">${tc.done||0}/${tc.total||0}</div>
