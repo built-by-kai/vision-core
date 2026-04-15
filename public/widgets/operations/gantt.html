@@ -195,6 +195,7 @@ function toggleMode(){light=!light;document.body.classList.toggle('light',light)
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function fmtNice(iso){if(!iso)return'';const d=new Date(iso);if(isNaN(d))return iso;return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kuala_Lumpur'});}
 
 let allProjects=[], activeIdx=0, activePhase='all';
 const DAY_W=48;
@@ -257,7 +258,7 @@ async function startTask(taskId, btnEl){
     });
     const j=await r.json();
     if(j.ok){
-      showToast('Task started — '+j.date);
+      showToast('Task started — '+fmtNice(j.date));
       // Update local data and re-render
       const proj=allProjects[activeIdx];
       if(proj){
@@ -287,7 +288,7 @@ async function completeTask(taskId, btnEl){
     });
     const j=await r.json();
     if(j.ok){
-      showToast('Task completed — '+j.date);
+      showToast('Task completed — '+fmtNice(j.date));
       const proj=allProjects[activeIdx];
       if(proj){
         const t=proj.tasks.find(t=>t.id===taskId);
