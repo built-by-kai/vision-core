@@ -140,20 +140,16 @@ body.light .gr-cell{border-right-color:rgba(0,0,0,.02);}
 .gr-cell.wknd-col{background:rgba(255,255,255,.008);}
 body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 
-/* ── Track bar (ghost: created → due/end) ── */
-.g-track{position:absolute;height:18px;top:12px;border-radius:999px;z-index:1;min-width:8px;background:rgba(255,255,255,.06);cursor:default;}
-body.light .g-track{background:rgba(0,0,0,.05);}
-/* ── Fill bar (colored: started → completed/today) ── */
-.g-fill{position:absolute;height:18px;top:12px;border-radius:999px;z-index:2;min-width:6px;cursor:default;transition:opacity .15s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
-.g-fill:hover{opacity:.85!important;transform:scaleY(1.15);}
-.f-Done{background:var(--g);opacity:.9;}
-.f-InProgress{background:var(--amber);}
-.f-Blocked{background:var(--red);opacity:.9;}
-/* Not started — no fill, just track */
-
-/* Due date dot marker */
-.g-due-dot{position:absolute;top:16px;width:8px;height:8px;border-radius:50%;background:var(--red);z-index:2;box-shadow:0 0 6px rgba(255,107,107,.4);transform:translateX(-4px);}
-/* removed on-time grey variant — all due dots are red */
+/* ── Single bar: Planned Start → Due Date, colored by status ── */
+.g-bar{position:absolute;height:18px;top:12px;border-radius:999px;z-index:1;min-width:18px;cursor:default;transition:opacity .15s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.g-bar:hover{opacity:.85!important;transform:scaleY(1.15);}
+.b-Done{background:var(--g);opacity:.85;}
+.b-InProgress{background:var(--amber);}
+.b-Blocked{background:var(--red);opacity:.85;}
+.b-NotStarted{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);}
+body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04);}
+/* Overdue — task past due date and not done */
+.b-Overdue{background:linear-gradient(90deg,var(--amber),var(--red));}
 
 .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.4;z-index:2;pointer-events:none;}
 
@@ -179,11 +175,11 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
 <div class="phase-tabs" id="phase-tabs"></div>
 
 <div class="legend">
-  <div class="leg-i"><div class="leg-bar" style="background:rgba(255,255,255,.06)"></div><span class="leg-l">Planned</span></div>
-  <div class="leg-i"><div class="leg-bar" style="background:var(--g);opacity:.9"></div><span class="leg-l">Done</span></div>
-  <div class="leg-i"><div class="leg-bar" style="background:var(--amber)"></div><span class="leg-l">In Progress</span></div>
-  <div class="leg-i"><div class="leg-bar" style="background:var(--red);opacity:.9"></div><span class="leg-l">Blocked</span></div>
-  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(255,107,107,.4);"></div><span class="leg-l">Due Date</span></div>
+  <div class="leg-i"><div class="leg-bar b-Done" style="opacity:1"></div><span class="leg-l">Done</span></div>
+  <div class="leg-i"><div class="leg-bar b-InProgress"></div><span class="leg-l">In Progress</span></div>
+  <div class="leg-i"><div class="leg-bar b-Blocked"></div><span class="leg-l">Blocked</span></div>
+  <div class="leg-i"><div class="leg-bar b-NotStarted" style="border:1px solid rgba(255,255,255,.06)"></div><span class="leg-l">Not Started</span></div>
+  <div class="leg-i"><div class="leg-bar b-Overdue"></div><span class="leg-l">Overdue</span></div>
 </div>
 
 <div class="gantt-outer">
@@ -236,6 +232,7 @@ function fmtDateTime(iso){if(!iso)return'';if(!iso.includes('T'))return fmtShort
 
 
 function dotCls(s){return s==='Done'?'d-Done':s==='In Progress'?'d-InProgress':s==='Blocked'?'d-Blocked':'d-NotStarted';}
+function barCls(s,overdue){if(overdue)return'b-Overdue';return s==='Done'?'b-Done':s==='In Progress'?'b-InProgress':s==='Blocked'?'b-Blocked':'b-NotStarted';}
 
 function avatarHTML(assignees){
   if(!assignees||!assignees.length) return '';
@@ -360,42 +357,27 @@ function renderGantt(){
     const phStart=addDays(projStart,pi*daysPerPhase);
     const phTasks=phaseGroups[ph];
     phTasks.forEach((t,ti)=>{
-      const sd=toDate(t.startDate), cd=toDate(t.completedDate);
-      // Track = planned window: startDate → due date
-      // For Not Started tasks with a due date: bar sits near the due date
-      // For Not Started without due: estimate from phase position
-      let estStart, estEnd;
-      if(t.status==='Not Started'&&t.due){
-        estStart=addDays(t.due,-3);
-        estEnd=t.due;
-      } else {
-        estStart=addDays(phStart,Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase));
-        estEnd=t.due||addDays(estStart,3);
-      }
-      t._trackStart=sd||estStart;
-      t._trackEnd=t.due||estEnd;
-      if(t._trackStart>t._trackEnd) t._trackEnd=t._trackStart;
-      // Fill = actual work: started → completed (or today)
-      t._fillStart=null; t._fillEnd=null;
-      if(t.status==='Done'){
-        t._fillStart=sd||t._trackStart;
-        t._fillEnd=cd||today;
-      } else if(t.status==='In Progress'){
-        t._fillStart=sd||t._trackStart;
-        t._fillEnd=today;
-      } else if(t.status==='Blocked'){
-        t._fillStart=sd||t._trackStart;
-        t._fillEnd=today;
-      }
-      // Not Started: no fill, just the track (planned window)
-      // Extend track if actual work overran the plan
-      if(t._fillEnd&&t._fillEnd>t._trackEnd) t._trackEnd=t._fillEnd;
+      const ps=toDate(t.plannedStart), sd=toDate(t.startDate), cd=toDate(t.completedDate);
+      // Traditional gantt: single bar = Planned Start → Due Date
+      // Fallback: plannedStart → startDate → created → phase estimate
+      const estOff=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);
+      const estStart=addDays(phStart,estOff);
+      const estEnd=addDays(estStart,3);
+      t._barStart=ps||sd||t.created||estStart;
+      t._barEnd=t.due||estEnd;
+      // For done tasks: extend bar to completion if it went past due
+      if(t.status==='Done'&&cd&&cd>t._barEnd) t._barEnd=cd;
+      // For in-progress/blocked: extend bar to today if past due
+      if((t.status==='In Progress'||t.status==='Blocked')&&today>t._barEnd) t._barEnd=today;
+      if(t._barStart>t._barEnd) t._barEnd=t._barStart;
+      // Overdue flag: not done and past due date
+      t._overdue=t.status!=='Done'&&t.due&&t.due<today;
     });
   });
 
   // Date range
   let minDate=projStart,maxDate=projTarget;
-  for(const t of tasks){if(t._trackStart&&t._trackStart<minDate)minDate=t._trackStart;if(t._trackEnd&&t._trackEnd>maxDate)maxDate=t._trackEnd;}
+  for(const t of tasks){if(t._barStart&&t._barStart<minDate)minDate=t._barStart;if(t._barEnd&&t._barEnd>maxDate)maxDate=t._barEnd;}
   minDate=addDays(minDate,-2);maxDate=addDays(maxDate,4);
   const days=[];
   for(let d=new Date(minDate+'T00:00:00');d<=new Date(maxDate+'T00:00:00');d.setDate(d.getDate()+1))days.push(d.toISOString().split('T')[0]);
@@ -456,35 +438,16 @@ function renderGantt(){
       rowsHTML+=`<div class="gr-phase-row">${makeCells()}</div>`;
     } else {
       const t=row.data;
-      // Track bar (ghost): created → due
-      let tsi=dayIdx[t._trackStart]??0, tei=dayIdx[t._trackEnd]??(tsi+1);
-      if(tei<tsi) tei=tsi;
-      const trackLeft=tsi*DAY_W+3;
-      const trackWidth=Math.max((tei-tsi+1)*DAY_W-6,8);
+      // Single bar: Planned Start → Due Date
+      let si=dayIdx[t._barStart]??0, ei=dayIdx[t._barEnd]??(si+1);
+      if(ei<si) ei=si;
+      const barLeft=si*DAY_W+3;
+      const barWidth=Math.max((ei-si+1)*DAY_W-6,18);
+      const cls=barCls(t.status,t._overdue);
 
-      // Fill bar (colored): started → completed/today
-      let fillHTML='';
-      if(t._fillStart&&t._fillEnd){
-        let fsi=dayIdx[t._fillStart]??tsi, fei=dayIdx[t._fillEnd]??fsi;
-        if(fei<fsi) fei=fsi;
-        const fillLeft=fsi*DAY_W+3;
-        const fillWidth=Math.max((fei-fsi+1)*DAY_W-6,6);
-        const fcls=t.status==='Done'?'f-Done':t.status==='Blocked'?'f-Blocked':'f-InProgress';
-        fillHTML=`<div class="g-fill ${fcls}" style="left:${fillLeft}px;width:${fillWidth}px;"></div>`;
-      }
-
-      // Due date dot marker — always red
-      let dueHTML='';
-      if(t.due&&dayIdx[t.due]!=null){
-        const dueX=dayIdx[t.due]*DAY_W+DAY_W/2;
-        dueHTML=`<div class="g-due-dot" style="left:${dueX}px" title="Due: ${fmtShort(t.due)}"></div>`;
-      }
-
-      const tooltip=`${esc(t.name)}\nStatus: ${t.status}\nPlanned: ${fmtShort(t._trackStart)} → ${fmtShort(t._trackEnd)}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}${t.due?'\nDue: '+fmtShort(t.due):''}`;
+      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t._overdue?'  ⚠ OVERDUE':''}${t.plannedStart?'\nPlanned Start: '+fmtShort(t.plannedStart):''}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nActual Start: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
       rowsHTML+=`<div class="gr-row">${makeCells()}
-        <div class="g-track" style="left:${trackLeft}px;width:${trackWidth}px;" title="${tooltip}"></div>
-        ${fillHTML}
-        ${dueHTML}
+        <div class="g-bar ${cls}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
       </div>`;
     }
   }
