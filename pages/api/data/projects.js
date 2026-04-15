@@ -64,7 +64,9 @@ export default async function handler(req, res) {
     }
 
     // Task map: taskId → { status, priority, phaseId, phaseStage, due, name }
+    // Also build reverse map: projectId → Set of taskIds (from task's Project relation)
     const taskMap = {}
+    const projTaskLookup = {}   // projectId → Set<taskId>
     for (const t of tasks) {
       const p = t.properties
       const id = strip(t.id)
@@ -75,6 +77,12 @@ export default async function handler(req, res) {
         phaseId:    strip(p.Phase?.relation?.[0]?.id || ""),
         phaseStage: p["Phase Stage"]?.select?.name || "",  // fallback when Phase relation is empty
         due:        p["Due Date"]?.date?.start || null,
+      }
+      // Build reverse project → tasks map from task's Project relation
+      for (const rel of (p.Project?.relation || [])) {
+        const pid = strip(rel.id)
+        if (!projTaskLookup[pid]) projTaskLookup[pid] = new Set()
+        projTaskLookup[pid].add(id)
       }
     }
 
@@ -106,8 +114,11 @@ export default async function handler(req, res) {
       const startDate = p["Start Date"]?.date?.start || null
       const targetDate = p["Target Date"]?.date?.start || p["Target End Date"]?.date?.start || null
 
-      // Get task IDs that belong to this project
-      const projTaskIds = new Set((p.Tasks?.relation || []).map(r => strip(r.id)))
+      // Get task IDs: merge project's Tasks relation + reverse lookup from task's Project relation
+      const projTaskIds = new Set([
+        ...(p.Tasks?.relation || []).map(r => strip(r.id)),
+        ...(projTaskLookup[projId] || []),
+      ])
 
       // Build per-phase breakdown from tasks
       // Two modes: phase relation IDs (phaseTaskMap) OR Phase Stage select (stageTaskMap)
