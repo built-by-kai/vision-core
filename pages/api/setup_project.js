@@ -341,7 +341,8 @@ async function setup(payload) {
           "Status":       { status: { name: "Not Started" } },
           "Start Date":   { date: { start: phStart } },
           "Due Date":     { date: { start: phEnd } },
-          "Project":      { relation: [{ id: projectId }] },
+          "Project":        { relation: [{ id: projectId }] },
+          "Impl. Project":  { relation: [{ id: projectId }] },
           ...(deliverables ? { "Deliverables": { rich_text: [{ text: { content: deliverables } }] } } : {}),
         },
       }, token)
@@ -407,8 +408,9 @@ async function setup(payload) {
         "Phase Name":   { title: [{ text: { content: task.name } }] },
         "Status":       { status: { name: "Not Started" } },
         "Phase No.":    { number: phase.no },
-        "Project":      { relation: [{ id: projectId }] },
-        "Parent item":  { relation: [{ id: phase.id }] },
+        "Project":        { relation: [{ id: projectId }] },
+        "Impl. Project":  { relation: [{ id: projectId }] },
+        "Parent item":    { relation: [{ id: phase.id }] },
         "Due Date":     { date: { start: taskDueDate } },
       }
       // Store deliverables / priority info in Notes if present
@@ -664,9 +666,9 @@ async function advanceTask(payload) {
           if (t.properties.Status?.status?.name === "Done") doneT++
         }
         overallPct = totalT > 0 ? Math.round((doneT / totalT) * 100) : 0
-        const pctDecimal = totalT > 0 ? Math.round((doneT / totalT) * 100) / 100 : 0
+        // "Completion" is now a native rollup (percent_checked on All Tasks → Status)
+        // Only write the text summary to Overall Progress
         await patchPage(projectId, {
-          "Completion": { number: pctDecimal },
           "Overall Progress": { rich_text: [{ text: { content: `${overallPct}% (${doneT}/${totalT} tasks)` } }] },
         }, token).catch(() => {})
       }
