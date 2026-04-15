@@ -210,25 +210,35 @@ async function setup(payload) {
     taskMap[phaseNo].push(task)
   }
 
-  // 1. Common tasks (OS Type empty, no Product Slug = shared across all OS)
-  for (const page of commonTasks) {
-    const task = extractTask(page)
-    if (task.slug) continue  // addon-specific — handle in step 4
-    if (task.phaseNo == null) continue
-    addTask(task.phaseNo, task)
+  // Each OS type in the template DB has a COMPLETE task set (Phase 0 pre-build,
+  // Phase 1 foundation, Phase 4 review, Phase 5 handover included). The "common"
+  // tasks (OS Type empty) are a generic fallback set — NOT additive fragments.
+  //
+  // Logic:
+  //   - If OS has specific tasks → use those (step 2) + source tasks (step 3)
+  //   - If OS has no specific tasks → use common tasks (step 1) as fallback
+
+  const hasOSTasks = osTasks.length > 0
+
+  // 1. Common tasks — fallback only when no OS-specific tasks exist
+  if (!hasOSTasks) {
+    for (const page of commonTasks) {
+      const task = extractTask(page)
+      if (task.slug) continue  // addon-specific — handle in step 4
+      if (task.phaseNo == null) continue
+      addTask(task.phaseNo, task)
+    }
   }
 
-  // 2. OS-specific tasks
+  // 2. OS-specific tasks (complete set for this OS type)
   for (const page of osTasks) {
     const task = extractTask(page)
     if (task.phaseNo == null) continue
     addTask(task.phaseNo, task)
   }
 
-  // 3. Source OS tasks (remapped to target phase)
-  // Only includes OS-specific tasks from the source — common tasks are already
-  // handled in step 1 by their own phase number. Adding common tasks here too
-  // would duplicate them across multiple target phases.
+  // 3. Source OS tasks (remapped to target phase for composite OS types)
+  // e.g. Business OS Phase 2 sources from Operations OS Phases 2,3
   for (const cfg of sourcePhaseConfig) {
     const srcTasks = sourceTasksByOS[cfg.sourceOS] || []
     for (const page of srcTasks) {
