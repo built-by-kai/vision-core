@@ -506,12 +506,20 @@ async function advanceTask(payload) {
   }
 
   // ── If advancing to Done, check dependencies ──
+  // Checks both "Depends On" (single relation) and "Blocked by" (dual relation)
   if (nextStatus === "Done") {
-    const depIds = (props["Depends On"]?.relation || []).map(r => r.id.replace(/-/g, ""))
-    if (depIds.length) {
+    const depIds = [
+      ...(props["Depends On"]?.relation || []),
+      ...(props["Blocked by"]?.relation || []),
+    ].map(r => r.id.replace(/-/g, ""))
+
+    // Deduplicate (same task could appear in both relations)
+    const uniqueDepIds = [...new Set(depIds)]
+
+    if (uniqueDepIds.length) {
       // Read all dependency tasks in parallel
       const deps = await Promise.all(
-        depIds.map(id => getPage(id, token).catch(() => null))
+        uniqueDepIds.map(id => getPage(id, token).catch(() => null))
       )
       const blockers = []
       for (const dep of deps) {
