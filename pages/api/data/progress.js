@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       const pp = ph.properties || {}
       const phaseNo     = pp["Phase No."]?.number ?? 99
       const phaseName   = plain(pp["Phase Name"]?.title || [])
-      const phaseStatus = pp["Status"]?.select?.name || "Not Started"
+      const phaseStatus = pp["Status"]?.status?.name || pp["Status"]?.select?.name || "Not Started"
       const startDt     = pp["Start Date"]?.date?.start || null
       const dueDt       = pp["Due Date"]?.date?.start || null
       const completedDt = pp["Completed Date"]?.date?.start || null
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         for (const t of taskPages) {
           if (!t) continue
           const tp = t.properties || {}
-          const ts = tp.Status?.select?.name || "Not Started"
+          const ts = tp.Status?.status?.name || tp.Status?.select?.name || "Not Started"
           if (ts === "Done") taskDone++
           else if (ts === "In Progress") taskInProgress++
           else taskNotStarted++

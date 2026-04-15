@@ -338,7 +338,7 @@ async function setup(payload) {
         properties: {
           "Phase Name":   { title: [{ text: { content: phaseName } }] },
           "Phase No.":    { number: phaseNo },
-          "Status":       { select: { name: "Not Started" } },
+          "Status":       { status: { name: "Not Started" } },
           "Start Date":   { date: { start: phStart } },
           "Due Date":     { date: { start: phEnd } },
           "Project":      { relation: [{ id: projectId }] },
@@ -405,7 +405,7 @@ async function setup(payload) {
 
       const props = {
         "Phase Name":   { title: [{ text: { content: task.name } }] },
-        "Status":       { select: { name: "Not Started" } },
+        "Status":       { status: { name: "Not Started" } },
         "Phase No.":    { number: phase.no },
         "Project":      { relation: [{ id: projectId }] },
         "Parent item":  { relation: [{ id: phase.id }] },
@@ -450,7 +450,7 @@ async function setup(payload) {
     }, token),
     // Set first phase to In Progress
     firstPhase
-      ? patchPage(firstPhase.id, { "Status": { select: { name: "In Progress" } } }, token)
+      ? patchPage(firstPhase.id, { "Status": { status: { name: "In Progress" } } }, token)
       : Promise.resolve(),
   ])
 
@@ -515,7 +515,7 @@ async function advanceTask(payload) {
 
   const task  = await getPage(taskId, token)
   const props = task.properties
-  const currentStatus = props.Status?.select?.name || "Not Started"
+  const currentStatus = props.Status?.status?.name || "Not Started"
   const taskName      = plain(props["Phase Name"]?.title || [])
 
   // Determine next status
@@ -557,7 +557,7 @@ async function advanceTask(payload) {
       const blockers = []
       for (const dep of deps) {
         if (!dep) continue
-        const depStatus = dep.properties.Status?.select?.name || "Not Started"
+        const depStatus = dep.properties.Status?.status?.name || "Not Started"
         if (depStatus !== "Done") {
           const depName = plain(dep.properties["Phase Name"]?.title || [])
           blockers.push({ name: depName, status: depStatus })
@@ -578,7 +578,7 @@ async function advanceTask(payload) {
 
   // ── Update task status ──
   const updates = {
-    "Status": { select: { name: nextStatus } },
+    "Status": { status: { name: nextStatus } },
   }
   // Set start date when beginning, completed date when finishing
   const today = new Date().toISOString().split("T")[0]
@@ -597,7 +597,7 @@ async function advanceTask(payload) {
   if (parentId) {
     try {
       const parent  = await getPage(parentId, token)
-      const phStatus = parent.properties.Status?.select?.name || "Not Started"
+      const phStatus = parent.properties.Status?.status?.name || "Not Started"
 
       if (nextStatus === "In Progress" && phStatus === "Not Started") {
         // First task started → phase starts
@@ -624,11 +624,11 @@ async function advanceTask(payload) {
           siblingIds.map(id => getPage(id, token).catch(() => null))
         )
         const allDone = siblings.every(s =>
-          s && (s.properties.Status?.select?.name === "Done")
+          s && (s.properties.Status?.status?.name === "Done")
         )
         if (allDone) {
           await patchPage(parentId, {
-            "Status":         { select: { name: "Done" } },
+            "Status":         { status: { name: "Done" } },
             "Completed Date": { date: { start: today } },
           }, token)
           phaseUpdate = "Done (all tasks complete)"
@@ -662,7 +662,7 @@ async function advanceTask(payload) {
         for (const t of allTasks) {
           if (!t) continue
           totalT++
-          if (t.properties.Status?.select?.name === "Done") doneT++
+          if (t.properties.Status?.status?.name === "Done") doneT++
         }
         overallPct = totalT > 0 ? Math.round((doneT / totalT) * 100) : 0
         await patchPage(projectId, {
