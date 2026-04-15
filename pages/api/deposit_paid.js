@@ -211,7 +211,6 @@ async function run(payload) {
 
         } else {
           // No existing Deal — create a new one at Building
-          const sourcedFrom = (lp.Source?.multi_select || []).map(s => ({ name: s.name }))
           const dealPage = await createPage({
             parent: { database_id: DB.DEALS },
             properties: {
@@ -223,7 +222,6 @@ async function run(payload) {
               ...(picIds.length        ? { "PIC Name":      { relation: [{ id: picIds[0]  }] } } : {}),
               ...(osInterest           ? { "Package Type":  { select:   { name: osInterest } } } : {}),
               ...(addons.length        ? { "Add-ons":       { multi_select: addons } } : {}),
-              ...(sourcedFrom.length   ? { "Source":        { multi_select: sourcedFrom } } : {}),
               ...(quotationAmount      ? { "Deal Value":    { number: quotationAmount } } : {}),
               ...(quotationId          ? { "Quotation":     { relation: [{ id: quotationId }] } } : {}),
               ...(pageId               ? { "Invoices":      { relation: [{ id: pageId }] } } : {}),
