@@ -21,13 +21,13 @@ body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0
 
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .h-right{display:flex;align-items:center;gap:6px;}
-.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
-.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 body.light .h-title{color:#111;}
-.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
-.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
 body.light .sec-lbl{color:rgba(0,0,0,.28);}
 
 /* ── STAT CARDS ── */
@@ -114,28 +114,32 @@ body.light .pri-count{color:#111;}
 .pri-pct{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);width:28px;text-align:right;flex-shrink:0;}
 body.light .pri-pct{color:rgba(0,0,0,.2);}
 
-/* ── STATUS VISUAL ── */
-.status-visual{display:flex;flex-direction:column;gap:12px;}
-.sv-bar-wrap{position:relative;height:28px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.03);display:flex;}
-body.light .sv-bar-wrap{background:rgba(0,0,0,.03);}
-.sv-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;transition:width .8s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;}
-.sv-seg span{position:relative;z-index:1;white-space:nowrap;}
-.sv-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
-.sv-leg{display:flex;align-items:center;gap:6px;}
-.sv-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0;}
-.sv-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);}
-body.light .sv-lbl{color:rgba(0,0,0,.35);}
-.sv-val{font-size:10px;font-weight:800;color:#fff;}
-body.light .sv-val{color:#111;}
+/* ── STATUS BARS (same style as priority) ── */
+.status-bars{display:flex;flex-direction:column;gap:10px;}
+.st-row{display:flex;align-items:center;gap:10px;}
+.st-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.st-label{font-size:11px;font-weight:700;width:70px;flex-shrink:0;color:rgba(255,255,255,.5);}
+body.light .st-label{color:rgba(0,0,0,.4);}
+.st-track{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;position:relative;}
+body.light .st-track{background:rgba(0,0,0,.05);}
+.st-fill{height:8px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.st-count{font-size:12px;font-weight:800;color:#fff;width:28px;text-align:right;flex-shrink:0;}
+body.light .st-count{color:#111;}
 
-/* Status detail cards */
-.status-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px;}
-@media(max-width:600px){.status-cards{grid-template-columns:repeat(3,1fr);}}
-.sc-item{text-align:center;padding:10px 6px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);}
-body.light .sc-item{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.04);}
-.sc-val{font-size:20px;font-weight:900;line-height:1;margin-bottom:3px;}
-.sc-lbl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3);}
-body.light .sc-lbl{color:rgba(0,0,0,.3);}
+/* ── TIMELINE CHART ── */
+.tl-chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:8px 0;}
+.tl-bar-group{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;}
+.tl-bars{display:flex;gap:2px;align-items:flex-end;height:90px;width:100%;}
+.tl-col{flex:1;border-radius:4px 4px 0 0;min-width:0;transition:height .6s cubic-bezier(.4,0,.2,1);position:relative;cursor:default;}
+.tl-col:hover{opacity:.8;}
+.tl-col.c-done{background:var(--g);}
+.tl-col.c-started{background:var(--amber);}
+.tl-date{font-size:8px;font-weight:700;color:rgba(255,255,255,.2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:4px;}
+body.light .tl-date{color:rgba(0,0,0,.18);}
+.tl-legend{display:flex;gap:16px;margin-top:10px;justify-content:center;}
+.tl-leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:rgba(255,255,255,.35);}
+body.light .tl-leg{color:rgba(0,0,0,.3);}
+.tl-leg-dot{width:8px;height:8px;border-radius:3px;}
 
 .empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
 body.light .empty{color:rgba(0,0,0,.18);}
@@ -193,6 +197,17 @@ body.light .empty{color:rgba(0,0,0,.18);}
   </div>
 </div>
 
+<!-- TASK ACTIVITY CHART -->
+<div class="sec-lbl">Activity</div>
+<div class="card panel" style="margin-bottom:10px;">
+  <div class="panel-hdr">
+    <span class="panel-title">Task Activity Timeline</span>
+    <span class="panel-badge" id="tl-badge">—</span>
+  </div>
+  <div class="tl-chart" id="tl-chart"><div style="font-size:11px;color:rgba(255,255,255,.2);">No activity data yet</div></div>
+  <div class="tl-legend" id="tl-legend"></div>
+</div>
+
 <!-- BOTTOM ROW -->
 <div class="sec-lbl">Details</div>
 <div class="bot-row">
@@ -208,7 +223,7 @@ body.light .empty{color:rgba(0,0,0,.18);}
     <div class="panel-hdr">
       <span class="panel-title">Project Status</span>
     </div>
-    <div class="status-visual" id="status-visual"></div>
+    <div class="status-bars" id="status-visual"></div>
   </div>
 </div>
 
@@ -375,24 +390,66 @@ function renderPriorities(pri){
 
 function renderStatusVisual(counts){
   const items=[
-    {val:counts.active||0,lbl:'Active',color:'var(--g)',icon:'▶'},
-    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--amber)',icon:'◆'},
-    {val:counts.review||0,lbl:'In Review',color:'#60A5FA',icon:'◉'},
-    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.3)',icon:'⏸'},
-    {val:counts.done||0,lbl:'Completed',color:'var(--g)',icon:'✓'},
+    {val:counts.active||0,lbl:'Active',color:'var(--g)'},
+    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--amber)'},
+    {val:counts.review||0,lbl:'In Review',color:'#60A5FA'},
+    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.2)'},
+    {val:counts.done||0,lbl:'Completed',color:'#A78BFA'},
   ];
+  const maxVal=Math.max(...items.map(i=>i.val),1);
 
-  // Clean status cards only — no stacked bar
-  let html='<div class="status-cards">';
+  let html='<div class="status-bars">';
   items.forEach(i=>{
-    html+=`<div class="sc-item">
-      <div class="sc-val" style="color:${i.color}">${i.val}</div>
-      <div class="sc-lbl">${i.lbl}</div>
+    const w=Math.round((i.val/maxVal)*100);
+    html+=`<div class="st-row">
+      <div class="st-dot" style="background:${i.color}"></div>
+      <span class="st-label">${i.lbl}</span>
+      <div class="st-track"><div class="st-fill" style="width:${w}%;background:${i.color}"></div></div>
+      <span class="st-count">${i.val}</span>
     </div>`;
   });
   html+='</div>';
 
   document.getElementById('status-visual').innerHTML=html;
+}
+
+function renderTimeline(timeline){
+  const el=document.getElementById('tl-chart');
+  const legEl=document.getElementById('tl-legend');
+  const badgeEl=document.getElementById('tl-badge');
+  if(!timeline||!timeline.length){
+    el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;height:100%;">No activity data yet</div>';
+    legEl.innerHTML='';
+    badgeEl.textContent='—';
+    return;
+  }
+
+  // Show last 14 data points max
+  const data=timeline.slice(-14);
+  const maxVal=Math.max(...data.map(d=>Math.max(d.done||0,d.started||0)),1);
+  const totalDone=data.reduce((s,d)=>s+(d.done||0),0);
+  const totalStarted=data.reduce((s,d)=>s+(d.started||0),0);
+  badgeEl.textContent=`${totalDone} completed · ${totalStarted} started`;
+
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  el.innerHTML=data.map(d=>{
+    const hDone=maxVal>0?Math.max(Math.round(((d.done||0)/maxVal)*80),2):2;
+    const hStarted=maxVal>0?Math.max(Math.round(((d.started||0)/maxVal)*80),2):2;
+    const dt=new Date(d.date+'T00:00:00');
+    const label=dt.getDate()+' '+MON[dt.getMonth()];
+    return`<div class="tl-bar-group">
+      <div class="tl-bars">
+        <div class="tl-col c-done" style="height:${hDone}px" title="Done: ${d.done||0}"></div>
+        <div class="tl-col c-started" style="height:${hStarted}px" title="Started: ${d.started||0}"></div>
+      </div>
+      <div class="tl-date">${label}</div>
+    </div>`;
+  }).join('');
+
+  legEl.innerHTML=`
+    <div class="tl-leg"><div class="tl-leg-dot" style="background:var(--g)"></div>Completed</div>
+    <div class="tl-leg"><div class="tl-leg-dot" style="background:var(--amber)"></div>Started</div>
+  `;
 }
 
 function render(data){
@@ -403,6 +460,7 @@ function render(data){
   renderTaskRing(ov.taskStats||{});
   renderPriorities(ov.priorities||{});
   renderStatusVisual(counts);
+  renderTimeline(ov.timeline||[]);
 }
 
 async function loadData(){

@@ -91,11 +91,21 @@ body.light .gl-name{color:rgba(0,0,0,.65);}
 .gl-complete.loading{opacity:.4;pointer-events:none;}
 .gl-started{font-size:8px;font-weight:700;color:rgba(170,255,0,.35);flex-shrink:0;}
 
-/* Avatar */
-.gl-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover;border:2px solid rgba(255,255,255,.1);}
+/* Avatar with tooltip */
+.gl-avatar-wrap{position:relative;flex-shrink:0;}
+.gl-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover;border:2px solid rgba(255,255,255,.1);cursor:pointer;transition:border-color .2s;}
+.gl-avatar:hover{border-color:var(--g);}
 body.light .gl-avatar{border-color:rgba(0,0,0,.08);}
-.gl-initials{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);text-transform:uppercase;}
+body.light .gl-avatar:hover{border-color:var(--g);}
+.gl-initials{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);text-transform:uppercase;cursor:pointer;transition:border .2s,background .2s;}
+.gl-initials:hover{background:rgba(170,255,0,.15);color:var(--g);}
 body.light .gl-initials{background:rgba(0,0,0,.06);color:rgba(0,0,0,.4);}
+body.light .gl-initials:hover{background:rgba(92,153,0,.12);color:var(--g);}
+.gl-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#252525;border:1px solid var(--gb);border-radius:8px;padding:6px 12px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--g);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+.gl-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#252525;}
+body.light .gl-tooltip{background:#fff;border-color:rgba(92,153,0,.25);color:#5C9900;box-shadow:0 4px 12px rgba(0,0,0,.1);}
+body.light .gl-tooltip::after{border-top-color:#fff;}
+.gl-avatar-wrap:hover .gl-tooltip{opacity:1;}
 
 .gl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .d-Done{background:var(--g);}
@@ -226,11 +236,12 @@ function dotCls(s){return s==='Done'?'d-Done':s==='In Progress'?'d-InProgress':s
 function avatarHTML(assignees){
   if(!assignees||!assignees.length) return '';
   const a=assignees[0];
+  const tooltip=`<div class="gl-tooltip">${esc(a.name)}</div>`;
   if(a.avatar){
-    return`<img class="gl-avatar" src="${esc(a.avatar)}" alt="${esc(a.name)}" title="${esc(a.name)}"/>`;
+    return`<div class="gl-avatar-wrap"><img class="gl-avatar" src="${esc(a.avatar)}" alt="${esc(a.name)}"/>${tooltip}</div>`;
   }
   const initials=a.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-  return`<div class="gl-initials" title="${esc(a.name)}">${esc(initials)}</div>`;
+  return`<div class="gl-avatar-wrap"><div class="gl-initials">${esc(initials)}</div>${tooltip}</div>`;
 }
 
 // ── Start Task action ──

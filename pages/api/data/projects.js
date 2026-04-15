@@ -4,6 +4,20 @@
 import { queryDB, plain, hdrs, patchPage, DB } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
+function actionHTML(title, msg, ok) {
+  const bg = ok ? "#0a0a0a" : "#1a0a0a"
+  const accent = ok ? "#AAFF00" : "#FF4444"
+  const icon = ok ? "✓" : "✕"
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:${bg};color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.card{background:#191919;border:1px solid ${accent}22;border-radius:16px;padding:40px;max-width:400px;text-align:center}
+.icon{width:56px;height:56px;border-radius:50%;background:${accent}18;color:${accent};display:inline-flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;margin-bottom:16px}
+h1{font-size:20px;font-weight:700;margin-bottom:8px}p{font-size:14px;color:rgba(255,255,255,.6);line-height:1.5}
+.hint{margin-top:20px;font-size:12px;color:rgba(255,255,255,.3)}</style></head>
+<body><div class="card"><div class="icon">${icon}</div><h1>${title}</h1><p>${msg}</p><p class="hint">You can close this tab and return to Notion.</p></div></body></html>`
+}
+
 async function fetchPageTitle(pageId, token) {
   try {
     const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: hdrs(token) })
@@ -63,6 +77,38 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error("projects POST:", err)
       return res.status(500).json({ error: err.message })
+    }
+  }
+
+  // ── GET: Quick actions (do=start|complete, task=ID) ───────────────────────
+  if (req.query.do && req.query.task) {
+    try {
+      const accessToken = req.query.token || req.headers["x-widget-token"]
+      if (!accessToken) return res.status(401).send(actionHTML("Error", "Missing token", false))
+      const client = await getClientByToken(accessToken)
+      if (!client) return res.status(403).send(actionHTML("Error", "Invalid token", false))
+      const notionToken = getNotionToken(client)
+      const taskId = req.query.task
+      const todayISO = new Date().toISOString().split("T")[0]
+
+      if (req.query.do === "start") {
+        await patchPage(taskId, {
+          "Start Date": { date: { start: todayISO } },
+          "Status":     { status: { name: "In Progress" } },
+        }, notionToken)
+        return res.status(200).send(actionHTML("Task Started", `Status → In Progress · Start Date → ${todayISO}`, true))
+      }
+      if (req.query.do === "complete") {
+        await patchPage(taskId, {
+          "Completed Date": { date: { start: todayISO } },
+          "Status":         { status: { name: "Done" } },
+        }, notionToken)
+        return res.status(200).send(actionHTML("Task Completed", `Status → Done · Completed Date → ${todayISO}`, true))
+      }
+      return res.status(400).send(actionHTML("Error", "Unknown action: " + req.query.do, false))
+    } catch (err) {
+      console.error("projects action:", err)
+      return res.status(500).send(actionHTML("Error", err.message, false))
     }
   }
 
@@ -334,12 +380,31 @@ export default async function handler(req, res) {
       ? Math.round(activeBuilds.reduce((s, b) => s + (b.overallPct || 0), 0) / activeBuilds.length)
       : 0
 
+    // Task timeline: group tasks by date for status trend chart
+    const taskTimeline = {}
+    for (const t of Object.values(taskMap)) {
+      // Track completed tasks by completion date
+      if (t.status === "Done" && t.completedDate) {
+        if (!taskTimeline[t.completedDate]) taskTimeline[t.completedDate] = { done: 0, started: 0 }
+        taskTimeline[t.completedDate].done++
+      }
+      // Track started tasks by start date
+      if (t.startDate) {
+        if (!taskTimeline[t.startDate]) taskTimeline[t.startDate] = { done: 0, started: 0 }
+        taskTimeline[t.startDate].started++
+      }
+    }
+    const timeline = Object.entries(taskTimeline)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, counts]) => ({ date, ...counts }))
+
     const overview = {
       totalProjects,
       avgCompletion,
       projectTypes,
       taskStats: aggTasks,
       priorities,
+      timeline,
     }
 
     // ── Gantt view: return task-level data with dates ─────────────────────
