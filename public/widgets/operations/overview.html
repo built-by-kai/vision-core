@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;--redm:rgba(255,107,107,.1);--redb:rgba(255,107,107,.18);--cyan:#22D3EE;--purple:#A78BFA;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
@@ -95,12 +95,10 @@ body.light .tb-pct{color:rgba(0,0,0,.2);}
 .bot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
 @media(max-width:700px){.bot-row{grid-template-columns:1fr;}}
 
-/* ── PRIORITY RADIAL ── */
-.pri-visual{display:flex;align-items:center;gap:20px;}
-@media(max-width:500px){.pri-visual{flex-direction:column;}}
-.pri-bars{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;}
+/* ── PRIORITY BARS ── */
+.pri-bars{display:flex;flex-direction:column;gap:10px;}
 .pri-row{display:flex;align-items:center;gap:10px;}
-.pri-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;}
+.pri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .pri-label{font-size:10px;font-weight:700;width:52px;flex-shrink:0;color:rgba(255,255,255,.5);}
 body.light .pri-label{color:rgba(0,0,0,.4);}
 .pri-track{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;position:relative;}
@@ -108,7 +106,7 @@ body.light .pri-track{background:rgba(0,0,0,.05);}
 .pri-fill{height:8px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
 .pri-high{background:var(--red);}
 .pri-medium{background:var(--amber);}
-.pri-low{background:var(--blue);}
+.pri-low{background:rgba(170,255,0,.5);}
 .pri-none{background:rgba(255,255,255,.12);}
 body.light .pri-none{background:rgba(0,0,0,.1);}
 .pri-count{font-size:11px;font-weight:800;color:#fff;width:36px;text-align:right;flex-shrink:0;}
@@ -156,7 +154,7 @@ body.light .empty{color:rgba(0,0,0,.18);}
 <div class="g4">
   <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Total Projects</span><div class="s-val" id="s-total">0</div><div class="s-sub" id="s-total-sub">Across all statuses</div></div>
   <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Active Builds</span><div class="s-val" id="s-active">0</div><div class="s-sub" id="s-active-sub">Currently in progress</div></div>
-  <div class="card stat"><div class="s-dot" style="background:var(--amber);"></div><span class="s-lbl">Total Tasks</span><div class="s-val" id="s-tasks">0</div><div class="s-sub" id="s-tasks-sub">Across all projects</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Total Tasks</span><div class="s-val" id="s-tasks">0</div><div class="s-sub" id="s-tasks-sub">Across all projects</div></div>
   <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Avg Completion</span><div class="s-val" id="s-avg">0%</div><div class="s-sub" id="s-avg-sub">Active project average</div></div>
 </div>
 
@@ -226,7 +224,8 @@ const CIRC=2*Math.PI*42; // ~263.9 for task ring
 const DONUT_R=48;
 const DONUT_CIRC=2*Math.PI*DONUT_R;
 
-const TYPE_COLORS=['var(--g)','var(--blue)','var(--amber)','var(--purple)','var(--cyan)','var(--red)'];
+// Green-family palette matching Revenue OS theme
+const TYPE_COLORS=['var(--g)','rgba(170,255,0,.55)','rgba(170,255,0,.3)','rgba(170,255,0,.15)','rgba(255,255,255,.12)','rgba(255,255,255,.06)'];
 
 function renderStats(counts, ov){
   document.getElementById('s-total').textContent=ov.totalProjects||0;
@@ -356,16 +355,16 @@ function renderTaskRing(ts){
 function renderPriorities(pri){
   const total=(pri.High||0)+(pri.Medium||0)+(pri.Low||0)+(pri.None||0)||1;
   const items=[
-    {label:'High',count:pri.High||0,cls:'pri-high',color:'var(--red)',icon:'!'},
-    {label:'Medium',count:pri.Medium||0,cls:'pri-medium',color:'var(--amber)',icon:'‼'},
-    {label:'Low',count:pri.Low||0,cls:'pri-low',color:'var(--blue)',icon:'↓'},
-    {label:'None',count:pri.None||0,cls:'pri-none',color:'rgba(255,255,255,.12)',icon:'—'},
+    {label:'High',count:pri.High||0,cls:'pri-high',color:'var(--red)'},
+    {label:'Medium',count:pri.Medium||0,cls:'pri-medium',color:'var(--amber)'},
+    {label:'Low',count:pri.Low||0,cls:'pri-low',color:'rgba(170,255,0,.5)'},
+    {label:'None',count:pri.None||0,cls:'pri-none',color:'rgba(255,255,255,.12)'},
   ];
   document.getElementById('pri-bars').innerHTML=items.map(i=>{
     const w=Math.round((i.count/total)*100);
     const pct=Math.round((i.count/total)*100);
     return`<div class="pri-row">
-      <div class="pri-icon" style="background:${i.color};color:#111;">${i.icon}</div>
+      <div class="pri-dot" style="background:${i.color}"></div>
       <span class="pri-label">${i.label}</span>
       <div class="pri-track"><div class="pri-fill ${i.cls}" style="width:${w}%"></div></div>
       <span class="pri-count">${i.count}</span>
@@ -377,10 +376,10 @@ function renderPriorities(pri){
 function renderStatusVisual(counts){
   const items=[
     {val:counts.active||0,lbl:'Active',color:'var(--g)'},
-    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--blue)'},
+    {val:counts.awaiting||0,lbl:'Awaiting',color:'rgba(170,255,0,.45)'},
     {val:counts.review||0,lbl:'In Review',color:'var(--amber)'},
     {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.25)'},
-    {val:counts.done||0,lbl:'Completed',color:'var(--g)'},
+    {val:counts.done||0,lbl:'Completed',color:'rgba(170,255,0,.65)'},
   ];
   const total=items.reduce((s,i)=>s+i.val,0)||1;
 
