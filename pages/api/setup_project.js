@@ -36,9 +36,9 @@ const ADDON_NAMES = Object.fromEntries(
   Object.entries(ADDON_SLUGS).map(([slug, name]) => [name, slug])
 )
 
-// ─── Page icons ──────────────────────────────────────────────────────────────
-const PHASE_ICON  = { type: "icon", icon: { name: "pin",           color: "gray" } }
-const TASK_ICON   = { type: "icon", icon: { name: "circle-dashed", color: "gray" } }
+// ─── Page icons (matches the database template: red map-pin) ─────────────────
+const PHASE_ICON  = { type: "icon", icon: { name: "map-pin", color: "red" } }
+const TASK_ICON   = { type: "icon", icon: { name: "map-pin", color: "red" } }
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 const LENGTH_DAYS = {
@@ -749,6 +749,14 @@ ul{color:rgba(255,255,255,.5);font-size:13px;line-height:1.8}
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  // CORS preflight — Notion sends OPTIONS before POST webhooks
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    return res.status(200).end()
+  }
+
   // GET with ?advance=<page_id> → browser-based advance (URL formula click)
   if (req.method === "GET" && req.query.advance) {
     try {
