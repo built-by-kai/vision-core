@@ -226,19 +226,13 @@ async function setup(payload) {
   }
 
   // 3. Source OS tasks (remapped to target phase)
+  // Only includes OS-specific tasks from the source — common tasks are already
+  // handled in step 1 by their own phase number. Adding common tasks here too
+  // would duplicate them across multiple target phases.
   for (const cfg of sourcePhaseConfig) {
     const srcTasks = sourceTasksByOS[cfg.sourceOS] || []
     for (const page of srcTasks) {
       const task = extractTask(page)
-      if (cfg.sourcePhaseNos.includes(task.phaseNo)) {
-        addTask(cfg.targetPhaseNo, task)
-      }
-    }
-    // Also include common tasks for those source phase numbers
-    for (const page of commonTasks) {
-      const task = extractTask(page)
-      if (task.slug) continue
-      if (task.phaseNo == null) continue
       if (cfg.sourcePhaseNos.includes(task.phaseNo)) {
         addTask(cfg.targetPhaseNo, task)
       }
