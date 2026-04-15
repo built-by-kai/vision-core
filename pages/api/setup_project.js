@@ -2,218 +2,41 @@
 // POST /api/setup_project   { "page_id": "<project_page_id>" }
 // Called by deposit_paid.js after deposit is confirmed.
 //
-// What it does:
-//   1. Reads the Project page → gets Package (OS type), linked Deal (Add-ons)
-//   2. Optionally reads Client Intake for delivery steps, timeline, etc.
-//   3. Creates/reuses 5 phases matching create_invoice's PHASES_FULL
-//   4. Creates OS-aware tasks per phase + add-on tasks in Phase 3
-//   5. Links: Task → Phase, Task → Project, Phase → Project
-//   6. Sets target date on Project based on Typical Project Length from intake
+// What it does (template-driven):
+//   1. Reads Project → Package (OS type)
+//   2. Queries Phase Templates DB for phase definitions matching this OS type
+//   3. Queries Phase Template Tasks DB for task definitions (OS-specific + common)
+//   4. For composite OS types (Business OS, Agency OS), resolves Source OS references
+//      e.g. Business OS Phase 2 pulls tasks from Operations OS Phases 2,3
+//   5. Creates phases as parent items in Phase Tasks DB (DB.PHASES)
+//   6. Creates tasks as sub-items in Phase Tasks DB using Parent item relation
+//   7. Links phases to Project, sets current phase
 //
-// Task generation is driven by OS type:
-//   - Phase 1 (Discovery & Setup): generic for all OS types
-//   - Phase 2 (Core Build): OS-specific module build tasks
-//   - Phase 3 (Advanced Build & Expansion): add-on tasks + advanced config
-//   - Phase 4 (Client Review & Revisions): generic review cycle
-//   - Phase 5 (QA & Handover): generic handover tasks
+// Sub-item architecture:
+//   Phase Tasks DB has a self-relation (Parent item ↔ Sub-item).
+//   Phases are top-level entries; tasks nest under them as sub-items.
+//   This gives native Notion collapsing/grouping in the Phase Tasks view.
 
 import { getPage, patchPage, createPage, queryDB, plain, DB } from "../../lib/notion"
 
-// ─── OS MODULE MAP ──────────────────────────────────────────────────────────
-// Mirrors OS_DEFAULT_MODULES from proposal_template.js.
-// Each OS type → { osGroup: [module names] }
-const OS_MODULES = {
-  'Revenue OS':    { 'Revenue OS':    ['CRM & Pipeline', 'Proposal & Deal Tracker', 'Payment Tracker', 'Finance & Expense Tracker', 'Product & Pricing Catalogue'] },
-  'Operations OS': { 'Operations OS': ['Project Tracker', 'Task Management', 'Client Onboarding Tracker', 'Team Responsibility Matrix', 'SOP & Process Library'] },
-  'Business OS':   { 'Revenue OS':    ['CRM & Pipeline', 'Proposal & Deal Tracker', 'Payment Tracker', 'Finance & Expense Tracker', 'Product & Pricing Catalogue'],
-                     'Operations OS': ['Project Tracker', 'Task Management', 'Client Onboarding Tracker', 'Team Responsibility Matrix', 'SOP & Process Library'] },
-  'Agency OS':     { 'Revenue OS':    ['CRM & Pipeline', 'Proposal & Deal Tracker', 'Payment Tracker', 'Finance & Expense Tracker', 'Product & Pricing Catalogue'],
-                     'Operations OS': ['Project Tracker', 'Task Management', 'Client Onboarding Tracker', 'Team Responsibility Matrix', 'SOP & Process Library'],
-                     'Marketing OS':  ['Campaign Tracker', 'Content Production Tracker', 'Content Calendar', 'Brand & Asset Library', 'Ads Tracker'] },
-  'Marketing OS':  { 'Marketing OS':  ['Campaign Tracker', 'Content Production Tracker', 'Content Calendar', 'Brand & Asset Library', 'Ads Tracker'] },
-  'Team OS':       { 'Team OS':       ['Hiring Pipeline', 'Team Onboarding Tracker', 'Performance & Goals', 'Leave & Availability', 'Role & Compensation Log'] },
-  'Retention OS':  { 'Retention OS':  ['Client Health Tracker', 'NPS & Feedback Log', 'Renewal Pipeline', 'Upsell Opportunity Tracker', 'Support & Issue Log'] },
+// ─── Addon slug ↔ Deal add-on name mapping ──────────────────────────────────
+const ADDON_SLUGS = {
+  "addon-ai-agent":              "AI Agent Integration",
+  "addon-lead-capture":          "Lead Capture System",
+  "addon-widget":                "Custom Widget",
+  "addon-workflow-integration":  "Automation & Workflow Integration",
+  "addon-automation-within":     "Automation (within database)",
+  "addon-automation-cross":      "Automation (cross-database)",
+  "addon-client-portal":         "Client Portal View",
+  "addon-api-integration":       "API / External Integration",
+  "addon-system-module":         "Additional System Module",
 }
+// Reverse: addon display name → slug
+const ADDON_NAMES = Object.fromEntries(
+  Object.entries(ADDON_SLUGS).map(([slug, name]) => [name, slug])
+)
 
-// ─── ADD-ON TASK MAP ────────────────────────────────────────────────────────
-// Each add-on → array of tasks to create in Phase 3 (Advanced Build & Expansion)
-const ADDON_TASKS = {
-  'Marketing OS':               [
-    { name: "Build Campaign Tracker",            priority: "High" },
-    { name: "Build Content Production Tracker",  priority: "High" },
-    { name: "Build Content Calendar",            priority: "High" },
-    { name: "Build Brand & Asset Library",       priority: "Medium" },
-    { name: "Build Ads Tracker",                 priority: "Medium" },
-  ],
-  'Team OS':                    [
-    { name: "Build Hiring Pipeline",             priority: "High" },
-    { name: "Build Team Onboarding Tracker",     priority: "High" },
-    { name: "Build Performance & Goals",         priority: "Medium" },
-    { name: "Build Leave & Availability",        priority: "Medium" },
-    { name: "Build Role & Compensation Log",     priority: "Low" },
-  ],
-  'Retention OS':               [
-    { name: "Build Client Health Tracker",       priority: "High" },
-    { name: "Build NPS & Feedback Log",          priority: "High" },
-    { name: "Build Renewal Pipeline",            priority: "High" },
-    { name: "Build Upsell Opportunity Tracker",  priority: "Medium" },
-    { name: "Build Support & Issue Log",         priority: "Medium" },
-  ],
-  'Enhanced Dashboard':         [
-    { name: "Design dashboard layout & KPIs",    priority: "High" },
-    { name: "Build chart widgets & embeds",      priority: "High" },
-    { name: "Connect dashboard to OS data",      priority: "High" },
-  ],
-  'Project Kickoff Automation': [
-    { name: "Build project kickoff automation (Make/N8N)", priority: "High" },
-    { name: "Test automation trigger & task creation",     priority: "High" },
-  ],
-  'Campaign Kickoff Automation': [
-    { name: "Build campaign kickoff automation (Make/N8N)", priority: "High" },
-    { name: "Test automation trigger & task creation",      priority: "High" },
-  ],
-  'Client Onboarding Kickoff':  [
-    { name: "Build client onboarding automation (Make/N8N)", priority: "High" },
-    { name: "Test onboarding automation flow",               priority: "High" },
-  ],
-  'Renewal Kickoff Automation': [
-    { name: "Build renewal check automation (Make/N8N)",  priority: "High" },
-    { name: "Test renewal reminder trigger",              priority: "High" },
-  ],
-  'Hiring Kickoff Automation':  [
-    { name: "Build hiring kickoff automation (Make/N8N)", priority: "High" },
-    { name: "Test hiring automation flow",                priority: "High" },
-  ],
-  'Document Generation':        [
-    { name: "Set up document generation endpoint",     priority: "High" },
-    { name: "Build PDF template & Notion button",      priority: "High" },
-    { name: "Test document generation end-to-end",     priority: "High" },
-  ],
-  'Lead Capture System':        [
-    { name: "Set up lead capture form/WhatsApp integration", priority: "High" },
-    { name: "Build auto-populate CRM automation",            priority: "High" },
-    { name: "Test lead capture → CRM pipeline flow",         priority: "High" },
-  ],
-  'Ads Platform Integration':   [
-    { name: "Connect ads platform API (Meta/Google/TikTok)", priority: "High" },
-    { name: "Build data sync to Ads Tracker",                priority: "High" },
-    { name: "Test real-time spend & performance pull",       priority: "High" },
-  ],
-  'Client Portal View':         [
-    { name: "Build client-facing read-only Notion view",  priority: "Medium" },
-    { name: "Configure portal permissions & sharing",     priority: "Medium" },
-  ],
-}
-
-// ─── PHASE 1 — DISCOVERY & SETUP (generic) ─────────────────────────────────
-const PHASE_1_TASKS = [
-  { name: "Kick-off call & gather requirements",   priority: "High"   },
-  { name: "Audit current workflows & tools",        priority: "High"   },
-  { name: "Set up Notion workspace structure",      priority: "High"   },
-  { name: "Install Base OS databases",              priority: "High"   },
-  { name: "Configure permissions & sharing",        priority: "Medium" },
-  { name: "Import existing data & contacts",        priority: "Medium" },
-  { name: "Client review — Discovery sign-off",     priority: "High"   },
-]
-
-// ─── PHASE 2 — CORE BUILD (OS-specific) ────────────────────────────────────
-// Generates tasks from OS_MODULES: one "Build <module>" task per module,
-// plus standard Phase 2 tasks that apply to all OS types.
-function buildPhase2Tasks(osType) {
-  const tasks = []
-  const groups = OS_MODULES[osType] || {}
-
-  for (const [osGroup, modules] of Object.entries(groups)) {
-    // Group header task (acts as a milestone)
-    if (Object.keys(groups).length > 1) {
-      tasks.push({ name: `── ${osGroup} Modules ──`, priority: "High", area: osGroup })
-    }
-    for (const mod of modules) {
-      tasks.push({ name: `Build ${mod}`, priority: "High", area: osGroup })
-    }
-  }
-
-  // If no OS matched (Starter OS, Micro Install, etc.), use generic tasks
-  if (!tasks.length) {
-    tasks.push(
-      { name: "Build core database architecture",     priority: "High"   },
-      { name: "Build primary module",                 priority: "High"   },
-      { name: "Build secondary module",               priority: "High"   },
-      { name: "Configure module relations",           priority: "High"   },
-    )
-  }
-
-  // Standard Phase 2 tasks (all OS types)
-  tasks.push(
-    { name: "Set up database relations & rollups",     priority: "High"   },
-    { name: "Build automations & recurring workflows", priority: "High"   },
-    { name: "Build views, filters & sorts",            priority: "Medium" },
-  )
-
-  return tasks
-}
-
-// ─── PHASE 3 — ADVANCED BUILD & EXPANSION ──────────────────────────────────
-// Standard advanced tasks + add-on tasks from ADDON_TASKS
-function buildPhase3Tasks(osType, addons = []) {
-  const tasks = [
-    { name: "Build dashboard hub & reporting views",   priority: "High"   },
-    { name: "Configure advanced automations",          priority: "High"   },
-    { name: "Build template pages & quick-add buttons", priority: "Medium" },
-  ]
-
-  // Add-on specific tasks
-  for (const addon of addons) {
-    const addonTasks = ADDON_TASKS[addon]
-    if (addonTasks) {
-      tasks.push({ name: `── Add-on: ${addon} ──`, priority: "High" })
-      tasks.push(...addonTasks)
-    } else {
-      // Unknown add-on — create a generic build task
-      tasks.push({ name: `Build add-on: ${addon}`, priority: "High" })
-    }
-  }
-
-  // If no add-ons, still add integration tasks
-  if (!addons.length) {
-    tasks.push(
-      { name: "Review for integration opportunities", priority: "Medium" },
-    )
-  }
-
-  return tasks
-}
-
-// ─── PHASE 4 — CLIENT REVIEW & REVISIONS (generic) ─────────────────────────
-const PHASE_4_TASKS = [
-  { name: "Client walkthrough & demo session",     priority: "High"   },
-  { name: "Collect client feedback & change list",  priority: "High"   },
-  { name: "Apply revisions — Round 1",             priority: "High"   },
-  { name: "Apply revisions — Round 2 (if needed)", priority: "Medium" },
-  { name: "Client sign-off on build",              priority: "High"   },
-]
-
-// ─── PHASE 5 — QA & HANDOVER (generic) ─────────────────────────────────────
-const PHASE_5_TASKS = [
-  { name: "Internal QA & testing",                priority: "High"   },
-  { name: "Data validation & integrity check",    priority: "High"   },
-  { name: "Training session with client team",    priority: "High"   },
-  { name: "Prepare handover documentation",       priority: "High"   },
-  { name: "Final handover & access transfer",     priority: "High"   },
-  { name: "Post-launch check-in (1 week)",        priority: "Medium" },
-]
-
-// ─── 5 PHASE STRUCTURE ──────────────────────────────────────────────────────
-// Matches PHASES_FULL in create_invoice.js exactly.
-const PHASES = [
-  { no: 1, name: "Phase 1 — Discovery & Setup" },
-  { no: 2, name: "Phase 2 — Core Build" },
-  { no: 3, name: "Phase 3 — Advanced Build & Expansion" },
-  { no: 4, name: "Phase 4 — Client Review & Revisions" },
-  { no: 5, name: "Phase 5 — QA & Handover" },
-]
-
-// ─── TARGET DATE helpers ─────────────────────────────────────────────────────
+// ─── Date helpers ────────────────────────────────────────────────────────────
 const LENGTH_DAYS = {
   "Under 2 weeks": 14,
   "2–4 weeks":     28,
@@ -221,25 +44,36 @@ const LENGTH_DAYS = {
   "3+ months":     105,
 }
 
-function addDays(isoDate, days) {
-  const d = new Date(isoDate)
+function addDays(iso, days) {
+  const d = new Date(iso)
   d.setDate(d.getDate() + days)
   return d.toISOString().split("T")[0]
 }
 
-// Phase date splits: Discovery 10%, Core Build 35%, Advanced 25%, Review 15%, Handover 15%
-const PHASE_SPLITS = [0, 0.10, 0.45, 0.70, 0.85, 1.0]
-
-function phaseEndDate(startDate, phaseNo, totalDays) {
-  const start = addDays(startDate, Math.round(totalDays * PHASE_SPLITS[phaseNo - 1]))
-  const end   = addDays(startDate, Math.round(totalDays * PHASE_SPLITS[phaseNo]))
-  return { start, end }
+// ─── Extract task info from a Phase Template Tasks page ─────────────────────
+function extractTask(page) {
+  const p = page.properties
+  return {
+    name:         plain(p["Task Name"]?.title || []),
+    order:        p["Task Order"]?.number || 0,
+    priority:     p["Priority"]?.select?.name || "Medium",
+    phaseNo:      p["Phase No."]?.number ?? null,
+    slug:         plain(p["Product Slug"]?.rich_text || []),
+    deliverables: plain(p["Deliverables"]?.rich_text || []),
+  }
 }
 
-// ─── READ ADD-ONS FROM DEAL ─────────────────────────────────────────────────
-async function readDealAddons(projectPage, token) {
+// ─── Parse "2,3" → [2, 3] from Source Phase Nos. ───────────────────────────
+function parseSourcePhaseNos(templatePage) {
+  const text = plain(templatePage.properties["Source Phase Nos."]?.rich_text || [])
+  if (!text) return []
+  return text.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+}
+
+// ─── Read add-ons from Deal ─────────────────────────────────────────────────
+async function readDealAddons(project, token) {
   try {
-    const dealIds = (projectPage.properties.Deals?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const dealIds = (project.properties.Deals?.relation || []).map(r => r.id.replace(/-/g, ""))
     for (const dealId of dealIds) {
       const deal = await getPage(dealId, token)
       const addons = (deal.properties["Add-ons"]?.multi_select || []).map(a => a.name)
@@ -251,197 +85,305 @@ async function readDealAddons(projectPage, token) {
   return []
 }
 
-// ─── READ CLIENT INTAKE ───────────────────────────────────────────────────────
-async function readClientIntake(projectPage, token) {
+// ─── Read existing phases for project → { map: {phaseNo: pageId}, hasSubItems } ─
+async function readExistingPhases(project, token) {
+  const map = {}
+  let hasSubItems = false
+  const rels = project.properties.Phases?.relation || []
+  if (!rels.length) return { map, hasSubItems }
+
+  const reads = rels.map(async (rel) => {
+    try {
+      const ph = await getPage(rel.id.replace(/-/g, ""), token)
+      const no = ph.properties["Phase No."]?.number
+      if (no != null) map[no] = rel.id.replace(/-/g, "")
+      const subs = ph.properties["Sub-item"]?.relation || []
+      if (subs.length) hasSubItems = true
+    } catch {}
+  })
+  await Promise.all(reads)
+  return { map, hasSubItems }
+}
+
+// ─── Read Client Intake for timeline info ────────────────────────────────────
+async function readIntakeTimeline(project, token) {
   try {
-    const dealIds = (projectPage.properties.Deals?.relation || []).map(r => r.id.replace(/-/g, ""))
+    const dealIds = (project.properties.Deals?.relation || []).map(r => r.id.replace(/-/g, ""))
     for (const dealId of dealIds) {
       const deal = await getPage(dealId, token)
       const implIds = (deal.properties.Implementation?.relation || []).map(r => r.id.replace(/-/g, ""))
       if (implIds.length) {
         const intake = await getPage(implIds[0], token)
-        return intake.properties
+        return intake.properties["Typical Project Length"]?.select?.name || ""
       }
     }
-  } catch (e) {
-    console.warn("[setup_project] readClientIntake:", e.message)
-  }
-  return null
-}
-
-// ─── EXTRACT CUSTOM TASKS FROM INTAKE ────────────────────────────────────────
-function extractCustomTasks(intakeProps) {
-  const customTasks = []
-
-  const deliveryProcess = plain(intakeProps["Delivery Process"]?.rich_text || [])
-  if (deliveryProcess) {
-    for (const line of deliveryProcess.split("\n").filter(l => l.trim())) {
-      const cleaned = line.replace(/^\d+\.\s*/, "").trim()
-      if (cleaned.length > 3) customTasks.push({ name: cleaned, priority: "High" })
-    }
-  }
-
-  const onboardingProcess = plain(intakeProps["Onboarding Process"]?.rich_text || [])
-  if (onboardingProcess) {
-    for (const line of onboardingProcess.split("\n").filter(l => l.trim())) {
-      const cleaned = line.replace(/^\d+\.\s*/, "").trim()
-      if (cleaned.length > 3) customTasks.push({ name: `Onboarding: ${cleaned}`, priority: "Medium" })
-    }
-  }
-
-  const prioritySOPs = plain(intakeProps["Priority SOPs"]?.rich_text || [])
-  if (prioritySOPs) {
-    for (const sop of prioritySOPs.split(",").map(s => s.trim()).filter(Boolean)) {
-      customTasks.push({ name: `Build SOP: ${sop}`, priority: "High" })
-    }
-  }
-
-  return customTasks
+  } catch {}
+  return ""
 }
 
 // ─── MAIN SETUP ──────────────────────────────────────────────────────────────
 async function setup(payload) {
-  const token   = process.env.NOTION_API_KEY
-  const rawId   = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  const token = process.env.NOTION_API_KEY
+  const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
   if (!rawId) throw new Error("No page_id in payload")
   const projectId = rawId.replace(/-/g, "")
 
-  const project     = await getPage(projectId, token)
-  const projectProps = project.properties
-
-  // Guard: don't recreate if tasks already exist for this project
-  const existingTasks = projectProps.Tasks?.relation || []
-  if (existingTasks.length > 0) {
-    console.log(`[setup_project] tasks already exist for ${projectId} — skipping`)
-    return { status: "skipped", reason: "tasks already exist", project_id: projectId }
-  }
-
-  // ── Read OS type from Project.Package ──
-  const osType = projectProps.Package?.select?.name || ""
+  const project = await getPage(projectId, token)
+  const osType  = project.properties.Package?.select?.name || ""
   console.log(`[setup_project] OS type: "${osType}"`)
 
   const today     = new Date().toISOString().split("T")[0]
-  const startDate = projectProps["Start Date"]?.date?.start || today
+  const startDate = project.properties["Start Date"]?.date?.start || today
 
-  // ── Parallel reads: Deal add-ons, client intake, existing phases ──
-  const existingPhaseRels = projectProps.Phases?.relation || []
-
-  const [addons, intakeProps, existingPhaseMap] = await Promise.all([
+  // ── Parallel reads: templates, tasks, existing phases, addons, timeline ──
+  const [phaseTemplates, osTasks, commonTasks, phaseInfo, addons, timelineLabel] = await Promise.all([
+    // Phase definitions for this OS type
+    osType
+      ? queryDB(DB.PHASE_TEMPLATES, { property: "OS Type", select: { equals: osType } }, token)
+      : Promise.resolve([]),
+    // OS-specific template tasks
+    osType
+      ? queryDB(DB.PHASE_TEMPLATE_TASKS, { property: "OS Type", select: { equals: osType } }, token)
+      : Promise.resolve([]),
+    // Common template tasks (OS Type empty — shared across all OS types)
+    queryDB(DB.PHASE_TEMPLATE_TASKS, { property: "OS Type", select: { is_empty: true } }, token),
+    // Existing phases from create_invoice
+    readExistingPhases(project, token),
+    // Deal add-ons
     readDealAddons(project, token),
-    readClientIntake(project, token),
-    (async () => {
-      const map = {}
-      if (existingPhaseRels.length > 0) {
-        const phaseReads = existingPhaseRels.map(async (rel) => {
-          try {
-            const ph = await getPage(rel.id.replace(/-/g, ""), token)
-            const phNo = ph.properties["Phase No."]?.number
-            if (phNo) map[phNo] = rel.id.replace(/-/g, "")
-          } catch {}
-        })
-        await Promise.all(phaseReads)
-      }
-      return map
-    })(),
+    // Client intake timeline
+    readIntakeTimeline(project, token),
   ])
 
-  console.log(`[setup_project] Add-ons: ${addons.length ? addons.join(", ") : "(none)"}`)
-  console.log(`[setup_project] Existing phases: ${Object.keys(existingPhaseMap).length}`)
-  const typicalLength = intakeProps
-    ? plain(intakeProps["Typical Project Length"] === undefined
-        ? []
-        : [{ plain_text: (intakeProps["Typical Project Length"]?.select?.name || "") }])
-    : ""
-  const totalDays = LENGTH_DAYS[typicalLength] || LENGTH_DAYS["2–4 weeks"]
-  const projectTargetDate = addDays(startDate, totalDays)
+  const { map: existingPhaseMap, hasSubItems } = phaseInfo
 
-  // Extract custom tasks from intake (appended to Phase 2)
-  const customPh2Tasks = intakeProps ? extractCustomTasks(intakeProps) : []
-
-  // Services list → store in project Notes if not already set
-  const servicesList = intakeProps ? plain(intakeProps["Services List"]?.rich_text || []) : ""
-
-  // ── Update project with target date, current phase, + notes ──
-  const projectUpdates = {
-    "Targeted Completion": { date: { start: projectTargetDate } },
-    "Phase":               { select: { name: "Phase 1 — Discovery & Setup" } },
+  // Guard: don't recreate if sub-item tasks already exist
+  if (hasSubItems) {
+    console.log(`[setup_project] sub-items already exist — skipping`)
+    return { status: "skipped", reason: "tasks already exist", project_id: projectId }
   }
-  if (servicesList) {
-    const existingNotes = plain(projectProps.Notes?.rich_text || [])
-    if (!existingNotes) {
-      projectUpdates["Notes"] = { rich_text: [{ type: "text", text: { content: `Services: ${servicesList}` } }] }
+
+  console.log(`[setup_project] Templates: ${phaseTemplates.length} phases, ${osTasks.length} OS tasks, ${commonTasks.length} common tasks`)
+  console.log(`[setup_project] Existing phases: ${Object.keys(existingPhaseMap).length}, Add-ons: ${addons.length ? addons.join(", ") : "(none)"}`)
+
+  // ── Resolve Source OS tasks for composite phases (e.g. Business OS) ──────
+  // Phase Templates with Source OS reference another OS type's tasks.
+  // Business OS Phase 2 → Source OS: Operations OS, Source Phase Nos: "2,3"
+  // Business OS Phase 3 → Source OS: Revenue OS, Source Phase Nos: "2,3"
+  const sourceOSNames = new Set()
+  const sourcePhaseConfig = [] // { targetPhaseNo, sourceOS, sourcePhaseNos }
+
+  for (const pt of phaseTemplates) {
+    const srcOS  = pt.properties["Source OS"]?.select?.name
+    const srcNos = parseSourcePhaseNos(pt)
+    if (srcOS && srcNos.length) {
+      sourceOSNames.add(srcOS)
+      sourcePhaseConfig.push({
+        targetPhaseNo: pt.properties["Phase No."]?.number,
+        sourceOS:      srcOS,
+        sourcePhaseNos: srcNos,
+      })
     }
   }
-  await patchPage(projectId, projectUpdates, token)
 
-  // ── Build task lists per phase ──
-  const phase2Tasks = [...buildPhase2Tasks(osType), ...customPh2Tasks]
-  const phase3Tasks = buildPhase3Tasks(osType, addons)
-
-  const phaseTaskMap = {
-    1: PHASE_1_TASKS,
-    2: phase2Tasks,
-    3: phase3Tasks,
-    4: PHASE_4_TASKS,
-    5: PHASE_5_TASKS,
+  // Fetch source OS tasks in parallel
+  const sourceTasksByOS = {}
+  if (sourceOSNames.size) {
+    const queries = [...sourceOSNames].map(async (srcOS) => {
+      const tasks = await queryDB(DB.PHASE_TEMPLATE_TASKS, {
+        property: "OS Type", select: { equals: srcOS }
+      }, token)
+      sourceTasksByOS[srcOS] = tasks
+    })
+    await Promise.all(queries)
+    console.log(`[setup_project] Source OS tasks fetched: ${[...sourceOSNames].map(os => `${os}(${sourceTasksByOS[os]?.length || 0})`).join(", ")}`)
   }
 
-  // ── Resolve phases (reuse existing or create new) ──
-  const phasesCreated = []
+  // ── Build task map: phaseNo → [task objects] ──────────────────────────────
+  const taskMap = {}
 
-  // Parallelize: create/update all phases at once
-  const phasePromises = PHASES.map(async (phase) => {
-    const { start: phStart, end: phEnd } = phaseEndDate(startDate, phase.no, totalDays)
-    let phaseId = existingPhaseMap[phase.no] || null
+  function addTask(phaseNo, task) {
+    if (phaseNo == null) return
+    if (!taskMap[phaseNo]) taskMap[phaseNo] = []
+    // Deduplicate by task name within the same phase
+    if (taskMap[phaseNo].some(t => t.name === task.name)) return
+    taskMap[phaseNo].push(task)
+  }
+
+  // 1. Common tasks (OS Type empty, no Product Slug = shared across all OS)
+  for (const page of commonTasks) {
+    const task = extractTask(page)
+    if (task.slug) continue  // addon-specific — handle in step 4
+    if (task.phaseNo == null) continue
+    addTask(task.phaseNo, task)
+  }
+
+  // 2. OS-specific tasks
+  for (const page of osTasks) {
+    const task = extractTask(page)
+    if (task.phaseNo == null) continue
+    addTask(task.phaseNo, task)
+  }
+
+  // 3. Source OS tasks (remapped to target phase)
+  for (const cfg of sourcePhaseConfig) {
+    const srcTasks = sourceTasksByOS[cfg.sourceOS] || []
+    for (const page of srcTasks) {
+      const task = extractTask(page)
+      if (cfg.sourcePhaseNos.includes(task.phaseNo)) {
+        addTask(cfg.targetPhaseNo, task)
+      }
+    }
+    // Also include common tasks for those source phase numbers
+    for (const page of commonTasks) {
+      const task = extractTask(page)
+      if (task.slug) continue
+      if (task.phaseNo == null) continue
+      if (cfg.sourcePhaseNos.includes(task.phaseNo)) {
+        addTask(cfg.targetPhaseNo, task)
+      }
+    }
+  }
+
+  // 4. Addon tasks (Product Slug matches project's add-ons)
+  if (addons.length) {
+    // Build set of slugs from deal add-on names
+    const addonSlugs = new Set()
+    for (const addon of addons) {
+      // Try exact name → slug mapping
+      if (ADDON_NAMES[addon]) addonSlugs.add(ADDON_NAMES[addon])
+      // Also try generating slug from name
+      const generated = "addon-" + addon.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+      addonSlugs.add(generated)
+    }
+
+    // Find the last "build" phase number (before review/handover phases)
+    const phaseNos = phaseTemplates
+      .map(pt => pt.properties["Phase No."]?.number)
+      .filter(n => n != null)
+      .sort((a, b) => a - b)
+    // Default addon phase = second-to-last build phase, or phase 2
+    const addonPhaseNo = phaseNos.length >= 4 ? phaseNos[phaseNos.length - 3] : (phaseNos[1] || 2)
+
+    for (const page of commonTasks) {
+      const task = extractTask(page)
+      if (!task.slug) continue
+      if (!addonSlugs.has(task.slug)) continue
+      // Use the task's phase number if set, otherwise assign to addon build phase
+      addTask(task.phaseNo ?? addonPhaseNo, task)
+    }
+    console.log(`[setup_project] Addon slugs matched: ${[...addonSlugs].join(", ")}`)
+  }
+
+  // Sort tasks within each phase by Task Order
+  for (const phaseNo of Object.keys(taskMap)) {
+    taskMap[phaseNo].sort((a, b) => (a.order || 0) - (b.order || 0))
+  }
+
+  // ── Sort phase templates by Phase No. ─────────────────────────────────────
+  phaseTemplates.sort((a, b) =>
+    (a.properties["Phase No."]?.number || 0) - (b.properties["Phase No."]?.number || 0)
+  )
+
+  // Fallback: if no templates found for this OS type, create generic phases
+  if (!phaseTemplates.length) {
+    console.warn(`[setup_project] No templates for "${osType}" — using generic 3-phase fallback`)
+    const fallback = [
+      { no: 1, name: "Phase 1 — Setup",     del: "Workspace setup, scope confirmation" },
+      { no: 2, name: "Phase 2 — Build",     del: "Core modules built and configured" },
+      { no: 3, name: "Phase 3 — Handover",  del: "Client review, QA, handover" },
+    ]
+    for (const f of fallback) {
+      phaseTemplates.push({
+        properties: {
+          "Phase Name":   { title: [{ text: { content: f.name } }] },
+          "Phase No.":    { number: f.no },
+          "Deliverables": { rich_text: [{ text: { content: f.del } }] },
+          "Source OS":    { select: null },
+        },
+      })
+    }
+  }
+
+  // ── Calculate timeline ────────────────────────────────────────────────────
+  const totalDays   = LENGTH_DAYS[timelineLabel] || LENGTH_DAYS["2–4 weeks"]
+  const totalPhases = phaseTemplates.length
+  const targetDate  = addDays(startDate, totalDays)
+
+  // ── Create / reuse phases (parallel) ──────────────────────────────────────
+  const phasePromises = phaseTemplates.map(async (pt, idx) => {
+    const phaseNo      = pt.properties["Phase No."]?.number
+    const phaseName    = plain(pt.properties["Phase Name"]?.title || [])
+    const deliverables = plain(pt.properties["Deliverables"]?.rich_text || [])
+
+    // Proportional date split
+    const phStart = addDays(startDate, Math.round(totalDays * (idx / totalPhases)))
+    const phEnd   = addDays(startDate, Math.round(totalDays * ((idx + 1) / totalPhases)))
+
+    let phaseId = existingPhaseMap[phaseNo] || null
 
     if (!phaseId) {
+      // Create new phase
       const created = await createPage({
         parent: { database_id: DB.PHASES },
         properties: {
-          "Phase Name": { title: [{ type: "text", text: { content: phase.name } }] },
-          "Phase No.":  { number: phase.no },
-          "Status":     { select: { name: "Not Started" } },
-          "Start Date": { date: { start: phStart } },
-          "Due Date":   { date: { start: phEnd } },
-          "Project":    { relation: [{ id: projectId }] },
+          "Phase Name":   { title: [{ text: { content: phaseName } }] },
+          "Phase No.":    { number: phaseNo },
+          "Status":       { select: { name: "Not Started" } },
+          "Start Date":   { date: { start: phStart } },
+          "Due Date":     { date: { start: phEnd } },
+          "Project":      { relation: [{ id: projectId }] },
+          ...(deliverables ? { "Deliverables": { rich_text: [{ text: { content: deliverables } }] } } : {}),
         },
       }, token)
       phaseId = created.id.replace(/-/g, "")
-      console.log(`[setup_project] Created ${phase.name} → ${phaseId}`)
+      console.log(`[setup_project] Created ${phaseName} → ${phaseId}`)
     } else {
+      // Reuse existing — update name, dates, deliverables to match template
       await patchPage(phaseId, {
-        "Start Date": { date: { start: phStart } },
-        "Due Date":   { date: { start: phEnd } },
+        "Phase Name":   { title: [{ text: { content: phaseName } }] },
+        "Start Date":   { date: { start: phStart } },
+        "Due Date":     { date: { start: phEnd } },
+        ...(deliverables ? { "Deliverables": { rich_text: [{ text: { content: deliverables } }] } } : {}),
       }, token).catch(() => {})
-      console.log(`[setup_project] Reusing ${phase.name} → ${phaseId}`)
+      console.log(`[setup_project] Reusing ${phaseName} → ${phaseId}`)
     }
-    return { no: phase.no, id: phaseId }
+
+    return { no: phaseNo, id: phaseId, name: phaseName }
   })
+
   const resolvedPhases = await Promise.all(phasePromises)
   resolvedPhases.sort((a, b) => a.no - b.no)
-  for (const p of resolvedPhases) phasesCreated.push(p.id)
 
-  // ── Build all task bodies first, then create in parallel batches ──
+  // ── Build sub-item task bodies ────────────────────────────────────────────
   const allTaskBodies = []
+  const taskBreakdown = {}
+
   for (const phase of resolvedPhases) {
-    const taskList = (phaseTaskMap[phase.no] || []).filter(t => !t.name.startsWith("──"))
-    for (let i = 0; i < taskList.length; i++) {
-      const task = taskList[i]
-      const taskProps = {
-        "Task Name":    { title: [{ type: "text", text: { content: task.name } }] },
-        "Status":       { status: { name: "Not Started" } },
-        "Priority":     { select: { name: task.priority || "Medium" } },
-        "Phase Stage":  { select: { name: `Phase ${phase.no}` } },
-        "Phase":        { relation: [{ id: phase.id }] },
+    const tasks = taskMap[phase.no] || []
+    taskBreakdown[`phase_${phase.no}`] = tasks.length
+
+    for (const task of tasks) {
+      const props = {
+        "Phase Name":   { title: [{ text: { content: task.name } }] },
+        "Status":       { select: { name: "Not Started" } },
+        "Phase No.":    { number: phase.no },
         "Project":      { relation: [{ id: projectId }] },
-        "Task No.":     { number: i + 1 },
+        "Parent item":  { relation: [{ id: phase.id }] },
       }
-      if (task.area) taskProps["Area"] = { select: { name: task.area } }
-      allTaskBodies.push({ parent: { database_id: DB.TASKS }, properties: taskProps })
+      // Store deliverables / priority info in Notes if present
+      const noteParts = []
+      if (task.priority && task.priority !== "Medium") noteParts.push(`Priority: ${task.priority}`)
+      if (task.deliverables) noteParts.push(task.deliverables)
+      if (noteParts.length) {
+        props["Notes"] = { rich_text: [{ text: { content: noteParts.join(" · ") } }] }
+      }
+
+      allTaskBodies.push({ parent: { database_id: DB.PHASES }, properties: props })
     }
   }
 
-  // Create tasks in parallel batches of 8 (stay under Notion rate limit)
+  // ── Create tasks in parallel batches of 8 ─────────────────────────────────
   const BATCH = 8
   const tasksCreated = []
   for (let i = 0; i < allTaskBodies.length; i += BATCH) {
@@ -452,13 +394,19 @@ async function setup(payload) {
     tasksCreated.push(...results)
   }
 
-  // Link phases + set Phase 1 to In Progress — in parallel
+  // ── Link phases to project + set current phase + target date ──────────────
+  const phaseIds   = resolvedPhases.map(p => p.id)
+  const firstPhase = resolvedPhases[0]
+
   await Promise.all([
     patchPage(projectId, {
-      "Phases": { relation: phasesCreated.map(id => ({ id })) },
+      "Phases":               { relation: phaseIds.map(id => ({ id })) },
+      "Phase":                { select: { name: firstPhase?.name || "Phase 0 — Pre-Build" } },
+      "Targeted Completion":  { date: { start: targetDate } },
     }, token),
-    phasesCreated[0]
-      ? patchPage(phasesCreated[0], { "Status": { select: { name: "In Progress" } } }, token)
+    // Set first phase to In Progress
+    firstPhase
+      ? patchPage(firstPhase.id, { "Status": { select: { name: "In Progress" } } }, token)
       : Promise.resolve(),
   ])
 
@@ -466,28 +414,21 @@ async function setup(payload) {
     status:         "success",
     project_id:     projectId,
     os_type:        osType || "(generic)",
-    addons:         addons,
-    phases_created: phasesCreated.length,
+    addons,
+    phases_created: phaseIds.length,
     tasks_created:  tasksCreated.length,
-    target_date:    projectTargetDate,
-    custom_tasks:   customPh2Tasks.length,
-    task_breakdown: {
-      phase_1: PHASE_1_TASKS.length,
-      phase_2: phase2Tasks.filter(t => !t.name.startsWith("──")).length,
-      phase_3: phase3Tasks.filter(t => !t.name.startsWith("──")).length,
-      phase_4: PHASE_4_TASKS.length,
-      phase_5: PHASE_5_TASKS.length,
-    },
+    target_date:    targetDate,
+    task_breakdown: taskBreakdown,
   }
 
-  console.log(`[setup_project] Done: ${phasesCreated.length} phases, ${tasksCreated.length} tasks for ${osType || "generic"} project ${projectId}`)
+  console.log(`[setup_project] Done: ${phaseIds.length} phases, ${tasksCreated.length} sub-item tasks for ${osType || "generic"} project ${projectId}`)
   return summary
 }
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    return res.json({ service: "Opxio — Setup Project", status: "ready" })
+    return res.json({ service: "Opxio — Setup Project (template-driven)", status: "ready" })
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
