@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;min-height:100%;transition:background .3s,color .3s;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:10px;background:#191919;color:#fff;overflow-y:auto;min-height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.1);--lostb:rgba(255,107,53,.2);}
 
@@ -25,7 +25,7 @@ body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0
 body.light .btn:hover{border-color:rgba(92,153,0,.3);color:#5C9900;}
 
 /* topbar */
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
@@ -35,31 +35,31 @@ body.light .h-title{color:#111;}
 body.light .ts{color:rgba(0,0,0,.22);}
 
 /* section label */
-.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:10px 0 6px;}
 body.light .sec-lbl{color:rgba(0,0,0,.28);}
 
 /* ── STAT CARDS ── */
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 @media(max-width:680px){.grid-4{grid-template-columns:repeat(2,1fr);}}
-.stat{padding:16px 18px;position:relative;}
-.s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.45);margin-bottom:10px;display:block;}
+.stat{padding:10px 14px;position:relative;}
+.s-dot{position:absolute;top:10px;right:12px;width:5px;height:5px;border-radius:50%;background:var(--g);}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.45);margin-bottom:6px;display:block;}
 body.light .s-lbl{color:rgba(0,0,0,.4);}
-.s-val{font-size:26px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-val{font-size:22px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 body.light .s-val{color:#5C9900;}
-.s-delta-row{display:flex;align-items:center;gap:5px;margin-top:7px;}
+.s-delta-row{display:flex;align-items:center;gap:4px;margin-top:4px;}
 .s-delta{font-size:10.5px;font-weight:700;color:var(--g);}
 .s-delta.neg{color:#FF6B6B;}
 .s-delta-lbl{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.3);}
 body.light .s-delta-lbl{color:rgba(0,0,0,.3);}
 
 /* ── MID ROW ── */
-.mid-row{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-top:0;}
+.mid-row{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:0;}
 @media(max-width:620px){.mid-row{grid-template-columns:1fr;}}
 
 /* ── TOP PRODUCTS ── */
-.panel{padding:20px 22px;}
-.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.panel{padding:14px 16px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
 body.light .panel-title{color:#111;opacity:1;}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
@@ -71,7 +71,7 @@ body.light .panel-title{color:#111;opacity:1;}
 .prod-table th{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);padding-bottom:10px;text-align:left;}
 body.light .prod-table th{color:rgba(0,0,0,.28);}
 .prod-table th.th-pct{text-align:right;}
-.prod-table td{padding:10px 0;border-top:1px solid rgba(255,255,255,.05);vertical-align:middle;}
+.prod-table td{padding:7px 0;border-top:1px solid rgba(255,255,255,.05);vertical-align:middle;}
 body.light .prod-table td{border-top-color:rgba(0,0,0,.06);}
 .prod-num{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);}
 body.light .prod-num{color:rgba(0,0,0,.2);}
@@ -85,34 +85,18 @@ body.light .prod-bar-track{background:rgba(0,0,0,.08);}
 .prod-bar-fill{height:5px;border-radius:999px;background:var(--g);}
 .prod-pct{font-size:12px;font-weight:700;color:var(--g);text-align:right;display:block;}
 
-/* ── PRODUCT TOGGLE PILLS ── */
-.pill-row{display:flex;gap:4px;flex-wrap:wrap;}
-.pill{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.06em;}
-.pill:hover{border-color:var(--gb);color:var(--g);}
-.pill.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
-body.light .pill{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.35);}
-body.light .pill:hover{border-color:rgba(92,153,0,.3);color:#5C9900;}
-body.light .pill.active{background:rgba(92,153,0,.08);border-color:rgba(92,153,0,.3);color:#5C9900;}
-.prod-cat{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;margin-left:6px;display:inline-block;vertical-align:middle;}
-.cat-os{background:var(--gm);color:var(--g);}
-.cat-widgets{background:rgba(96,165,250,.12);color:#60A5FA;}
-.cat-automations{background:rgba(251,191,36,.12);color:#FBBF24;}
-body.light .cat-os{background:rgba(92,153,0,.08);color:#5C9900;}
-body.light .cat-widgets{background:rgba(37,99,235,.08);color:#2563EB;}
-body.light .cat-automations{background:rgba(217,119,6,.08);color:#D97706;}
-
 /* ── EARNINGS ── */
 .earn-inner{display:flex;flex-direction:column;height:100%;}
 .earn-top{flex:1;}
 .earn-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.25);margin-bottom:8px;}
 body.light .earn-eyebrow{color:rgba(0,0,0,.3);}
-.earn-amt{font-size:36px;font-weight:900;letter-spacing:-2px;color:var(--g);line-height:1;}
+.earn-amt{font-size:28px;font-weight:900;letter-spacing:-2px;color:var(--g);line-height:1;}
 body.light .earn-amt{color:#5C9900;}
-.earn-diff{font-size:12px;font-weight:700;color:var(--g);margin-top:8px;display:flex;align-items:center;gap:4px;}
+.earn-diff{font-size:11px;font-weight:700;color:var(--g);margin-top:5px;display:flex;align-items:center;gap:4px;}
 .earn-diff-lbl{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.35);}
 body.light .earn-diff-lbl{color:rgba(0,0,0,.35);}
 /* month bars */
-.earn-bars{margin-top:18px;display:flex;flex-direction:column;gap:8px;}
+.earn-bars{margin-top:10px;display:flex;flex-direction:column;gap:5px;}
 .ebar-row{display:flex;align-items:center;gap:10px;}
 .ebar-lbl{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);width:28px;flex-shrink:0;}
 body.light .ebar-lbl{color:rgba(0,0,0,.35);}
@@ -122,19 +106,19 @@ body.light .ebar-track{background:rgba(0,0,0,.08);}
 .ebar-val{font-size:10px;font-weight:700;color:rgba(255,255,255,.55);width:54px;text-align:right;flex-shrink:0;}
 body.light .ebar-val{color:rgba(0,0,0,.5);}
 /* circular ring */
-.ring-wrap{display:flex;flex-direction:column;align-items:center;margin-top:18px;}
-.ring-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-bottom:8px;}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;margin-top:10px;}
+.ring-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);margin-bottom:4px;}
 body.light .ring-lbl{color:rgba(0,0,0,.3);}
 .ring-svg{overflow:visible;}
 .ring-track{fill:none;stroke:rgba(255,255,255,.06);}
 body.light .ring-track{stroke:rgba(0,0,0,.07);}
 .ring-fill{fill:none;stroke:var(--g);stroke-linecap:round;transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1);}
-.ring-center-val{font-size:22px;font-weight:900;fill:#fff;letter-spacing:-1px;}
+.ring-center-val{font-size:18px;font-weight:900;fill:#fff;letter-spacing:-1px;}
 body.light .ring-center-val{fill:#111;}
 .ring-center-sub{font-size:9px;font-weight:600;fill:rgba(255,255,255,.3);letter-spacing:.05em;}
 body.light .ring-center-sub{fill:rgba(0,0,0,.3);}
 /* editable target */
-.target-row{display:flex;align-items:center;gap:5px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
+.target-row{display:flex;align-items:center;gap:5px;margin-top:6px;flex-wrap:wrap;justify-content:center;}
 .target-of{font-size:10px;font-weight:500;color:rgba(255,255,255,.3);}
 body.light .target-of{color:rgba(0,0,0,.3);}
 .target-val{font-size:10px;font-weight:700;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.2);transition:all .2s;}
@@ -142,7 +126,7 @@ body.light .target-of{color:rgba(0,0,0,.3);}
 body.light .target-val{color:rgba(0,0,0,.5);}
 .edit-ic{font-size:9px;color:rgba(255,255,255,.22);cursor:pointer;transition:color .2s;}
 .edit-ic:hover{color:var(--g);}
-.target-edit-wrap{display:none;align-items:center;gap:6px;margin-top:8px;justify-content:center;}
+.target-edit-wrap{display:none;align-items:center;gap:6px;margin-top:5px;justify-content:center;}
 .target-edit-wrap.show{display:flex;}
 .target-inp{background:#2A2A2A;border:1px solid rgba(255,255,255,.15);color:#fff;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;padding:4px 9px;border-radius:7px;width:110px;outline:none;}
 .target-inp:focus{border-color:var(--gb);}
@@ -150,8 +134,8 @@ body.light .target-inp{background:#F3F4F6;border-color:rgba(0,0,0,.12);color:#11
 .set-btn{background:var(--g);color:#111;border:none;font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;cursor:pointer;}
 
 /* ── REVENUE CHART ── */
-.chart-outer{padding:20px 22px;}
-.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.chart-outer{padding:14px 16px;}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
 .chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
 body.light .chart-title{color:#111;opacity:1;}
 .legend-row{display:flex;align-items:center;gap:16px;}
@@ -161,7 +145,7 @@ body.light .chart-title{color:#111;opacity:1;}
 .leg-l{background:var(--lost);}
 .leg-txt{font-size:10px;font-weight:600;color:rgba(255,255,255,.45);}
 body.light .leg-txt{color:rgba(0,0,0,.4);}
-.chart-wrap{position:relative;width:100%;height:220px;}
+.chart-wrap{position:relative;width:100%;height:160px;}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:#fff;pointer-events:none;display:none;white-space:nowrap;z-index:10;}
 body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);color:#111;}
 ::-webkit-scrollbar{width:5px;}
@@ -236,12 +220,7 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div class="card panel">
     <div class="panel-hdr">
       <span class="panel-title">Top Products</span>
-      <div class="pill-row" id="cat-pills">
-        <button class="pill active" data-cat="all" onclick="filterProds('all')">All</button>
-        <button class="pill" data-cat="os" onclick="filterProds('os')">OS</button>
-        <button class="pill" data-cat="widgets" onclick="filterProds('widgets')">Widgets</button>
-        <button class="pill" data-cat="automations" onclick="filterProds('automations')">Automations</button>
-      </div>
+      <span class="panel-badge" id="prod-month">—</span>
     </div>
     <table class="prod-table">
       <colgroup>
@@ -297,7 +276,7 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
     <!-- Ring -->
     <div class="ring-wrap">
       <div class="ring-lbl">Monthly Target</div>
-      <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
+      <svg class="ring-svg" width="90" height="90" viewBox="0 0 120 120">
         <circle class="ring-track" cx="60" cy="60" r="50" stroke-width="11"/>
         <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="50"
           stroke-width="11"
@@ -373,61 +352,6 @@ function fmtRM(n) {
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Top Products filter state ──
-let allProducts = [];
-let activeCat = 'all';
-
-const CAT_LABELS = { os: 'OS', widgets: 'Widgets', automations: 'Automations' };
-
-function catBadge(cat) {
-  const cls = 'prod-cat cat-' + (cat || 'os');
-  return `<span class="${cls}">${CAT_LABELS[cat] || 'OS'}</span>`;
-}
-
-function filterProds(cat) {
-  activeCat = cat;
-  document.querySelectorAll('#cat-pills .pill').forEach(b => {
-    b.classList.toggle('active', b.dataset.cat === cat);
-  });
-  renderProducts(cat);
-}
-
-function renderProducts(cat) {
-  const tbody = document.getElementById('prod-tbody');
-  if (!tbody) return;
-
-  const filtered = cat === 'all' ? allProducts : allProducts.filter(p => p.cat === cat);
-
-  // Renormalize bar widths for filtered set
-  const maxCount = filtered.length > 0 ? filtered[0].count : 1;
-  const items = filtered.map((p, i) => ({
-    ...p,
-    barPct: Math.round((p.count / maxCount) * 100)
-  }));
-
-  if (items.length === 0) {
-    const msg = cat === 'all' ? 'No approved quotations yet' : `No ${CAT_LABELS[cat] || cat} products yet`;
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">${msg}</td></tr>`;
-  } else {
-    tbody.innerHTML = items.map((p, i) => `
-      <tr>
-        <td><span class="prod-num">${i + 1}</span></td>
-        <td>
-          <span class="prod-name">${esc(p.name)}${catBadge(p.cat)}</span>
-          <span class="prod-sub">${esc(p.sub || '')}</span>
-        </td>
-        <td>
-          <div class="prod-bar-wrap">
-            <div class="prod-bar-track">
-              <div class="prod-bar-fill" style="width:${p.barPct || 0}%"></div>
-            </div>
-          </div>
-        </td>
-        <td><span class="prod-pct">${p.pct || 0}%</span></td>
-      </tr>`).join('');
-  }
 }
 
 function renderRing(col, tgt) {
@@ -691,8 +615,32 @@ async function loadData() {
     animBars(monthly);
 
     // ── Render top products dynamically ──────────────────────────────────
-    allProducts = j.topProducts || [];
-    renderProducts(activeCat);
+    const tbody = document.getElementById('prod-tbody');
+    if (tbody) {
+      const prods = j.topProducts || [];
+      const pm = document.getElementById('prod-month');
+      if (pm) { const n = new Date(); pm.textContent = n.toLocaleString('default',{month:'short',year:'numeric'}); }
+      if (prods.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">No approved quotations yet</td></tr>';
+      } else {
+        tbody.innerHTML = prods.map((p, i) => `
+          <tr>
+            <td><span class="prod-num">${i + 1}</span></td>
+            <td>
+              <span class="prod-name">${esc(p.name)}</span>
+              <span class="prod-sub">${esc(p.sub || '')}</span>
+            </td>
+            <td>
+              <div class="prod-bar-wrap">
+                <div class="prod-bar-track">
+                  <div class="prod-bar-fill" style="width:${p.barPct || p.pct || 0}%"></div>
+                </div>
+              </div>
+            </td>
+            <td><span class="prod-pct">${p.pct || 0}%</span></td>
+          </tr>`).join('');
+      }
+    }
 
     // Build revData from monthly paid (lost = 0, no lost-deal revenue data yet)
     revData = monthly.map(m => ({ m: m.m.split(' ')[0], col: m.v, lost: 0 }));
