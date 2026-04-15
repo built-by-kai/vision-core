@@ -454,6 +454,39 @@ async function setup(payload) {
       : Promise.resolve(),
   ])
 
+  // ── Add progress widget embed to the project page ──────────────────────────
+  const widgetUrl = `https://dashboard.opxio.io/operations/progress?project=${projectId}`
+  try {
+    await fetch(`https://api.notion.com/v1/blocks/${projectId}/children`, {
+      method: "PATCH",
+      headers: {
+        "Authorization":  `Bearer ${token}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type":   "application/json",
+      },
+      body: JSON.stringify({
+        children: [
+          { object: "block", type: "divider", divider: {} },
+          {
+            object: "block",
+            type: "heading_3",
+            heading_3: {
+              rich_text: [{ type: "text", text: { content: "📊 Project Progress" } }],
+            },
+          },
+          {
+            object: "block",
+            type: "embed",
+            embed: { url: widgetUrl },
+          },
+        ],
+      }),
+    })
+    console.log(`[setup_project] Progress widget embedded on project page`)
+  } catch (e) {
+    console.warn("[setup_project] embed widget failed (non-fatal):", e.message)
+  }
+
   const summary = {
     status:         "success",
     project_id:     projectId,
