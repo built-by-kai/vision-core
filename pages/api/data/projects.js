@@ -52,50 +52,72 @@ export default async function handler(req, res) {
       const notionToken = getNotionToken(client)
 
       const body = req.body || {}
-      const todayISO = new Date().toISOString().split("T")[0]
+      const now = new Date()
+      const nowISO = now.toISOString() // full datetime with time
+
+      // Helper: validate that userId (if provided) is an assignee on the task
+      async function validateAssignee(taskPageId, userId) {
+        if (!userId) return true // skip check if no userId provided (e.g. Notion webhook)
+        try {
+          const res = await fetch(`https://api.notion.com/v1/pages/${taskPageId}`, { headers: hdrs(notionToken) })
+          if (!res.ok) return true // if we can't fetch, don't block the action
+          const page = await res.json()
+          const people = page.properties?.["Assigned To"]?.people || page.properties?.Assignee?.people || []
+          if (!people.length) return true // no assignees = anyone can act
+          return people.some(p => p.id === userId || p.person?.email === userId)
+        } catch { return true }
+      }
 
       // ── Mode 1: Notion webhook button — action from ?do= query, page ID from body ──
       if (req.query.do) {
-        // Extract page ID from Notion webhook payload (multiple possible locations)
         const pageId = body.data?.page_id || body.data?.id || body.page_id || body.id
           || body.source?.page_id || body.taskId || null
         if (!pageId) return res.status(400).json({ error: "Could not find page_id in webhook payload", received: Object.keys(body) })
 
+        // Notion webhooks include user context — validate if available
+        const webhookUserId = body.data?.user_id || body.source?.user_id || body.user_id || null
+        const allowed = await validateAssignee(pageId, webhookUserId)
+        if (!allowed) return res.status(403).json({ error: "Only the assigned team member can perform this action" })
+
         if (req.query.do === "start") {
           await patchPage(pageId, {
-            "Start Date": { date: { start: todayISO } },
+            "Start Date": { date: { start: nowISO } },
             "Status":     { status: { name: "In Progress" } },
           }, notionToken)
-          return res.status(200).json({ ok: true, action: "start_task", pageId, date: todayISO })
+          return res.status(200).json({ ok: true, action: "start_task", pageId, date: nowISO })
         }
         if (req.query.do === "complete") {
           await patchPage(pageId, {
-            "Completed Date": { date: { start: todayISO } },
+            "Completed Date": { date: { start: nowISO } },
             "Status":         { status: { name: "Done" } },
           }, notionToken)
-          return res.status(200).json({ ok: true, action: "complete_task", pageId, date: todayISO })
+          return res.status(200).json({ ok: true, action: "complete_task", pageId, date: nowISO })
         }
         return res.status(400).json({ error: "Unknown action: " + req.query.do })
       }
 
-      // ── Mode 2: Widget / direct JSON body {action, taskId} ──
-      const { action, taskId } = body
+      // ── Mode 2: Widget / direct JSON body {action, taskId, userId} ──
+      const { action, taskId, userId } = body
       if (!action || !taskId) return res.status(400).json({ error: "Missing action or taskId" })
+
+      // Validate assignee if userId provided
+      const allowed = await validateAssignee(taskId, userId)
+      if (!allowed) return res.status(403).json({ error: "Only the assigned team member can perform this action" })
 
       if (action === "start_task") {
         await patchPage(taskId, {
-          "Start Date": { date: { start: todayISO } },
+          "Start Date": { date: { start: nowISO } },
           "Status":     { status: { name: "In Progress" } },
         }, notionToken)
-        return res.status(200).json({ ok: true, action: "start_task", date: todayISO })
+        return res.status(200).json({ ok: true, action: "start_task", date: nowISO })
       }
 
       if (action === "complete_task") {
         await patchPage(taskId, {
-          "Completed Date": { date: { start: todayISO } },
+          "Completed Date": { date: { start: nowISO } },
           "Status":         { status: { name: "Done" } },
         }, notionToken)
-        return res.status(200).json({ ok: true, action: "complete_task", date: todayISO })
+        return res.status(200).json({ ok: true, action: "complete_task", date: nowISO })
       }
 
       return res.status(400).json({ error: "Unknown action: " + action })
@@ -114,21 +136,22 @@ export default async function handler(req, res) {
       if (!client) return res.status(403).send(actionHTML("Error", "Invalid token", false))
       const notionToken = getNotionToken(client)
       const taskId = req.query.task
-      const todayISO = new Date().toISOString().split("T")[0]
+      const nowISO = new Date().toISOString()
+      const fmtTime = new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kuala_Lumpur" })
 
       if (req.query.do === "start") {
         await patchPage(taskId, {
-          "Start Date": { date: { start: todayISO } },
+          "Start Date": { date: { start: nowISO } },
           "Status":     { status: { name: "In Progress" } },
         }, notionToken)
-        return res.status(200).send(actionHTML("Task Started", `Status → In Progress · Start Date → ${todayISO}`, true))
+        return res.status(200).send(actionHTML("Task Started", `Status → In Progress · Start Date → ${fmtTime}`, true))
       }
       if (req.query.do === "complete") {
         await patchPage(taskId, {
-          "Completed Date": { date: { start: todayISO } },
+          "Completed Date": { date: { start: nowISO } },
           "Status":         { status: { name: "Done" } },
         }, notionToken)
-        return res.status(200).send(actionHTML("Task Completed", `Status → Done · Completed Date → ${todayISO}`, true))
+        return res.status(200).send(actionHTML("Task Completed", `Status → Done · Completed Date → ${fmtTime}`, true))
       }
       return res.status(400).send(actionHTML("Error", "Unknown action: " + req.query.do, false))
     } catch (err) {

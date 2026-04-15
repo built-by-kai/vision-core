@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Opxio — Task Gantt</title>
+<title>Opxio — Project Task Gantt</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
@@ -86,8 +86,8 @@ body.light .gl-name{color:rgba(0,0,0,.65);}
 .gl-start{background:var(--gm);border:1px solid var(--gb);color:var(--g);width:26px;height:26px;border-radius:50%;cursor:pointer;flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;padding:0;}
 .gl-start:hover{background:var(--g);color:#111;transform:scale(1.1);}
 .gl-start.loading{opacity:.4;pointer-events:none;}
-.gl-complete{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber);width:26px;height:26px;border-radius:50%;cursor:pointer;flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;padding:0;}
-.gl-complete:hover{background:var(--amber);color:#111;transform:scale(1.1);}
+.gl-complete{background:rgba(170,255,0,.08);border:1px solid rgba(170,255,0,.15);color:var(--g);width:24px;height:24px;border-radius:6px;cursor:pointer;flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;padding:0;}
+.gl-complete:hover{background:var(--g);color:#111;transform:scale(1.08);}
 .gl-complete.loading{opacity:.4;pointer-events:none;}
 .gl-started{font-size:8px;font-weight:700;color:rgba(170,255,0,.35);flex-shrink:0;}
 
@@ -149,8 +149,10 @@ body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 .b-NotStarted{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);}
 body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04);}
 
-/* Completed marker */
-.g-done-mark{position:absolute;top:10px;width:22px;height:22px;border-radius:50%;background:var(--g);color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;z-index:2;box-shadow:0 1px 6px rgba(170,255,0,.3);}
+/* Completed flag — small vertical line with dot */
+.g-done-mark{position:absolute;top:6px;z-index:2;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.g-done-line{width:2px;height:10px;background:var(--g);border-radius:1px;}
+.g-done-dot{width:8px;height:8px;border-radius:50%;background:var(--g);margin-top:-1px;box-shadow:0 0 6px rgba(170,255,0,.4);}
 
 /* Due label outside bar */
 .g-due{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
@@ -169,7 +171,7 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
 </style></head><body>
 
 <div class="header">
-  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Task Gantt</h1></div>
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Project Task Gantt</h1></div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -367,6 +369,8 @@ function renderGantt(){
       else if(t.created){t._start=t.created;t._end=addDays(t.created,3);}
       else{const off=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);t._start=addDays(phStart,off);t._end=addDays(t._start,2);}
       if(t._start>t._end) t._end=t._start;
+      // For Done tasks: extend bar to completedDate if it's later than _end
+      if(t.status==='Done'&&t.completedDate&&t.completedDate>t._end) t._end=t.completedDate;
     });
   });
 
@@ -445,11 +449,11 @@ function renderGantt(){
         dueHTML=`<div class="g-due${isOverdue?' overdue':''}" style="left:${dueX}px">${fmtShort(t.due)}</div>`;
       }
 
-      // Completed marker at completion date
+      // Completed flag at completion date
       let doneHTML='';
       if(t.status==='Done'&&t.completedDate&&dayIdx[t.completedDate]!=null){
-        const doneX=dayIdx[t.completedDate]*DAY_W+DAY_W/2-11;
-        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtShort(t.completedDate)}">✓</div>`;
+        const doneX=dayIdx[t.completedDate]*DAY_W+DAY_W/2-4;
+        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtShort(t.completedDate)}"><div class="g-done-line"></div><div class="g-done-dot"></div></div>`;
       }
 
       const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtShort(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtShort(t.completedDate):''}`;
