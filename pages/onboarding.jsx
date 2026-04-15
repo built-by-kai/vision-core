@@ -3,7 +3,7 @@
 // Pre-fills from URL params: ?client=Creaitors+Official&package=Business+OS&addons=Enhanced+Dashboard,Lead+Capture+System&deal=DEAL_ID
 // On submit: POSTs to /api/onboarding which writes to Notion
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
