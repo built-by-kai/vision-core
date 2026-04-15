@@ -115,10 +115,12 @@ export default async function handler(req, res) {
       .filter(t => t.status === "In Progress")
       .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
 
-    // Upcoming tasks: Not Started from the current or next active phase, first 5
-    const activePhaseNo = phases.find(p => p.status === "In Progress")?.no ?? 0
+    // Upcoming tasks: Not Started from the current active phase or first incomplete phase, + next phase
+    const activePhase = phases.find(p => p.status === "In Progress")
+    const firstIncomplete = phases.find(p => p.status !== "Done")
+    const refPhaseNo = activePhase?.no ?? firstIncomplete?.no ?? 0
     const upcomingTasks = allTaskDetails
-      .filter(t => t.status === "Not Started" && t.phaseNo <= activePhaseNo + 1)
+      .filter(t => t.status === "Not Started" && t.phaseNo <= refPhaseNo + 1)
       .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
       .slice(0, 5)
 
