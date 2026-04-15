@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Operations Overview</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;--redm:rgba(255,107,107,.1);--redb:rgba(255,107,107,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+
+/* ── STAT CARDS ── */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:600px){.g4{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:16px 18px;position:relative;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.6;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
+body.light .s-lbl{color:rgba(0,0,0,.4);}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+body.light .s-sub{color:rgba(0,0,0,.28);}
+
+/* ── MID ROW: 2-col ── */
+.mid-row{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:700px){.mid-row{grid-template-columns:1fr;}}
+.panel{padding:20px 22px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
+body.light .panel-title{color:#111;opacity:1;}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+
+/* ── PROJECT TYPE TABLE ── */
+.type-table{width:100%;border-collapse:collapse;}
+.type-table td{padding:6px 0;vertical-align:middle;}
+.type-table tr{border-bottom:1px solid rgba(255,255,255,.04);}
+.type-table tr:last-child{border-bottom:none;}
+body.light .type-table tr{border-bottom-color:rgba(0,0,0,.05);}
+.tt-name{font-size:12px;font-weight:700;color:#fff;}
+body.light .tt-name{color:#111;}
+.tt-count{font-size:11px;font-weight:800;color:var(--g);text-align:center;width:40px;}
+.tt-bar-cell{width:45%;}
+.tt-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;}
+body.light .tt-bar{background:rgba(0,0,0,.06);}
+.tt-fill{height:6px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.tt-pct{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);width:36px;text-align:right;}
+body.light .tt-pct{color:rgba(0,0,0,.25);}
+
+/* ── TASK STATUS BREAKDOWN ── */
+.task-ring-wrap{display:flex;align-items:center;gap:20px;margin-bottom:18px;}
+.ring-svg{flex-shrink:0;}
+.ring-center{font-size:18px;font-weight:900;fill:var(--g);}
+.ring-label{font-size:8px;font-weight:700;fill:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;}
+body.light .ring-label{fill:rgba(0,0,0,.3);}
+.ring-legend{display:flex;flex-direction:column;gap:6px;}
+.rl-item{display:flex;align-items:center;gap:8px;}
+.rl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.rl-info{display:flex;flex-direction:column;}
+.rl-val{font-size:14px;font-weight:800;color:#fff;line-height:1.1;}
+body.light .rl-val{color:#111;}
+.rl-lbl{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);}
+body.light .rl-lbl{color:rgba(0,0,0,.3);}
+
+/* ── PRIORITY BARS ── */
+.pri-list{display:flex;flex-direction:column;gap:10px;}
+.pri-row{display:flex;align-items:center;gap:10px;}
+.pri-label{font-size:10px;font-weight:700;width:60px;flex-shrink:0;color:rgba(255,255,255,.5);}
+body.light .pri-label{color:rgba(0,0,0,.4);}
+.pri-track{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+body.light .pri-track{background:rgba(0,0,0,.05);}
+.pri-fill{height:8px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pri-high{background:var(--red);}
+.pri-medium{background:var(--amber);}
+.pri-low{background:var(--blue);}
+.pri-none{background:rgba(255,255,255,.12);}
+body.light .pri-none{background:rgba(0,0,0,.1);}
+.pri-count{font-size:10px;font-weight:800;color:rgba(255,255,255,.4);width:32px;text-align:right;flex-shrink:0;}
+body.light .pri-count{color:rgba(0,0,0,.35);}
+
+/* ── BOTTOM ROW ── */
+.bot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:700px){.bot-row{grid-template-columns:1fr;}}
+
+/* ── STATUS BOARD ── */
+.status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.sg-item{padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);}
+body.light .sg-item{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.04);}
+.sg-val{font-size:22px;font-weight:900;line-height:1;margin-bottom:3px;}
+.sg-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);}
+body.light .sg-lbl{color:rgba(0,0,0,.3);}
+
+.empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
+body.light .empty{color:rgba(0,0,0,.18);}
+</style></head><body>
+
+<div class="header">
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Overview</h1></div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="g4">
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Total Projects</span><div class="s-val" id="s-total">0</div><div class="s-sub" id="s-total-sub">Across all statuses</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Active Builds</span><div class="s-val" id="s-active">0</div><div class="s-sub" id="s-active-sub">Currently in progress</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Total Tasks</span><div class="s-val" id="s-tasks">0</div><div class="s-sub" id="s-tasks-sub">Across all projects</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Avg Completion</span><div class="s-val" id="s-avg">0%</div><div class="s-sub" id="s-avg-sub">Active project average</div></div>
+</div>
+
+<!-- MID ROW -->
+<div class="mid-row">
+  <!-- LEFT: Project Types -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Project Types</span>
+      <span class="panel-badge" id="type-badge">0 projects</span>
+    </div>
+    <table class="type-table"><tbody id="type-body"></tbody></table>
+  </div>
+  <!-- RIGHT: Task Completion Ring + Legend -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Task Completion</span>
+    </div>
+    <div class="task-ring-wrap">
+      <svg class="ring-svg" width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
+        <circle id="ring-done" cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"/>
+        <circle id="ring-ip" cx="50" cy="50" r="40" fill="none" stroke="var(--amber)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);"/>
+        <text x="50" y="46" text-anchor="middle" class="ring-center" id="ring-pct">0%</text>
+        <text x="50" y="58" text-anchor="middle" class="ring-label">Complete</text>
+      </svg>
+      <div class="ring-legend" id="ring-legend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="bot-row">
+  <!-- LEFT: Priority Distribution -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Task Priority</span>
+    </div>
+    <div class="pri-list" id="pri-list"></div>
+  </div>
+  <!-- RIGHT: Status Board -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Project Status</span>
+    </div>
+    <div class="status-grid" id="status-grid"></div>
+  </div>
+</div>
+
+<script>
+const _tok=new URLSearchParams(location.search).get('token')||'';
+function apiUrl(p){return _tok?p+'?token='+encodeURIComponent(_tok):p;}
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+const CIRC=2*Math.PI*40; // 251.3
+
+function renderStats(counts, ov){
+  document.getElementById('s-total').textContent=ov.totalProjects||0;
+  document.getElementById('s-total-sub').textContent=`${counts.active||0} active · ${counts.done||0} completed`;
+  document.getElementById('s-active').textContent=counts.active||0;
+  document.getElementById('s-active-sub').textContent=`${counts.awaiting||0} awaiting · ${counts.hold||0} on hold`;
+  document.getElementById('s-tasks').textContent=ov.taskStats?.total||0;
+  const ts=ov.taskStats||{};
+  document.getElementById('s-tasks-sub').textContent=`${ts.done||0} done · ${ts.inProgress||0} in progress`;
+  document.getElementById('s-avg').textContent=(ov.avgCompletion||0)+'%';
+  document.getElementById('s-avg-sub').textContent=`Across ${counts.active||0} active builds`;
+}
+
+function renderTypes(types, total){
+  document.getElementById('type-badge').textContent=total+' project'+(total!==1?'s':'');
+  const tbody=document.getElementById('type-body');
+  if(!types||!types.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;opacity:.3;font-size:11px;padding:16px;">No project data</td></tr>';return;}
+  const maxPct=types[0]?.pct||1;
+  tbody.innerHTML=types.map(t=>{
+    const barW=Math.round((t.pct/maxPct)*100);
+    return`<tr>
+      <td><span class="tt-name">${esc(t.name)}</span></td>
+      <td class="tt-count">${t.count}</td>
+      <td class="tt-bar-cell"><div class="tt-bar"><div class="tt-fill" style="width:${barW}%"></div></div></td>
+      <td class="tt-pct">${t.pct}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRing(ts){
+  const total=ts.total||0;
+  const done=ts.done||0;
+  const ip=ts.inProgress||0;
+  const blocked=ts.blocked||0;
+  const ns=ts.notStarted||0;
+  const pct=ts.completionPct||0;
+
+  document.getElementById('ring-pct').textContent=pct+'%';
+
+  // Done arc
+  const doneFrac=total>0?done/total:0;
+  const doneOffset=CIRC*(1-doneFrac);
+  document.getElementById('ring-done').style.strokeDashoffset=doneOffset;
+
+  // In-progress arc (starts after done)
+  const ipFrac=total>0?ip/total:0;
+  const ipOffset=CIRC*(1-ipFrac);
+  const ipEl=document.getElementById('ring-ip');
+  ipEl.style.strokeDashoffset=ipOffset;
+  ipEl.setAttribute('transform',`rotate(${-90+doneFrac*360} 50 50)`);
+
+  // Legend
+  const items=[
+    {color:'var(--g)',val:done,lbl:'Done'},
+    {color:'var(--amber)',val:ip,lbl:'In Progress'},
+    {color:'var(--red)',val:blocked,lbl:'Blocked'},
+    {color:'rgba(255,255,255,.12)',val:ns,lbl:'Not Started'},
+  ];
+  document.getElementById('ring-legend').innerHTML=items.map(i=>`
+    <div class="rl-item">
+      <div class="rl-dot" style="background:${i.color}"></div>
+      <div class="rl-info"><span class="rl-val">${i.val}</span><span class="rl-lbl">${i.lbl}</span></div>
+    </div>`).join('');
+}
+
+function renderPriorities(pri){
+  const total=(pri.High||0)+(pri.Medium||0)+(pri.Low||0)+(pri.None||0)||1;
+  const items=[
+    {label:'High',count:pri.High||0,cls:'pri-high'},
+    {label:'Medium',count:pri.Medium||0,cls:'pri-medium'},
+    {label:'Low',count:pri.Low||0,cls:'pri-low'},
+    {label:'None',count:pri.None||0,cls:'pri-none'},
+  ];
+  document.getElementById('pri-list').innerHTML=items.map(i=>{
+    const w=Math.round((i.count/total)*100);
+    return`<div class="pri-row">
+      <span class="pri-label">${i.label}</span>
+      <div class="pri-track"><div class="pri-fill ${i.cls}" style="width:${w}%"></div></div>
+      <span class="pri-count">${i.count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderStatusBoard(counts){
+  const items=[
+    {val:counts.active||0,lbl:'Active',color:'var(--g)'},
+    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--blue)'},
+    {val:counts.review||0,lbl:'In Review',color:'var(--amber)'},
+    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.35)'},
+    {val:counts.done||0,lbl:'Completed',color:'var(--g)'},
+  ];
+  document.getElementById('status-grid').innerHTML=items.map(i=>`
+    <div class="sg-item">
+      <div class="sg-val" style="color:${i.color}">${i.val}</div>
+      <div class="sg-lbl">${i.lbl}</div>
+    </div>`).join('');
+}
+
+function render(data){
+  const counts=data.counts||{};
+  const ov=data.overview||{};
+  renderStats(counts, ov);
+  renderTypes(ov.projectTypes||[], ov.totalProjects||0);
+  renderRing(ov.taskStats||{});
+  renderPriorities(ov.priorities||{});
+  renderStatusBoard(counts);
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(apiUrl('/api/data/projects'));
+    const j=await r.json();
+    if(j.error){console.error('API:',j.error);return;}
+    render(j);
+    setTs();
+  }catch(e){console.error('overview:',e);}
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setTs();loadData();setInterval(loadData,5*60*1000);
+</script></body></html>

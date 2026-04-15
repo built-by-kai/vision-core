@@ -237,7 +237,57 @@ export default async function handler(req, res) {
     const order = { active: 0, review: 1, awaiting: 2, hold: 3 }
     builds.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9))
 
-    res.status(200).json({ counts, builds, completed })
+    // ── Overview aggregates ───────────────────────────────────────────────
+    const allEntries = [...builds, ...completed]
+    const totalProjects = projects.length
+
+    // Project type distribution
+    const typeCount = {}
+    for (const e of allEntries) {
+      const t = e.type || "Unspecified"
+      typeCount[t] = (typeCount[t] || 0) + 1
+    }
+    const projectTypes = Object.entries(typeCount)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count, pct: Math.round((count / (totalProjects || 1)) * 100) }))
+
+    // Aggregate task stats across ALL projects
+    const aggTasks = { total: 0, done: 0, inProgress: 0, blocked: 0, notStarted: 0 }
+    for (const e of allEntries) {
+      const ts = e.taskSummary || {}
+      aggTasks.total += ts.total || 0
+      aggTasks.done += ts.done || 0
+      aggTasks.inProgress += ts.inProgress || 0
+      aggTasks.blocked += ts.blocked || 0
+      aggTasks.notStarted += ts.notStarted || 0
+    }
+    aggTasks.completionPct = aggTasks.total > 0 ? Math.round((aggTasks.done / aggTasks.total) * 100) : 0
+
+    // Priority distribution from taskMap
+    const priorities = { High: 0, Medium: 0, Low: 0, None: 0 }
+    for (const t of Object.values(taskMap)) {
+      const pri = t.priority
+      if (pri === "High" || pri === "Urgent") priorities.High++
+      else if (pri === "Medium") priorities.Medium++
+      else if (pri === "Low") priorities.Low++
+      else priorities.None++
+    }
+
+    // Average completion across active projects
+    const activeBuilds = builds.filter(b => b.status === "active")
+    const avgCompletion = activeBuilds.length > 0
+      ? Math.round(activeBuilds.reduce((s, b) => s + (b.overallPct || 0), 0) / activeBuilds.length)
+      : 0
+
+    const overview = {
+      totalProjects,
+      avgCompletion,
+      projectTypes,
+      taskStats: aggTasks,
+      priorities,
+    }
+
+    res.status(200).json({ counts, builds, completed, overview })
   } catch (err) {
     console.error("projects:", err)
     res.status(500).json({ error: err.message })

@@ -77,12 +77,19 @@ body.light .tab{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
 body.light .tab:hover{border-color:rgba(0,0,0,.15);color:rgba(0,0,0,.5);}
 body.light .tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
 
-.pc-progress{flex-shrink:0;width:200px;display:flex;align-items:center;gap:8px;}
-@media(max-width:600px){.pc-progress{width:100%;}}
+.pc-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:220px;}
+@media(max-width:600px){.pc-right{width:100%;align-items:stretch;}}
+.pc-progress{display:flex;align-items:center;gap:8px;width:100%;}
 .pc-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
 body.light .pc-track{background:rgba(0,0,0,.08);}
-.pc-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pc-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);min-width:0;}
 .pc-pct{font-size:13px;font-weight:900;color:var(--g);width:36px;text-align:right;flex-shrink:0;}
+.pc-pct.zero{color:rgba(255,255,255,.2);}
+body.light .pc-pct.zero{color:rgba(0,0,0,.15);}
+.pc-target{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.22);text-align:right;}
+body.light .pc-target{color:rgba(0,0,0,.2);}
+.pc-target strong{font-weight:700;color:rgba(255,255,255,.4);}
+body.light .pc-target strong{color:rgba(0,0,0,.35);}
 
 /* ── MID: TASK SUMMARY ── */
 .pc-tasks{display:flex;gap:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
@@ -248,6 +255,16 @@ function renderCard(b){
     phHTML='<div class="no-phases">No phases configured yet</div>';
   }
 
+  // Progress bar width: only fill from tasks done
+  const tasksDone=ts.done||0;
+  const tasksTotal=ts.total||0;
+  const barPct=tasksTotal>0?Math.round((tasksDone/tasksTotal)*100):0;
+
+  // Target date line below progress
+  let targetHTML='';
+  if(b.completedDate) targetHTML=`<div class="pc-target"><strong>Completed:</strong> ${fmtDateFull(b.completedDate)}</div>`;
+  else if(b.targetDate) targetHTML=`<div class="pc-target"><strong>Targeted Completion:</strong> ${fmtDateFull(b.targetDate)}</div>`;
+
   return`<div class="card proj-card">
     <div class="pc-top">
       <span class="pc-pill ${sp.cls}">${sp.label}</span>
@@ -256,9 +273,12 @@ function renderCard(b){
         ${subParts.length?`<div class="pc-sub">${subParts.join(' · ')}</div>`:''}
         ${datesHTML}
       </div>
-      <div class="pc-progress">
-        <div class="pc-track"><div class="pc-fill" style="width:${pct}%"></div></div>
-        <span class="pc-pct">${pct}%</span>
+      <div class="pc-right">
+        <div class="pc-progress">
+          <div class="pc-track"><div class="pc-fill" style="width:${barPct}%"></div></div>
+          <span class="pc-pct${barPct===0?' zero':''}">${barPct}%</span>
+        </div>
+        ${targetHTML}
       </div>
     </div>
     <div class="pc-tasks">
