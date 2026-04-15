@@ -457,7 +457,7 @@ export default async function handler(req, res) {
       "Status":        { select: { name: "Draft" } },
       "Date":          { date: { start: today } },
       "Payment Terms": { select: { name: "50% Deposit" } },
-      "Deal Source":   { relation: [{ id: leadId }] },
+      "Lead Source":   { relation: [{ id: leadId }] },
       ...(osName               ? { "OS Type":    { select: { name: osName } } } : {}),
       ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
       ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
