@@ -198,7 +198,7 @@ async function setup(payload) {
 
   // Update project with target date + notes
   const projectUpdates = {
-    "Target End Date": { date: { start: projectTargetDate } },
+    "Targeted Completion": { date: { start: projectTargetDate } },
   }
   if (servicesList) {
     const existingNotes = plain(projectProps.Notes?.rich_text || [])
