@@ -128,7 +128,7 @@ async function readIntakeTimeline(project, token) {
 // ─── MAIN SETUP ──────────────────────────────────────────────────────────────
 async function setup(payload) {
   const token = process.env.NOTION_API_KEY
-  const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  const rawId = payload.page_id || payload.data?.id || payload.data?.page_id || payload.source?.page_id || payload.source?.id
   if (!rawId) throw new Error("No page_id in payload")
   const projectId = rawId.replace(/-/g, "")
 
@@ -509,7 +509,7 @@ async function setup(payload) {
 // Also auto-advances the parent phase status.
 async function advanceTask(payload) {
   const token = process.env.NOTION_API_KEY
-  const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  const rawId = payload.page_id || payload.data?.id || payload.data?.page_id || payload.source?.page_id || payload.source?.id
   if (!rawId) throw new Error("No page_id in payload")
   const taskId = rawId.replace(/-/g, "")
 
@@ -692,9 +692,15 @@ async function advanceTask(payload) {
 //   Projects DB (DB.PROJECTS)  → setup project
 async function detectAction(payload) {
   const token  = process.env.NOTION_API_KEY
-  const rawId  = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  const rawId  = payload.page_id || payload.data?.id || payload.data?.page_id || payload.source?.page_id || payload.source?.id
   if (!rawId) return "setup" // fallback
 
+  // Fast path: Notion webhook payloads include parent DB directly in data
+  const inlineDb = (payload.data?.parent?.database_id || "").replace(/-/g, "")
+  if (inlineDb === DB.PHASES.replace(/-/g, "")) return "advance"
+  if (inlineDb === DB.PROJECTS.replace(/-/g, "")) return "setup"
+
+  // Fallback: fetch page from API (for manual/curl calls that don't include data.parent)
   const pageId = rawId.replace(/-/g, "")
   try {
     const page     = await getPage(pageId, token)
