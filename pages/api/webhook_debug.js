@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         parent: { database_id: ACTIVITY_LOG },
         properties: {
-          "Name": { title: [{ text: { content: `[DEBUG] Button click ${new Date().toISOString().slice(0,19)}` } }] },
+          "Activity": { title: [{ text: { content: `[DEBUG] Button click ${new Date().toISOString().slice(0,19)}` } }] },
         },
         children: [
           {
