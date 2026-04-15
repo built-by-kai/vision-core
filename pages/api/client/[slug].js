@@ -38,7 +38,6 @@ const FIELD_DEFAULTS = {
   dealPackage: "Package Type",
   // Projects
   projectStatus:   "Status",
-  projectProgress: "Overall Progress",
   projectCompany:  "Company",
   // Invoices
   invoiceAmount: "Total Amount",

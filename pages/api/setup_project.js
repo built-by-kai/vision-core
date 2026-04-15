@@ -667,10 +667,7 @@ async function advanceTask(payload) {
         }
         overallPct = totalT > 0 ? Math.round((doneT / totalT) * 100) : 0
         // "Completion" is now a native rollup (percent_checked on All Tasks → Status)
-        // Only write the text summary to Overall Progress
-        await patchPage(projectId, {
-          "Overall Progress": { rich_text: [{ text: { content: `${overallPct}% (${doneT}/${totalT} tasks)` } }] },
-        }, token).catch(() => {})
+        // No separate progress field needed — Notion computes it automatically
       }
     } catch (e) {
       console.warn("[advanceTask] progress calc:", e.message)
