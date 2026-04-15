@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow:hidden;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;--cyan:#22D3EE;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
@@ -29,70 +29,59 @@ body.light .ts{color:rgba(0,0,0,.22);}
 .board{display:flex;gap:10px;height:calc(100vh - 72px);overflow-x:auto;overflow-y:hidden;padding-bottom:8px;}
 
 /* ── COLUMN ── */
-.col{min-width:248px;width:248px;flex-shrink:0;display:flex;flex-direction:column;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);overflow:hidden;}
-body.light .col{background:rgba(0,0,0,.015);border-color:rgba(0,0,0,.04);}
+.col{min-width:240px;width:240px;flex-shrink:0;display:flex;flex-direction:column;max-height:100%;}
 
-.col-hdr{padding:14px 14px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.03);}
-body.light .col-hdr{border-bottom-color:rgba(0,0,0,.04);}
-.col-stripe{width:3px;height:20px;border-radius:999px;flex-shrink:0;}
-.col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);flex:1;}
-body.light .col-title{color:rgba(0,0,0,.4);}
-.col-count{font-size:10px;font-weight:800;color:rgba(255,255,255,.18);padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);}
-body.light .col-count{color:rgba(0,0,0,.16);background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.04);}
+.col-hdr{padding:10px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.col-stripe{width:3px;height:16px;border-radius:999px;flex-shrink:0;}
+.col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);flex:1;}
+body.light .col-title{color:rgba(0,0,0,.35);}
+.col-count{font-size:10px;font-weight:800;color:rgba(255,255,255,.15);}
+body.light .col-count{color:rgba(0,0,0,.14);}
 
-.col-body{flex:1;overflow-y:auto;padding:8px 8px 14px;display:flex;flex-direction:column;gap:6px;}
+.col-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:0 2px 12px;}
 
 /* ── CARD ── */
-.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;cursor:default;transition:border-color .2s,box-shadow .2s;}
-.card:hover{border-color:rgba(170,255,0,.12);box-shadow:0 2px 12px rgba(0,0,0,.2);}
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;cursor:default;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.12);}
 body.light .card{background:#fff;border-color:rgba(0,0,0,.05);box-shadow:0 1px 3px rgba(0,0,0,.03);}
-body.light .card:hover{border-color:rgba(92,153,0,.18);box-shadow:0 2px 12px rgba(0,0,0,.06);}
+body.light .card:hover{border-color:rgba(92,153,0,.18);}
 
-/* Card top row */
-.c-top{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
-.c-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;border:1px solid transparent;}
-.c-client{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;}
-body.light .c-client{color:rgba(0,0,0,.25);}
+/* Top row: type + client */
+.c-top{display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+.c-type{font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;letter-spacing:.02em;white-space:nowrap;}
+.c-client{font-size:9px;font-weight:600;color:rgba(255,255,255,.22);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+body.light .c-client{color:rgba(0,0,0,.22);}
 
-/* Project name */
-.c-name{font-size:12.5px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.35;display:block;text-decoration:none;}
+/* Name */
+.c-name{font-size:12px;font-weight:700;color:#fff;line-height:1.3;display:block;text-decoration:none;margin-bottom:8px;}
 .c-name:hover{text-decoration:underline;text-decoration-color:var(--g);text-underline-offset:2px;}
 body.light .c-name{color:#111;}
 
-/* Progress ring + percentage */
-.c-progress{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.ring-wrap{width:28px;height:28px;flex-shrink:0;position:relative;}
-.ring-wrap svg{transform:rotate(-90deg);}
-.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:3;}
-body.light .ring-bg{stroke:rgba(0,0,0,.06);}
-.ring-fill{fill:none;stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
-.c-pct{font-size:11px;font-weight:800;color:var(--g);}
-.c-pct.zero{color:rgba(255,255,255,.12);}
-body.light .c-pct.zero{color:rgba(0,0,0,.1);}
-.c-pct-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);margin-left:-4px;}
-body.light .c-pct-label{color:rgba(0,0,0,.18);}
+/* Progress bar */
+.c-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.c-track{flex:1;height:3px;border-radius:999px;background:rgba(255,255,255,.06);}
+body.light .c-track{background:rgba(0,0,0,.06);}
+.c-fill{height:3px;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+.c-pct{font-size:10px;font-weight:800;width:28px;text-align:right;flex-shrink:0;}
 
-/* Task chips */
-.c-tasks{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
-.c-chip{display:flex;align-items:center;gap:3px;font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.025);}
-body.light .c-chip{color:rgba(0,0,0,.28);background:rgba(0,0,0,.025);}
-.c-chip-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;}
+/* Minimal task summary — single line */
+.c-tasks{font-size:9px;font-weight:600;color:rgba(255,255,255,.22);display:flex;align-items:center;gap:6px;}
+body.light .c-tasks{color:rgba(0,0,0,.2);}
+.c-tasks .dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;}
+.c-tasks .sep{width:1px;height:8px;background:rgba(255,255,255,.06);flex-shrink:0;}
+body.light .c-tasks .sep{background:rgba(0,0,0,.06);}
 
-/* Meta row (dates + phase) */
-.c-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;}
-.c-date{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.18);}
-body.light .c-date{color:rgba(0,0,0,.18);}
-.c-date b{font-weight:700;color:rgba(255,255,255,.28);}
-body.light .c-date b{color:rgba(0,0,0,.28);}
-.c-phase{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:4px;margin-left:auto;}
-body.light .c-phase{color:rgba(0,0,0,.18);}
-.c-phase-dot{width:5px;height:5px;border-radius:50%;background:var(--g);flex-shrink:0;}
+/* Bottom meta */
+.c-meta{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.c-date{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.16);}
+body.light .c-date{color:rgba(0,0,0,.16);}
+.c-phase{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.18);display:flex;align-items:center;gap:3px;margin-left:auto;}
+body.light .c-phase{color:rgba(0,0,0,.16);}
+.c-phase-dot{width:4px;height:4px;border-radius:50%;background:var(--g);flex-shrink:0;}
 
-/* Empty state */
-.col-empty{display:flex;align-items:center;justify-content:center;flex:1;font-size:10px;color:rgba(255,255,255,.1);padding:20px 0;}
-body.light .col-empty{color:rgba(0,0,0,.08);}
-
-/* Loading */
+/* Empty */
+.col-empty{padding:16px;text-align:center;font-size:10px;color:rgba(255,255,255,.08);}
+body.light .col-empty{color:rgba(0,0,0,.07);}
 .loading{display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:rgba(255,255,255,.15);}
 body.light .loading{color:rgba(0,0,0,.12);}
 </style></head><body>
@@ -115,95 +104,78 @@ let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];}
 
 const COLUMNS=[
-  {key:'awaiting',label:'Awaiting',color:'var(--blue)',hex:'#60A5FA'},
-  {key:'active',label:'Active',color:'var(--g)',hex:'#AAFF00'},
-  {key:'review',label:'In Review',color:'var(--amber)',hex:'#FBBF24'},
-  {key:'hold',label:'On Hold',color:'rgba(255,255,255,.2)',hex:'#666'},
-  {key:'done',label:'Completed',color:'var(--purple)',hex:'#A78BFA'},
+  {key:'awaiting',label:'Awaiting',hex:'#60A5FA'},
+  {key:'active',label:'Active',hex:'#AAFF00'},
+  {key:'review',label:'In Review',hex:'#FBBF24'},
+  {key:'hold',label:'On Hold',hex:'#666'},
+  {key:'done',label:'Completed',hex:'#A78BFA'},
 ];
 
 const TYPE_COLORS={};
-const PALETTE=['var(--g)','var(--amber)','#60A5FA','#A78BFA','#22D3EE','var(--red)'];
-let _tIdx=0;
-function typeColor(t){
-  if(!t)return'rgba(255,255,255,.08)';
-  if(!TYPE_COLORS[t])TYPE_COLORS[t]=PALETTE[_tIdx++%PALETTE.length];
-  return TYPE_COLORS[t];
-}
+const PALETTE=['#AAFF00','#FBBF24','#60A5FA','#A78BFA','#22D3EE','#FF6B6B'];
+let _ti=0;
+function tc(t){if(!t)return null;if(!TYPE_COLORS[t])TYPE_COLORS[t]=PALETTE[_ti++%PALETTE.length];return TYPE_COLORS[t];}
 
-function ringSVG(pct,color){
-  const r=11,circ=2*Math.PI*r;
-  const offset=circ-(pct/100)*circ;
-  return`<svg width="28" height="28" viewBox="0 0 28 28"><circle class="ring-bg" cx="14" cy="14" r="${r}"/><circle class="ring-fill" cx="14" cy="14" r="${r}" stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg>`;
-}
-
-function renderCard(proj,colColor){
+function renderCard(proj,colHex){
   const pct=proj.overallPct||0;
   const ts=proj.taskSummary||{};
-  const tc=typeColor(proj.type);
+  const color=tc(proj.type);
 
+  // Type pill
   let typeHTML='';
-  if(proj.type){
-    typeHTML=`<span class="c-type" style="background:${tc}10;color:${tc};border-color:${tc}25;">${esc(proj.type)}</span>`;
+  if(proj.type&&color){
+    typeHTML=`<span class="c-type" style="background:${color}15;color:${color}">${esc(proj.type)}</span>`;
   }
 
-  const chips=[
-    {val:ts.done||0,lbl:'Done',color:'var(--g)'},
-    {val:ts.inProgress||0,lbl:'Active',color:'var(--amber)'},
-    {val:ts.blocked||0,lbl:'Blocked',color:'var(--red)'},
-    {val:ts.notStarted||0,lbl:'Pending',color:'rgba(255,255,255,.12)'},
-  ];
-  const chipHTML=chips.filter(c=>c.val>0).map(c=>`<div class="c-chip"><div class="c-chip-dot" style="background:${c.color}"></div>${c.val} ${c.lbl}</div>`).join('');
+  // Task summary — minimal inline: "6✓ · 1● · 199○"
+  let taskParts=[];
+  if(ts.done)    taskParts.push(`<span class="dot" style="background:var(--g)"></span>${ts.done} done`);
+  if(ts.inProgress) taskParts.push(`<span class="dot" style="background:var(--amber)"></span>${ts.inProgress} active`);
+  if(ts.blocked) taskParts.push(`<span class="dot" style="background:var(--red)"></span>${ts.blocked} blocked`);
+  if(ts.notStarted) taskParts.push(`<span class="dot" style="background:rgba(255,255,255,.1)"></span>${ts.notStarted} pending`);
+  const taskHTML=taskParts.length?`<div class="c-tasks">${taskParts.join('<span class="sep"></span>')}</div>`:'';
 
-  let datesHTML='';
-  if(proj.startDate||proj.targetDate||proj.completedDate){
-    datesHTML='';
-    if(proj.startDate) datesHTML+=`<span class="c-date"><b>Start</b> ${fmtDate(proj.startDate)}</span>`;
-    if(proj.completedDate) datesHTML+=`<span class="c-date"><b>Done</b> ${fmtDate(proj.completedDate)}</span>`;
-    else if(proj.targetDate) datesHTML+=`<span class="c-date"><b>Target</b> ${fmtDate(proj.targetDate)}</span>`;
-  }
+  // Dates
+  let metaParts=[];
+  if(proj.startDate) metaParts.push(`<span class="c-date">${fmtDate(proj.startDate)}</span>`);
+  if(proj.completedDate) metaParts.push(`<span class="c-date">→ ${fmtDate(proj.completedDate)}</span>`);
+  else if(proj.targetDate) metaParts.push(`<span class="c-date">→ ${fmtDate(proj.targetDate)}</span>`);
 
   let phaseHTML='';
-  if(proj.phase&&proj.phase!=='—'){
-    phaseHTML=`<span class="c-phase"><span class="c-phase-dot"></span>${esc(proj.phase)}</span>`;
-  }
+  if(proj.phase&&proj.phase!=='—') phaseHTML=`<span class="c-phase"><span class="c-phase-dot"></span>${esc(proj.phase)}</span>`;
+
+  const metaHTML=(metaParts.length||phaseHTML)?`<div class="c-meta">${metaParts.join('')}${phaseHTML}</div>`:'';
 
   const nameTag=proj.notionUrl
     ?`<a class="c-name" href="${proj.notionUrl}" target="_blank" rel="noopener">${esc(proj.name)}</a>`
     :`<div class="c-name">${esc(proj.name)}</div>`;
 
+  const pctColor=pct===0?'rgba(255,255,255,.12)':colHex;
+
   return`<div class="card">
-    <div class="c-top">${typeHTML}<span class="c-client">${proj.client?esc(proj.client):''}</span></div>
-    ${nameTag}
-    <div class="c-progress">
-      <div class="ring-wrap">${ringSVG(pct,colColor)}</div>
-      <span class="c-pct${pct===0?' zero':''}">${pct}%</span>
-      <span class="c-pct-label">complete</span>
-    </div>
-    <div class="c-tasks">${chipHTML}</div>
-    <div class="c-meta">${datesHTML}${phaseHTML}</div>
-  </div>`;
+  <div class="c-top">${typeHTML}<span class="c-client">${proj.client?esc(proj.client):''}</span></div>
+  ${nameTag}
+  <div class="c-bar-row">
+    <div class="c-track"><div class="c-fill" style="width:${pct}%;background:${colHex}"></div></div>
+    <span class="c-pct" style="color:${pctColor}">${pct}%</span>
+  </div>
+  ${taskHTML}
+  ${metaHTML}
+</div>`;
 }
 
 function render(data){
-  const builds=data.builds||[];
-  const completed=data.completed||[];
-  const all=[...builds,...completed];
-
+  const all=[...(data.builds||[]),...(data.completed||[])];
   const buckets={};
   COLUMNS.forEach(c=>buckets[c.key]=[]);
-  for(const p of all){
-    const s=p.status||'';
-    if(buckets[s])buckets[s].push(p);
-  }
+  for(const p of all){if(buckets[p.status])buckets[p.status].push(p);}
 
-  const board=document.getElementById('board');
-  board.innerHTML=COLUMNS.map(col=>{
+  document.getElementById('board').innerHTML=COLUMNS.map(col=>{
     const items=buckets[col.key]||[];
-    const cardsHTML=items.length
+    const body=items.length
       ?items.map(p=>renderCard(p,col.hex)).join('')
       :`<div class="col-empty">No projects</div>`;
     return`<div class="col">
@@ -212,21 +184,14 @@ function render(data){
         <span class="col-title">${col.label}</span>
         <span class="col-count">${items.length}</span>
       </div>
-      <div class="col-body">${cardsHTML}</div>
+      <div class="col-body">${body}</div>
     </div>`;
   }).join('');
 }
 
 async function loadData(){
-  try{
-    const r=await fetch(apiUrl('/api/data/projects'));
-    const j=await r.json();
-    if(j.error){console.error('API:',j.error);return;}
-    render(j);
-    setTs();
-  }catch(e){console.error('kanban:',e);}
+  try{const r=await fetch(apiUrl('/api/data/projects'));const j=await r.json();if(j.error)return;render(j);setTs();}catch(e){console.error('kanban:',e);}
 }
-
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
 setTs();loadData();setInterval(loadData,5*60*1000);
 </script></body></html>
