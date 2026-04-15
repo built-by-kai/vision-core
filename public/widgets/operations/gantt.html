@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Task Gantt</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow:hidden;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--blue:#60A5FA;--red:#FF6B6B;}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* Project selector */
+.proj-sel{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+.ps-btn{background:transparent;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.ps-btn:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.5);}
+.ps-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+body.light .ps-btn{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
+body.light .ps-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+
+/* Gantt container */
+.gantt-wrap{display:flex;flex:1;overflow:hidden;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#1E1E1E;}
+body.light .gantt-wrap{background:#fff;border-color:rgba(0,0,0,.06);}
+
+/* Left: task names */
+.gantt-left{width:240px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(255,255,255,.06);}
+body.light .gantt-left{border-right-color:rgba(0,0,0,.06);}
+.gl-hdr{padding:8px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:2;}
+body.light .gl-hdr{color:rgba(0,0,0,.3);background:rgba(0,0,0,.02);border-bottom-color:rgba(0,0,0,.06);}
+
+.gl-phase{padding:6px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g);background:rgba(170,255,0,.04);border-bottom:1px solid rgba(255,255,255,.04);position:sticky;top:28px;z-index:1;}
+body.light .gl-phase{background:rgba(92,153,0,.04);}
+
+.gl-task{padding:5px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.03);height:32px;}
+body.light .gl-task{border-bottom-color:rgba(0,0,0,.03);}
+.gl-pri{width:4px;height:16px;border-radius:2px;flex-shrink:0;}
+.pri-c-High{background:var(--red);}
+.pri-c-Medium{background:var(--amber);}
+.pri-c-Low{background:var(--blue);}
+.pri-c-{background:rgba(255,255,255,.08);}
+body.light .pri-c-{background:rgba(0,0,0,.06);}
+.gl-name{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+body.light .gl-name{color:rgba(0,0,0,.6);}
+.gl-name.done{text-decoration:line-through;opacity:.4;}
+.gl-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* Right: timeline bars */
+.gantt-right{flex:1;overflow:auto;position:relative;}
+.gr-hdr{display:flex;position:sticky;top:0;z-index:2;background:#1E1E1E;border-bottom:1px solid rgba(255,255,255,.06);}
+body.light .gr-hdr{background:#fff;border-bottom-color:rgba(0,0,0,.06);}
+.gr-day{width:36px;flex-shrink:0;text-align:center;padding:4px 0;font-size:8px;font-weight:700;color:rgba(255,255,255,.2);border-right:1px solid rgba(255,255,255,.02);}
+body.light .gr-day{color:rgba(0,0,0,.2);border-right-color:rgba(0,0,0,.02);}
+.gr-day.today{color:var(--g);background:rgba(170,255,0,.04);}
+.gr-day.weekend{background:rgba(255,255,255,.015);}
+body.light .gr-day.weekend{background:rgba(0,0,0,.02);}
+.gr-day .day-num{font-size:11px;font-weight:800;display:block;}
+.gr-day .day-lbl{font-size:7px;text-transform:uppercase;letter-spacing:.05em;}
+
+.gr-phase-row{height:28px;border-bottom:1px solid rgba(255,255,255,.04);}
+.gr-rows{position:relative;}
+.gr-row{display:flex;height:32px;border-bottom:1px solid rgba(255,255,255,.03);position:relative;}
+body.light .gr-row{border-bottom-color:rgba(0,0,0,.03);}
+.gr-cell{width:36px;flex-shrink:0;border-right:1px solid rgba(255,255,255,.02);}
+body.light .gr-cell{border-right-color:rgba(0,0,0,.02);}
+.gr-cell.today-col{background:rgba(170,255,0,.03);}
+.gr-cell.weekend-col{background:rgba(255,255,255,.01);}
+body.light .gr-cell.weekend-col{background:rgba(0,0,0,.015);}
+
+/* Gantt bars */
+.g-bar{position:absolute;height:18px;top:7px;border-radius:5px;z-index:1;min-width:18px;display:flex;align-items:center;padding:0 6px;}
+.g-bar span{font-size:8px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-Done{background:var(--g);opacity:.7;}
+.bar-InProgress{background:var(--amber);}
+.bar-Blocked{background:var(--red);opacity:.85;}
+.bar-NotStarted{background:rgba(255,255,255,.08);}
+.bar-NotStarted span{color:rgba(255,255,255,.4);}
+body.light .bar-NotStarted{background:rgba(0,0,0,.06);}
+body.light .bar-NotStarted span{color:rgba(0,0,0,.35);}
+
+/* Today marker */
+.today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.5;z-index:3;pointer-events:none;}
+
+.empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);width:100%;}
+body.light .empty{color:rgba(0,0,0,.18);}
+
+/* Layout */
+.gantt-outer{display:flex;flex-direction:column;height:calc(100vh - 90px);}
+</style></head><body>
+
+<div class="header">
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Task Gantt</h1></div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="proj-sel" id="proj-sel"></div>
+
+<div class="gantt-outer">
+  <div class="gantt-wrap" id="gantt-wrap">
+    <div class="empty">Loading…</div>
+  </div>
+</div>
+
+<script>
+const _tok=new URLSearchParams(location.search).get('token')||'';
+function apiUrl(p){const sep=p.includes('?')?'&':'?';return _tok?p+sep+'token='+encodeURIComponent(_tok):p;}
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+let allProjects=[], activeIdx=0;
+
+function selectProject(idx){
+  activeIdx=idx;
+  document.querySelectorAll('.ps-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  renderGantt(allProjects[idx]);
+}
+
+// Generate date range for the gantt header
+function dateRange(startISO, endISO, padDays=3){
+  const s=new Date(startISO+'T00:00:00');
+  const e=new Date(endISO+'T00:00:00');
+  s.setDate(s.getDate()-padDays);
+  e.setDate(e.getDate()+padDays);
+  const days=[];
+  for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){
+    days.push(new Date(d));
+  }
+  return days;
+}
+
+function todayISO(){return new Date().toISOString().split('T')[0];}
+const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MON_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function statusBarClass(s){
+  if(s==='Done')return'bar-Done';
+  if(s==='In Progress')return'bar-InProgress';
+  if(s==='Blocked')return'bar-Blocked';
+  return'bar-NotStarted';
+}
+function statusDotColor(s){
+  if(s==='Done')return'var(--g)';
+  if(s==='In Progress')return'var(--amber)';
+  if(s==='Blocked')return'var(--red)';
+  return'rgba(255,255,255,.12)';
+}
+
+function renderGantt(proj){
+  const wrap=document.getElementById('gantt-wrap');
+  if(!proj||!proj.tasks||!proj.tasks.length){
+    wrap.innerHTML='<div class="empty">No tasks with dates for this project</div>';
+    return;
+  }
+
+  const today=todayISO();
+  const tasks=proj.tasks;
+
+  // Determine date range from tasks
+  let minDate=today, maxDate=today;
+  if(proj.startDate && proj.startDate<minDate) minDate=proj.startDate;
+  if(proj.targetDate && proj.targetDate>maxDate) maxDate=proj.targetDate;
+  for(const t of tasks){
+    if(t.due){
+      if(t.due<minDate) minDate=t.due;
+      if(t.due>maxDate) maxDate=t.due;
+    }
+    if(t.created){
+      if(t.created<minDate) minDate=t.created;
+    }
+  }
+  // Ensure reasonable range
+  const days=dateRange(minDate, maxDate, 5);
+  const dayW=36;
+
+  // Group tasks by phase
+  const phases=[];
+  let curPhase=null;
+  for(const t of tasks){
+    const ph=t.phase||'Unassigned';
+    if(ph!==curPhase){curPhase=ph;phases.push({name:ph,tasks:[]});}
+    phases[phases.length-1].tasks.push(t);
+  }
+
+  // Build left panel (task names)
+  let leftHTML='<div class="gl-hdr">Tasks</div>';
+  for(const ph of phases){
+    leftHTML+=`<div class="gl-phase">${esc(ph.name)}</div>`;
+    for(const t of ph.tasks){
+      const isDone=t.status==='Done';
+      leftHTML+=`<div class="gl-task">
+        <div class="gl-pri pri-c-${t.priority||''}"></div>
+        <div class="gl-name${isDone?' done':''}" title="${esc(t.name)}">${esc(t.name)}</div>
+        <div class="gl-status-dot" style="background:${statusDotColor(t.status)}"></div>
+      </div>`;
+    }
+  }
+
+  // Build right panel (timeline)
+  let hdrHTML='<div class="gr-hdr">';
+  const dayIndexMap={};
+  days.forEach((d,i)=>{
+    const iso=d.toISOString().split('T')[0];
+    dayIndexMap[iso]=i;
+    const isToday=iso===today;
+    const isWeekend=d.getDay()===0||d.getDay()===6;
+    hdrHTML+=`<div class="gr-day${isToday?' today':''}${isWeekend?' weekend':''}">
+      <span class="day-num">${d.getDate()}</span>
+      <span class="day-lbl">${DAY_NAMES[d.getDay()]}</span>
+    </div>`;
+  });
+  hdrHTML+='</div>';
+
+  let rowsHTML='';
+  for(const ph of phases){
+    // Phase separator row
+    rowsHTML+=`<div class="gr-phase-row"></div>`;
+    for(const t of ph.tasks){
+      // Calculate bar position
+      const startDay=t.created||t.due||today;
+      const endDay=t.due||startDay;
+      let si=dayIndexMap[startDay]??0;
+      let ei=dayIndexMap[endDay]??(si+1);
+      if(ei<si) ei=si;
+      const barLeft=si*dayW;
+      const barWidth=Math.max((ei-si+1)*dayW-4, 18);
+      const barCls=statusBarClass(t.status);
+
+      // Duration label
+      const dur=ei-si+1;
+      const durLbl=dur>1?dur+'d':'';
+
+      // Cell backgrounds
+      let cellsHTML='';
+      days.forEach((d,i)=>{
+        const iso=d.toISOString().split('T')[0];
+        const isToday=iso===today;
+        const isWeekend=d.getDay()===0||d.getDay()===6;
+        cellsHTML+=`<div class="gr-cell${isToday?' today-col':''}${isWeekend?' weekend-col':''}"></div>`;
+      });
+
+      rowsHTML+=`<div class="gr-row">${cellsHTML}
+        <div class="g-bar ${barCls}" style="left:${barLeft+2}px;width:${barWidth}px;">
+          <span>${durLbl}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Today line
+  const todayIdx=dayIndexMap[today];
+  const todayLineHTML=todayIdx!==undefined?`<div class="today-line" style="left:${todayIdx*dayW+dayW/2}px;"></div>`:'';
+
+  wrap.innerHTML=`
+    <div class="gantt-left" id="gl">${leftHTML}</div>
+    <div class="gantt-right" id="gr">
+      ${hdrHTML}
+      <div class="gr-rows" style="width:${days.length*dayW}px;position:relative;">
+        ${rowsHTML}
+        ${todayLineHTML}
+      </div>
+    </div>`;
+
+  // Sync scroll between left and right panels
+  const gl=document.getElementById('gl');
+  const gr=document.getElementById('gr');
+  gr.addEventListener('scroll',()=>{gl.scrollTop=gr.scrollTop;});
+  gl.addEventListener('scroll',()=>{gr.scrollTop=gl.scrollTop;});
+
+  // Scroll to today
+  if(todayIdx!==undefined){
+    gr.scrollLeft=Math.max(0,todayIdx*dayW-gr.clientWidth/2);
+  }
+}
+
+function render(data){
+  allProjects=data.gantt||[];
+  const sel=document.getElementById('proj-sel');
+  if(!allProjects.length){
+    sel.innerHTML='';
+    document.getElementById('gantt-wrap').innerHTML='<div class="empty">No projects found</div>';
+    return;
+  }
+  sel.innerHTML=allProjects.map((p,i)=>`<button class="ps-btn${i===0?' active':''}" onclick="selectProject(${i})">${esc(p.name)}</button>`).join('');
+  renderGantt(allProjects[0]);
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(apiUrl('/api/data/projects?view=gantt'));
+    const j=await r.json();
+    if(j.error){console.error('API:',j.error);return;}
+    render(j);
+    setTs();
+  }catch(e){console.error('gantt:',e);}
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setTs();loadData();setInterval(loadData,5*60*1000);
+</script></body></html>

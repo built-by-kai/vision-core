@@ -287,6 +287,67 @@ export default async function handler(req, res) {
       priorities,
     }
 
+    // ── Gantt view: return task-level data with dates ─────────────────────
+    if (req.query.view === "gantt") {
+      const ganttProjects = [...builds, ...completed].map(b => {
+        // Collect tasks for this project from projTaskLookup + relation
+        const projPage = projects.find(pr => {
+          const n = plain(pr.properties["Project Name"]?.title || pr.properties.Name?.title || [])
+          return n === b.name
+        })
+        const pid = projPage ? strip(projPage.id) : ""
+        const tIds = new Set([
+          ...((projPage?.properties.Tasks?.relation || []).map(r => strip(r.id))),
+          ...(projTaskLookup[pid] || []),
+        ])
+
+        const ganttTasks = []
+        for (const tid of tIds) {
+          const t = taskMap[tid]
+          if (!t) continue
+          ganttTasks.push({
+            id: tid,
+            name: t.name,
+            status: t.status,
+            priority: t.priority,
+            phase: t.phaseStage || "",
+            due: t.due,
+            created: null, // filled below
+          })
+        }
+
+        // Fetch created_time from raw tasks
+        for (const rawTask of tasks) {
+          const rtid = strip(rawTask.id)
+          const gt = ganttTasks.find(g => g.id === rtid)
+          if (gt) gt.created = rawTask.created_time?.split("T")[0] || null
+        }
+
+        // Sort tasks by phase then due date
+        const phaseOrder = {}
+        for (const ph of b.phases || []) phaseOrder[ph.name] = ph.no ?? 99
+        ganttTasks.sort((a, b2) => {
+          const pa = phaseOrder[a.phase] ?? 99, pb = phaseOrder[b2.phase] ?? 99
+          if (pa !== pb) return pa - pb
+          if (a.due && b2.due) return a.due.localeCompare(b2.due)
+          return a.due ? -1 : 1
+        })
+
+        return {
+          name: b.name,
+          client: b.client,
+          type: b.type,
+          status: b.status,
+          startDate: b.startDate,
+          targetDate: b.targetDate,
+          phases: (b.phases || []).map(ph => ({ name: ph.name, no: ph.no })),
+          tasks: ganttTasks,
+        }
+      })
+
+      return res.status(200).json({ gantt: ganttProjects })
+    }
+
     res.status(200).json({ counts, builds, completed, overview })
   } catch (err) {
     console.error("projects:", err)
