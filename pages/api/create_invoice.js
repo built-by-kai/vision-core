@@ -243,25 +243,38 @@ async function run(payload) {
   let projectId = existingProjectId
 
   if (!projectId) {
-    // Build project name: "Package — Company" or just package
-    let projectName = packageName
+    // Build project name: "Company — Package" (company first, more readable)
+    let companyName = ""
     if (companyId) {
       try {
         const co = await getPage(companyId, token)
-        const coName = plain(co.properties?.["Company Name"]?.title || co.properties?.Name?.title || [])
-        if (coName) projectName = `${packageName} — ${coName}`
+        // Companies DB title field is "Company"
+        for (const v of Object.values(co.properties || {})) {
+          if (v.type === "title") { companyName = plain(v.title); break }
+        }
       } catch {}
     }
+    // If package isn't resolved from Quotation, try Proposal's OS Type via Related Proposal
+    let resolvedPackage = packageName
+    if ((!resolvedPackage || resolvedPackage === quoteType) && props["Related Proposal"]?.relation?.length) {
+      try {
+        const propPage = await getPage(props["Related Proposal"].relation[0].id.replace(/-/g, ""), token)
+        const propOsType = propPage.properties["OS Type"]?.select?.name
+        if (propOsType) resolvedPackage = propOsType
+      } catch {}
+    }
+    const projectName = companyName
+      ? `${companyName} — ${resolvedPackage || quoteType}`
+      : resolvedPackage || quoteType
 
     const projProps = {
       "Project Name": { title: [{ text: { content: projectName } }] },
       "Status":       { select: { name: "Pending Start" } },
       "Quotation":    { relation: [{ id: quotId }] },
       "Invoice":      { relation: [{ id: invId }] },
-      ...(packageName ? { "Package":     { select:   { name: packageName } } } : {}),
-      ...(companyId   ? { "Company":     { relation: [{ id: companyId }] } } : {}),
-      // Project.Deal Source → Deals DB. Only write if Deal already exists.
-      ...(dealId      ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
+      ...(resolvedPackage ? { "Package":  { select:   { name: resolvedPackage } } } : {}),
+      ...(companyId       ? { "Company": { relation: [{ id: companyId }] } } : {}),
+      ...(dealId          ? { "Deals":   { relation: [{ id: dealId }] } } : {}),
     }
 
     const projPage = await createPage({ parent: { database_id: DB.PROJECTS }, properties: projProps }, token)

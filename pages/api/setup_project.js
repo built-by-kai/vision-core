@@ -154,11 +154,25 @@ async function setup(payload) {
   const project     = await getPage(projectId, token)
   const projectProps = project.properties
 
-  // Guard: don't recreate if phases already exist
-  const existingPhases = projectProps.Phases?.relation || []
-  if (existingPhases.length > 0) {
-    console.log(`[setup_project] phases already exist for ${projectId} — skipping`)
-    return { status: "skipped", reason: "phases already exist", project_id: projectId }
+  // Guard: don't recreate if tasks already exist for this project
+  const existingTasks = projectProps.Tasks?.relation || []
+  if (existingTasks.length > 0) {
+    console.log(`[setup_project] tasks already exist for ${projectId} — skipping`)
+    return { status: "skipped", reason: "tasks already exist", project_id: projectId }
+  }
+
+  // Check if phases were already created by create_invoice.js (deliverables only, no tasks)
+  const existingPhaseRels = projectProps.Phases?.relation || []
+  let existingPhaseMap = {}  // phase_no → phaseId
+  if (existingPhaseRels.length > 0) {
+    for (const rel of existingPhaseRels) {
+      try {
+        const ph = await getPage(rel.id.replace(/-/g, ""), token)
+        const phNo = ph.properties["Phase No."]?.number
+        if (phNo) existingPhaseMap[phNo] = rel.id.replace(/-/g, "")
+      } catch {}
+    }
+    console.log(`[setup_project] found ${Object.keys(existingPhaseMap).length} existing phases — will add tasks`)
   }
 
   const today    = new Date().toISOString().split("T")[0]
@@ -194,29 +208,40 @@ async function setup(payload) {
   }
   await patchPage(projectId, projectUpdates, token)
 
-  // Create phases + tasks
+  // Create phases (or reuse existing) + tasks
   const phasesCreated = []
   const tasksCreated  = []
 
   for (const template of PHASE_TEMPLATES) {
     const { start: phStart, end: phEnd } = phaseEndDate(startDate, template.no, totalDays)
 
-    // Create Phase page
-    const phaseBody = {
-      parent: { database_id: DB.PHASES },
-      properties: {
-        "Phase Name": { title: [{ type: "text", text: { content: template.name } }] },
-        "Phase No.":  { number: template.no },
-        "Status":     { select: { name: "Not Started" } },
+    let phaseId = existingPhaseMap[template.no] || null
+
+    if (!phaseId) {
+      // Phase doesn't exist yet — create it
+      const phaseBody = {
+        parent: { database_id: DB.PHASES },
+        properties: {
+          "Phase Name": { title: [{ type: "text", text: { content: template.name } }] },
+          "Phase No.":  { number: template.no },
+          "Status":     { select: { name: "Not Started" } },
+          "Start Date": { date: { start: phStart } },
+          "Due Date":   { date: { start: phEnd } },
+          "Project":    { relation: [{ id: projectId }] },
+        },
+      }
+      const phase = await createPage(phaseBody, token)
+      phaseId = phase.id.replace(/-/g, "")
+      console.log(`[setup_project] Created ${template.name} → ${phaseId}`)
+    } else {
+      // Phase exists (from create_invoice) — update dates
+      await patchPage(phaseId, {
         "Start Date": { date: { start: phStart } },
         "Due Date":   { date: { start: phEnd } },
-        "Project":    { relation: [{ id: projectId }] },
-      },
+      }, token).catch(() => {})
+      console.log(`[setup_project] Reusing ${template.name} → ${phaseId} (adding tasks)`)
     }
-    const phase    = await createPage(phaseBody, token)
-    const phaseId  = phase.id.replace(/-/g, "")
     phasesCreated.push(phaseId)
-    console.log(`[setup_project] Created ${template.name} → ${phaseId}`)
 
     // Build task list: standard + custom (Phase 2 only)
     let taskList = [...template.tasks]
@@ -224,14 +249,14 @@ async function setup(payload) {
       taskList = [...taskList, ...customPh2Tasks]
     }
 
-    // Create tasks
+    // Create tasks for this phase
     for (let i = 0; i < taskList.length; i++) {
       const task = taskList[i]
       const taskBody = {
         parent: { database_id: DB.TASKS },
         properties: {
           "Task Name":    { title: [{ type: "text", text: { content: task.name } }] },
-          "Status":       { select: { name: "Not Started" } },
+          "Status":       { status: { name: "Not Started" } },
           "Priority":     { select: { name: task.priority || "Medium" } },
           "Phase Stage":  { select: { name: `Phase ${template.no}` } },
           "Phase":        { relation: [{ id: phaseId }] },
@@ -244,8 +269,7 @@ async function setup(payload) {
     }
   }
 
-  // Link all phases back to the project (Notion relations are bidirectional but
-  // we set explicitly to be safe)
+  // Link all phases back to the project
   await patchPage(projectId, {
     "Phases": { relation: phasesCreated.map(id => ({ id })) },
   }, token)

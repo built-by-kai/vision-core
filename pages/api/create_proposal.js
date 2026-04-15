@@ -471,7 +471,13 @@ export default async function handler(req, res) {
     await patchPage(propId, patchProps, process.env.NOTION_API_KEY)
 
     // ── 4. Line Items DB ─────────────────────────────────────────────────────
+    // Notion template may still be applying — retry before creating a new DB
     let dbId = await findLineItemsDB(propId)
+    if (!dbId) {
+      console.log("[create_proposal] inline DB not found — retrying after 2s")
+      await new Promise(r => setTimeout(r, 2000))
+      dbId = await findLineItemsDB(propId)
+    }
     if (!dbId) {
       dbId = await createLineItemsDB(propId)
       console.log("[create_proposal] created line items DB:", dbId)
