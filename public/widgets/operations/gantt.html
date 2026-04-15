@@ -141,11 +141,11 @@ body.light .gr-cell{border-right-color:rgba(0,0,0,.02);}
 body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 
 /* ── Track bar (ghost: created → due/end) ── */
-.g-track{position:absolute;height:8px;top:17px;border-radius:999px;z-index:1;min-width:8px;background:rgba(255,255,255,.06);cursor:default;}
+.g-track{position:absolute;height:18px;top:12px;border-radius:999px;z-index:1;min-width:8px;background:rgba(255,255,255,.06);cursor:default;}
 body.light .g-track{background:rgba(0,0,0,.05);}
 /* ── Fill bar (colored: started → completed/today) ── */
-.g-fill{position:absolute;height:8px;top:17px;border-radius:999px;z-index:2;min-width:6px;cursor:default;transition:opacity .15s;}
-.g-fill:hover{opacity:.85!important;transform:scaleY(1.6);}
+.g-fill{position:absolute;height:18px;top:12px;border-radius:999px;z-index:2;min-width:6px;cursor:default;transition:opacity .15s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.g-fill:hover{opacity:.85!important;transform:scaleY(1.15);}
 .f-Done{background:var(--g);opacity:.9;}
 .f-InProgress{background:var(--amber);}
 .f-Blocked{background:var(--red);opacity:.9;}
