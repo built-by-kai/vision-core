@@ -106,15 +106,13 @@ body.light .ph-step:not(:last-child)::after{background:rgba(0,0,0,.07);}
 .ph-step.done:not(:last-child)::after{background:var(--g);}
 .ph-step.active:not(:last-child)::after{background:linear-gradient(90deg, var(--g) 40%, rgba(255,255,255,.06) 100%);}
 
-.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;}
+.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;color:var(--g);}
 .phd-done{background:var(--g);color:#111;}
-.phd-active{background:#191919;color:var(--g);border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
-body.light .phd-active{background:#fff;}
-.phd-review{background:#191919;color:var(--amber);border:2px solid var(--amber);}
-body.light .phd-review{background:#fff;}
-.phd-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.08);}
-body.light .phd-ns{background:rgba(0,0,0,.02);color:rgba(0,0,0,.18);border-color:rgba(0,0,0,.08);}
-.phd-hold{background:rgba(255,255,255,.04);color:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.12);}
+.phd-partial{background:#191919;border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
+body.light .phd-partial{background:#fff;}
+.phd-ns{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);}
+body.light .phd-ns{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.08);}
+.phd-hold{background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.12);}
 
 .ph-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 body.light .ph-label{color:rgba(0,0,0,.45);}
@@ -183,17 +181,17 @@ function pillCfg(s){
   return{cls:'pill-hold',label:s};
 }
 
-function phDotClass(status){
-  if(status==='Done')       return 'phd-done';
-  if(status==='In Progress')return 'phd-active';
-  if(status==='Review')     return 'phd-review';
-  if(status==='On Hold')    return 'phd-hold';
+// Derive phase visual state from task counts, not status label
+function phDotClass(tc){
+  if(!tc||!tc.total) return 'phd-ns';
+  if(tc.done===tc.total) return 'phd-done';
+  if(tc.done>0||tc.inProgress>0) return 'phd-partial';
   return 'phd-ns';
 }
-function phStepClass(status){
-  if(status==='Done')       return 'done';
-  if(status==='In Progress')return 'active';
-  if(status==='Review')     return 'review';
+function phStepClass(tc){
+  if(!tc||!tc.total) return '';
+  if(tc.done===tc.total) return 'done';
+  if(tc.done>0||tc.inProgress>0) return 'active';
   return '';
 }
 
@@ -221,8 +219,8 @@ function renderCard(b){
   if(b.phases&&b.phases.length>0){
     phHTML='<div class="ph-timeline">'+b.phases.map(ph=>{
       const tc=ph.tasks||{};
-      const cls=phStepClass(ph.status);
-      const dotCls=phDotClass(ph.status);
+      const cls=phStepClass(tc);
+      const dotCls=phDotClass(tc);
       const ov=isOverdue(ph.due)&&ph.status!=='Done';
       const dueStr=ph.due?(ov?'Overdue':'Due '+fmtDate(ph.due)):'';
       // Short label: strip "Phase N — " prefix for cleaner display
