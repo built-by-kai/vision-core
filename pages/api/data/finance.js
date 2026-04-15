@@ -46,8 +46,9 @@ export default async function handler(req, res) {
       const s = p[statusField]?.status?.name || p[statusField]?.select?.name || ""
       if (s in qStatus) qStatus[s]++
       if (s === "Approved") {
-        const pkg = plain(p[packageField]) || "Other"
-        pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
+        const raw = plain(p[packageField]) || ""
+        const pkg = normalisePkg(raw)
+        if (pkg) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
       }
     }
 
@@ -97,9 +98,9 @@ export default async function handler(req, res) {
 
     const totalApproved = Object.values(pkgCount).reduce((s, v) => s + v, 0) || 1
     const topProducts   = Object.entries(pkgCount)
-      .sort((a, b) => b[1] - a[1]).slice(0, 6)
+      .sort((a, b) => b[1] - a[1]).slice(0, 10)
       .map(([name, count]) => ({
-        name, sub: pkgSubtitle(name), count,
+        name, sub: pkgSubtitle(name), cat: pkgCategory(name), count,
         pct: Math.round((count / totalApproved) * 100),
         barPct: 0, // set below after normalization
       }))
@@ -146,21 +147,113 @@ export default async function handler(req, res) {
   }
 }
 
-function pkgSubtitle(name) {
-  const map = {
-    "Business OS":    "Revenue + Operations",
-    "Agency OS":      "Revenue + Operations + Marketing",
-    "Revenue OS":     "Pipeline & revenue",
-    "Operations OS":  "Workflow & delivery",
-    "Marketing OS":   "Campaigns & content",
-    "Team OS":        "People & performance",
-    "Retention OS":   "Health & renewals",
-    "Intelligence OS":"Prospect intelligence",
-    "Micro Install":  "Entry point · 1–3 modules",
-    "Micro Install — 1 Module": "Entry point",
-    "Micro Install — 2 Modules": "Entry point",
-    "Micro Install — 3 Modules": "Entry point",
+// ── Product catalogue mapping ────────────────────────────────────────────────
+
+// Normalise raw "Package Type" values from Notion into known product names.
+// Returns null for values that should be excluded (empty, garbage, unknown).
+function normalisePkg(raw) {
+  if (!raw || !raw.trim()) return null
+  const t = raw.trim()
+
+  // Direct match first
+  if (PRODUCT_CATALOGUE[t]) return t
+
+  // Case-insensitive / partial match
+  const lower = t.toLowerCase()
+  for (const key of Object.keys(PRODUCT_CATALOGUE)) {
+    if (key.toLowerCase() === lower) return key
   }
-  return map[name] || "Custom install"
+
+  // Common aliases
+  const aliases = {
+    "sales os": "Revenue OS",
+    "full os": "Business OS",
+    "ops os": "Operations OS",
+    "content os": "Marketing OS",
+    "starter os": "Micro Install",
+    "micro": "Micro Install",
+    "micro 1": "Micro Install — 1 Module",
+    "micro 2": "Micro Install — 2 Modules",
+    "micro 3": "Micro Install — 3 Modules",
+    // Widgets
+    "dashboard": "Enhanced Dashboard",
+    "enhanced dashboard": "Enhanced Dashboard",
+    "custom widget": "Custom Widget",
+    "static dashboard": "Static Dashboard Hub",
+    // Automations
+    "project kickoff": "Project Kickoff",
+    "campaign kickoff": "Campaign Kickoff",
+    "client onboarding kickoff": "Client Onboarding Kickoff",
+    "renewal kickoff": "Renewal Kickoff",
+    "hiring kickoff": "Hiring Kickoff",
+    // Add-ons
+    "document generation": "Document Generation",
+    "doc gen": "Document Generation",
+    "lead capture": "Lead Capture",
+    "whatsapp": "WhatsApp Automation",
+    "module expansion": "Module Expansion",
+    "client portal": "Client Portal View",
+    "ads platform": "Ads Platform Integration",
+    "payment gateway": "Payment Gateway Integration",
+    "google calendar": "Google Calendar Sync",
+    "google sheets": "Google Sheets Sync",
+    "kol tracker": "KOL & Influencer Tracker",
+    "client report": "Client Report Generator",
+  }
+  if (aliases[lower]) return aliases[lower]
+
+  return null // skip unknown values — don't show "Other"
 }
-// cache bust Sat Apr 11 12:34:03 +08 2026
+
+const PRODUCT_CATALOGUE = {
+  // ── OS Packages ──
+  "Business OS":      { sub: "Revenue + Operations",             cat: "os" },
+  "Agency OS":        { sub: "Revenue + Ops + Marketing",        cat: "os" },
+  "Revenue OS":       { sub: "Pipeline & revenue",               cat: "os" },
+  "Operations OS":    { sub: "Workflow & delivery",              cat: "os" },
+  "Marketing OS":     { sub: "Campaigns & content",             cat: "os" },
+  "Team OS":          { sub: "People & performance",            cat: "os" },
+  "Retention OS":     { sub: "Health & renewals",               cat: "os" },
+  "Intelligence OS":  { sub: "Prospect intelligence",           cat: "os" },
+  "Micro Install":              { sub: "Entry point · 1–3 modules", cat: "os" },
+  "Micro Install — 1 Module":   { sub: "1 module entry point",     cat: "os" },
+  "Micro Install — 2 Modules":  { sub: "2 module entry point",     cat: "os" },
+  "Micro Install — 3 Modules":  { sub: "3 module entry point",     cat: "os" },
+
+  // ── Dashboard Widgets ──
+  "Static Dashboard Hub":       { sub: "Stat cards · included free",    cat: "widgets" },
+  "Enhanced Dashboard":         { sub: "Charts, trends, target donut",  cat: "widgets" },
+  "Custom Widget":              { sub: "Bespoke dashboard widget",      cat: "widgets" },
+
+  // ── Kickoff Automations ──
+  "Project Kickoff":            { sub: "Cross-system project trigger",         cat: "automations" },
+  "Campaign Kickoff":           { sub: "Cross-system campaign trigger",        cat: "automations" },
+  "Client Onboarding Kickoff":  { sub: "Cross-system onboarding trigger",      cat: "automations" },
+  "Renewal Kickoff":            { sub: "Cross-system renewal trigger",         cat: "automations" },
+  "Hiring Kickoff":             { sub: "Cross-system hiring trigger",          cat: "automations" },
+
+  // ── Server & Integration Add-Ons ──
+  "Document Generation":        { sub: "PDF/doc generation",               cat: "automations" },
+  "Lead Capture":               { sub: "Inbound lead capture system",      cat: "automations" },
+  "WhatsApp Automation":        { sub: "WhatsApp workflow integration",    cat: "automations" },
+  "Client Report Generator":    { sub: "Automated client reports",         cat: "automations" },
+  "Ads Platform Integration":   { sub: "Meta / Google Ads sync",          cat: "automations" },
+  "Payment Gateway Integration":{ sub: "Payment system connection",        cat: "automations" },
+  "Google Calendar Sync":       { sub: "Calendar integration",             cat: "automations" },
+  "Google Sheets Sync":         { sub: "Sheets data sync",                 cat: "automations" },
+
+  // ── Module Add-Ons ──
+  "Module Expansion":           { sub: "Additional database module",   cat: "os" },
+  "KOL & Influencer Tracker":   { sub: "Influencer management",       cat: "os" },
+  "Client Portal View":         { sub: "Client-facing portal",        cat: "os" },
+  "Notion AI Agent Setup":      { sub: "AI agent configuration",      cat: "automations" },
+}
+
+function pkgSubtitle(name) {
+  return PRODUCT_CATALOGUE[name]?.sub || "Custom install"
+}
+
+function pkgCategory(name) {
+  return PRODUCT_CATALOGUE[name]?.cat || "os"
+}
+// cache bust Tue Apr 15 2026

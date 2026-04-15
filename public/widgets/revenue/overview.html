@@ -85,6 +85,22 @@ body.light .prod-bar-track{background:rgba(0,0,0,.08);}
 .prod-bar-fill{height:5px;border-radius:999px;background:var(--g);}
 .prod-pct{font-size:12px;font-weight:700;color:var(--g);text-align:right;display:block;}
 
+/* ── PRODUCT TOGGLE PILLS ── */
+.pill-row{display:flex;gap:4px;flex-wrap:wrap;}
+.pill{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.06em;}
+.pill:hover{border-color:var(--gb);color:var(--g);}
+.pill.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+body.light .pill{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.35);}
+body.light .pill:hover{border-color:rgba(92,153,0,.3);color:#5C9900;}
+body.light .pill.active{background:rgba(92,153,0,.08);border-color:rgba(92,153,0,.3);color:#5C9900;}
+.prod-cat{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;margin-left:6px;display:inline-block;vertical-align:middle;}
+.cat-os{background:var(--gm);color:var(--g);}
+.cat-widgets{background:rgba(96,165,250,.12);color:#60A5FA;}
+.cat-automations{background:rgba(251,191,36,.12);color:#FBBF24;}
+body.light .cat-os{background:rgba(92,153,0,.08);color:#5C9900;}
+body.light .cat-widgets{background:rgba(37,99,235,.08);color:#2563EB;}
+body.light .cat-automations{background:rgba(217,119,6,.08);color:#D97706;}
+
 /* ── EARNINGS ── */
 .earn-inner{display:flex;flex-direction:column;height:100%;}
 .earn-top{flex:1;}
@@ -220,7 +236,12 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
   <div class="card panel">
     <div class="panel-hdr">
       <span class="panel-title">Top Products</span>
-      <span class="panel-badge" id="prod-month">—</span>
+      <div class="pill-row" id="cat-pills">
+        <button class="pill active" data-cat="all" onclick="filterProds('all')">All</button>
+        <button class="pill" data-cat="os" onclick="filterProds('os')">OS</button>
+        <button class="pill" data-cat="widgets" onclick="filterProds('widgets')">Widgets</button>
+        <button class="pill" data-cat="automations" onclick="filterProds('automations')">Automations</button>
+      </div>
     </div>
     <table class="prod-table">
       <colgroup>
@@ -352,6 +373,61 @@ function fmtRM(n) {
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Top Products filter state ──
+let allProducts = [];
+let activeCat = 'all';
+
+const CAT_LABELS = { os: 'OS', widgets: 'Widgets', automations: 'Automations' };
+
+function catBadge(cat) {
+  const cls = 'prod-cat cat-' + (cat || 'os');
+  return `<span class="${cls}">${CAT_LABELS[cat] || 'OS'}</span>`;
+}
+
+function filterProds(cat) {
+  activeCat = cat;
+  document.querySelectorAll('#cat-pills .pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  renderProducts(cat);
+}
+
+function renderProducts(cat) {
+  const tbody = document.getElementById('prod-tbody');
+  if (!tbody) return;
+
+  const filtered = cat === 'all' ? allProducts : allProducts.filter(p => p.cat === cat);
+
+  // Renormalize bar widths for filtered set
+  const maxCount = filtered.length > 0 ? filtered[0].count : 1;
+  const items = filtered.map((p, i) => ({
+    ...p,
+    barPct: Math.round((p.count / maxCount) * 100)
+  }));
+
+  if (items.length === 0) {
+    const msg = cat === 'all' ? 'No approved quotations yet' : `No ${CAT_LABELS[cat] || cat} products yet`;
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">${msg}</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map((p, i) => `
+      <tr>
+        <td><span class="prod-num">${i + 1}</span></td>
+        <td>
+          <span class="prod-name">${esc(p.name)}${catBadge(p.cat)}</span>
+          <span class="prod-sub">${esc(p.sub || '')}</span>
+        </td>
+        <td>
+          <div class="prod-bar-wrap">
+            <div class="prod-bar-track">
+              <div class="prod-bar-fill" style="width:${p.barPct || 0}%"></div>
+            </div>
+          </div>
+        </td>
+        <td><span class="prod-pct">${p.pct || 0}%</span></td>
+      </tr>`).join('');
+  }
 }
 
 function renderRing(col, tgt) {
@@ -615,32 +691,8 @@ async function loadData() {
     animBars(monthly);
 
     // ── Render top products dynamically ──────────────────────────────────
-    const tbody = document.getElementById('prod-tbody');
-    if (tbody) {
-      const prods = j.topProducts || [];
-      const pm = document.getElementById('prod-month');
-      if (pm) { const n = new Date(); pm.textContent = n.toLocaleString('default',{month:'short',year:'numeric'}); }
-      if (prods.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">No approved quotations yet</td></tr>';
-      } else {
-        tbody.innerHTML = prods.map((p, i) => `
-          <tr>
-            <td><span class="prod-num">${i + 1}</span></td>
-            <td>
-              <span class="prod-name">${esc(p.name)}</span>
-              <span class="prod-sub">${esc(p.sub || '')}</span>
-            </td>
-            <td>
-              <div class="prod-bar-wrap">
-                <div class="prod-bar-track">
-                  <div class="prod-bar-fill" style="width:${p.barPct || p.pct || 0}%"></div>
-                </div>
-              </div>
-            </td>
-            <td><span class="prod-pct">${p.pct || 0}%</span></td>
-          </tr>`).join('');
-      }
-    }
+    allProducts = j.topProducts || [];
+    renderProducts(activeCat);
 
     // Build revData from monthly paid (lost = 0, no lost-deal revenue data yet)
     revData = monthly.map(m => ({ m: m.m.split(' ')[0], col: m.v, lost: 0 }));
