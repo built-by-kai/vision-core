@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60")
 
-  const projectId = (req.query.project || "").replace(/-/g, "")
-  if (!projectId) return res.status(400).json({ error: "Missing ?project= parameter" })
+  const projectId = (req.query.project || "").replace(/[^a-f0-9]/gi, "")
+  if (!projectId || projectId.length < 32) return res.status(400).json({ error: "Missing or invalid ?project= parameter" })
 
   const token = process.env.NOTION_API_KEY
   try {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const props = project.properties || {}
 
     const projectName  = plain(props["Project Name"]?.title || props["Name"]?.title || [])
-    const status       = props["Status"]?.select?.name || ""
+    const status       = props["Status"]?.status?.name || props["Status"]?.select?.name || ""
     const packageType  = props["Package"]?.select?.name || ""
     const currentPhase = props["Phase"]?.select?.name || ""
     const startDate    = props["Start Date"]?.date?.start || null
@@ -83,6 +83,7 @@ export default async function handler(req, res) {
             name: plain(tp["Phase Name"]?.title || []),
             status: ts,
             priority: tp.Priority?.select?.name || null,
+            startDate: tp["Start Date"]?.date?.start || null,
             dueDate: tp["Due Date"]?.date?.start || null,
             assignees,
             phaseNo,
