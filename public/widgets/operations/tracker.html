@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Project Tracker</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--red:#FF6B6B;--redm:rgba(255,107,107,.1);--redb:rgba(255,107,107,.18);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+
+/* ── STAT CARDS ── */
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:700px){.g5{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:440px){.g5{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:14px 16px;position:relative;}
+.s-dot{position:absolute;top:12px;right:12px;width:6px;height:6px;border-radius:50%;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:8px;display:block;}
+body.light .s-lbl{color:rgba(0,0,0,.4);}
+.s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;}
+.s-sub{font-size:9px;font-weight:500;color:rgba(255,255,255,.22);margin-top:5px;}
+body.light .s-sub{color:rgba(0,0,0,.28);}
+
+/* ── PROJECT CARDS ── */
+.proj-card{padding:20px 22px;margin-bottom:10px;}
+.proj-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.proj-left{flex:1;min-width:0;}
+.proj-name{font-size:15px;font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:4px;}
+body.light .proj-name{color:#111;}
+.proj-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.proj-client{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.4);}
+body.light .proj-client{color:rgba(0,0,0,.4);}
+.proj-pkg{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.proj-status-pill{font-size:9px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.04em;}
+.pill-active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.pill-review{background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
+.pill-awaiting{background:var(--bluem);color:var(--blue);border:1px solid var(--blueb);}
+.pill-hold{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);}
+body.light .pill-hold{background:rgba(0,0,0,.04);color:rgba(0,0,0,.35);border-color:rgba(0,0,0,.1);}
+
+/* Overall progress */
+.proj-progress{margin-bottom:16px;}
+.prog-row{display:flex;align-items:center;gap:10px;}
+.prog-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);flex-shrink:0;}
+body.light .prog-label{color:rgba(0,0,0,.35);}
+.prog-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
+body.light .prog-track{background:rgba(0,0,0,.08);}
+.prog-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.prog-pct{font-size:12px;font-weight:900;color:var(--g);flex-shrink:0;width:36px;text-align:right;}
+
+/* Task summary row */
+.task-summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.ts-item{display:flex;align-items:center;gap:5px;}
+.ts-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ts-dot-done{background:var(--g);}
+.ts-dot-ip{background:var(--amber);}
+.ts-dot-blocked{background:var(--red);}
+.ts-dot-ns{background:rgba(255,255,255,.15);}
+body.light .ts-dot-ns{background:rgba(0,0,0,.12);}
+.ts-count{font-size:13px;font-weight:900;color:#fff;}
+body.light .ts-count{color:#111;}
+.ts-label{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.35);}
+body.light .ts-label{color:rgba(0,0,0,.35);}
+
+/* ── PHASE PIPELINE ── */
+.phase-pipeline{display:flex;flex-direction:column;gap:0;}
+.phase-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);}
+.phase-row:first-child{border-top:none;}
+body.light .phase-row{border-top-color:rgba(0,0,0,.06);}
+
+.phase-indicator{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;position:relative;}
+.ph-done{background:var(--gm);color:var(--g);border:2px solid var(--g);}
+.ph-ip{background:var(--gm);color:var(--g);border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
+.ph-review{background:var(--amberm);color:var(--amber);border:2px solid var(--amber);}
+.ph-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.1);}
+.ph-hold{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2);border:2px dashed rgba(255,255,255,.15);}
+body.light .ph-ns{background:rgba(0,0,0,.03);color:rgba(0,0,0,.2);border-color:rgba(0,0,0,.1);}
+body.light .ph-hold{background:rgba(0,0,0,.03);color:rgba(0,0,0,.2);border-color:rgba(0,0,0,.12);}
+
+.phase-info{flex:1;min-width:0;}
+.phase-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .phase-name{color:#111;}
+.phase-due{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.3);}
+body.light .phase-due{color:rgba(0,0,0,.3);}
+.phase-due.overdue{color:var(--red);}
+
+.phase-tasks{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.phase-task-bar{width:80px;height:4px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;display:flex;}
+body.light .phase-task-bar{background:rgba(0,0,0,.08);}
+.ptb-done{height:4px;background:var(--g);border-radius:999px 0 0 999px;}
+.ptb-ip{height:4px;background:var(--amber);}
+.ptb-blocked{height:4px;background:var(--red);}
+.phase-task-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);white-space:nowrap;}
+body.light .phase-task-count{color:rgba(0,0,0,.4);}
+
+.phase-status-badge{font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;letter-spacing:.04em;text-transform:uppercase;}
+.psb-done{background:var(--gm);color:var(--g);}
+.psb-ip{background:var(--gm);color:var(--g);}
+.psb-review{background:var(--amberm);color:var(--amber);}
+.psb-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.25);}
+.psb-hold{background:rgba(255,255,255,.04);color:rgba(255,255,255,.25);}
+body.light .psb-ns{background:rgba(0,0,0,.04);color:rgba(0,0,0,.25);}
+
+/* ── DATES ── */
+.proj-dates{display:flex;gap:16px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);}
+body.light .proj-dates{border-top-color:rgba(0,0,0,.06);}
+.date-item{display:flex;align-items:center;gap:5px;}
+.date-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.25);}
+body.light .date-label{color:rgba(0,0,0,.25);}
+.date-val{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.55);}
+body.light .date-val{color:rgba(0,0,0,.55);}
+
+/* Empty state */
+.empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
+body.light .empty{color:rgba(0,0,0,.18);}
+</style></head><body>
+
+<div class="header">
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Project Tracker</h1></div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="sec-lbl">Overview</div>
+<div class="g5">
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Active Builds</span><div class="s-val" id="s-active" style="color:var(--g);">0</div><div class="s-sub">Currently building</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--amber);"></div><span class="s-lbl">In Review</span><div class="s-val" id="s-review" style="color:var(--amber);">0</div><div class="s-sub">Client sign-off</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--blue);"></div><span class="s-lbl">Awaiting</span><div class="s-val" id="s-awaiting" style="color:var(--blue);">0</div><div class="s-sub">Deposit or kickoff</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);opacity:.4;"></div><span class="s-lbl">Completed</span><div class="s-val" id="s-done" style="color:var(--g);opacity:.5;">0</div><div class="s-sub">Fully delivered</div></div>
+  <div class="card stat"><div class="s-dot" style="background:rgba(255,255,255,.2);"></div><span class="s-lbl">On Hold</span><div class="s-val" id="s-hold" style="color:rgba(255,255,255,.35);">0</div><div class="s-sub">Paused</div></div>
+</div>
+
+<!-- PROJECT CARDS -->
+<div class="sec-lbl">Active Projects</div>
+<div id="projects-list"><div class="card empty">Loading…</div></div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return _tok ? p+'?token='+encodeURIComponent(_tok) : p; }
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function fmtDate(iso){
+  if(!iso)return '—';
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+function isOverdue(iso){
+  if(!iso)return false;
+  return new Date(iso+'T23:59:59') < new Date();
+}
+
+function statusPill(s){
+  if(s==='active')  return {cls:'pill-active',  label:'Building'};
+  if(s==='review')  return {cls:'pill-review',  label:'In Review'};
+  if(s==='awaiting')return {cls:'pill-awaiting', label:'Awaiting'};
+  if(s==='hold')    return {cls:'pill-hold',     label:'On Hold'};
+  return {cls:'pill-hold', label:s};
+}
+
+function phaseIndicator(status, no){
+  const n = no ?? '?';
+  if(status==='Done')        return `<div class="phase-indicator ph-done">${n}</div>`;
+  if(status==='In Progress') return `<div class="phase-indicator ph-ip">${n}</div>`;
+  if(status==='Review')      return `<div class="phase-indicator ph-review">${n}</div>`;
+  if(status==='On Hold')     return `<div class="phase-indicator ph-hold">${n}</div>`;
+  return `<div class="phase-indicator ph-ns">${n}</div>`;
+}
+
+function phaseBadge(status){
+  if(status==='Done')        return `<span class="phase-status-badge psb-done">Done</span>`;
+  if(status==='In Progress') return `<span class="phase-status-badge psb-ip">Active</span>`;
+  if(status==='Review')      return `<span class="phase-status-badge psb-review">Review</span>`;
+  if(status==='On Hold')     return `<span class="phase-status-badge psb-hold">Hold</span>`;
+  return `<span class="phase-status-badge psb-ns">Pending</span>`;
+}
+
+function taskBar(tc){
+  if(!tc || tc.total===0) return '<div class="phase-task-bar"></div>';
+  const w = n => (n/tc.total*100).toFixed(1);
+  return `<div class="phase-task-bar">
+    <div class="ptb-done" style="width:${w(tc.done)}%"></div>
+    <div class="ptb-ip" style="width:${w(tc.inProgress)}%"></div>
+    <div class="ptb-blocked" style="width:${w(tc.blocked)}%"></div>
+  </div>`;
+}
+
+function renderProject(b){
+  const sp = statusPill(b.status);
+  const ts = b.taskSummary || {};
+  const hasPhases = b.phases && b.phases.length > 0;
+
+  let phasesHTML = '';
+  if(hasPhases){
+    phasesHTML = b.phases.map(ph => {
+      const tc = ph.tasks || {};
+      const dueClass = isOverdue(ph.due) && ph.status !== 'Done' ? ' overdue' : '';
+      const doneCount = tc.done || 0;
+      const totalCount = tc.total || 0;
+      return `
+      <div class="phase-row">
+        ${phaseIndicator(ph.status, ph.no)}
+        <div class="phase-info">
+          <div class="phase-name">${esc(ph.name)}</div>
+          <div class="phase-due${dueClass}">${ph.due ? (isOverdue(ph.due) && ph.status!=='Done' ? 'Overdue · ' : 'Due ') + fmtDate(ph.due) : 'No due date'}</div>
+        </div>
+        <div class="phase-tasks">
+          ${taskBar(tc)}
+          <span class="phase-task-count">${doneCount}/${totalCount}</span>
+        </div>
+        ${phaseBadge(ph.status)}
+      </div>`;
+    }).join('');
+  } else {
+    phasesHTML = '<div style="padding:12px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.18);">No phases configured yet</div>';
+  }
+
+  return `
+  <div class="card proj-card">
+    <div class="proj-header">
+      <div class="proj-left">
+        <div class="proj-name">${esc(b.name)}</div>
+        <div class="proj-meta">
+          ${b.client ? `<span class="proj-client">${esc(b.client)}</span>` : ''}
+          ${b.type ? `<span class="proj-pkg">${esc(b.type)}</span>` : ''}
+        </div>
+      </div>
+      <span class="proj-status-pill ${sp.cls}">${sp.label}</span>
+    </div>
+
+    <!-- Overall progress -->
+    <div class="proj-progress">
+      <div class="prog-row">
+        <span class="prog-label">Overall</span>
+        <div class="prog-track"><div class="prog-fill" style="width:${b.overallPct||0}%"></div></div>
+        <span class="prog-pct">${b.overallPct||0}%</span>
+      </div>
+    </div>
+
+    <!-- Task summary -->
+    <div class="task-summary">
+      <div class="ts-item"><div class="ts-dot ts-dot-done"></div><span class="ts-count">${ts.done||0}</span><span class="ts-label">Done</span></div>
+      <div class="ts-item"><div class="ts-dot ts-dot-ip"></div><span class="ts-count">${ts.inProgress||0}</span><span class="ts-label">In Progress</span></div>
+      <div class="ts-item"><div class="ts-dot ts-dot-blocked"></div><span class="ts-count">${ts.blocked||0}</span><span class="ts-label">Blocked</span></div>
+      <div class="ts-item"><div class="ts-dot ts-dot-ns"></div><span class="ts-count">${ts.notStarted||0}</span><span class="ts-label">Not Started</span></div>
+      <div class="ts-item" style="margin-left:auto;"><span class="ts-count" style="font-size:11px;color:rgba(255,255,255,.3);">${ts.total||0} total</span></div>
+    </div>
+
+    <!-- Phase pipeline -->
+    <div class="phase-pipeline">
+      ${phasesHTML}
+    </div>
+
+    <!-- Dates -->
+    ${(b.startDate || b.targetDate) ? `
+    <div class="proj-dates">
+      ${b.startDate ? `<div class="date-item"><span class="date-label">Started</span><span class="date-val">${fmtDate(b.startDate)}</span></div>` : ''}
+      ${b.targetDate ? `<div class="date-item"><span class="date-label">Target</span><span class="date-val${isOverdue(b.targetDate)?' overdue':''}">${fmtDate(b.targetDate)}</span></div>` : ''}
+    </div>` : ''}
+  </div>`;
+}
+
+function render(counts, builds){
+  document.getElementById('s-active').textContent   = counts.active   || 0;
+  document.getElementById('s-review').textContent   = counts.review   || 0;
+  document.getElementById('s-awaiting').textContent  = counts.awaiting || 0;
+  document.getElementById('s-done').textContent     = counts.done     || 0;
+  document.getElementById('s-hold').textContent     = counts.hold     || 0;
+
+  const el = document.getElementById('projects-list');
+  if(!builds.length){
+    el.innerHTML = '<div class="card empty">No active projects</div>';
+    return;
+  }
+  el.innerHTML = builds.map(renderProject).join('');
+}
+
+async function loadData(){
+  try{
+    const r = await fetch(apiUrl('/api/data/projects'));
+    const j = await r.json();
+    if(j.error) { console.error('API error:', j.error); return; }
+    render(j.counts||{}, j.builds||[]);
+    setTs();
+  }catch(e){console.error('tracker widget:', e);}
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+
+setTs();
+loadData();
+setInterval(loadData, 5*60*1000);
+</script></body></html>
