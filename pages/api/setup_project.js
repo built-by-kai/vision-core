@@ -320,29 +320,33 @@ async function setup(payload) {
   const osType = projectProps.Package?.select?.name || ""
   console.log(`[setup_project] OS type: "${osType}"`)
 
-  // ── Read add-ons from linked Deal ──
-  const addons = await readDealAddons(project, token)
-  console.log(`[setup_project] Add-ons: ${addons.length ? addons.join(", ") : "(none)"}`)
-
-  // ── Check for existing phases (created by create_invoice.js) ──
-  const existingPhaseRels = projectProps.Phases?.relation || []
-  let existingPhaseMap = {}  // phase_no → phaseId
-  if (existingPhaseRels.length > 0) {
-    for (const rel of existingPhaseRels) {
-      try {
-        const ph = await getPage(rel.id.replace(/-/g, ""), token)
-        const phNo = ph.properties["Phase No."]?.number
-        if (phNo) existingPhaseMap[phNo] = rel.id.replace(/-/g, "")
-      } catch {}
-    }
-    console.log(`[setup_project] found ${Object.keys(existingPhaseMap).length} existing phases — will add tasks`)
-  }
-
   const today     = new Date().toISOString().split("T")[0]
   const startDate = projectProps["Start Date"]?.date?.start || today
 
-  // ── Read client intake for customisation ──
-  const intakeProps = await readClientIntake(project, token)
+  // ── Parallel reads: Deal add-ons, client intake, existing phases ──
+  const existingPhaseRels = projectProps.Phases?.relation || []
+
+  const [addons, intakeProps, existingPhaseMap] = await Promise.all([
+    readDealAddons(project, token),
+    readClientIntake(project, token),
+    (async () => {
+      const map = {}
+      if (existingPhaseRels.length > 0) {
+        const phaseReads = existingPhaseRels.map(async (rel) => {
+          try {
+            const ph = await getPage(rel.id.replace(/-/g, ""), token)
+            const phNo = ph.properties["Phase No."]?.number
+            if (phNo) map[phNo] = rel.id.replace(/-/g, "")
+          } catch {}
+        })
+        await Promise.all(phaseReads)
+      }
+      return map
+    })(),
+  ])
+
+  console.log(`[setup_project] Add-ons: ${addons.length ? addons.join(", ") : "(none)"}`)
+  console.log(`[setup_project] Existing phases: ${Object.keys(existingPhaseMap).length}`)
   const typicalLength = intakeProps
     ? plain(intakeProps["Typical Project Length"] === undefined
         ? []
@@ -381,17 +385,16 @@ async function setup(payload) {
     5: PHASE_5_TASKS,
   }
 
-  // ── Create phases (or reuse existing) + tasks ──
+  // ── Resolve phases (reuse existing or create new) ──
   const phasesCreated = []
-  const tasksCreated  = []
 
-  for (const phase of PHASES) {
+  // Parallelize: create/update all phases at once
+  const phasePromises = PHASES.map(async (phase) => {
     const { start: phStart, end: phEnd } = phaseEndDate(startDate, phase.no, totalDays)
     let phaseId = existingPhaseMap[phase.no] || null
 
     if (!phaseId) {
-      // Phase doesn't exist yet — create it
-      const phaseBody = {
+      const created = await createPage({
         parent: { database_id: DB.PHASES },
         properties: {
           "Phase Name": { title: [{ type: "text", text: { content: phase.name } }] },
@@ -401,65 +404,62 @@ async function setup(payload) {
           "Due Date":   { date: { start: phEnd } },
           "Project":    { relation: [{ id: projectId }] },
         },
-      }
-      const created = await createPage(phaseBody, token)
+      }, token)
       phaseId = created.id.replace(/-/g, "")
       console.log(`[setup_project] Created ${phase.name} → ${phaseId}`)
     } else {
-      // Phase exists (from create_invoice) — update dates
       await patchPage(phaseId, {
         "Start Date": { date: { start: phStart } },
         "Due Date":   { date: { start: phEnd } },
       }, token).catch(() => {})
-      console.log(`[setup_project] Reusing ${phase.name} → ${phaseId} (adding tasks)`)
+      console.log(`[setup_project] Reusing ${phase.name} → ${phaseId}`)
     }
-    phasesCreated.push(phaseId)
+    return { no: phase.no, id: phaseId }
+  })
+  const resolvedPhases = await Promise.all(phasePromises)
+  resolvedPhases.sort((a, b) => a.no - b.no)
+  for (const p of resolvedPhases) phasesCreated.push(p.id)
 
-    // Create tasks for this phase
-    const taskList = phaseTaskMap[phase.no] || []
+  // ── Build all task bodies first, then create in parallel batches ──
+  const allTaskBodies = []
+  for (const phase of resolvedPhases) {
+    const taskList = (phaseTaskMap[phase.no] || []).filter(t => !t.name.startsWith("──"))
     for (let i = 0; i < taskList.length; i++) {
       const task = taskList[i]
-
-      // Skip separator tasks (── markers) — they're just visual grouping
-      if (task.name.startsWith("──")) continue
-
       const taskProps = {
         "Task Name":    { title: [{ type: "text", text: { content: task.name } }] },
         "Status":       { status: { name: "Not Started" } },
         "Priority":     { select: { name: task.priority || "Medium" } },
         "Phase Stage":  { select: { name: `Phase ${phase.no}` } },
-        "Phase":        { relation: [{ id: phaseId }] },
+        "Phase":        { relation: [{ id: phase.id }] },
         "Project":      { relation: [{ id: projectId }] },
         "Task No.":     { number: i + 1 },
       }
-
-      // Set Area if available (OS group name for Phase 2 tasks)
-      if (task.area) {
-        try {
-          taskProps["Area"] = { select: { name: task.area } }
-        } catch {}
-      }
-
-      const taskBody = {
-        parent: { database_id: DB.TASKS },
-        properties: taskProps,
-      }
-      const taskPage = await createPage(taskBody, token)
-      tasksCreated.push(taskPage.id.replace(/-/g, ""))
+      if (task.area) taskProps["Area"] = { select: { name: task.area } }
+      allTaskBodies.push({ parent: { database_id: DB.TASKS }, properties: taskProps })
     }
   }
 
-  // Link all phases back to the project
-  await patchPage(projectId, {
-    "Phases": { relation: phasesCreated.map(id => ({ id })) },
-  }, token)
-
-  // Set Phase 1 to In Progress (build has started)
-  if (phasesCreated[0]) {
-    await patchPage(phasesCreated[0], {
-      "Status": { select: { name: "In Progress" } },
-    }, token)
+  // Create tasks in parallel batches of 8 (stay under Notion rate limit)
+  const BATCH = 8
+  const tasksCreated = []
+  for (let i = 0; i < allTaskBodies.length; i += BATCH) {
+    const batch = allTaskBodies.slice(i, i + BATCH)
+    const results = await Promise.all(
+      batch.map(body => createPage(body, token).then(p => p.id.replace(/-/g, "")))
+    )
+    tasksCreated.push(...results)
   }
+
+  // Link phases + set Phase 1 to In Progress — in parallel
+  await Promise.all([
+    patchPage(projectId, {
+      "Phases": { relation: phasesCreated.map(id => ({ id })) },
+    }, token),
+    phasesCreated[0]
+      ? patchPage(phasesCreated[0], { "Status": { select: { name: "In Progress" } } }, token)
+      : Promise.resolve(),
+  ])
 
   const summary = {
     status:         "success",
