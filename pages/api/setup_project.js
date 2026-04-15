@@ -608,6 +608,33 @@ async function advanceTask(payload) {
   }
 }
 
+// ─── AUTO-DETECT action from page's parent database ─────────────────────────
+// Notion button webhooks POST { page_id } but may not pass query params.
+// We read the page and check which DB it belongs to:
+//   Phase Tasks DB (DB.PHASES) → advance task
+//   Projects DB (DB.PROJECTS)  → setup project
+async function detectAction(payload) {
+  const token  = process.env.NOTION_API_KEY
+  const rawId  = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  if (!rawId) return "setup" // fallback
+
+  const pageId = rawId.replace(/-/g, "")
+  try {
+    const page     = await getPage(pageId, token)
+    const parentDb = page.parent?.database_id?.replace(/-/g, "") || ""
+
+    if (parentDb === DB.PHASES.replace(/-/g, "")) return "advance"
+    if (parentDb === DB.PROJECTS.replace(/-/g, "")) return "setup"
+
+    // Fallback: check if page has "Parent item" relation (→ it's a task sub-item)
+    const hasParent = (page.properties?.["Parent item"]?.relation || []).length > 0
+    if (hasParent) return "advance"
+  } catch (e) {
+    console.warn("[detectAction]", e.message)
+  }
+  return "setup"
+}
+
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -615,15 +642,23 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
-  const action = req.query?.action || ""
+  const body = req.body || {}
+
+  // Action priority: query param > body field > auto-detect from parent DB
+  let action = req.query?.action || body.action || ""
 
   try {
+    if (!action) {
+      action = await detectAction(body)
+      console.log(`[setup_project] Auto-detected action: "${action}"`)
+    }
+
     if (action === "advance") {
-      const result = await advanceTask(req.body || {})
+      const result = await advanceTask(body)
       return res.json(result)
     }
     // Default: full project setup
-    const result = await setup(req.body || {})
+    const result = await setup(body)
     return res.json(result)
   } catch (e) {
     console.error("[setup_project]", e)
