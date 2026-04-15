@@ -9,7 +9,7 @@
 // 5. Advances Lead/Deal stage → "Awaiting Deposit"
 // 6. Returns { invoice_id, project_id }
 
-import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
+import { getPage, patchPage, createPage, queryDB, plain, DB, hdrs } from "../../lib/notion"
 
 // ── Default phases per package tier ─────────────────────────────────────────
 // Full OS installs get 5 phases; micro installs get 3.
@@ -28,6 +28,94 @@ const PHASES_MICRO = [
 ]
 
 const MICRO_PACKAGES = new Set(["Micro Install — 1 Module", "Micro Install — 2 Modules", "Micro Install — 3 Modules"])
+
+// ── Find inline Products & Services DB on a page (checks callouts too) ──
+async function findLineItemsDB(pageId, token) {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=100`, {
+      headers: hdrs(token),
+    })
+    if (!r.ok) return null
+    const blocks = (await r.json()).results || []
+
+    const direct = blocks.find(b => b.type === "child_database")
+    if (direct) return direct.id.replace(/-/g, "")
+
+    const containers = blocks.filter(b =>
+      ["callout", "column", "column_list", "toggle"].includes(b.type)
+    )
+    const inner = await Promise.all(
+      containers.map(async b => {
+        try {
+          const nb = await fetch(`https://api.notion.com/v1/blocks/${b.id}/children?page_size=50`, {
+            headers: hdrs(token),
+          })
+          return nb.ok ? (await nb.json()).results || [] : []
+        } catch { return [] }
+      })
+    )
+    const nested = inner.flat().find(b => b.type === "child_database")
+    if (nested) return nested.id.replace(/-/g, "")
+  } catch (e) {
+    console.warn("[create_invoice] findLineItemsDB:", e.message)
+  }
+  return null
+}
+
+// ── Copy line items from Quotation's inline DB to Invoice's inline DB ────
+async function copyLineItems(quotId, invId, token) {
+  try {
+    // Find source (Quotation) inline DB
+    const srcDbId = await findLineItemsDB(quotId, token)
+    if (!srcDbId) { console.log("[create_invoice] no source line items DB on quotation"); return }
+
+    // Find target (Invoice) inline DB — created by Notion template
+    // Allow a moment for the template to be fully applied
+    let tgtDbId = await findLineItemsDB(invId, token)
+    if (!tgtDbId) {
+      await new Promise(r => setTimeout(r, 1500))
+      tgtDbId = await findLineItemsDB(invId, token)
+    }
+    if (!tgtDbId) { console.log("[create_invoice] no target line items DB on invoice"); return }
+
+    // Read source rows
+    const srcRows = await queryDB(srcDbId, undefined, token)
+    if (!srcRows.length) return
+
+    // Write each row to the target DB
+    let written = 0
+    for (const row of srcRows) {
+      const rp = row.properties
+      const productRels = rp.Product?.relation || []
+      const qty         = rp.Qty?.number || 1
+      const unitPrice   = rp["Unit Price"]?.number ?? 0
+
+      const props = {
+        "Notes":      { title: rp.Notes?.title || [] },
+        "Qty":        { number: qty },
+        "Unit Price": { number: unitPrice },
+        ...(productRels.length ? { "Product": { relation: [{ id: productRels[0].id }] } } : {}),
+      }
+
+      // Try with description column names
+      for (const descCol of ["Product Description", "Description", null]) {
+        try {
+          const p = descCol
+            ? { ...props, [descCol]: rp[descCol] || { rich_text: [] } }
+            : props
+          await createPage({ parent: { database_id: tgtDbId }, properties: p }, token)
+          written++
+          break
+        } catch (e) {
+          if (!descCol) console.warn("[create_invoice] line item write failed:", e.message)
+        }
+      }
+    }
+    console.log(`[create_invoice] copied ${written} line items from quotation to invoice`)
+  } catch (e) {
+    console.warn("[create_invoice] copyLineItems:", e.message)
+  }
+}
 
 // ── Package slug → human-readable OS name (for Projects DB Package select) ─
 const SLUG_TO_PACKAGE = {
@@ -143,6 +231,13 @@ async function run(payload) {
 
   // Link Invoice ↔ Quotation
   await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, token).catch(() => {})
+
+  // ── 1b. Copy line items from Quotation → Invoice inline table ────────────
+  // Invoice template has an inline Products & Services DB — populate it so the
+  // Invoice page shows the same line items as the Quotation (non-blocking).
+  copyLineItems(quotId, invId, token).catch(e =>
+    console.warn("[create_invoice] copyLineItems non-fatal:", e.message)
+  )
 
   // ── 2. Create or Link Project ──────────────────────────────────────────────
   let projectId = existingProjectId

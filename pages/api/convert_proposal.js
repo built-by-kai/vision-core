@@ -159,6 +159,49 @@ async function fetchDealAddons(dealId) {
   }
 }
 
+// ── Read add-on products from a Proposal's inline Products & Services DB ──
+// Fallback for when Deal doesn't have add-ons yet.
+// Reads the Proposal's inline DB, resolves Product relations to get names/prices,
+// and returns only the add-on items (excludes Base OS and main OS packages).
+async function fetchProposalAddons(proposalId, mainOsSlug) {
+  try {
+    const dbId = await findLineItemsDB(proposalId)
+    if (!dbId) return []
+
+    const rows = await queryDB(dbId, undefined, process.env.NOTION_API_KEY)
+    const results = []
+
+    for (const row of rows) {
+      const rp = row.properties
+      const productRels = rp.Product?.relation || []
+      if (!productRels.length) continue
+
+      let prodPage
+      try { prodPage = await getPage(productRels[0].id.replace(/-/g, ""), process.env.NOTION_API_KEY) }
+      catch { continue }
+
+      const prodProps = prodPage.properties
+      const name  = plain(prodProps["Product Name"]?.title || [])
+      const slug  = plain(prodProps.Slug?.rich_text || [])
+      const price = rp["Unit Price"]?.number ?? prodProps.Price?.number ?? null
+      const desc  = plain(prodProps.Description?.rich_text || [])
+
+      // Skip Base OS and main OS package — only return add-ons
+      if (/base\s*os/i.test(name)) continue
+      if (slug && OS_PACKAGE_SLUGS.has(slug)) continue
+      if (slug === mainOsSlug) continue
+
+      results.push({ id: prodPage.id.replace(/-/g, ""), name, price, description: desc, slug })
+    }
+
+    console.log(`[convert_proposal] proposal add-ons found: ${results.map(r => r.name)}`)
+    return results
+  } catch (e) {
+    console.warn("[convert_proposal] fetchProposalAddons:", e.message)
+    return []
+  }
+}
+
 // ── Find inline Products & Services DB on a page ──────────────────────────
 // Checks direct children, then inside callouts/columns (template nesting)
 async function findLineItemsDB(pageId) {
@@ -344,11 +387,15 @@ export default async function handler(req, res) {
     const osSlug  = OS_SLUG_MAP[osTypeRaw.toLowerCase().trim()] || null
     const isOsPkg = osSlug && OS_PACKAGE_SLUGS.has(osSlug)
 
-    const [baseProduct, mainProduct, addonProducts] = await Promise.all([
+    // Fetch add-ons from Deal first; fall back to Proposal's inline Products DB
+    const [baseProduct, mainProduct, dealAddons, proposalAddons] = await Promise.all([
       isOsPkg ? fetchProduct("base-os") : Promise.resolve(null),
       osSlug  ? fetchProduct(osSlug)    : Promise.resolve(null),
       dealIds.length ? fetchDealAddons(dealIds[0]) : Promise.resolve([]),
+      fetchProposalAddons(proposalId, osSlug),
     ])
+    // Use Deal add-ons if available; otherwise fall back to Proposal's inline add-ons
+    const addonProducts = dealAddons.length ? dealAddons : proposalAddons
 
     const lineItems = []
     if (isOsPkg && baseProduct?.id) lineItems.push(baseProduct)

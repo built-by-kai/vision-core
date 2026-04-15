@@ -86,7 +86,8 @@ async function handleProposal(pageId) {
 
   // ── Split line items: core (Base OS + main OS) vs add-ons ─────────────
   // Core items are the OS packages — everything else is an add-on for this proposal
-  const isCoreItem = name => /base\s*os/i.test(name) || /\bos\b$/i.test(name.trim())
+  // Match "Base OS" or any known OS package name (may have suffixes like "(Revenue OS + Operations OS)")
+  const isCoreItem = name => /base\s*os/i.test(name) || /\b(revenue|operations|business|marketing|agency|team|retention|intelligence|starter)\s+os\b/i.test(name)
   const coreItems  = (data.line_items || []).filter(i => isCoreItem(i.name || ''))
   const addonItems = (data.line_items || []).filter(i => !isCoreItem(i.name || ''))
 

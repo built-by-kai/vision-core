@@ -268,31 +268,7 @@ async function run(payload) {
     }
   }
 
-  let projectId = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
-  let phasesCount = 0, tasksCount = 0
-
-  if (!projectId && quotationId) {
-    try {
-      const rows = await queryDB(DB.PROJECTS, {
-        property: "Quotation", relation: { contains: quotationId }
-      }, token)
-      if (rows.length) projectId = rows[0].id.replace(/-/g, "")
-    } catch {}
-  }
-
-  if (projectId) {
-    await patchPage(projectId, {
-      "Status":     { select: { name: "Build Started" } },
-      "Start Date": { date: { start: today } },
-      // If we created a new Deal (from Lead conversion), link it to the Project
-      ...(dealId && dealId !== leadId ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
-    }, token)
-    try {
-      await patchPage(pageId, { "Implementation": { relation: [{ id: projectId }] } }, token)
-    } catch {}
-    ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
-  }
-
+  // ── Resolve company name EARLY (needed for onboarding form URL) ─────────
   let companyName = ""
   if (companyId) {
     try {
@@ -303,7 +279,8 @@ async function run(payload) {
     } catch {}
   }
 
-  // ── Build onboarding form URL ──────────────────────────────────────────────
+  // ── Build onboarding form URL and save to Deal BEFORE heavy project work ──
+  // This runs early to avoid Vercel timeout (10s Hobby plan) cutting it off.
   // Form lives at /onboarding and uses these params to conditionally show/hide steps:
   //   client=  — company name (pre-fills sidebar label)
   //   package= — OS package e.g. "Business OS", "Revenue OS" (controls which OS steps appear)
@@ -329,6 +306,32 @@ async function run(payload) {
     await patchPage(dealId, dealPatches, token).catch(e =>
       console.warn("[deposit_paid] deal form link patch:", e.message)
     )
+  }
+
+  // ── Project setup (heavy — may take multiple seconds) ─────────────────────
+  let projectId = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
+  let phasesCount = 0, tasksCount = 0
+
+  if (!projectId && quotationId) {
+    try {
+      const rows = await queryDB(DB.PROJECTS, {
+        property: "Quotation", relation: { contains: quotationId }
+      }, token)
+      if (rows.length) projectId = rows[0].id.replace(/-/g, "")
+    } catch {}
+  }
+
+  if (projectId) {
+    await patchPage(projectId, {
+      "Status":     { select: { name: "Build Started" } },
+      "Start Date": { date: { start: today } },
+      // If we created a new Deal (from Lead conversion), link it to the Project
+      ...(dealId && dealId !== leadId ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
+    }, token)
+    try {
+      await patchPage(pageId, { "Implementation": { relation: [{ id: projectId }] } }, token)
+    } catch {}
+    ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
   }
 
   // ── Finance Ledger — auto-create Deposit entry ───────────────────────────
