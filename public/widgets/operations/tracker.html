@@ -43,33 +43,82 @@ body.light .s-lbl{color:rgba(0,0,0,.4);}
 body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
-.proj-list{display:flex;flex-direction:column;gap:8px;}
-.proj-row{padding:16px 20px;display:flex;align-items:center;gap:16px;}
-@media(max-width:600px){.proj-row{flex-wrap:wrap;gap:10px;}}
+.proj-list{display:flex;flex-direction:column;gap:10px;}
+.proj-card{padding:20px 22px;}
 
-.pr-info{flex:1;min-width:0;}
-.pr-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .pr-name{color:#111;}
-.pr-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-top:2px;display:flex;align-items:center;gap:6px;}
-body.light .pr-sub{color:rgba(0,0,0,.3);}
-
-.pr-phase{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.5);white-space:nowrap;flex-shrink:0;width:180px;text-align:right;overflow:hidden;text-overflow:ellipsis;}
-body.light .pr-phase{color:rgba(0,0,0,.45);}
-.pr-phase-current{color:var(--g);}
-
-.pr-progress{flex-shrink:0;width:180px;display:flex;align-items:center;gap:8px;}
-@media(max-width:600px){.pr-progress{width:100%;}}
-.pr-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
-body.light .pr-track{background:rgba(0,0,0,.08);}
-.pr-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);min-width:0;}
-.pr-pct{font-size:12px;font-weight:900;color:var(--g);width:32px;text-align:right;flex-shrink:0;}
-
-.pr-pill{font-size:8.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.04em;flex-shrink:0;white-space:nowrap;}
+/* Top row: pill + name + client/pkg + progress */
+.pc-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+@media(max-width:600px){.pc-top{flex-wrap:wrap;gap:8px;}}
+.pc-pill{font-size:8.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.04em;flex-shrink:0;white-space:nowrap;}
 .pill-active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 .pill-review{background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
 .pill-awaiting{background:var(--bluem);color:var(--blue);border:1px solid var(--blueb);}
 .pill-hold{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);}
 body.light .pill-hold{background:rgba(0,0,0,.04);color:rgba(0,0,0,.35);border-color:rgba(0,0,0,.1);}
+
+.pc-info{flex:1;min-width:0;}
+.pc-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+body.light .pc-name{color:#111;}
+.pc-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-top:1px;}
+body.light .pc-sub{color:rgba(0,0,0,.3);}
+
+.pc-progress{flex-shrink:0;width:200px;display:flex;align-items:center;gap:8px;}
+@media(max-width:600px){.pc-progress{width:100%;}}
+.pc-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
+body.light .pc-track{background:rgba(0,0,0,.08);}
+.pc-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pc-pct{font-size:13px;font-weight:900;color:var(--g);width:36px;text-align:right;flex-shrink:0;}
+
+/* ── MID: TASK SUMMARY ── */
+.pc-tasks{display:flex;gap:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
+body.light .pc-tasks{border-bottom-color:rgba(0,0,0,.06);}
+.tk{display:flex;align-items:center;gap:5px;}
+.tk-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.tk-d{background:var(--g);}
+.tk-ip{background:var(--amber);}
+.tk-b{background:var(--red);}
+.tk-ns{background:rgba(255,255,255,.12);}body.light .tk-ns{background:rgba(0,0,0,.1);}
+.tk-val{font-size:12px;font-weight:800;color:#fff;}body.light .tk-val{color:#111;}
+.tk-lbl{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.3);}body.light .tk-lbl{color:rgba(0,0,0,.3);}
+.tk-total{margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);}body.light .tk-total{color:rgba(0,0,0,.2);}
+
+/* ── PHASE TIMELINE ── */
+.ph-timeline{display:flex;align-items:stretch;gap:0;position:relative;}
+.ph-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;min-width:0;padding:0 4px;}
+
+/* Connector line between steps */
+.ph-step:not(:last-child)::after{content:'';position:absolute;top:11px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:rgba(255,255,255,.06);}
+body.light .ph-step:not(:last-child)::after{background:rgba(0,0,0,.07);}
+.ph-step.done:not(:last-child)::after{background:var(--g);}
+.ph-step.active:not(:last-child)::after{background:linear-gradient(90deg, var(--g) 40%, rgba(255,255,255,.06) 100%);}
+
+.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;}
+.phd-done{background:var(--g);color:#111;}
+.phd-active{background:#191919;color:var(--g);border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
+body.light .phd-active{background:#fff;}
+.phd-review{background:#191919;color:var(--amber);border:2px solid var(--amber);}
+body.light .phd-review{background:#fff;}
+.phd-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.08);}
+body.light .phd-ns{background:rgba(0,0,0,.02);color:rgba(0,0,0,.18);border-color:rgba(0,0,0,.08);}
+.phd-hold{background:rgba(255,255,255,.04);color:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.12);}
+
+.ph-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+body.light .ph-label{color:rgba(0,0,0,.45);}
+.ph-step.active .ph-label{color:var(--g);}
+.ph-step.done .ph-label{color:rgba(255,255,255,.3);}
+body.light .ph-step.done .ph-label{color:rgba(0,0,0,.25);}
+
+.ph-count{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.25);margin-top:2px;}
+body.light .ph-count{color:rgba(0,0,0,.2);}
+.ph-step.active .ph-count{color:var(--g);}
+
+.ph-due{font-size:8px;font-weight:600;color:rgba(255,255,255,.18);margin-top:1px;}
+body.light .ph-due{color:rgba(0,0,0,.15);}
+.ph-due.overdue{color:var(--red);}
+
+/* No phases fallback */
+.no-phases{padding:8px 0;text-align:center;font-size:10px;color:rgba(255,255,255,.15);}
+body.light .no-phases{color:rgba(0,0,0,.12);}
 
 .empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
 body.light .empty{color:rgba(0,0,0,.18);}
@@ -105,6 +154,8 @@ let light=false;
 function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function isOverdue(iso){if(!iso)return false;return new Date(iso+'T23:59:59')<new Date();}
 
 function pillCfg(s){
   if(s==='active')  return{cls:'pill-active',  label:'Building'};
@@ -114,30 +165,71 @@ function pillCfg(s){
   return{cls:'pill-hold',label:s};
 }
 
-function renderRow(b){
+function phDotClass(status){
+  if(status==='Done')       return 'phd-done';
+  if(status==='In Progress')return 'phd-active';
+  if(status==='Review')     return 'phd-review';
+  if(status==='On Hold')    return 'phd-hold';
+  return 'phd-ns';
+}
+function phStepClass(status){
+  if(status==='Done')       return 'done';
+  if(status==='In Progress')return 'active';
+  if(status==='Review')     return 'review';
+  return '';
+}
+
+function renderCard(b){
   const sp=pillCfg(b.status);
   const pct=b.overallPct||0;
+  const ts=b.taskSummary||{};
 
-  // Current phase name
-  const curPhase=b.phase||'—';
-
-  // Sub line: client + package
   let subParts=[];
   if(b.client) subParts.push(esc(b.client));
   if(b.type) subParts.push(esc(b.type));
-  const subLine=subParts.join(' · ');
 
-  return`<div class="card proj-row">
-    <span class="pr-pill ${sp.cls}">${sp.label}</span>
-    <div class="pr-info">
-      <div class="pr-name">${esc(b.name)}</div>
-      ${subLine?`<div class="pr-sub">${subLine}</div>`:''}
+  // Phase timeline
+  let phHTML='';
+  if(b.phases&&b.phases.length>0){
+    phHTML='<div class="ph-timeline">'+b.phases.map(ph=>{
+      const tc=ph.tasks||{};
+      const cls=phStepClass(ph.status);
+      const dotCls=phDotClass(ph.status);
+      const ov=isOverdue(ph.due)&&ph.status!=='Done';
+      const dueStr=ph.due?(ov?'Overdue':'Due '+fmtDate(ph.due)):'';
+      // Short label: strip "Phase N — " prefix for cleaner display
+      const shortName=(ph.name||'').replace(/^Phase\s*\d+\s*[—–-]\s*/,'');
+      return`<div class="ph-step ${cls}">
+        <div class="ph-dot ${dotCls}">${ph.no??'?'}</div>
+        <div class="ph-label">${esc(shortName||ph.name)}</div>
+        <div class="ph-count">${tc.done||0}/${tc.total||0}</div>
+        ${dueStr?`<div class="ph-due${ov?' overdue':''}">${dueStr}</div>`:''}
+      </div>`;
+    }).join('')+'</div>';
+  } else {
+    phHTML='<div class="no-phases">No phases configured yet</div>';
+  }
+
+  return`<div class="card proj-card">
+    <div class="pc-top">
+      <span class="pc-pill ${sp.cls}">${sp.label}</span>
+      <div class="pc-info">
+        <div class="pc-name">${esc(b.name)}</div>
+        ${subParts.length?`<div class="pc-sub">${subParts.join(' · ')}</div>`:''}
+      </div>
+      <div class="pc-progress">
+        <div class="pc-track"><div class="pc-fill" style="width:${pct}%"></div></div>
+        <span class="pc-pct">${pct}%</span>
+      </div>
     </div>
-    <div class="pr-phase pr-phase-current">${esc(curPhase)}</div>
-    <div class="pr-progress">
-      <div class="pr-track"><div class="pr-fill" style="width:${pct}%"></div></div>
-      <span class="pr-pct">${pct}%</span>
+    <div class="pc-tasks">
+      <div class="tk"><div class="tk-dot tk-d"></div><span class="tk-val">${ts.done||0}</span><span class="tk-lbl">Done</span></div>
+      <div class="tk"><div class="tk-dot tk-ip"></div><span class="tk-val">${ts.inProgress||0}</span><span class="tk-lbl">In Progress</span></div>
+      <div class="tk"><div class="tk-dot tk-b"></div><span class="tk-val">${ts.blocked||0}</span><span class="tk-lbl">Blocked</span></div>
+      <div class="tk"><div class="tk-dot tk-ns"></div><span class="tk-val">${ts.notStarted||0}</span><span class="tk-lbl">Not Started</span></div>
+      <span class="tk-total">${ts.total||0} tasks</span>
     </div>
+    ${phHTML}
   </div>`;
 }
 
@@ -150,7 +242,7 @@ function render(counts,builds){
 
   const el=document.getElementById('proj-list');
   if(!builds.length){el.innerHTML='<div class="card empty">No active projects</div>';return;}
-  el.innerHTML=builds.map(renderRow).join('');
+  el.innerHTML=builds.map(renderCard).join('');
 }
 
 async function loadData(){
