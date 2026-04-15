@@ -538,40 +538,39 @@ async function advanceTask(payload) {
     }
   }
 
-  // ── If advancing to Done, check dependencies ──
-  // Checks both "Depends On" (single relation) and "Blocked by" (dual relation)
-  if (nextStatus === "Done") {
-    const depIds = [
-      ...(props["Depends On"]?.relation || []),
-      ...(props["Blocked by"]?.relation || []),
-    ].map(r => r.id.replace(/-/g, ""))
+  // ── Check dependencies before ANY advance ──
+  // A task can't start or complete if its dependencies aren't Done.
+  // Checks both "Depends On" and "Blocked by" relations.
+  const depIds = [
+    ...(props["Depends On"]?.relation || []),
+    ...(props["Blocked by"]?.relation || []),
+  ].map(r => r.id.replace(/-/g, ""))
 
-    // Deduplicate (same task could appear in both relations)
-    const uniqueDepIds = [...new Set(depIds)]
+  // Deduplicate (same task could appear in both relations)
+  const uniqueDepIds = [...new Set(depIds)]
 
-    if (uniqueDepIds.length) {
-      // Read all dependency tasks in parallel
-      const deps = await Promise.all(
-        uniqueDepIds.map(id => getPage(id, token).catch(() => null))
-      )
-      const blockers = []
-      for (const dep of deps) {
-        if (!dep) continue
-        const depStatus = dep.properties.Status?.status?.name || "Not Started"
-        if (depStatus !== "Done") {
-          const depName = plain(dep.properties["Phase Name"]?.title || [])
-          blockers.push({ name: depName, status: depStatus })
-        }
+  if (uniqueDepIds.length) {
+    // Read all dependency tasks in parallel
+    const deps = await Promise.all(
+      uniqueDepIds.map(id => getPage(id, token).catch(() => null))
+    )
+    const blockers = []
+    for (const dep of deps) {
+      if (!dep) continue
+      const depStatus = dep.properties.Status?.status?.name || "Not Started"
+      if (depStatus !== "Done") {
+        const depName = plain(dep.properties["Phase Name"]?.title || [])
+        blockers.push({ name: depName, status: depStatus })
       }
-      if (blockers.length) {
-        return {
-          status:   "blocked",
-          task_id:  taskId,
-          task:     taskName,
-          current:  currentStatus,
-          blockers: blockers,
-          message:  `Cannot complete — ${blockers.length} dependency task(s) not done: ${blockers.map(b => b.name).join(", ")}`,
-        }
+    }
+    if (blockers.length) {
+      return {
+        status:   "blocked",
+        task_id:  taskId,
+        task:     taskName,
+        current:  currentStatus,
+        blockers: blockers,
+        message:  `Blocked — ${blockers.length} task(s) must be completed first: ${blockers.map(b => b.name).join(", ")}`,
       }
     }
   }
