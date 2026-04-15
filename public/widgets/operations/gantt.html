@@ -362,9 +362,16 @@ function renderGantt(){
     phTasks.forEach((t,ti)=>{
       const sd=toDate(t.startDate), cd=toDate(t.completedDate);
       // Track = planned window: startDate → due date
-      // If no startDate, estimate from phase position
-      const estStart=addDays(phStart,Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase));
-      const estEnd=t.due||addDays(estStart,3);
+      // For Not Started tasks with a due date: bar sits near the due date
+      // For Not Started without due: estimate from phase position
+      let estStart, estEnd;
+      if(t.status==='Not Started'&&t.due){
+        estStart=addDays(t.due,-3);
+        estEnd=t.due;
+      } else {
+        estStart=addDays(phStart,Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase));
+        estEnd=t.due||addDays(estStart,3);
+      }
       t._trackStart=sd||estStart;
       t._trackEnd=t.due||estEnd;
       if(t._trackStart>t._trackEnd) t._trackEnd=t._trackStart;

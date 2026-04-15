@@ -154,13 +154,13 @@ function renderCard(proj,colHex){
     ?`<a class="c-name" href="${proj.notionUrl}" target="_blank" rel="noopener">${esc(proj.name)}</a>`
     :`<div class="c-name">${esc(proj.name)}</div>`;
 
-  const pctColor=pct===0?'rgba(255,255,255,.12)':colHex;
+  const pctColor=pct===0?'rgba(255,255,255,.12)':'var(--g)';
 
   return`<div class="card">
   <div class="c-top">${typeHTML}<span class="c-client">${proj.client?esc(proj.client):''}</span></div>
   ${nameTag}
   <div class="c-bar-row">
-    <div class="c-track"><div class="c-fill" style="width:${pct}%;background:${colHex}"></div></div>
+    <div class="c-track"><div class="c-fill" style="width:${pct}%;background:var(--g)"></div></div>
     <span class="c-pct" style="color:${pctColor}">${pct}%</span>
   </div>
   ${taskHTML}
