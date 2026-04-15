@@ -181,7 +181,7 @@ async function run(payload) {
   const quoteType    = props["Quote Type"]?.select?.name || "New Business"
   const paymentTerms = props["Payment Terms"]?.select?.name || "50% Deposit"
   const amount       = props.Amount?.number || 0
-  const packageName  = derivePackage(props) || quoteType
+  const packageName  = derivePackage(props) || null  // null if no OS detected — don't use quoteType as package
 
   // Linked IDs
   // Quotation has two separate relation fields:
@@ -256,7 +256,7 @@ async function run(payload) {
     }
     // If package isn't resolved from Quotation, try Proposal's OS Type via Related Proposal
     let resolvedPackage = packageName
-    if ((!resolvedPackage || resolvedPackage === quoteType) && props["Related Proposal"]?.relation?.length) {
+    if (!resolvedPackage && props["Related Proposal"]?.relation?.length) {
       try {
         const propPage = await getPage(props["Related Proposal"].relation[0].id.replace(/-/g, ""), token)
         const propOsType = propPage.properties["OS Type"]?.select?.name
