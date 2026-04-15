@@ -358,19 +358,25 @@ function renderGantt(){
     const phTasks=phaseGroups[ph];
     phTasks.forEach((t,ti)=>{
       const ps=toDate(t.plannedStart), sd=toDate(t.startDate), cd=toDate(t.completedDate);
-      // Traditional gantt: single bar = Planned Start → Due Date
-      // Fallback: plannedStart → startDate → created → phase estimate
       const estOff=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);
       const estStart=addDays(phStart,estOff);
       const estEnd=addDays(estStart,3);
-      t._barStart=ps||sd||t.created||estStart;
-      t._barEnd=t.due||estEnd;
-      // For done tasks: extend bar to completion if it went past due
-      if(t.status==='Done'&&cd&&cd>t._barEnd) t._barEnd=cd;
-      // For in-progress/blocked: extend bar to today if past due
-      if((t.status==='In Progress'||t.status==='Blocked')&&today>t._barEnd) t._barEnd=today;
+      // Done: actual start → actual completion (what really happened)
+      if(t.status==='Done'){
+        t._barStart=sd||ps||t.created||estStart;
+        t._barEnd=cd||sd||t._barStart;
+      }
+      // In Progress / Blocked: planned start → today (extends past due if overdue)
+      else if(t.status==='In Progress'||t.status==='Blocked'){
+        t._barStart=sd||ps||t.created||estStart;
+        t._barEnd=today>t.due?today:(t.due||estEnd);
+      }
+      // Not Started: planned start → due date (the schedule)
+      else {
+        t._barStart=ps||estStart;
+        t._barEnd=t.due||estEnd;
+      }
       if(t._barStart>t._barEnd) t._barEnd=t._barStart;
-      // Overdue flag: not done and past due date
       t._overdue=t.status!=='Done'&&t.due&&t.due<today;
     });
   });
