@@ -42,6 +42,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-widget-token")
 
   // ── POST: Task actions (start_task, complete_task) ────────────────────────
+  // Supports: widget JSON body {action, taskId} OR Notion webhook {do= query param, page_id in body}
   if (req.method === "POST") {
     try {
       const accessToken = req.query.token || req.headers["x-widget-token"]
@@ -50,13 +51,38 @@ export default async function handler(req, res) {
       if (!client) return res.status(403).json({ error: "Invalid token" })
       const notionToken = getNotionToken(client)
 
-      const { action, taskId } = req.body || {}
-      if (!action || !taskId) return res.status(400).json({ error: "Missing action or taskId" })
-
+      const body = req.body || {}
       const todayISO = new Date().toISOString().split("T")[0]
 
+      // ── Mode 1: Notion webhook button — action from ?do= query, page ID from body ──
+      if (req.query.do) {
+        // Extract page ID from Notion webhook payload (multiple possible locations)
+        const pageId = body.data?.page_id || body.data?.id || body.page_id || body.id
+          || body.source?.page_id || body.taskId || null
+        if (!pageId) return res.status(400).json({ error: "Could not find page_id in webhook payload", received: Object.keys(body) })
+
+        if (req.query.do === "start") {
+          await patchPage(pageId, {
+            "Start Date": { date: { start: todayISO } },
+            "Status":     { status: { name: "In Progress" } },
+          }, notionToken)
+          return res.status(200).json({ ok: true, action: "start_task", pageId, date: todayISO })
+        }
+        if (req.query.do === "complete") {
+          await patchPage(pageId, {
+            "Completed Date": { date: { start: todayISO } },
+            "Status":         { status: { name: "Done" } },
+          }, notionToken)
+          return res.status(200).json({ ok: true, action: "complete_task", pageId, date: todayISO })
+        }
+        return res.status(400).json({ error: "Unknown action: " + req.query.do })
+      }
+
+      // ── Mode 2: Widget / direct JSON body {action, taskId} ──
+      const { action, taskId } = body
+      if (!action || !taskId) return res.status(400).json({ error: "Missing action or taskId" })
+
       if (action === "start_task") {
-        // Set Start Date + Status → In Progress
         await patchPage(taskId, {
           "Start Date": { date: { start: todayISO } },
           "Status":     { status: { name: "In Progress" } },
@@ -65,7 +91,6 @@ export default async function handler(req, res) {
       }
 
       if (action === "complete_task") {
-        // Set Completed Date + Status → Done
         await patchPage(taskId, {
           "Completed Date": { date: { start: todayISO } },
           "Status":         { status: { name: "Done" } },

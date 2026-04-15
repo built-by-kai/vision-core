@@ -126,20 +126,6 @@ body.light .st-track{background:rgba(0,0,0,.05);}
 .st-count{font-size:12px;font-weight:800;color:#fff;width:28px;text-align:right;flex-shrink:0;}
 body.light .st-count{color:#111;}
 
-/* ── TIMELINE CHART ── */
-.tl-chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:8px 0;}
-.tl-bar-group{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;}
-.tl-bars{display:flex;gap:2px;align-items:flex-end;height:90px;width:100%;}
-.tl-col{flex:1;border-radius:4px 4px 0 0;min-width:0;transition:height .6s cubic-bezier(.4,0,.2,1);position:relative;cursor:default;}
-.tl-col:hover{opacity:.8;}
-.tl-col.c-done{background:var(--g);}
-.tl-col.c-started{background:var(--amber);}
-.tl-date{font-size:8px;font-weight:700;color:rgba(255,255,255,.2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:4px;}
-body.light .tl-date{color:rgba(0,0,0,.18);}
-.tl-legend{display:flex;gap:16px;margin-top:10px;justify-content:center;}
-.tl-leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:rgba(255,255,255,.35);}
-body.light .tl-leg{color:rgba(0,0,0,.3);}
-.tl-leg-dot{width:8px;height:8px;border-radius:3px;}
 
 .empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
 body.light .empty{color:rgba(0,0,0,.18);}
@@ -195,17 +181,6 @@ body.light .empty{color:rgba(0,0,0,.18);}
       <div class="task-bars" id="task-bars"></div>
     </div>
   </div>
-</div>
-
-<!-- TASK ACTIVITY CHART -->
-<div class="sec-lbl">Activity</div>
-<div class="card panel" style="margin-bottom:10px;">
-  <div class="panel-hdr">
-    <span class="panel-title">Task Activity Timeline</span>
-    <span class="panel-badge" id="tl-badge">—</span>
-  </div>
-  <div class="tl-chart" id="tl-chart"><div style="font-size:11px;color:rgba(255,255,255,.2);">No activity data yet</div></div>
-  <div class="tl-legend" id="tl-legend"></div>
 </div>
 
 <!-- BOTTOM ROW -->
@@ -413,45 +388,6 @@ function renderStatusVisual(counts){
   document.getElementById('status-visual').innerHTML=html;
 }
 
-function renderTimeline(timeline){
-  const el=document.getElementById('tl-chart');
-  const legEl=document.getElementById('tl-legend');
-  const badgeEl=document.getElementById('tl-badge');
-  if(!timeline||!timeline.length){
-    el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;height:100%;">No activity data yet</div>';
-    legEl.innerHTML='';
-    badgeEl.textContent='—';
-    return;
-  }
-
-  // Show last 14 data points max
-  const data=timeline.slice(-14);
-  const maxVal=Math.max(...data.map(d=>Math.max(d.done||0,d.started||0)),1);
-  const totalDone=data.reduce((s,d)=>s+(d.done||0),0);
-  const totalStarted=data.reduce((s,d)=>s+(d.started||0),0);
-  badgeEl.textContent=`${totalDone} completed · ${totalStarted} started`;
-
-  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  el.innerHTML=data.map(d=>{
-    const hDone=maxVal>0?Math.max(Math.round(((d.done||0)/maxVal)*80),2):2;
-    const hStarted=maxVal>0?Math.max(Math.round(((d.started||0)/maxVal)*80),2):2;
-    const dt=new Date(d.date+'T00:00:00');
-    const label=dt.getDate()+' '+MON[dt.getMonth()];
-    return`<div class="tl-bar-group">
-      <div class="tl-bars">
-        <div class="tl-col c-done" style="height:${hDone}px" title="Done: ${d.done||0}"></div>
-        <div class="tl-col c-started" style="height:${hStarted}px" title="Started: ${d.started||0}"></div>
-      </div>
-      <div class="tl-date">${label}</div>
-    </div>`;
-  }).join('');
-
-  legEl.innerHTML=`
-    <div class="tl-leg"><div class="tl-leg-dot" style="background:var(--g)"></div>Completed</div>
-    <div class="tl-leg"><div class="tl-leg-dot" style="background:var(--amber)"></div>Started</div>
-  `;
-}
-
 function render(data){
   const counts=data.counts||{};
   const ov=data.overview||{};
@@ -460,7 +396,6 @@ function render(data){
   renderTaskRing(ov.taskStats||{});
   renderPriorities(ov.priorities||{});
   renderStatusVisual(counts);
-  renderTimeline(ov.timeline||[]);
 }
 
 async function loadData(){

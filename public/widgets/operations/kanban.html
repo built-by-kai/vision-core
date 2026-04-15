@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Project Kanban</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow:hidden;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* ── KANBAN BOARD ── */
+.kb-board{display:flex;gap:12px;height:calc(100vh - 80px);overflow-x:auto;overflow-y:hidden;padding-bottom:12px;}
+
+/* Column */
+.kb-col{min-width:260px;width:260px;flex-shrink:0;display:flex;flex-direction:column;border-radius:14px;background:#1E1E1E;border:1px solid rgba(255,255,255,.06);overflow:hidden;}
+body.light .kb-col{background:#fff;border-color:rgba(0,0,0,.06);}
+
+.kb-col-hdr{padding:14px 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;}
+body.light .kb-col-hdr{border-bottom-color:rgba(0,0,0,.04);}
+.kb-col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.kb-col-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.6);flex:1;}
+body.light .kb-col-title{color:rgba(0,0,0,.5);}
+.kb-col-count{font-size:11px;font-weight:800;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);padding:2px 8px;border-radius:999px;}
+body.light .kb-col-count{color:rgba(0,0,0,.2);background:rgba(0,0,0,.04);}
+
+.kb-col-body{flex:1;overflow-y:auto;padding:10px 10px 16px;display:flex;flex-direction:column;gap:8px;}
+
+/* Card */
+.kb-card{background:#252525;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;cursor:default;transition:border-color .2s,transform .15s;}
+.kb-card:hover{border-color:rgba(170,255,0,.15);transform:translateY(-1px);}
+body.light .kb-card{background:#F8F8F8;border-color:rgba(0,0,0,.06);}
+body.light .kb-card:hover{border-color:rgba(92,153,0,.2);}
+
+.kb-card-top{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.kb-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;}
+.kb-client{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+body.light .kb-client{color:rgba(0,0,0,.3);}
+
+.kb-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.3;display:block;text-decoration:none;}
+.kb-name:hover{text-decoration:underline;text-decoration-color:var(--g);text-underline-offset:2px;}
+body.light .kb-name{color:#111;}
+
+/* Progress bar */
+.kb-progress{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.kb-track{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.06);}
+body.light .kb-track{background:rgba(0,0,0,.06);}
+.kb-fill{height:4px;border-radius:999px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
+.kb-pct{font-size:11px;font-weight:800;color:var(--g);width:32px;text-align:right;flex-shrink:0;}
+.kb-pct.zero{color:rgba(255,255,255,.15);}
+body.light .kb-pct.zero{color:rgba(0,0,0,.12);}
+
+/* Task summary chips */
+.kb-tasks{display:flex;gap:6px;flex-wrap:wrap;}
+.kb-chip{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:rgba(255,255,255,.35);padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.03);}
+body.light .kb-chip{color:rgba(0,0,0,.3);background:rgba(0,0,0,.03);}
+.kb-chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* Dates */
+.kb-dates{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;}
+.kb-date{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);}
+body.light .kb-date{color:rgba(0,0,0,.2);}
+.kb-date strong{font-weight:700;color:rgba(255,255,255,.35);}
+body.light .kb-date strong{color:rgba(0,0,0,.3);}
+
+/* Phase indicator */
+.kb-phase{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);margin-top:8px;display:flex;align-items:center;gap:5px;}
+body.light .kb-phase{color:rgba(0,0,0,.22);}
+.kb-phase-dot{width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;}
+
+.empty{display:flex;align-items:center;justify-content:center;height:100%;width:100%;font-size:13px;color:rgba(255,255,255,.18);}
+body.light .empty{color:rgba(0,0,0,.18);}
+.kb-empty{padding:20px;text-align:center;font-size:11px;color:rgba(255,255,255,.12);}
+body.light .kb-empty{color:rgba(0,0,0,.1);}
+</style></head><body>
+
+<div class="header">
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Project Board</h1></div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<div class="kb-board" id="board"><div class="empty">Loading…</div></div>
+
+<script>
+const _tok=new URLSearchParams(location.search).get('token')||'';
+function apiUrl(p){return _tok?p+'?token='+encodeURIComponent(_tok):p;}
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+
+const COLUMNS=[
+  {key:'awaiting',label:'Awaiting',color:'var(--blue)',dot:'#60A5FA'},
+  {key:'active',label:'Active',color:'var(--g)',dot:'#AAFF00'},
+  {key:'review',label:'In Review',color:'var(--amber)',dot:'#FBBF24'},
+  {key:'hold',label:'On Hold',color:'rgba(255,255,255,.25)',dot:'rgba(255,255,255,.25)'},
+  {key:'done',label:'Completed',color:'var(--purple)',dot:'#A78BFA'},
+];
+
+// Distinct type colors
+const TYPE_COLORS=['var(--g)','var(--amber)','#60A5FA','#A78BFA','#22D3EE','var(--red)'];
+const typeColorMap={};
+let typeIdx=0;
+function getTypeColor(t){
+  if(!t)return'rgba(255,255,255,.1)';
+  if(!typeColorMap[t])typeColorMap[t]=TYPE_COLORS[typeIdx++%TYPE_COLORS.length];
+  return typeColorMap[t];
+}
+
+function renderCard(proj){
+  const pct=proj.overallPct||0;
+  const ts=proj.taskSummary||{};
+  const typeColor=getTypeColor(proj.type);
+
+  let typeHTML='';
+  if(proj.type){
+    typeHTML=`<span class="kb-type" style="background:${typeColor}18;color:${typeColor};border:1px solid ${typeColor}30;">${esc(proj.type)}</span>`;
+  }
+
+  let chipHTML='';
+  const chips=[
+    {val:ts.done||0,lbl:'Done',color:'var(--g)'},
+    {val:ts.inProgress||0,lbl:'In Progress',color:'var(--amber)'},
+    {val:ts.blocked||0,lbl:'Blocked',color:'var(--red)'},
+    {val:ts.notStarted||0,lbl:'Not Started',color:'rgba(255,255,255,.15)'},
+  ];
+  chipHTML=chips.filter(c=>c.val>0).map(c=>`<div class="kb-chip"><div class="kb-chip-dot" style="background:${c.color}"></div>${c.val} ${c.lbl}</div>`).join('');
+
+  let datesHTML='';
+  if(proj.startDate||proj.targetDate||proj.completedDate){
+    datesHTML='<div class="kb-dates">';
+    if(proj.startDate) datesHTML+=`<span class="kb-date"><strong>Start:</strong> ${fmtDate(proj.startDate)}</span>`;
+    if(proj.completedDate) datesHTML+=`<span class="kb-date"><strong>Done:</strong> ${fmtDate(proj.completedDate)}</span>`;
+    else if(proj.targetDate) datesHTML+=`<span class="kb-date"><strong>Target:</strong> ${fmtDate(proj.targetDate)}</span>`;
+    datesHTML+='</div>';
+  }
+
+  let phaseHTML='';
+  if(proj.phase&&proj.phase!=='—'){
+    phaseHTML=`<div class="kb-phase"><div class="kb-phase-dot"></div>${esc(proj.phase)}</div>`;
+  }
+
+  return`<div class="kb-card">
+    <div class="kb-card-top">
+      ${typeHTML}
+      ${proj.client?`<span class="kb-client">${esc(proj.client)}</span>`:''}
+    </div>
+    ${proj.notionUrl?`<a class="kb-name" href="${proj.notionUrl}" target="_blank" rel="noopener">${esc(proj.name)}</a>`:`<div class="kb-name">${esc(proj.name)}</div>`}
+    <div class="kb-progress">
+      <div class="kb-track"><div class="kb-fill" style="width:${pct}%"></div></div>
+      <span class="kb-pct${pct===0?' zero':''}">${pct}%</span>
+    </div>
+    <div class="kb-tasks">${chipHTML}</div>
+    ${datesHTML}
+    ${phaseHTML}
+  </div>`;
+}
+
+function render(data){
+  const builds=data.builds||[];
+  const completed=data.completed||[];
+  const all=[...builds,...completed];
+
+  // Bucket by status
+  const buckets={};
+  COLUMNS.forEach(c=>buckets[c.key]=[]);
+  for(const p of all){
+    const s=p.status||'';
+    if(buckets[s]) buckets[s].push(p);
+  }
+
+  const board=document.getElementById('board');
+  board.innerHTML=COLUMNS.map(col=>{
+    const items=buckets[col.key]||[];
+    const cardsHTML=items.length?items.map(renderCard).join(''):`<div class="kb-empty">No projects</div>`;
+    return`<div class="kb-col">
+      <div class="kb-col-hdr">
+        <div class="kb-col-dot" style="background:${col.dot}"></div>
+        <span class="kb-col-title">${col.label}</span>
+        <span class="kb-col-count">${items.length}</span>
+      </div>
+      <div class="kb-col-body">${cardsHTML}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(apiUrl('/api/data/projects'));
+    const j=await r.json();
+    if(j.error){console.error('API:',j.error);return;}
+    render(j);
+    setTs();
+  }catch(e){console.error('kanban:',e);}
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setTs();loadData();setInterval(loadData,5*60*1000);
+</script></body></html>
