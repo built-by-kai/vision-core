@@ -92,6 +92,7 @@ export default async function handler(req, res) {
     // ── Process projects ───────────────────────────────────────────────────
     const counts = { active: 0, review: 0, done: 0, hold: 0, awaiting: 0 }
     const builds = []
+    const completed = []
 
     for (const proj of projects) {
       const p        = proj.properties
@@ -197,27 +198,31 @@ export default async function handler(req, res) {
 
       if (bucket) counts[bucket]++
 
+      const entry = {
+        name,
+        client: company,
+        type: pkg,
+        status: bucket,
+        phase: activePhase?.name || curPhase || "—",
+        phasePct: activePhase?.pct ?? 0,
+        overallPct,
+        startDate,
+        targetDate,
+        phases: projectPhases,
+        taskSummary,
+      }
+
       if (["active","review","hold","awaiting"].includes(bucket)) {
-        builds.push({
-          name,
-          client: company,
-          type: pkg,
-          status: bucket,
-          phase: activePhase?.name || curPhase || "—",
-          phasePct: activePhase?.pct ?? 0,
-          overallPct,
-          startDate,
-          targetDate,
-          phases: projectPhases,
-          taskSummary,
-        })
+        builds.push(entry)
+      } else if (bucket === "done") {
+        completed.push(entry)
       }
     }
 
     const order = { active: 0, review: 1, awaiting: 2, hold: 3 }
     builds.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9))
 
-    res.status(200).json({ counts, builds })
+    res.status(200).json({ counts, builds, completed })
   } catch (err) {
     console.error("projects:", err)
     res.status(500).json({ error: err.message })
