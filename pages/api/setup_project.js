@@ -602,7 +602,7 @@ async function advanceTask(payload) {
       if (nextStatus === "In Progress" && phStatus === "Not Started") {
         // First task started → phase starts
         await patchPage(parentId, {
-          "Status":     { select: { name: "In Progress" } },
+          "Status":     { status: { name: "In Progress" } },
           "Start Date": { date: { start: today } },
         }, token)
         phaseUpdate = "In Progress"
