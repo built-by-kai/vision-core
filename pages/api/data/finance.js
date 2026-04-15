@@ -2,7 +2,7 @@
 // Resolves client by access_token → uses their Notion key + DB IDs
 // Called by widgets: revenue.html, earnings.html, monthly.html, topproducts.html
 
-import { queryDB, plain, DB } from "../../../lib/notion"
+import { queryDB, plain, getProp, DB } from "../../../lib/notion"
 import { getClientByToken, getNotionToken, resolveDB, resolveField } from "../../../lib/supabase"
 
 export default async function handler(req, res) {
@@ -52,25 +52,22 @@ export default async function handler(req, res) {
 
     // Primary: count from proposals (Accepted, Quotation Issued, etc.)
     for (const pr of proposals) {
-      const p = pr.properties
-      const s = p[statusField]?.select?.name || ""
+      const s = getProp(pr, statusField) || ""
       // Count proposals that converted (Accepted, Quotation Issued, or any non-Draft/Rejected)
       if (s === "Accepted" || s === "Quotation Issued" || s === "Won") {
-        const raw = plain(p[osTypeField]) || plain(p[packageField]) || ""
-        const pkg = normalisePkg(raw)
+        const raw = getProp(pr, osTypeField) || getProp(pr, packageField) || ""
+        const pkg = normalisePkg(String(raw))
         if (pkg) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
       }
     }
 
     // Fallback: if quotations DB has Package Type, count Approved quotes too
     for (const q of quotes) {
-      const p = q.properties
-      const s = p[statusField]?.status?.name || p[statusField]?.select?.name || ""
+      const s = getProp(q, statusField) || ""
       if (s === "Approved") {
-        const raw = plain(p[packageField]) || plain(p[osTypeField]) || ""
-        const pkg = normalisePkg(raw)
-        if (pkg && !pkgCount[pkg]) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
-        else if (pkg) pkgCount[pkg]++
+        const raw = getProp(q, packageField) || getProp(q, osTypeField) || ""
+        const pkg = normalisePkg(String(raw))
+        if (pkg) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1
       }
     }
 
