@@ -256,7 +256,7 @@ export default async function handler(req, res) {
 
     for (const proj of projects) {
       const p        = proj.properties
-      const status   = p.Status?.select?.name || ""
+      const status   = p.Status?.status?.name || p.Status?.select?.name || ""
       const name     = plain(p["Project Name"]?.title || p.Name?.title || []) || "Untitled"
       const compRel  = strip(p.Company?.relation?.[0]?.id || "")
       const company  = compRel ? (companyNames[compRel] || "") : ""
@@ -264,7 +264,7 @@ export default async function handler(req, res) {
       const projId   = strip(proj.id)
       const curPhase = p.Phase?.select?.name || ""
       const startDate = p["Start Date"]?.date?.start || null
-      const targetDate = p["Target Date"]?.date?.start || p["Target End Date"]?.date?.start || null
+      const targetDate = p["Targeted Completion"]?.date?.start || p["Target Date"]?.date?.start || p["Target End Date"]?.date?.start || null
       const completedDate = p["Completed Date"]?.date?.start || p["Date Completed"]?.date?.start || null
       const notionUrl = proj.url || null
 
