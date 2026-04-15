@@ -4,7 +4,7 @@
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;overflow-x:hidden;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
@@ -43,7 +43,7 @@ body.light .s-lbl{color:rgba(0,0,0,.4);}
 body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
-.proj-list{display:flex;flex-direction:column;gap:10px;}
+.proj-list{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 200px);overflow-y:auto;padding-right:2px;}
 .proj-card{padding:20px 22px;}
 
 /* Top row: pill + name + client/pkg + progress */
@@ -57,15 +57,16 @@ body.light .s-sub{color:rgba(0,0,0,.28);}
 body.light .pill-hold{background:rgba(0,0,0,.04);color:rgba(0,0,0,.35);border-color:rgba(0,0,0,.1);}
 
 .pc-info{flex:1;min-width:0;}
-.pc-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.pc-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;text-decoration:none;display:inline-block;}
+.pc-name:hover{text-decoration:underline;text-decoration-color:var(--g);text-underline-offset:2px;}
 body.light .pc-name{color:#111;}
 .pc-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-top:1px;}
 body.light .pc-sub{color:rgba(0,0,0,.3);}
-.pc-dates{display:flex;gap:12px;margin-top:3px;}
-.pc-date{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);}
-body.light .pc-date{color:rgba(0,0,0,.2);}
-.pc-date span{color:rgba(255,255,255,.4);font-weight:700;}
-body.light .pc-date span{color:rgba(0,0,0,.35);}
+.pc-dates{display:flex;gap:16px;margin-top:4px;flex-wrap:wrap;}
+.pc-date{font-size:9px;font-weight:500;color:rgba(255,255,255,.25);}
+body.light .pc-date{color:rgba(0,0,0,.22);}
+.pc-date strong{font-weight:700;color:rgba(255,255,255,.45);}
+body.light .pc-date strong{color:rgba(0,0,0,.38);}
 
 /* ── TAB TOGGLE ── */
 .tab-row{display:flex;gap:4px;margin-bottom:10px;}
@@ -171,6 +172,7 @@ function toggleMode(){light=!light;document.body.classList.toggle('light',light)
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtDate(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function fmtDateFull(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function isOverdue(iso){if(!iso)return false;return new Date(iso+'T23:59:59')<new Date();}
 
 function pillCfg(s){
@@ -181,17 +183,25 @@ function pillCfg(s){
   return{cls:'pill-hold',label:s};
 }
 
-// Derive phase visual state from task counts, not status label
-function phDotClass(tc){
-  if(!tc||!tc.total) return 'phd-ns';
-  if(tc.done===tc.total) return 'phd-done';
-  if(tc.done>0||tc.inProgress>0) return 'phd-partial';
+// Assign sequential phase states: done → active (first incomplete) → not started
+function assignPhaseStates(phases){
+  let foundActive=false;
+  for(const ph of phases){
+    const tc=ph.tasks||{};
+    const allDone=tc.total>0&&tc.done===tc.total;
+    if(allDone&&!foundActive){ph._state='done';}
+    else if(!foundActive){ph._state='active';foundActive=true;}
+    else{ph._state='ns';}
+  }
+}
+function phDotClass(state){
+  if(state==='done') return 'phd-done';
+  if(state==='active') return 'phd-partial';
   return 'phd-ns';
 }
-function phStepClass(tc){
-  if(!tc||!tc.total) return '';
-  if(tc.done===tc.total) return 'done';
-  if(tc.done>0||tc.inProgress>0) return 'active';
+function phStepClass(state){
+  if(state==='done') return 'done';
+  if(state==='active') return 'active';
   return '';
 }
 
@@ -206,21 +216,23 @@ function renderCard(b){
 
   // Dates row
   let datesHTML='';
-  const hasStart=b.startDate, hasTarget=b.targetDate;
-  if(hasStart||hasTarget){
+  const hasStart=b.startDate, hasTarget=b.targetDate, hasCompleted=b.completedDate;
+  if(hasStart||hasTarget||hasCompleted){
     datesHTML='<div class="pc-dates">';
-    if(hasStart) datesHTML+=`<div class="pc-date"><span>Start</span> ${fmtDate(b.startDate)}</div>`;
-    if(hasTarget) datesHTML+=`<div class="pc-date"><span>Target</span> ${fmtDate(b.targetDate)}</div>`;
+    if(hasStart) datesHTML+=`<div class="pc-date"><strong>Started:</strong> ${fmtDateFull(b.startDate)}</div>`;
+    if(hasCompleted) datesHTML+=`<div class="pc-date"><strong>Completed:</strong> ${fmtDateFull(b.completedDate)}</div>`;
+    else if(hasTarget) datesHTML+=`<div class="pc-date"><strong>Targeted Completion:</strong> ${fmtDateFull(b.targetDate)}</div>`;
     datesHTML+='</div>';
   }
 
   // Phase timeline
   let phHTML='';
   if(b.phases&&b.phases.length>0){
+    assignPhaseStates(b.phases);
     phHTML='<div class="ph-timeline">'+b.phases.map(ph=>{
       const tc=ph.tasks||{};
-      const cls=phStepClass(tc);
-      const dotCls=phDotClass(tc);
+      const cls=phStepClass(ph._state);
+      const dotCls=phDotClass(ph._state);
       const ov=isOverdue(ph.due)&&ph.status!=='Done';
       const dueStr=ph.due?(ov?'Overdue':'Due '+fmtDate(ph.due)):'';
       // Short label: strip "Phase N — " prefix for cleaner display
@@ -240,7 +252,7 @@ function renderCard(b){
     <div class="pc-top">
       <span class="pc-pill ${sp.cls}">${sp.label}</span>
       <div class="pc-info">
-        <div class="pc-name">${esc(b.name)}</div>
+        ${b.notionUrl?`<a class="pc-name" href="${b.notionUrl}" target="_blank" rel="noopener">${esc(b.name)}</a>`:`<div class="pc-name">${esc(b.name)}</div>`}
         ${subParts.length?`<div class="pc-sub">${subParts.join(' · ')}</div>`:''}
         ${datesHTML}
       </div>

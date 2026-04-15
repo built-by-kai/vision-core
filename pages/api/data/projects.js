@@ -113,6 +113,8 @@ export default async function handler(req, res) {
       const curPhase = p.Phase?.select?.name || ""
       const startDate = p["Start Date"]?.date?.start || null
       const targetDate = p["Target Date"]?.date?.start || p["Target End Date"]?.date?.start || null
+      const completedDate = p["Completed Date"]?.date?.start || p["Date Completed"]?.date?.start || null
+      const notionUrl = proj.url || null
 
       // Get task IDs: merge project's Tasks relation + reverse lookup from task's Project relation
       const projTaskIds = new Set([
@@ -219,6 +221,8 @@ export default async function handler(req, res) {
         overallPct,
         startDate,
         targetDate,
+        completedDate,
+        notionUrl,
         phases: projectPhases,
         taskSummary,
       }
