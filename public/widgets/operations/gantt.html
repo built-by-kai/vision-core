@@ -149,10 +149,10 @@ body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 .b-NotStarted{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);}
 body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04);}
 
-/* Completed flag — small vertical line with dot */
-.g-done-mark{position:absolute;top:6px;z-index:2;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
-.g-done-line{width:2px;height:10px;background:var(--g);border-radius:1px;}
-.g-done-dot{width:8px;height:8px;border-radius:50%;background:var(--g);margin-top:-1px;box-shadow:0 0 6px rgba(170,255,0,.4);}
+/* Completed flag — vertical line with diamond */
+.g-done-mark{position:absolute;top:4px;z-index:3;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.g-done-line{width:2px;height:14px;background:var(--g);border-radius:1px;opacity:.8;}
+.g-done-dot{width:10px;height:10px;border-radius:2px;background:var(--g);transform:rotate(45deg);margin-top:-2px;box-shadow:0 0 8px rgba(170,255,0,.5),0 0 16px rgba(170,255,0,.2);}
 
 /* Due label outside bar */
 .g-due{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
@@ -232,8 +232,10 @@ function buildPhaseTabs(proj){
 }
 
 function todayISO(){return new Date().toISOString().split('T')[0];}
-function addDays(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
-function fmtShort(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+MON_NAMES[d.getMonth()];}
+function toDate(iso){if(!iso)return null;return iso.includes('T')?iso.split('T')[0]:iso;}
+function addDays(iso,n){const d=new Date(toDate(iso)+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+function fmtShort(iso){if(!iso)return'';const d=new Date(toDate(iso)+'T00:00:00');if(isNaN(d))return'';return d.getDate()+' '+MON_NAMES[d.getMonth()];}
+function fmtDateTime(iso){if(!iso)return'';if(!iso.includes('T'))return fmtShort(iso);const d=new Date(iso);if(isNaN(d))return'';return d.getDate()+' '+MON_NAMES[d.getMonth()]+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 
 function barCls(s){return s==='Done'?'b-Done':s==='In Progress'?'b-InProgress':s==='Blocked'?'b-Blocked':'b-NotStarted';}
 function dotCls(s){return s==='Done'?'d-Done':s==='In Progress'?'d-InProgress':s==='Blocked'?'d-Blocked':'d-NotStarted';}
@@ -361,16 +363,18 @@ function renderGantt(){
     const phStart=addDays(projStart,pi*daysPerPhase);
     const phTasks=phaseGroups[ph];
     phTasks.forEach((t,ti)=>{
+      // Normalize datetime fields to date-only for bar positioning
+      const sd=toDate(t.startDate), cd=toDate(t.completedDate);
       // Use task's own Start Date if available, else created date, else estimate
-      if(t.startDate&&t.due){t._start=t.startDate;t._end=t.due;}
+      if(sd&&t.due){t._start=sd;t._end=t.due;}
       else if(t.due&&t.created){t._start=t.created;t._end=t.due;}
       else if(t.due){t._start=addDays(t.due,-3);t._end=t.due;}
-      else if(t.startDate){t._start=t.startDate;t._end=addDays(t.startDate,3);}
+      else if(sd){t._start=sd;t._end=addDays(sd,3);}
       else if(t.created){t._start=t.created;t._end=addDays(t.created,3);}
       else{const off=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);t._start=addDays(phStart,off);t._end=addDays(t._start,2);}
       if(t._start>t._end) t._end=t._start;
       // For Done tasks: extend bar to completedDate if it's later than _end
-      if(t.status==='Done'&&t.completedDate&&t.completedDate>t._end) t._end=t.completedDate;
+      if(t.status==='Done'&&cd&&cd>t._end) t._end=cd;
     });
   });
 
@@ -451,12 +455,13 @@ function renderGantt(){
 
       // Completed flag at completion date
       let doneHTML='';
-      if(t.status==='Done'&&t.completedDate&&dayIdx[t.completedDate]!=null){
-        const doneX=dayIdx[t.completedDate]*DAY_W+DAY_W/2-4;
-        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtShort(t.completedDate)}"><div class="g-done-line"></div><div class="g-done-dot"></div></div>`;
+      const compDay=toDate(t.completedDate);
+      if(t.status==='Done'&&compDay&&dayIdx[compDay]!=null){
+        const doneX=dayIdx[compDay]*DAY_W+DAY_W/2-4;
+        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtDateTime(t.completedDate)}"><div class="g-done-line"></div><div class="g-done-dot"></div></div>`;
       }
 
-      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtShort(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtShort(t.completedDate):''}`;
+      const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
       rowsHTML+=`<div class="gr-row">${makeCells()}
         <div class="g-bar ${barCls(t.status)}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
         ${doneHTML}${dueHTML}
