@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Team Performance</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px 16px 28px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;height:100%;transition:background .3s,color .3s;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:18px 0 10px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+
+/* ── STAT CARDS ── */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:500px){.g3{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:16px 18px;position:relative;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.6;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
+body.light .s-lbl{color:rgba(0,0,0,.4);}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+body.light .s-sub{color:rgba(0,0,0,.28);}
+
+/* ── PANEL ── */
+.panel{padding:22px 24px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
+body.light .panel-title{color:#111;opacity:1;}
+
+/* ── 2-col grid ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:700px){.row2{grid-template-columns:1fr;}}
+
+/* ── MEMBER ROW ── */
+.m-list{display:flex;flex-direction:column;gap:2px;}
+.m-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+body.light .m-row{border-bottom-color:rgba(0,0,0,.04);}
+.m-row:last-child{border-bottom:none;}
+.m-rank{font-size:10px;font-weight:800;color:rgba(255,255,255,.2);width:16px;text-align:center;flex-shrink:0;}
+body.light .m-rank{color:rgba(0,0,0,.15);}
+.m-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover;border:2px solid rgba(255,255,255,.08);}
+body.light .m-avatar{border-color:rgba(0,0,0,.06);}
+.m-initials{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);text-transform:uppercase;}
+body.light .m-initials{background:rgba(0,0,0,.04);color:rgba(0,0,0,.3);}
+.m-info{flex:1;min-width:0;}
+.m-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;}
+body.light .m-name{color:#111;}
+.m-stats{display:flex;gap:10px;flex-wrap:wrap;}
+.m-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;}
+.m-tag .t-val{font-weight:900;}
+
+/* ── WORKLOAD BAR ── */
+.m-bar-area{width:180px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;}
+@media(max-width:600px){.m-bar-area{width:120px;}}
+.m-bar{height:8px;border-radius:999px;display:flex;overflow:hidden;background:rgba(255,255,255,.04);}
+body.light .m-bar{background:rgba(0,0,0,.04);}
+.m-seg{height:100%;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.m-bar-legend{display:flex;gap:6px;justify-content:flex-end;}
+.m-bl{font-size:8px;font-weight:700;color:rgba(255,255,255,.2);}
+body.light .m-bl{color:rgba(0,0,0,.18);}
+
+/* ── COMPLETION RATE ── */
+.m-rate{width:52px;text-align:right;flex-shrink:0;}
+.m-rate-val{font-size:16px;font-weight:900;color:var(--g);line-height:1;}
+.m-rate-lbl{font-size:7px;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.06em;}
+body.light .m-rate-lbl{color:rgba(0,0,0,.15);}
+
+/* ── AVG DURATION CHART ── */
+.dur-list{display:flex;flex-direction:column;gap:8px;}
+.dur-row{display:flex;align-items:center;gap:10px;}
+.dur-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .dur-name{color:rgba(0,0,0,.5);}
+.dur-track{flex:1;height:10px;border-radius:999px;background:rgba(255,255,255,.04);overflow:hidden;}
+body.light .dur-track{background:rgba(0,0,0,.04);}
+.dur-fill{height:10px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.dur-val{font-size:11px;font-weight:800;color:var(--g);width:50px;text-align:right;flex-shrink:0;}
+.dur-none{font-size:10px;color:rgba(255,255,255,.15);text-align:center;padding:16px 0;}
+body.light .dur-none{color:rgba(0,0,0,.12);}
+
+/* ── WORKLOAD HEATMAP ── */
+.heat-grid{display:grid;gap:6px;}
+.heat-cell{border-radius:8px;padding:10px;text-align:center;transition:all .3s;}
+.heat-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .heat-name{color:rgba(0,0,0,.5);}
+.heat-val{font-size:18px;font-weight:900;line-height:1;}
+.heat-lbl{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.25);margin-top:2px;}
+body.light .heat-lbl{color:rgba(0,0,0,.2);}
+
+.empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
+body.light .empty{color:rgba(0,0,0,.18);}
+</style></head><body>
+
+<div class="header">
+  <div><p class="eyebrow">Opxio · Operations OS</p><h1 class="h-title">Team Performance</h1></div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
+    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="g3">
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Team Members</span><div class="s-val" id="s-members">0</div><div class="s-sub" id="s-members-sub">With assigned tasks</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--g);"></div><span class="s-lbl">Total Tasks</span><div class="s-val" id="s-tasks">0</div><div class="s-sub" id="s-tasks-sub">Across all members</div></div>
+  <div class="card stat"><div class="s-dot" style="background:var(--amber);"></div><span class="s-lbl">Avg Completion</span><div class="s-val" id="s-avg">0%</div><div class="s-sub" id="s-avg-sub">Team average rate</div></div>
+</div>
+
+<!-- MEMBER LEADERBOARD -->
+<div class="sec-lbl">Task Distribution</div>
+<div class="card panel">
+  <div class="panel-hdr">
+    <span class="panel-title">Tasks Per Member</span>
+  </div>
+  <div class="m-list" id="m-list"><div class="empty">Loading…</div></div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="row2">
+  <!-- LEFT: Avg Duration -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Avg Task Duration</span>
+    </div>
+    <div class="dur-list" id="dur-list"><div class="dur-none">No completed tasks with duration data yet</div></div>
+  </div>
+  <!-- RIGHT: Workload Heatmap -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Workload Heatmap</span>
+    </div>
+    <div id="heat-grid"></div>
+  </div>
+</div>
+
+<script>
+const _tok=new URLSearchParams(location.search).get('token')||'';
+function apiUrl(p){const sep=p.includes('?')?'&':'?';return _tok?p+sep+'token='+encodeURIComponent(_tok):p;}
+let light=false;
+function toggleMode(){light=!light;document.body.classList.toggle('light',light);document.getElementById('mb').textContent=light?'🌙 Dark':'☀ Light';}
+function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function avatarHTML(m,size){
+  const sz=size||32;
+  if(m.avatar) return`<img class="m-avatar" src="${esc(m.avatar)}" alt="${esc(m.name)}" style="width:${sz}px;height:${sz}px;"/>`;
+  const initials=m.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  return`<div class="m-initials" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.34)}px;">${esc(initials)}</div>`;
+}
+
+function render(data){
+  const team=data.team||[];
+  const totalTasks=data.totalTasks||0;
+
+  // Stats
+  document.getElementById('s-members').textContent=team.length;
+  document.getElementById('s-members-sub').textContent=team.length===1?'1 team member':team.length+' team members';
+  document.getElementById('s-tasks').textContent=totalTasks;
+  const totalAssigned=team.reduce((s,m)=>s+m.assigned,0);
+  const totalDone=team.reduce((s,m)=>s+m.done,0);
+  document.getElementById('s-tasks-sub').textContent=`${totalDone} done · ${totalAssigned-totalDone} remaining`;
+  const avgRate=team.length>0?Math.round(team.reduce((s,m)=>s+m.completionRate,0)/team.length):0;
+  document.getElementById('s-avg').textContent=avgRate+'%';
+  document.getElementById('s-avg-sub').textContent='Team average completion rate';
+
+  // Member leaderboard
+  const maxAssigned=team.length>0?Math.max(...team.map(m=>m.assigned)):1;
+  const listEl=document.getElementById('m-list');
+  if(!team.length){listEl.innerHTML='<div class="empty">No team members with tasks</div>';return;}
+
+  listEl.innerHTML=team.map((m,i)=>{
+    const doneW=m.assigned>0?Math.round((m.done/m.assigned)*100):0;
+    const ipW=m.assigned>0?Math.round((m.inProgress/m.assigned)*100):0;
+    const blW=m.assigned>0?Math.round((m.blocked/m.assigned)*100):0;
+    return`<div class="m-row">
+      <span class="m-rank">${i+1}</span>
+      ${avatarHTML(m)}
+      <div class="m-info">
+        <div class="m-name">${esc(m.name)}</div>
+        <div class="m-stats">
+          <span class="m-tag" style="background:var(--gm);color:var(--g);"><span class="t-val">${m.done}</span> done</span>
+          <span class="m-tag" style="background:rgba(251,191,36,.1);color:var(--amber);"><span class="t-val">${m.inProgress}</span> active</span>
+          ${m.blocked?`<span class="m-tag" style="background:rgba(255,107,107,.1);color:var(--red);"><span class="t-val">${m.blocked}</span> blocked</span>`:''}
+          <span class="m-tag" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);"><span class="t-val">${m.notStarted}</span> pending</span>
+        </div>
+      </div>
+      <div class="m-bar-area">
+        <div class="m-bar">
+          <div class="m-seg" style="width:${doneW}%;background:var(--g);"></div>
+          <div class="m-seg" style="width:${ipW}%;background:var(--amber);"></div>
+          <div class="m-seg" style="width:${blW}%;background:var(--red);"></div>
+        </div>
+        <div class="m-bar-legend">
+          <span class="m-bl">${m.assigned} tasks</span>
+        </div>
+      </div>
+      <div class="m-rate">
+        <div class="m-rate-val">${m.completionRate}%</div>
+        <div class="m-rate-lbl">Complete</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Avg Duration chart
+  const durEl=document.getElementById('dur-list');
+  const withDur=team.filter(m=>m.avgDurationDays!=null).sort((a,b)=>a.avgDurationDays-b.avgDurationDays);
+  if(!withDur.length){
+    durEl.innerHTML='<div class="dur-none">No completed tasks with duration data yet.<br>Start using the Start/Complete buttons to track task duration.</div>';
+  } else {
+    const maxDur=Math.max(...withDur.map(m=>m.avgDurationDays),1);
+    durEl.innerHTML=withDur.map(m=>{
+      const w=Math.round((m.avgDurationDays/maxDur)*100);
+      const color=m.avgDurationDays<=2?'var(--g)':m.avgDurationDays<=5?'var(--amber)':'var(--red)';
+      return`<div class="dur-row">
+        <span class="dur-name">${esc(m.name)}</span>
+        <div class="dur-track"><div class="dur-fill" style="width:${w}%;background:${color};"></div></div>
+        <span class="dur-val" style="color:${color};">${m.avgDurationDays}d</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Workload heatmap
+  const heatEl=document.getElementById('heat-grid');
+  const cols=Math.min(team.length,5);
+  heatEl.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  heatEl.innerHTML=team.map(m=>{
+    // Color intensity based on workload relative to max
+    const load=m.assigned/maxAssigned;
+    let bg,textColor;
+    if(load>.7){bg='rgba(255,107,107,.15)';textColor='var(--red)';}
+    else if(load>.4){bg='rgba(251,191,36,.12)';textColor='var(--amber)';}
+    else{bg='var(--gm)';textColor='var(--g)';}
+    return`<div class="heat-cell" style="background:${bg};">
+      <div class="heat-name">${esc(m.name)}</div>
+      <div class="heat-val" style="color:${textColor};">${m.assigned}</div>
+      <div class="heat-lbl">${m.inProgress} active</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(apiUrl('/api/data/projects?view=team'));
+    const j=await r.json();
+    if(j.error){console.error('API:',j.error);return;}
+    render(j);
+    setTs();
+  }catch(e){console.error('team:',e);}
+}
+
+function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
+setTs();loadData();setInterval(loadData,5*60*1000);
+</script></body></html>

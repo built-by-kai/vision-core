@@ -4,7 +4,7 @@
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;height:100%;transition:background .3s,color .3s;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
@@ -224,8 +224,8 @@ const CIRC=2*Math.PI*42; // ~263.9 for task ring
 const DONUT_R=48;
 const DONUT_CIRC=2*Math.PI*DONUT_R;
 
-// Green-family palette matching Revenue OS theme
-const TYPE_COLORS=['var(--g)','rgba(170,255,0,.55)','rgba(170,255,0,.3)','rgba(170,255,0,.15)','rgba(255,255,255,.12)','rgba(255,255,255,.06)'];
+// Distinct hues for project types — easy to tell apart
+const TYPE_COLORS=['var(--g)','var(--amber)','#60A5FA','#A78BFA','#22D3EE','var(--red)'];
 
 function renderStats(counts, ov){
   document.getElementById('s-total').textContent=ov.totalProjects||0;
@@ -375,46 +375,24 @@ function renderPriorities(pri){
 
 function renderStatusVisual(counts){
   const items=[
-    {val:counts.active||0,lbl:'Active',color:'var(--g)'},
-    {val:counts.awaiting||0,lbl:'Awaiting',color:'rgba(170,255,0,.45)'},
-    {val:counts.review||0,lbl:'In Review',color:'var(--amber)'},
-    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.25)'},
-    {val:counts.done||0,lbl:'Completed',color:'rgba(170,255,0,.65)'},
+    {val:counts.active||0,lbl:'Active',color:'var(--g)',icon:'▶'},
+    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--amber)',icon:'◆'},
+    {val:counts.review||0,lbl:'In Review',color:'#60A5FA',icon:'◉'},
+    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.3)',icon:'⏸'},
+    {val:counts.done||0,lbl:'Completed',color:'var(--g)',icon:'✓'},
   ];
-  const total=items.reduce((s,i)=>s+i.val,0)||1;
 
-  // Stacked horizontal bar
-  let barHTML='<div class="sv-bar-wrap">';
+  // Clean status cards only — no stacked bar
+  let html='<div class="status-cards">';
   items.forEach(i=>{
-    const w=Math.max((i.val/total)*100,0);
-    if(i.val>0){
-      barHTML+=`<div class="sv-seg" style="width:${w}%;background:${i.color};"><span style="color:#111;font-size:10px;">${i.val}</span></div>`;
-    }
-  });
-  barHTML+='</div>';
-
-  // Legend row
-  barHTML+='<div class="sv-legend">';
-  items.forEach(i=>{
-    barHTML+=`<div class="sv-leg">
-      <div class="sv-dot" style="background:${i.color}"></div>
-      <span class="sv-val">${i.val}</span>
-      <span class="sv-lbl">${i.lbl}</span>
-    </div>`;
-  });
-  barHTML+='</div>';
-
-  // Status cards
-  barHTML+='<div class="status-cards">';
-  items.forEach(i=>{
-    barHTML+=`<div class="sc-item">
+    html+=`<div class="sc-item">
       <div class="sc-val" style="color:${i.color}">${i.val}</div>
       <div class="sc-lbl">${i.lbl}</div>
     </div>`;
   });
-  barHTML+='</div>';
+  html+='</div>';
 
-  document.getElementById('status-visual').innerHTML=barHTML;
+  document.getElementById('status-visual').innerHTML=html;
 }
 
 function render(data){

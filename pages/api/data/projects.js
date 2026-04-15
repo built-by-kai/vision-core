@@ -406,6 +406,41 @@ export default async function handler(req, res) {
       return res.status(200).json({ gantt: ganttProjects })
     }
 
+    // ── Team view: per-member task stats ───────────────────────────────────
+    if (req.query.view === "team") {
+      const members = {} // name → { avatar, assigned, done, inProgress, blocked, notStarted, totalDurationDays, completedWithDuration }
+      for (const t of Object.values(taskMap)) {
+        for (const a of (t.assignees || [])) {
+          const key = a.name
+          if (!members[key]) members[key] = { name: a.name, avatar: a.avatar, assigned: 0, done: 0, inProgress: 0, blocked: 0, notStarted: 0, totalDurationDays: 0, completedWithDuration: 0 }
+          const m = members[key]
+          m.assigned++
+          if (t.status === "Done") {
+            m.done++
+            // Calculate duration if both dates exist
+            if (t.startDate && t.completedDate) {
+              const start = new Date(t.startDate + "T00:00:00")
+              const end = new Date(t.completedDate + "T00:00:00")
+              const days = Math.max(Math.round((end - start) / 86400000), 0)
+              m.totalDurationDays += days
+              m.completedWithDuration++
+            }
+          }
+          else if (t.status === "In Progress") m.inProgress++
+          else if (t.status === "Blocked") m.blocked++
+          else m.notStarted++
+        }
+      }
+
+      const team = Object.values(members).map(m => ({
+        ...m,
+        completionRate: m.assigned > 0 ? Math.round((m.done / m.assigned) * 100) : 0,
+        avgDurationDays: m.completedWithDuration > 0 ? Math.round(m.totalDurationDays / m.completedWithDuration * 10) / 10 : null,
+      })).sort((a, b) => b.assigned - a.assigned)
+
+      return res.status(200).json({ team, totalTasks: Object.keys(taskMap).length })
+    }
+
     res.status(200).json({ counts, builds, completed, overview })
   } catch (err) {
     console.error("projects:", err)

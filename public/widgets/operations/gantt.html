@@ -51,12 +51,12 @@ body.light .ph-tab.active{background:var(--gm);border-color:var(--gb);color:var(
 body.light .leg-l{color:rgba(0,0,0,.2);}
 
 /* ── GANTT CONTAINER ── */
-.gantt-outer{display:flex;flex-direction:column;height:calc(100vh - 160px);}
+.gantt-outer{display:flex;flex-direction:column;height:calc(100vh - 160px);padding-bottom:16px;}
 .gantt-wrap{display:flex;flex:1;overflow:hidden;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#1E1E1E;}
 body.light .gantt-wrap{background:#fff;border-color:rgba(0,0,0,.06);}
 
 /* ── LEFT PANEL ── */
-.g-left{width:360px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(255,255,255,.06);}
+.g-left{width:420px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(255,255,255,.06);}
 body.light .g-left{border-right-color:rgba(0,0,0,.06);}
 .gl-hdr{height:48px;display:flex;align-items:center;padding:0 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);background:#1E1E1E;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:5;}
 body.light .gl-hdr{color:rgba(0,0,0,.3);background:#fff;border-bottom-color:rgba(0,0,0,.06);}
@@ -86,7 +86,10 @@ body.light .gl-name{color:rgba(0,0,0,.65);}
 .gl-start{background:var(--gm);border:1px solid var(--gb);color:var(--g);font-family:'Satoshi',sans-serif;font-size:9px;font-weight:800;padding:3px 8px;border-radius:5px;cursor:pointer;flex-shrink:0;transition:all .15s;text-transform:uppercase;letter-spacing:.04em;}
 .gl-start:hover{background:var(--g);color:#111;}
 .gl-start.loading{opacity:.4;pointer-events:none;}
-.gl-started{font-size:9px;font-weight:700;color:rgba(170,255,0,.4);flex-shrink:0;}
+.gl-complete{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber);font-family:'Satoshi',sans-serif;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;cursor:pointer;flex-shrink:0;transition:all .15s;text-transform:uppercase;letter-spacing:.04em;}
+.gl-complete:hover{background:var(--amber);color:#111;}
+.gl-complete.loading{opacity:.4;pointer-events:none;}
+.gl-started{font-size:8px;font-weight:700;color:rgba(170,255,0,.35);flex-shrink:0;}
 
 /* Avatar */
 .gl-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover;border:2px solid rgba(255,255,255,.1);}
@@ -261,8 +264,37 @@ async function startTask(taskId, btnEl){
     btnEl.textContent='Start';
   }
 }
-// Make it globally callable
+async function completeTask(taskId, btnEl){
+  btnEl.classList.add('loading');
+  btnEl.textContent='…';
+  try{
+    const r=await fetch(apiUrl('/api/data/projects'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'complete_task',taskId}),
+    });
+    const j=await r.json();
+    if(j.ok){
+      showToast('Task completed — '+j.date);
+      const proj=allProjects[activeIdx];
+      if(proj){
+        const t=proj.tasks.find(t=>t.id===taskId);
+        if(t){t.status='Done';t.completedDate=j.date;}
+      }
+      renderGantt();
+    } else {
+      showToast('Error: '+(j.error||'Unknown'));
+      btnEl.classList.remove('loading');
+      btnEl.textContent='Complete';
+    }
+  }catch(e){
+    showToast('Error: '+e.message);
+    btnEl.classList.remove('loading');
+    btnEl.textContent='Complete';
+  }
+}
 window.startTask=startTask;
+window.completeTask=completeTask;
 
 // Sort: In Progress → Blocked → Not Started → Done, then by due date
 const STATUS_ORDER={'In Progress':0,'Blocked':1,'Not Started':2,'Done':3};
@@ -354,12 +386,12 @@ function renderGantt(){
       const t=row.data;
       const isDone=t.status==='Done';
       const isNS=t.status==='Not Started';
-      // Start button: show only if Not Started and no startDate
+      const isIP=t.status==='In Progress';
       let actionHTML='';
       if(isNS&&!t.startDate){
         actionHTML=`<button class="gl-start" onclick="startTask('${t.id}',this)">Start</button>`;
-      } else if(t.startDate&&!isDone){
-        actionHTML=`<span class="gl-started">${fmtShort(t.startDate)}</span>`;
+      } else if(isIP||t.status==='Blocked'){
+        actionHTML=`<button class="gl-complete" onclick="completeTask('${t.id}',this)">Complete</button>`;
       }
       leftHTML+=`<div class="gl-task">
         <div class="gl-pri p-${(t.priority||'None').replace(/\s/g,'')}"></div>
