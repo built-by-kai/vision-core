@@ -324,7 +324,7 @@ async function run(payload) {
       "Status":     { select: { name: "Build Started" } },
       "Start Date": { date: { start: today } },
       // If we created a new Deal (from Lead conversion), link it to the Project
-      ...(dealId && dealId !== leadId ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
+      ...(dealId && dealId !== leadId ? { "Deals": { relation: [{ id: dealId }] } } : {}),
     }, token)
     try {
       await patchPage(pageId, { "Implementation": { relation: [{ id: projectId }] } }, token)
