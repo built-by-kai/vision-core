@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Project Progress</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;overflow-x:hidden;}
+body.light{background:#F5F5F5;color:#111;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;}
+body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
+
+/* ── Header ── */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-left{display:flex;flex-direction:column;gap:2px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);}
+body.light .eyebrow{color:rgba(0,0,0,.28);}
+.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+body.light .h-title{color:#111;}
+.h-right{display:flex;align-items:center;gap:8px;}
+.pill{font-size:10px;font-weight:700;padding:4px 11px;border-radius:999px;letter-spacing:.04em;white-space:nowrap;}
+.pill-active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.pill-pkg{background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08);}
+body.light .pill-pkg{background:rgba(0,0,0,.04);color:rgba(0,0,0,.4);border-color:rgba(0,0,0,.08);}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+body.light .ts{color:rgba(0,0,0,.22);}
+
+/* ── Overall Ring ── */
+.overall{display:flex;align-items:center;gap:20px;padding:20px 24px;margin-bottom:12px;}
+@media(max-width:500px){.overall{flex-direction:column;align-items:flex-start;gap:14px;}}
+.ring-wrap{position:relative;flex-shrink:0;}
+.ring-svg{transform:rotate(-90deg);overflow:visible;}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:7;}
+body.light .ring-bg{stroke:rgba(0,0,0,.06);}
+.ring-fill{fill:none;stroke:var(--g);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.ring-pct{font-size:26px;font-weight:900;color:var(--g);letter-spacing:-1px;line-height:1;}
+.ring-sub{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-top:2px;}
+body.light .ring-sub{color:rgba(0,0,0,.3);}
+
+.stats{display:flex;flex-direction:column;gap:10px;flex:1;}
+.stat-row{display:flex;align-items:center;gap:10px;}
+.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.stat-label{font-size:12px;font-weight:600;color:rgba(255,255,255,.6);flex:1;}
+body.light .stat-label{color:rgba(0,0,0,.5);}
+.stat-val{font-size:14px;font-weight:900;color:#fff;}
+body.light .stat-val{color:#111;}
+.dates{display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;}
+.date-item{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);}
+body.light .date-item{color:rgba(0,0,0,.3);}
+.date-item strong{color:rgba(255,255,255,.5);margin-right:3px;}
+body.light .date-item strong{color:rgba(0,0,0,.45);}
+
+/* ── Phase Timeline ── */
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 10px;padding:0 4px;}
+body.light .sec-lbl{color:rgba(0,0,0,.28);}
+.phases{display:flex;flex-direction:column;gap:8px;}
+.ph{padding:14px 18px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;}
+@media(max-width:500px){.ph{flex-wrap:wrap;gap:8px;}}
+.ph-no{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,255,255,.1);color:rgba(255,255,255,.35);background:transparent;transition:all .3s;}
+body.light .ph-no{border-color:rgba(0,0,0,.1);color:rgba(0,0,0,.35);}
+.ph-no.done{border-color:var(--g);color:var(--g);background:var(--gm);}
+.ph-no.active{border-color:var(--amber);color:var(--amber);background:var(--amberm);}
+.ph-info{flex:1;min-width:0;}
+.ph-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .ph-name{color:#111;}
+.ph-bar-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;}
+body.light .ph-bar-track{background:rgba(0,0,0,.06);}
+.ph-bar-fill{height:6px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.ph-bar-fill.done{background:var(--g);}
+.ph-bar-fill.active{background:var(--amber);}
+.ph-bar-fill.ns{background:rgba(255,255,255,.1);}
+body.light .ph-bar-fill.ns{background:rgba(0,0,0,.1);}
+.ph-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;min-width:65px;}
+.ph-count{font-size:12px;font-weight:800;color:rgba(255,255,255,.5);}
+body.light .ph-count{color:rgba(0,0,0,.45);}
+.ph-count .done-num{color:var(--g);}
+.ph-pct{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);}
+body.light .ph-pct{color:rgba(0,0,0,.25);}
+.ph-due{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);margin-top:1px;}
+body.light .ph-due{color:rgba(0,0,0,.2);}
+.ph-due.overdue{color:var(--red);}
+.ph-status-pill{font-size:9px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+.psp-done{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.psp-active{background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
+.psp-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.06);}
+body.light .psp-ns{background:rgba(0,0,0,.03);color:rgba(0,0,0,.25);border-color:rgba(0,0,0,.06);}
+
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:40px;color:rgba(255,255,255,.3);font-size:13px;font-weight:600;}
+body.light .loading{color:rgba(0,0,0,.3);}
+.error{text-align:center;padding:40px;color:var(--red);font-size:13px;font-weight:600;}
+</style></head>
+<body>
+<div id="app"><div class="loading">Loading progress…</div></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const projectId = params.get('project') || '';
+
+// Theme detection (Notion embeds are dark by default)
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+  document.body.classList.add('light');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return iso; }
+}
+
+function isOverdue(dueDate) {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date(new Date().toISOString().split('T')[0]);
+}
+
+function render(data) {
+  const { project: p, phases, overall: o } = data;
+
+  // Ring dimensions
+  const r = 46, circ = 2 * Math.PI * r;
+  const offset = circ - (circ * o.pct / 100);
+
+  // Phase rows
+  const phaseHTML = phases.map(ph => {
+    const t = ph.tasks || {};
+    const isDone = ph.status === 'Done';
+    const isActive = ph.status === 'In Progress';
+    const noCls = isDone ? 'done' : isActive ? 'active' : '';
+    const barCls = isDone ? 'done' : isActive ? 'active' : 'ns';
+    const barW = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
+    const ov = isOverdue(ph.dueDate) && !isDone;
+
+    // Status pill
+    let spCls = 'psp-ns', spLabel = 'Not Started';
+    if (isDone) { spCls = 'psp-done'; spLabel = 'Done'; }
+    else if (isActive) { spCls = 'psp-active'; spLabel = 'In Progress'; }
+
+    // Short phase name: strip "Phase N — " prefix
+    const shortName = (ph.name || '').replace(/^Phase\s*\d+\s*[—–\-]\s*/, '');
+
+    return `<div class="card ph">
+      <div class="ph-no ${noCls}">${ph.no ?? '?'}</div>
+      <div class="ph-info">
+        <div class="ph-name">${esc(shortName || ph.name)}</div>
+        <div class="ph-bar-track"><div class="ph-bar-fill ${barCls}" style="width:${barW}%"></div></div>
+      </div>
+      <div class="ph-meta">
+        <span class="ph-status-pill ${spCls}">${spLabel}</span>
+        <span class="ph-count"><span class="done-num">${t.done || 0}</span> / ${t.total || 0}</span>
+        ${ph.dueDate ? `<span class="ph-due${ov ? ' overdue' : ''}">${ov ? 'Overdue' : 'Due ' + fmtDate(ph.dueDate)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Dates section
+  let datesHTML = '';
+  if (p.startDate || p.targetDate) {
+    datesHTML = '<div class="dates">';
+    if (p.startDate) datesHTML += `<span class="date-item"><strong>Started</strong>${fmtDate(p.startDate)}</span>`;
+    if (p.targetDate) datesHTML += `<span class="date-item"><strong>Target</strong>${fmtDate(p.targetDate)}</span>`;
+    datesHTML += '</div>';
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <div class="h-left">
+        <div class="eyebrow">Project Progress</div>
+        <div class="h-title">${esc(p.name || 'Project')}</div>
+      </div>
+      <div class="h-right">
+        ${p.package ? `<span class="pill pill-pkg">${esc(p.package)}</span>` : ''}
+        <span class="pill pill-active">${esc(p.currentPhase || p.status || 'Active')}</span>
+      </div>
+    </div>
+
+    <div class="card overall">
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110">
+          <circle class="ring-bg" cx="55" cy="55" r="${r}"/>
+          <circle class="ring-fill" cx="55" cy="55" r="${r}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct">${o.pct}%</div>
+          <div class="ring-sub">Complete</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat-row">
+          <div class="stat-dot" style="background:var(--g)"></div>
+          <span class="stat-label">Tasks Completed</span>
+          <span class="stat-val">${o.done}</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat-dot" style="background:var(--amber)"></div>
+          <span class="stat-label">In Progress</span>
+          <span class="stat-val">${o.inProgress}</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat-dot" style="background:rgba(255,255,255,.15)"></div>
+          <span class="stat-label">Total Tasks</span>
+          <span class="stat-val">${o.total}</span>
+        </div>
+        ${datesHTML}
+      </div>
+    </div>
+
+    <div class="sec-lbl">Phases</div>
+    <div class="phases">${phaseHTML || '<div class="loading">No phases yet</div>'}</div>
+    <div class="ts" style="text-align:right;margin-top:10px;">Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+  `;
+}
+
+async function loadData() {
+  if (!projectId) {
+    document.getElementById('app').innerHTML = '<div class="error">No project ID provided.<br>Use ?project=&lt;id&gt; in the URL.</div>';
+    return;
+  }
+  try {
+    const r = await fetch('/api/data/progress?project=' + encodeURIComponent(projectId));
+    const j = await r.json();
+    if (j.error) {
+      document.getElementById('app').innerHTML = `<div class="error">${esc(j.error)}</div>`;
+      return;
+    }
+    render(j);
+  } catch (e) {
+    document.getElementById('app').innerHTML = `<div class="error">Failed to load: ${esc(e.message)}</div>`;
+  }
+}
+
+loadData();
+// Auto-refresh every 2 minutes
+setInterval(loadData, 2 * 60 * 1000);
+</script></body></html>
