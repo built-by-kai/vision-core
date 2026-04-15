@@ -143,21 +143,19 @@ body.light .gr-cell.wknd-col{background:rgba(0,0,0,.01);}
 /* ── Bars — clean colored pills, NO text ── */
 .g-bar{position:absolute;height:18px;top:12px;border-radius:999px;z-index:1;min-width:18px;cursor:default;transition:opacity .15s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
 .g-bar:hover{opacity:.85!important;transform:scaleY(1.15);}
-.b-Done{background:var(--g);opacity:.7;}
+.b-Done{background:var(--g);opacity:.85;}
 .b-InProgress{background:var(--amber);}
 .b-Blocked{background:var(--red);opacity:.85;}
 .b-NotStarted{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);}
 body.light .b-NotStarted{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.04);}
 
-/* Completed flag — vertical line with diamond */
-.g-done-mark{position:absolute;top:4px;z-index:3;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
-.g-done-line{width:2px;height:14px;background:var(--g);border-radius:1px;opacity:.8;}
-.g-done-dot{width:10px;height:10px;border-radius:2px;background:var(--g);transform:rotate(45deg);margin-top:-2px;box-shadow:0 0 8px rgba(170,255,0,.5),0 0 16px rgba(170,255,0,.2);}
-
-/* Due label outside bar */
-.g-due{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
-body.light .g-due{color:rgba(0,0,0,.25);}
-.g-due.overdue{color:var(--red);}
+/* Due date dot marker */
+.g-due-dot{position:absolute;top:16px;width:8px;height:8px;border-radius:50%;background:var(--red);z-index:2;box-shadow:0 0 6px rgba(255,107,107,.4);transform:translateX(-4px);}
+.g-due-dot.on-time{background:rgba(255,255,255,.2);box-shadow:none;}
+body.light .g-due-dot.on-time{background:rgba(0,0,0,.12);}
+.g-due-label{position:absolute;top:14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);white-space:nowrap;z-index:1;}
+body.light .g-due-label{color:rgba(0,0,0,.25);}
+.g-due-label.overdue{color:var(--red);}
 
 .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.4;z-index:2;pointer-events:none;}
 
@@ -187,6 +185,8 @@ body.light .toast{background:#fff;border-color:rgba(92,153,0,.3);color:#5C9900;}
   <div class="leg-i"><div class="leg-bar b-InProgress"></div><span class="leg-l">In Progress</span></div>
   <div class="leg-i"><div class="leg-bar b-Blocked"></div><span class="leg-l">Blocked</span></div>
   <div class="leg-i"><div class="leg-bar b-NotStarted" style="border:1px solid rgba(255,255,255,.06);"></div><span class="leg-l">Not Started</span></div>
+  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div><span class="leg-l">Overdue</span></div>
+  <div class="leg-i"><div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);"></div><span class="leg-l">Due Date</span></div>
 </div>
 
 <div class="gantt-outer">
@@ -365,16 +365,28 @@ function renderGantt(){
     phTasks.forEach((t,ti)=>{
       // Normalize datetime fields to date-only for bar positioning
       const sd=toDate(t.startDate), cd=toDate(t.completedDate);
-      // Use task's own Start Date if available, else created date, else estimate
-      if(sd&&t.due){t._start=sd;t._end=t.due;}
-      else if(t.due&&t.created){t._start=t.created;t._end=t.due;}
-      else if(t.due){t._start=addDays(t.due,-3);t._end=t.due;}
-      else if(sd){t._start=sd;t._end=addDays(sd,3);}
-      else if(t.created){t._start=t.created;t._end=addDays(t.created,3);}
-      else{const off=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);t._start=addDays(phStart,off);t._end=addDays(t._start,2);}
+      // Bar = actual work period: startDate → completedDate (or today if in progress)
+      // Done: startDate → completedDate
+      if(t.status==='Done'){
+        t._start=sd||t.created||addDays(phStart,ti);
+        t._end=cd||sd||t._start; // if no completedDate, bar is just a dot at start
+      }
+      // In Progress: startDate → today
+      else if(t.status==='In Progress'){
+        t._start=sd||t.created||today;
+        t._end=today; // ongoing — bar extends to today
+      }
+      // Blocked: startDate → today (stuck)
+      else if(t.status==='Blocked'){
+        t._start=sd||t.created||today;
+        t._end=today;
+      }
+      // Not Started: show a ghost bar at estimated position
+      else {
+        if(t.due){t._start=addDays(t.due,-3);t._end=t.due;}
+        else{const off=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);t._start=addDays(phStart,off);t._end=addDays(t._start,2);}
+      }
       if(t._start>t._end) t._end=t._start;
-      // For Done tasks: extend bar to completedDate if it's later than _end
-      if(t.status==='Done'&&cd&&cd>t._end) t._end=cd;
     });
   });
 
@@ -445,26 +457,23 @@ function renderGantt(){
       const barLeft=si*DAY_W+3;
       const barWidth=Math.max((ei-si+1)*DAY_W-6,18);
 
-      // Due label
+      // Due date dot marker (red if overdue, grey if on time)
       let dueHTML='';
-      if(t.due){
-        const dueX=(ei+1)*DAY_W+6;
+      if(t.due&&dayIdx[t.due]!=null){
+        const dueX=dayIdx[t.due]*DAY_W+DAY_W/2;
         const isOverdue=t.status!=='Done'&&t.due<today;
-        dueHTML=`<div class="g-due${isOverdue?' overdue':''}" style="left:${dueX}px">${fmtShort(t.due)}</div>`;
-      }
-
-      // Completed flag at completion date
-      let doneHTML='';
-      const compDay=toDate(t.completedDate);
-      if(t.status==='Done'&&compDay&&dayIdx[compDay]!=null){
-        const doneX=dayIdx[compDay]*DAY_W+DAY_W/2-4;
-        doneHTML=`<div class="g-done-mark" style="left:${doneX}px" title="Completed ${fmtDateTime(t.completedDate)}"><div class="g-done-line"></div><div class="g-done-dot"></div></div>`;
+        const onTime=t.status==='Done'||t.due>=today;
+        dueHTML=`<div class="g-due-dot${onTime?' on-time':''}" style="left:${dueX}px" title="Due: ${fmtShort(t.due)}"></div>`;
+        // Show date label only for overdue or next upcoming
+        if(isOverdue){
+          dueHTML+=`<div class="g-due-label overdue" style="left:${dueX+8}px">${fmtShort(t.due)}</div>`;
+        }
       }
 
       const tooltip=`${esc(t.name)}\nStatus: ${t.status}${t.due?'\nDue: '+fmtShort(t.due):''}${t.startDate?'\nStarted: '+fmtDateTime(t.startDate):''}${t.completedDate?'\nCompleted: '+fmtDateTime(t.completedDate):''}`;
       rowsHTML+=`<div class="gr-row">${makeCells()}
         <div class="g-bar ${barCls(t.status)}" style="left:${barLeft}px;width:${barWidth}px;" title="${tooltip}"></div>
-        ${doneHTML}${dueHTML}
+        ${dueHTML}
       </div>`;
     }
   }
