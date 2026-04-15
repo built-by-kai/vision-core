@@ -11,6 +11,24 @@
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
 
+// ── Default phases per package tier ─────────────────────────────────────────
+// Full OS installs get 5 phases; micro installs get 3.
+const PHASES_FULL = [
+  { no: 1, name: "Phase 1 — Discovery & Setup",         deliverables: "Kickoff meeting, scope confirmation, access & workspace setup" },
+  { no: 2, name: "Phase 2 — Core Build",                deliverables: "Database architecture, core modules, relations & automations" },
+  { no: 3, name: "Phase 3 — Advanced Build & Expansion", deliverables: "Dashboards, advanced automations, integrations, add-on modules" },
+  { no: 4, name: "Phase 4 — Client Review & Revisions",  deliverables: "Walkthrough session, client feedback, revisions & refinements" },
+  { no: 5, name: "Phase 5 — QA & Handover",              deliverables: "Final QA, documentation, training session, handover" },
+]
+
+const PHASES_MICRO = [
+  { no: 1, name: "Phase 1 — Discovery & Setup",          deliverables: "Kickoff, scope confirmation, workspace access" },
+  { no: 2, name: "Phase 2 — Build & Configure",          deliverables: "Module build, relations, automations" },
+  { no: 3, name: "Phase 3 — Review & Handover",          deliverables: "Client walkthrough, revisions, handover" },
+]
+
+const MICRO_PACKAGES = new Set(["Micro Install — 1 Module", "Micro Install — 2 Modules", "Micro Install — 3 Modules"])
+
 // ── Package slug → human-readable OS name (for Projects DB Package select) ─
 const SLUG_TO_PACKAGE = {
   "revenue-os":       "Revenue OS",
@@ -160,6 +178,36 @@ async function run(payload) {
       patchPage(invId,  { "Implementation": { relation: [{ id: projectId }] } }, token),
       patchPage(quotId, { "Project":         { relation: [{ id: projectId }] } }, token),
     ])
+
+    // ── 2b. Create default Phases for the new project ──────────────────────
+    const phaseList = MICRO_PACKAGES.has(packageName) ? PHASES_MICRO : PHASES_FULL
+    const phaseIds  = []
+
+    for (const ph of phaseList) {
+      try {
+        const phPage = await createPage({
+          parent: { database_id: DB.PHASES },
+          properties: {
+            "Phase Name":   { title: [{ text: { content: ph.name } }] },
+            "Phase No.":    { number: ph.no },
+            "Status":       { select: { name: "Not Started" } },
+            "Project":      { relation: [{ id: projectId }] },
+            "Deliverables": { rich_text: [{ text: { content: ph.deliverables } }] },
+          },
+        }, token)
+        phaseIds.push(phPage.id.replace(/-/g, ""))
+      } catch (e) {
+        console.warn(`[create_invoice] phase ${ph.no} creation failed:`, e.message)
+      }
+    }
+
+    // Link all phases back to the project's Phases relation
+    if (phaseIds.length) {
+      await patchPage(projectId, {
+        "Phases": { relation: phaseIds.map(id => ({ id })) },
+      }, token).catch(e => console.warn("[create_invoice] link phases:", e.message))
+    }
+    console.log(`[create_invoice] Created ${phaseIds.length} phases for project:`, projectId)
   } else {
     // Add-on: append supplementary invoice to existing project
     try {
