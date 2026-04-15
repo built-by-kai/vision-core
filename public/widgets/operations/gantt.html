@@ -6,19 +6,17 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow:hidden;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--blue:#60A5FA;--red:#FF6B6B;--row:38px;--dayW:48px;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--blue:#60A5FA;--red:#FF6B6B;--row:40px;--dayW:48px;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 ::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:999px;}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
 body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);}
 
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
 
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
-.h-left{display:flex;align-items:center;gap:12px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
 .h-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
@@ -27,37 +25,42 @@ body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
 
-/* Project selector */
-.proj-sel{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
-.ps-btn{background:transparent;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;white-space:nowrap;}
-.ps-btn:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.5);}
-.ps-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
-body.light .ps-btn{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
-body.light .ps-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+/* Selectors */
+.sel-row{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.sel-btn{background:transparent;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.sel-btn:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.5);}
+.sel-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+body.light .sel-btn{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
+body.light .sel-btn.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+.sel-btn .cnt{opacity:.4;margin-left:3px;}
 
-/* Filter pills */
-.filter-row{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
-.f-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.08em;margin-right:4px;}
-body.light .f-label{color:rgba(0,0,0,.2);}
-.f-pill{background:transparent;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.25);font-family:'Satoshi',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all .2s;}
-.f-pill:hover{border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.4);}
-.f-pill.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+/* Phase tabs */
+.phase-tabs{display:flex;gap:3px;margin-bottom:8px;flex-wrap:wrap;}
+.ph-tab{background:transparent;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.25);font-family:'Satoshi',sans-serif;font-size:9px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s;}
+.ph-tab:hover{border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.4);}
+.ph-tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+body.light .ph-tab{border-color:rgba(0,0,0,.06);color:rgba(0,0,0,.25);}
+body.light .ph-tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
 
-/* ── GANTT LAYOUT ── */
-.gantt-outer{display:flex;flex-direction:column;height:calc(100vh - 120px);}
+/* Legend */
+.legend{display:flex;gap:12px;margin-bottom:8px;}
+.leg-i{display:flex;align-items:center;gap:4px;}
+.leg-bar{width:14px;height:8px;border-radius:999px;}
+.leg-l{font-size:8px;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.06em;}
+body.light .leg-l{color:rgba(0,0,0,.18);}
+
+/* ── GANTT ── */
+.gantt-outer{display:flex;flex-direction:column;height:calc(100vh - 145px);}
 .gantt-wrap{display:flex;flex:1;overflow:hidden;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#1E1E1E;}
 body.light .gantt-wrap{background:#fff;border-color:rgba(0,0,0,.06);}
 
-/* LEFT: task panel */
-.g-left{width:300px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(255,255,255,.06);}
+/* LEFT */
+.g-left{width:320px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(255,255,255,.06);}
 body.light .g-left{border-right-color:rgba(0,0,0,.06);}
 .gl-hdr{height:44px;display:flex;align-items:center;padding:0 16px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:2;}
 body.light .gl-hdr{color:rgba(0,0,0,.3);background:rgba(0,0,0,.02);border-bottom-color:rgba(0,0,0,.06);}
 
-.gl-phase{height:var(--row);display:flex;align-items:center;padding:0 16px;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--g);background:rgba(170,255,0,.03);border-bottom:1px solid rgba(255,255,255,.05);}
-body.light .gl-phase{background:rgba(92,153,0,.04);}
-
-.gl-task{height:var(--row);display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.03);}
+.gl-task{height:var(--row);display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.03);}
 body.light .gl-task{border-bottom-color:rgba(0,0,0,.03);}
 .gl-pri{width:3px;height:18px;border-radius:2px;flex-shrink:0;}
 .p-High{background:var(--red);}
@@ -65,11 +68,16 @@ body.light .gl-task{border-bottom-color:rgba(0,0,0,.03);}
 .p-Low{background:var(--blue);}
 .p-None{background:rgba(255,255,255,.06);}
 body.light .p-None{background:rgba(0,0,0,.05);}
-.gl-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+.gl-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
 body.light .gl-name{color:rgba(0,0,0,.55);}
 .gl-name.s-Done{text-decoration:line-through;opacity:.35;}
-.gl-assign{font-size:8px;font-weight:700;color:#111;background:rgba(255,255,255,.15);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;letter-spacing:-.02em;}
-body.light .gl-assign{background:rgba(0,0,0,.08);color:rgba(0,0,0,.5);}
+
+/* Avatar */
+.gl-avatar{width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover;border:1.5px solid rgba(255,255,255,.1);}
+body.light .gl-avatar{border-color:rgba(0,0,0,.08);}
+.gl-initials{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:800;color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);text-transform:uppercase;letter-spacing:-.02em;}
+body.light .gl-initials{background:rgba(0,0,0,.06);color:rgba(0,0,0,.4);}
+
 .gl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .d-Done{background:var(--g);}
 .d-InProgress{background:var(--amber);}
@@ -77,15 +85,12 @@ body.light .gl-assign{background:rgba(0,0,0,.08);color:rgba(0,0,0,.5);}
 .d-NotStarted{background:rgba(255,255,255,.1);}
 body.light .d-NotStarted{background:rgba(0,0,0,.08);}
 
-/* RIGHT: timeline */
+/* RIGHT */
 .g-right{flex:1;overflow:auto;position:relative;}
-
-/* Header dates */
 .gr-month-row{display:flex;height:20px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04);position:sticky;top:0;z-index:3;}
 body.light .gr-month-row{background:rgba(0,0,0,.02);border-bottom-color:rgba(0,0,0,.04);}
 .gr-month{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);display:flex;align-items:center;padding:0 8px;border-right:1px solid rgba(255,255,255,.04);}
 body.light .gr-month{color:rgba(0,0,0,.22);border-right-color:rgba(0,0,0,.04);}
-
 .gr-day-row{display:flex;height:24px;background:#1E1E1E;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:20px;z-index:3;}
 body.light .gr-day-row{background:#fff;border-bottom-color:rgba(0,0,0,.06);}
 .gr-day{width:var(--dayW);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.2);border-right:1px solid rgba(255,255,255,.03);}
@@ -95,8 +100,6 @@ body.light .gr-day{color:rgba(0,0,0,.18);border-right-color:rgba(0,0,0,.03);}
 .gr-day .dn{font-size:11px;font-weight:800;line-height:1;}
 .gr-day .dl{font-size:7px;text-transform:uppercase;letter-spacing:.04em;line-height:1;}
 
-/* Grid rows */
-.gr-phase{height:var(--row);border-bottom:1px solid rgba(255,255,255,.05);background:rgba(170,255,0,.015);}
 .gr-row{height:var(--row);border-bottom:1px solid rgba(255,255,255,.03);position:relative;display:flex;}
 body.light .gr-row{border-bottom-color:rgba(0,0,0,.03);}
 .gr-cell{width:var(--dayW);flex-shrink:0;border-right:1px solid rgba(255,255,255,.02);}
@@ -105,29 +108,26 @@ body.light .gr-cell{border-right-color:rgba(0,0,0,.02);}
 .gr-cell.wknd-col{background:rgba(255,255,255,.01);}
 body.light .gr-cell.wknd-col{background:rgba(0,0,0,.012);}
 
-/* Bars */
-.g-bar{position:absolute;height:22px;top:8px;border-radius:6px;z-index:1;min-width:22px;display:flex;align-items:center;padding:0 8px;cursor:default;transition:opacity .2s;}
-.g-bar:hover{opacity:.9 !important;}
-.g-bar span{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Bars — round pill style */
+.g-bar{position:absolute;height:20px;top:10px;border-radius:999px;z-index:1;min-width:20px;display:flex;align-items:center;padding:0 8px;cursor:default;transition:opacity .15s;}
+.g-bar:hover{opacity:.85!important;transform:scaleY(1.05);}
+.g-bar span{font-size:8px;font-weight:700;white-space:nowrap;}
 .b-Done{background:var(--g);opacity:.65;}.b-Done span{color:#111;}
 .b-InProgress{background:var(--amber);}.b-InProgress span{color:#111;}
 .b-Blocked{background:var(--red);opacity:.8;}.b-Blocked span{color:#fff;}
-.b-NotStarted{background:rgba(255,255,255,.06);}.b-NotStarted span{color:rgba(255,255,255,.35);}
+.b-NotStarted{background:rgba(255,255,255,.06);}.b-NotStarted span{color:rgba(255,255,255,.3);}
 body.light .b-NotStarted{background:rgba(0,0,0,.05);}
-body.light .b-NotStarted span{color:rgba(0,0,0,.3);}
+body.light .b-NotStarted span{color:rgba(0,0,0,.25);}
 
-/* Today line */
+/* Due label outside bar */
+.g-due{position:absolute;top:13px;font-size:8px;font-weight:700;color:rgba(255,255,255,.22);white-space:nowrap;z-index:1;}
+body.light .g-due{color:rgba(0,0,0,.2);}
+.g-due.overdue{color:var(--red);}
+
 .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--g);opacity:.4;z-index:2;pointer-events:none;}
 
 .empty{display:flex;align-items:center;justify-content:center;height:100%;width:100%;font-size:12px;color:rgba(255,255,255,.18);}
 body.light .empty{color:rgba(0,0,0,.18);}
-
-/* Legend */
-.legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
-.leg-item{display:flex;align-items:center;gap:4px;}
-.leg-bar{width:14px;height:8px;border-radius:3px;}
-.leg-lbl{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.06em;}
-body.light .leg-lbl{color:rgba(0,0,0,.2);}
 </style></head><body>
 
 <div class="header">
@@ -139,24 +139,18 @@ body.light .leg-lbl{color:rgba(0,0,0,.2);}
   </div>
 </div>
 
-<div class="proj-sel" id="proj-sel"></div>
-
-<div class="filter-row" id="filter-row" style="display:none;">
-  <span class="f-label">Phase</span>
-  <button class="f-pill active" onclick="filterPhase('all')">All</button>
-</div>
+<div class="sel-row" id="proj-sel"></div>
+<div class="phase-tabs" id="phase-tabs"></div>
 
 <div class="legend">
-  <div class="leg-item"><div class="leg-bar b-Done"></div><span class="leg-lbl">Done</span></div>
-  <div class="leg-item"><div class="leg-bar b-InProgress"></div><span class="leg-lbl">In Progress</span></div>
-  <div class="leg-item"><div class="leg-bar b-Blocked"></div><span class="leg-lbl">Blocked</span></div>
-  <div class="leg-item"><div class="leg-bar b-NotStarted"></div><span class="leg-lbl">Not Started</span></div>
+  <div class="leg-i"><div class="leg-bar b-Done" style="opacity:1"></div><span class="leg-l">Done</span></div>
+  <div class="leg-i"><div class="leg-bar b-InProgress"></div><span class="leg-l">In Progress</span></div>
+  <div class="leg-i"><div class="leg-bar b-Blocked"></div><span class="leg-l">Blocked</span></div>
+  <div class="leg-i"><div class="leg-bar b-NotStarted"></div><span class="leg-l">Not Started</span></div>
 </div>
 
 <div class="gantt-outer">
-  <div class="gantt-wrap" id="gantt-wrap">
-    <div class="empty">Loading…</div>
-  </div>
+  <div class="gantt-wrap" id="gantt-wrap"><div class="empty">Loading…</div></div>
 </div>
 
 <script>
@@ -167,205 +161,136 @@ function toggleMode(){light=!light;document.body.classList.toggle('light',light)
 function setTs(){document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-let allProjects=[], activeIdx=0, activePhaseFilter='all';
+let allProjects=[], activeIdx=0, activePhase='all';
 const DAY_W=48;
 const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MON_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function selectProject(idx){
-  activeIdx=idx;
-  activePhaseFilter='all';
-  document.querySelectorAll('.ps-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
-  buildFilters(allProjects[idx]);
-  renderGantt(allProjects[idx]);
+  activeIdx=idx;activePhase='all';
+  document.querySelectorAll('#proj-sel .sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  buildPhaseTabs(allProjects[idx]);
+  renderGantt();
 }
-
-function filterPhase(ph){
-  activePhaseFilter=ph;
-  document.querySelectorAll('.f-pill').forEach(b=>b.classList.toggle('active',b.dataset.ph===ph));
-  renderGantt(allProjects[activeIdx]);
+function selectPhase(ph){
+  activePhase=ph;
+  document.querySelectorAll('#phase-tabs .ph-tab').forEach(b=>b.classList.toggle('active',b.dataset.ph===ph));
+  renderGantt();
 }
-
-function buildFilters(proj){
-  const row=document.getElementById('filter-row');
-  if(!proj||!proj.phases||proj.phases.length<2){row.style.display='none';return;}
-  row.style.display='flex';
-  const phaseNames=proj.phases.map(p=>p.name);
-  row.innerHTML=`<span class="f-label">Phase</span>
-    <button class="f-pill active" data-ph="all" onclick="filterPhase('all')">All</button>
-    ${phaseNames.map(n=>`<button class="f-pill" data-ph="${esc(n)}" onclick="filterPhase('${esc(n)}')">${esc(n)}</button>`).join('')}`;
+function buildPhaseTabs(proj){
+  const el=document.getElementById('phase-tabs');
+  if(!proj||!proj.phases||proj.phases.length<2){el.innerHTML='';return;}
+  // Count tasks per phase
+  const phaseCounts={};
+  for(const t of proj.tasks||[]){const ph=t.phase||'Unassigned';phaseCounts[ph]=(phaseCounts[ph]||0)+1;}
+  el.innerHTML=`<button class="ph-tab active" data-ph="all" onclick="selectPhase('all')">All · ${proj.tasks.length}</button>`+
+    proj.phases.map(p=>{
+      const c=phaseCounts[p.name]||0;
+      return`<button class="ph-tab" data-ph="${esc(p.name)}" onclick="selectPhase('${esc(p.name)}')">${esc(p.name)} · ${c}</button>`;
+    }).join('');
 }
 
 function todayISO(){return new Date().toISOString().split('T')[0];}
 function addDays(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+function fmtShort(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+MON_NAMES[d.getMonth()];}
 
-function statusBarCls(s){
-  if(s==='Done')return'b-Done';
-  if(s==='In Progress')return'b-InProgress';
-  if(s==='Blocked')return'b-Blocked';
-  return'b-NotStarted';
-}
-function statusDotCls(s){
-  if(s==='Done')return'd-Done';
-  if(s==='In Progress')return'd-InProgress';
-  if(s==='Blocked')return'd-Blocked';
-  return'd-NotStarted';
+function barCls(s){return s==='Done'?'b-Done':s==='In Progress'?'b-InProgress':s==='Blocked'?'b-Blocked':'b-NotStarted';}
+function dotCls(s){return s==='Done'?'d-Done':s==='In Progress'?'d-InProgress':s==='Blocked'?'d-Blocked':'d-NotStarted';}
+
+function avatarHTML(assignees){
+  if(!assignees||!assignees.length) return '';
+  const a=assignees[0];
+  if(a.avatar){
+    return`<img class="gl-avatar" src="${esc(a.avatar)}" alt="${esc(a.name)}" title="${esc(a.name)}"/>`;
+  }
+  const initials=a.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  return`<div class="gl-initials" title="${esc(a.name)}">${esc(initials)}</div>`;
 }
 
-function renderGantt(proj){
+function renderGantt(){
   const wrap=document.getElementById('gantt-wrap');
+  const proj=allProjects[activeIdx];
   if(!proj){wrap.innerHTML='<div class="empty">Select a project</div>';return;}
 
   let tasks=proj.tasks||[];
-  if(!tasks.length){wrap.innerHTML='<div class="empty">No tasks for this project</div>';return;}
-
-  // Filter by phase
-  if(activePhaseFilter!=='all'){
-    tasks=tasks.filter(t=>t.phase===activePhaseFilter);
-  }
-  if(!tasks.length){wrap.innerHTML='<div class="empty">No tasks in this phase</div>';return;}
+  if(activePhase!=='all') tasks=tasks.filter(t=>t.phase===activePhase);
+  if(!tasks.length){wrap.innerHTML='<div class="empty">No tasks in this view</div>';return;}
 
   const today=todayISO();
-
-  // Assign estimated start/end dates for tasks without them
-  // Strategy: spread tasks within each phase across a reasonable timeline
   const projStart=proj.startDate||today;
-  const projTarget=proj.targetDate||addDays(projStart, 60);
+  const projTarget=proj.targetDate||addDays(projStart,60);
 
-  // Group by phase
-  const phases=[];
-  let curPh=null;
-  for(const t of tasks){
-    const ph=t.phase||'Unassigned';
-    if(ph!==curPh){curPh=ph;phases.push({name:ph,tasks:[]});}
-    phases[phases.length-1].tasks.push(t);
-  }
-
-  // Estimate dates: distribute phases evenly across project timeline
-  const totalPhases=phases.length||1;
+  // Estimate dates for tasks without them — spread within phase windows
+  const phaseNames=[...new Set(tasks.map(t=>t.phase||'Unassigned'))];
+  const totalPhases=phaseNames.length||1;
   const projStartD=new Date(projStart+'T00:00:00');
   const projTargetD=new Date(projTarget+'T00:00:00');
-  const totalDays=Math.max(Math.round((projTargetD-projStartD)/(86400000)),totalPhases*7);
+  const totalDays=Math.max(Math.round((projTargetD-projStartD)/86400000),totalPhases*7);
   const daysPerPhase=Math.max(Math.floor(totalDays/totalPhases),5);
 
-  phases.forEach((ph,pi)=>{
-    const phStart=addDays(projStart, pi*daysPerPhase);
-    const phEnd=addDays(projStart, (pi+1)*daysPerPhase-1);
-    const tasksInPhase=ph.tasks.length;
-    // Spread tasks within phase window
-    ph.tasks.forEach((t,ti)=>{
-      if(!t._start){
-        if(t.due){
-          // Has due date: bar ends at due, starts 2 days before
-          t._end=t.due;
-          t._start=t.created||addDays(t.due,-2);
-        } else if(t.created){
-          // Has created only: show 3-day bar starting from created
-          t._start=t.created;
-          t._end=addDays(t.created,2);
-        } else {
-          // No dates: estimate based on position within phase
-          const offset=Math.floor((ti/Math.max(tasksInPhase,1))*daysPerPhase);
-          t._start=addDays(phStart,offset);
-          t._end=addDays(t._start,2);
-        }
-      }
+  phaseNames.forEach((ph,pi)=>{
+    const phStart=addDays(projStart,pi*daysPerPhase);
+    const phTasks=tasks.filter(t=>(t.phase||'Unassigned')===ph);
+    phTasks.forEach((t,ti)=>{
+      if(t.due){t._end=t.due;t._start=t.created||addDays(t.due,-2);}
+      else if(t.created){t._start=t.created;t._end=addDays(t.created,2);}
+      else{const off=Math.floor((ti/Math.max(phTasks.length,1))*daysPerPhase);t._start=addDays(phStart,off);t._end=addDays(t._start,2);}
     });
   });
 
-  // Calculate full date range
-  let minDate=projStart, maxDate=projTarget;
-  for(const ph of phases) for(const t of ph.tasks){
-    if(t._start<minDate) minDate=t._start;
-    if(t._end>maxDate) maxDate=t._end;
-  }
-  // Add padding
-  minDate=addDays(minDate,-3);
-  maxDate=addDays(maxDate,5);
-
-  // Generate days array
+  // Date range
+  let minDate=projStart,maxDate=projTarget;
+  for(const t of tasks){if(t._start&&t._start<minDate)minDate=t._start;if(t._end&&t._end>maxDate)maxDate=t._end;}
+  minDate=addDays(minDate,-3);maxDate=addDays(maxDate,5);
   const days=[];
-  for(let d=new Date(minDate+'T00:00:00');d<=new Date(maxDate+'T00:00:00');d.setDate(d.getDate()+1)){
-    days.push(d.toISOString().split('T')[0]);
-  }
-  const dayIndex={};
-  days.forEach((d,i)=>dayIndex[d]=i);
+  for(let d=new Date(minDate+'T00:00:00');d<=new Date(maxDate+'T00:00:00');d.setDate(d.getDate()+1))days.push(d.toISOString().split('T')[0]);
+  const dayIdx={};days.forEach((d,i)=>dayIdx[d]=i);
 
-  // Build month spans for header
-  const months=[];
-  let cmKey='';
-  for(let i=0;i<days.length;i++){
-    const d=new Date(days[i]+'T00:00:00');
-    const mk=MON_NAMES[d.getMonth()]+' '+d.getFullYear();
-    if(mk!==cmKey){cmKey=mk;months.push({label:mk,start:i,span:1});}
-    else{months[months.length-1].span++;}
-  }
+  // Month spans
+  const months=[];let cmk='';
+  for(let i=0;i<days.length;i++){const d=new Date(days[i]+'T00:00:00');const mk=MON_NAMES[d.getMonth()]+' '+d.getFullYear();if(mk!==cmk){cmk=mk;months.push({label:mk,start:i,span:1});}else months[months.length-1].span++;}
 
-  // ── LEFT PANEL ──
+  // LEFT
   let leftHTML=`<div class="gl-hdr">Tasks · ${tasks.length}</div>`;
-  for(const ph of phases){
-    leftHTML+=`<div class="gl-phase">${esc(ph.name)} · ${ph.tasks.length}</div>`;
-    for(const t of ph.tasks){
-      const isDone=t.status==='Done';
-      const initials=(t.assignees||[]).length>0?t.assignees[0].split(' ').map(w=>w[0]).join('').slice(0,2):'';
-      leftHTML+=`<div class="gl-task">
-        <div class="gl-pri p-${t.priority||'None'}"></div>
-        <div class="gl-name${isDone?' s-Done':''}" title="${esc(t.name)}">${esc(t.name)}</div>
-        ${initials?`<div class="gl-assign" title="${esc(t.assignees.join(', '))}">${esc(initials)}</div>`:''}
-        <div class="gl-dot ${statusDotCls(t.status)}"></div>
-      </div>`;
-    }
+  for(const t of tasks){
+    const isDone=t.status==='Done';
+    leftHTML+=`<div class="gl-task">
+      <div class="gl-pri p-${t.priority||'None'}"></div>
+      <div class="gl-name${isDone?' s-Done':''}" title="${esc(t.name)}">${esc(t.name)}</div>
+      ${avatarHTML(t.assignees)}
+      <div class="gl-dot ${dotCls(t.status)}"></div>
+    </div>`;
   }
 
-  // ── RIGHT PANEL ──
+  // RIGHT
   const totalW=days.length*DAY_W;
-
-  // Month header
   let monthHTML=months.map(m=>`<div class="gr-month" style="width:${m.span*DAY_W}px">${m.label}</div>`).join('');
+  let dayHTML=days.map(iso=>{const d=new Date(iso+'T00:00:00');return`<div class="gr-day${iso===today?' today':''}${d.getDay()%6===0?' wknd':''}"><span class="dn">${d.getDate()}</span><span class="dl">${DAY_NAMES[d.getDay()]}</span></div>`;}).join('');
 
-  // Day header
-  let dayHTML=days.map(iso=>{
-    const d=new Date(iso+'T00:00:00');
-    const isToday=iso===today;
-    const isWknd=d.getDay()===0||d.getDay()===6;
-    return`<div class="gr-day${isToday?' today':''}${isWknd?' wknd':''}"><span class="dn">${d.getDate()}</span><span class="dl">${DAY_NAMES[d.getDay()]}</span></div>`;
-  }).join('');
-
-  // Grid rows
   let rowsHTML='';
-  for(const ph of phases){
-    // Phase separator
-    rowsHTML+=`<div class="gr-phase" style="width:${totalW}px"></div>`;
-    for(const t of ph.tasks){
-      // Cell backgrounds
-      let cells=days.map(iso=>{
-        const d=new Date(iso+'T00:00:00');
-        const isToday=iso===today;
-        const isWknd=d.getDay()===0||d.getDay()===6;
-        return`<div class="gr-cell${isToday?' today-col':''}${isWknd?' wknd-col':''}"></div>`;
-      }).join('');
+  for(const t of tasks){
+    let cells=days.map(iso=>{const d=new Date(iso+'T00:00:00');return`<div class="gr-cell${iso===today?' today-col':''}${d.getDay()%6===0?' wknd-col':''}"></div>`;}).join('');
+    let si=dayIdx[t._start]??0,ei=dayIdx[t._end]??(si+1);
+    if(ei<si)ei=si;
+    const barLeft=si*DAY_W+3;
+    const barWidth=Math.max((ei-si+1)*DAY_W-6,20);
 
-      // Bar position
-      let si=dayIndex[t._start]??0;
-      let ei=dayIndex[t._end]??(si+1);
-      if(ei<si)ei=si;
-      const barLeft=si*DAY_W+3;
-      const barWidth=Math.max((ei-si+1)*DAY_W-6, 22);
-      const barCls=statusBarCls(t.status);
-      const dur=ei-si+1;
-      const durLbl=dur>=2?dur+'d':'';
-
-      rowsHTML+=`<div class="gr-row">${cells}
-        <div class="g-bar ${barCls}" style="left:${barLeft}px;width:${barWidth}px;" title="${esc(t.name)}">
-          <span>${durLbl}</span>
-        </div>
-      </div>`;
+    // Due label outside bar (right side)
+    let dueHTML='';
+    if(t.due){
+      const dueX=(ei+1)*DAY_W+4;
+      const isOverdue=t.status!=='Done'&&t.due<today;
+      dueHTML=`<div class="g-due${isOverdue?' overdue':''}" style="left:${dueX}px">${fmtShort(t.due)}</div>`;
     }
+
+    rowsHTML+=`<div class="gr-row">${cells}
+      <div class="g-bar ${barCls(t.status)}" style="left:${barLeft}px;width:${barWidth}px;" title="${esc(t.name)}"></div>
+      ${dueHTML}
+    </div>`;
   }
 
-  // Today line
-  const todayIdx=dayIndex[today];
-  const todayLineHTML=todayIdx!==undefined?`<div class="today-line" style="left:${todayIdx*DAY_W+DAY_W/2}px;"></div>`:'';
+  const todayI=dayIdx[today];
+  const todayLine=todayI!=null?`<div class="today-line" style="left:${todayI*DAY_W+DAY_W/2}px;"></div>`:'';
 
   wrap.innerHTML=`
     <div class="g-left" id="gl">${leftHTML}</div>
@@ -373,49 +298,30 @@ function renderGantt(proj){
       <div style="min-width:${totalW}px;">
         <div class="gr-month-row">${monthHTML}</div>
         <div class="gr-day-row">${dayHTML}</div>
-        <div style="position:relative;">
-          ${rowsHTML}
-          ${todayLineHTML}
-        </div>
+        <div style="position:relative;">${rowsHTML}${todayLine}</div>
       </div>
     </div>`;
 
-  // Sync vertical scroll
-  const gl=document.getElementById('gl');
-  const gr=document.getElementById('gr');
-  let syncing=false;
-  gr.addEventListener('scroll',()=>{if(!syncing){syncing=true;gl.scrollTop=gr.scrollTop;syncing=false;}});
-  gl.addEventListener('scroll',()=>{if(!syncing){syncing=true;gr.scrollTop=gl.scrollTop;syncing=false;}});
-
-  // Scroll to today
-  if(todayIdx!==undefined){
-    gr.scrollLeft=Math.max(0,todayIdx*DAY_W-gr.clientWidth/3);
-  }
+  // Sync scroll
+  const gl=document.getElementById('gl'),gr=document.getElementById('gr');
+  let sync=false;
+  gr.addEventListener('scroll',()=>{if(!sync){sync=true;gl.scrollTop=gr.scrollTop;sync=false;}});
+  gl.addEventListener('scroll',()=>{if(!sync){sync=true;gr.scrollTop=gl.scrollTop;sync=false;}});
+  if(todayI!=null)gr.scrollLeft=Math.max(0,todayI*DAY_W-gr.clientWidth/3);
 }
 
 function render(data){
   allProjects=data.gantt||[];
   const sel=document.getElementById('proj-sel');
-  if(!allProjects.length){
-    sel.innerHTML='';
-    document.getElementById('gantt-wrap').innerHTML='<div class="empty">No projects found</div>';
-    return;
-  }
-  sel.innerHTML=allProjects.map((p,i)=>`<button class="ps-btn${i===0?' active':''}" onclick="selectProject(${i})">${esc(p.name)} <span style="opacity:.4;margin-left:4px;">${p.tasks.length}</span></button>`).join('');
-  buildFilters(allProjects[0]);
-  renderGantt(allProjects[0]);
+  if(!allProjects.length){sel.innerHTML='';document.getElementById('gantt-wrap').innerHTML='<div class="empty">No projects found</div>';return;}
+  sel.innerHTML=allProjects.map((p,i)=>`<button class="sel-btn${i===0?' active':''}" onclick="selectProject(${i})">${esc(p.name)}<span class="cnt">${p.tasks.length}</span></button>`).join('');
+  buildPhaseTabs(allProjects[0]);
+  renderGantt();
 }
 
 async function loadData(){
-  try{
-    const r=await fetch(apiUrl('/api/data/projects?view=gantt'));
-    const j=await r.json();
-    if(j.error){console.error('API:',j.error);return;}
-    render(j);
-    setTs();
-  }catch(e){console.error('gantt:',e);}
+  try{const r=await fetch(apiUrl('/api/data/projects?view=gantt'));const j=await r.json();if(j.error){console.error('API:',j.error);return;}render(j);setTs();}catch(e){console.error('gantt:',e);}
 }
-
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
 setTs();loadData();setInterval(loadData,5*60*1000);
 </script></body></html>

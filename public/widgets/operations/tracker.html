@@ -114,23 +114,25 @@ body.light .ph-step:not(:last-child)::after{background:rgba(0,0,0,.07);}
 .ph-step.conn-full:not(:last-child)::after{background:var(--g);}
 .ph-step.conn-partial:not(:last-child)::after{background:linear-gradient(90deg, var(--g) var(--conn-pct), rgba(255,255,255,.06) var(--conn-pct));}
 
-.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;color:var(--g);}
+.ph-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;z-index:1;flex-shrink:0;margin-bottom:6px;}
 .phd-done{background:var(--g);color:#111;}
-.phd-partial{background:#191919;border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);}
+.phd-partial{background:#191919;border:2px solid var(--g);box-shadow:0 0 8px rgba(170,255,0,.35);color:var(--g);}
 body.light .phd-partial{background:#fff;}
-.phd-ns{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);}
-body.light .phd-ns{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.08);}
+.phd-ns{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);color:rgba(255,255,255,.2);}
+body.light .phd-ns{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.2);}
 .phd-hold{background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.12);}
 
-.ph-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-body.light .ph-label{color:rgba(0,0,0,.45);}
+.ph-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.2);text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+body.light .ph-label{color:rgba(0,0,0,.18);}
 .ph-step.active .ph-label{color:var(--g);}
-.ph-step.done .ph-label{color:rgba(255,255,255,.3);}
-body.light .ph-step.done .ph-label{color:rgba(0,0,0,.25);}
+.ph-step.done .ph-label{color:rgba(255,255,255,.4);}
+body.light .ph-step.done .ph-label{color:rgba(0,0,0,.3);}
 
-.ph-count{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.25);margin-top:2px;}
-body.light .ph-count{color:rgba(0,0,0,.2);}
+.ph-count{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.15);margin-top:2px;}
+body.light .ph-count{color:rgba(0,0,0,.12);}
 .ph-step.active .ph-count{color:var(--g);}
+.ph-step.done .ph-count{color:rgba(255,255,255,.3);}
+body.light .ph-step.done .ph-count{color:rgba(0,0,0,.25);}
 
 .ph-due{font-size:8px;font-weight:600;color:rgba(255,255,255,.18);margin-top:1px;}
 body.light .ph-due{color:rgba(0,0,0,.15);}
@@ -269,10 +271,8 @@ function renderCard(b){
   const tasksTotal=ts.total||0;
   const barPct=tasksTotal>0?Math.round((tasksDone/tasksTotal)*100):0;
 
-  // Target date line below progress
-  let targetHTML='';
-  if(b.completedDate) targetHTML=`<div class="pc-target"><strong>Completed:</strong> ${fmtDateFull(b.completedDate)}</div>`;
-  else if(b.targetDate) targetHTML=`<div class="pc-target"><strong>Targeted Completion:</strong> ${fmtDateFull(b.targetDate)}</div>`;
+  // Task count label below progress
+  let targetHTML=`<div class="pc-target">${tasksTotal} tasks</div>`;
 
   return`<div class="card proj-card">
     <div class="pc-top">
@@ -318,6 +318,16 @@ function renderList(){
   el.innerHTML=list.map(renderCard).join('');
 }
 
+function sortByTarget(arr){
+  return arr.sort((a,b)=>{
+    // Sort by targetDate ascending (soonest first), nulls last
+    if(a.targetDate&&b.targetDate) return a.targetDate.localeCompare(b.targetDate);
+    if(a.targetDate) return -1;
+    if(b.targetDate) return 1;
+    return 0;
+  });
+}
+
 function render(counts,builds,done){
   document.getElementById('s-awaiting').textContent=counts.awaiting||0;
   document.getElementById('s-active').textContent=counts.active||0;
@@ -325,8 +335,8 @@ function render(counts,builds,done){
   document.getElementById('s-done').textContent=counts.done||0;
   document.getElementById('s-hold').textContent=counts.hold||0;
 
-  allBuilds=builds;
-  completedBuilds=done||[];
+  allBuilds=sortByTarget(builds);
+  completedBuilds=sortByTarget(done||[]);
   document.getElementById('tab-active').textContent=`Active (${builds.length})`;
   document.getElementById('tab-completed').textContent=`Completed (${completedBuilds.length})`;
   renderList();

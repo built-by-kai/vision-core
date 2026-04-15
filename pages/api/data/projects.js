@@ -71,9 +71,13 @@ export default async function handler(req, res) {
       const p = t.properties
       const id = strip(t.id)
       // Assignee: pick from "Assigned To" or "Assignee" people field
-      const assignees = (p["Assigned To"]?.people || p.Assignee?.people || [])
-        .map(u => u.name || u.person?.email?.split("@")[0] || "")
-        .filter(Boolean)
+      const rawPeople = p["Assigned To"]?.people || p.Assignee?.people || []
+      const assignees = rawPeople
+        .map(u => ({
+          name: u.name || u.person?.email?.split("@")[0] || "",
+          avatar: u.avatar_url || null,
+        }))
+        .filter(a => a.name)
       taskMap[id] = {
         name:       plain(p["Task Name"]?.title || []) || "",
         status:     p.Status?.status?.name || p.Status?.select?.name || "Not Started",
