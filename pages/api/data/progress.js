@@ -1,6 +1,6 @@
 // /api/data/progress — Project completion progress
 // GET ?project=<project_page_id>
-// Returns phase & task completion data for a single project
+// Returns phase & task completion data + active tasks with assignees
 import { getPage, queryDB, plain, DB } from "../../../lib/notion"
 
 export default async function handler(req, res) {
@@ -24,12 +24,14 @@ export default async function handler(req, res) {
     const startDate    = props["Start Date"]?.date?.start || null
     const targetDate   = props["Targeted Completion"]?.date?.start || null
 
-    // 2. Get all phases linked to this project (parent items in Phase Tasks DB)
+    // 2. Get all phases linked to this project
     const phaseRels = props["Phases"]?.relation || []
     if (!phaseRels.length) {
       return res.json({
         project: { id: projectId, name: projectName, status, package: packageType, currentPhase, startDate, targetDate },
         phases: [],
+        activeTasks: [],
+        upcomingTasks: [],
         overall: { total: 0, done: 0, inProgress: 0, pct: 0 },
       })
     }
@@ -40,16 +42,17 @@ export default async function handler(req, res) {
     )
 
     const phases = []
+    const allTaskDetails = [] // collect every task for active/upcoming
     let totalTasks = 0, doneTasks = 0, inProgressTasks = 0
 
     for (const ph of phasePages) {
       if (!ph) continue
       const pp = ph.properties || {}
-      const phaseNo    = pp["Phase No."]?.number ?? 99
-      const phaseName  = plain(pp["Phase Name"]?.title || [])
+      const phaseNo     = pp["Phase No."]?.number ?? 99
+      const phaseName   = plain(pp["Phase Name"]?.title || [])
       const phaseStatus = pp["Status"]?.select?.name || "Not Started"
-      const startDt    = pp["Start Date"]?.date?.start || null
-      const dueDt      = pp["Due Date"]?.date?.start || null
+      const startDt     = pp["Start Date"]?.date?.start || null
+      const dueDt       = pp["Due Date"]?.date?.start || null
       const completedDt = pp["Completed Date"]?.date?.start || null
 
       // Get sub-items (tasks) for this phase
@@ -63,10 +66,28 @@ export default async function handler(req, res) {
         )
         for (const t of taskPages) {
           if (!t) continue
-          const ts = t.properties?.Status?.select?.name || "Not Started"
+          const tp = t.properties || {}
+          const ts = tp.Status?.select?.name || "Not Started"
           if (ts === "Done") taskDone++
           else if (ts === "In Progress") taskInProgress++
           else taskNotStarted++
+
+          // Extract task details for active/upcoming lists
+          const assignees = (tp.Assignee?.people || []).map(p => ({
+            name: p.name || "",
+            avatar: p.avatar_url || "",
+          }))
+
+          allTaskDetails.push({
+            id: t.id.replace(/-/g, ""),
+            name: plain(tp["Phase Name"]?.title || []),
+            status: ts,
+            priority: tp.Priority?.select?.name || null,
+            dueDate: tp["Due Date"]?.date?.start || null,
+            assignees,
+            phaseNo,
+            phaseName,
+          })
         }
       }
 
@@ -86,8 +107,20 @@ export default async function handler(req, res) {
       })
     }
 
-    // Sort by phase number
+    // Sort
     phases.sort((a, b) => a.no - b.no)
+
+    // Active tasks: In Progress, sorted by due date
+    const activeTasks = allTaskDetails
+      .filter(t => t.status === "In Progress")
+      .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
+
+    // Upcoming tasks: Not Started from the current or next active phase, first 5
+    const activePhaseNo = phases.find(p => p.status === "In Progress")?.no ?? 0
+    const upcomingTasks = allTaskDetails
+      .filter(t => t.status === "Not Started" && t.phaseNo <= activePhaseNo + 1)
+      .sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"))
+      .slice(0, 5)
 
     const overallPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
@@ -102,6 +135,8 @@ export default async function handler(req, res) {
         targetDate,
       },
       phases,
+      activeTasks,
+      upcomingTasks,
       overall: {
         total: totalTasks,
         done: doneTasks,

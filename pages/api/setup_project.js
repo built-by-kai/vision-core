@@ -639,6 +639,41 @@ async function advanceTask(payload) {
     }
   }
 
+  // ── Recalculate & write overall progress to Project ──
+  let overallPct = null
+  if (parentId) {
+    try {
+      const parent    = await getPage(parentId, token)
+      const projectId = parent.properties.Project?.relation?.[0]?.id?.replace(/-/g, "")
+      if (projectId) {
+        const project   = await getPage(projectId, token)
+        const phaseRels = project.properties.Phases?.relation || []
+        let totalT = 0, doneT = 0
+        const phaseReads = await Promise.all(
+          phaseRels.map(r => getPage(r.id.replace(/-/g, ""), token).catch(() => null))
+        )
+        const subReads = []
+        for (const ph of phaseReads) {
+          if (!ph) continue
+          const subs = ph.properties["Sub-item"]?.relation || []
+          for (const s of subs) subReads.push(getPage(s.id.replace(/-/g, ""), token).catch(() => null))
+        }
+        const allTasks = await Promise.all(subReads)
+        for (const t of allTasks) {
+          if (!t) continue
+          totalT++
+          if (t.properties.Status?.select?.name === "Done") doneT++
+        }
+        overallPct = totalT > 0 ? Math.round((doneT / totalT) * 100) : 0
+        await patchPage(projectId, {
+          "Overall Progress": { rich_text: [{ text: { content: `${overallPct}% (${doneT}/${totalT} tasks)` } }] },
+        }, token).catch(() => {})
+      }
+    } catch (e) {
+      console.warn("[advanceTask] progress calc:", e.message)
+    }
+  }
+
   return {
     status:       "advanced",
     task_id:      taskId,
@@ -646,6 +681,7 @@ async function advanceTask(payload) {
     from:         currentStatus,
     to:           nextStatus,
     phase_update: phaseUpdate,
+    overall_pct:  overallPct,
   }
 }
 
