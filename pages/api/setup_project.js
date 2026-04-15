@@ -469,6 +469,145 @@ async function setup(payload) {
   return summary
 }
 
+// ─── ADVANCE TASK STATUS ─────────────────────────────────────────────────────
+// POST /api/setup_project?action=advance  { "page_id": "<task_page_id>" }
+// Smart single-button: Not Started → In Progress → Done
+// Checks "Depends On" relation before allowing Done.
+// Also auto-advances the parent phase status.
+async function advanceTask(payload) {
+  const token = process.env.NOTION_API_KEY
+  const rawId = payload.page_id || payload.source?.page_id || payload.data?.page_id
+  if (!rawId) throw new Error("No page_id in payload")
+  const taskId = rawId.replace(/-/g, "")
+
+  const task  = await getPage(taskId, token)
+  const props = task.properties
+  const currentStatus = props.Status?.select?.name || "Not Started"
+  const taskName      = plain(props["Phase Name"]?.title || [])
+
+  // Determine next status
+  const STATUS_FLOW = {
+    "Not Started":  "In Progress",
+    "In Progress":  "Done",
+    "On Hold":      "In Progress",
+    // "Done" and "Review" have no automatic next step
+  }
+  const nextStatus = STATUS_FLOW[currentStatus]
+  if (!nextStatus) {
+    return {
+      status:  "no_change",
+      task_id: taskId,
+      task:    taskName,
+      current: currentStatus,
+      message: currentStatus === "Done"
+        ? "Task is already complete"
+        : `No automatic next step from "${currentStatus}"`,
+    }
+  }
+
+  // ── If advancing to Done, check dependencies ──
+  if (nextStatus === "Done") {
+    const depIds = (props["Depends On"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+    if (depIds.length) {
+      // Read all dependency tasks in parallel
+      const deps = await Promise.all(
+        depIds.map(id => getPage(id, token).catch(() => null))
+      )
+      const blockers = []
+      for (const dep of deps) {
+        if (!dep) continue
+        const depStatus = dep.properties.Status?.select?.name || "Not Started"
+        if (depStatus !== "Done") {
+          const depName = plain(dep.properties["Phase Name"]?.title || [])
+          blockers.push({ name: depName, status: depStatus })
+        }
+      }
+      if (blockers.length) {
+        return {
+          status:   "blocked",
+          task_id:  taskId,
+          task:     taskName,
+          current:  currentStatus,
+          blockers: blockers,
+          message:  `Cannot complete — ${blockers.length} dependency task(s) not done: ${blockers.map(b => b.name).join(", ")}`,
+        }
+      }
+    }
+  }
+
+  // ── Update task status ──
+  const updates = {
+    "Status": { select: { name: nextStatus } },
+  }
+  // Set start date when beginning, completed date when finishing
+  const today = new Date().toISOString().split("T")[0]
+  if (nextStatus === "In Progress") {
+    updates["Start Date"] = { date: { start: today } }
+  }
+  if (nextStatus === "Done") {
+    updates["Completed Date"] = { date: { start: today } }
+  }
+
+  await patchPage(taskId, updates, token)
+
+  // ── Auto-advance parent phase status ──
+  const parentId = props["Parent item"]?.relation?.[0]?.id?.replace(/-/g, "")
+  let phaseUpdate = null
+  if (parentId) {
+    try {
+      const parent  = await getPage(parentId, token)
+      const phStatus = parent.properties.Status?.select?.name || "Not Started"
+
+      if (nextStatus === "In Progress" && phStatus === "Not Started") {
+        // First task started → phase starts
+        await patchPage(parentId, {
+          "Status":     { select: { name: "In Progress" } },
+          "Start Date": { date: { start: today } },
+        }, token)
+        phaseUpdate = "In Progress"
+
+        // Also update Project's Phase select to this phase
+        const projectId = parent.properties.Project?.relation?.[0]?.id?.replace(/-/g, "")
+        const phaseName = plain(parent.properties["Phase Name"]?.title || [])
+        if (projectId && phaseName) {
+          await patchPage(projectId, {
+            "Phase": { select: { name: phaseName } },
+          }, token).catch(() => {})
+        }
+      }
+
+      if (nextStatus === "Done") {
+        // Check if ALL sibling sub-items are now Done
+        const siblingIds = (parent.properties["Sub-item"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+        const siblings = await Promise.all(
+          siblingIds.map(id => getPage(id, token).catch(() => null))
+        )
+        const allDone = siblings.every(s =>
+          s && (s.properties.Status?.select?.name === "Done")
+        )
+        if (allDone) {
+          await patchPage(parentId, {
+            "Status":         { select: { name: "Done" } },
+            "Completed Date": { date: { start: today } },
+          }, token)
+          phaseUpdate = "Done (all tasks complete)"
+        }
+      }
+    } catch (e) {
+      console.warn("[advanceTask] phase update:", e.message)
+    }
+  }
+
+  return {
+    status:       "advanced",
+    task_id:      taskId,
+    task:         taskName,
+    from:         currentStatus,
+    to:           nextStatus,
+    phase_update: phaseUpdate,
+  }
+}
+
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -476,7 +615,14 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
+  const action = req.query?.action || ""
+
   try {
+    if (action === "advance") {
+      const result = await advanceTask(req.body || {})
+      return res.json(result)
+    }
+    // Default: full project setup
     const result = await setup(req.body || {})
     return res.json(result)
   } catch (e) {
