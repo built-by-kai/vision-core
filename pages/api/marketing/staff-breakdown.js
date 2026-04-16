@@ -186,7 +186,7 @@ export default async function handler(req, res) {
 
     // ── 6. Build result array ─────────────────────────────────────────────────
     const employees = [...empIdSet]
-      .filter(id => empMap[id]?.name && empMap[id].name !== 'Unknown')
+      .filter(id => empMap[id]?.name && empMap[id].name !== 'Unknown' && empMap[id].name !== '')
       .map(id => ({
         id,
         ...empMap[id],
