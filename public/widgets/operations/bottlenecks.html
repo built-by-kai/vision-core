@@ -103,7 +103,7 @@ body.light .empty-sub{color:rgba(0,0,0,.28);}
 </head>
 <body>
 <div id="lbar"></div>
-<div id="root"><div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div></div>
+<div id="root"><div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div><div style="font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.08);margin-top:6px;">Widgets by Opxio.io</div></div></div>
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
 (function(){
@@ -157,7 +157,7 @@ function render(data){
   var isLight=document.body.classList.contains('light');
   var total=data.total||0;
   var html='<div class="top-bar">'
-    +'<div><p class="eyebrow">Opxio &middot; Operations OS</p><h1 class="h-title">Bottlenecks</h1></div>'
+    +'<div><p class="eyebrow">OPXIO · Operations OS</p><h1 class="h-title">Bottlenecks</h1></div>'
     +'<div class="top-right">'
     +(total>0?'<span class="total-badge">'+total+'</span>':'<span class="total-badge none">All clear</span>')
     +'<span class="ts" id="ts"></span>'
@@ -247,5 +247,7 @@ async function loadData(){
 loadData();
 setInterval(loadData,600000);
 </script>
+
+<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 </body>
 </html>

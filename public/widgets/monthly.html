@@ -51,7 +51,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
 </style></head><body>
 <div class="topbar">
-  <div><p class="eyebrow">Opxio · Revenue</p><h1 class="h-title">This Month's Revenue</h1></div>
+  <div><p class="eyebrow">OPXIO · Revenue</p><h1 class="h-title">This Month's Revenue</h1></div>
   <div class="topbar-right">
     <span class="ts" id="ts"></span>
     <select class="sel" id="sel-m">
@@ -132,4 +132,6 @@ async function loadData(){
 loadData();
 function doRefresh(){const b=document.getElementById('rb');b.textContent='↻';b.style.opacity='.4';loadData().then(()=>{b.textContent='↻ Refresh';b.style.opacity='1';});}
 setInterval(loadData,5*60*1000);
-</script></body></html>
+</script>
+<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+</body></html>
