@@ -24,7 +24,7 @@ body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
 /* Stat row */
-.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px;}
 .stat{padding:18px 18px 16px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;}
 .stat:hover::before{opacity:1;}
@@ -101,7 +101,8 @@ body.light .chart-title{color:rgba(0,0,0,.7);}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
 body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
 /* Responsive */
-@media(max-width:900px){.stat-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:1100px){.stat-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:64px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -130,22 +131,28 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-sub">In lead pipeline</div>
   </div>
   <div class="card stat">
+    <div class="s-dot" style="background:#60A5FA;opacity:.7;"></div>
+    <div class="s-lbl">Active Deals</div>
+    <div class="s-val" style="color:#60A5FA;" id="d-deals">—</div>
+    <div class="s-sub" id="d-deals-sub">In deal pipeline</div>
+  </div>
+  <div class="card stat">
     <div class="s-dot"></div>
-    <div class="s-lbl">Leads — Potential Value</div>
+    <div class="s-lbl">Potential Value</div>
     <div class="s-val" id="d-potential">—</div>
     <div class="s-sub">Pre-win deal value</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:#34D399;opacity:.7;"></div>
-    <div class="s-lbl">In Delivery</div>
+    <div class="s-lbl" id="d-delivery-lbl">In Delivery</div>
     <div class="s-val green" id="d-building">—</div>
-    <div class="s-sub">Building stage</div>
+    <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
-  <div class="card stat">
+  <div class="card stat" id="d-balance-card">
     <div class="s-dot" style="background:#FBBF24;opacity:.7;"></div>
-    <div class="s-lbl">Balance Due</div>
+    <div class="s-lbl" id="d-balance-lbl">Balance Due</div>
     <div class="s-val amber" id="d-balance">—</div>
-    <div class="s-sub">Awaiting final payment</div>
+    <div class="s-sub" id="d-balance-sub">Awaiting final payment</div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
@@ -306,9 +313,34 @@ async function loadData() {
 
     document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
     document.getElementById('d-potential').textContent = jd.potentialValue ? fmtRM(jd.potentialValue) : '—';
-    document.getElementById('d-building').textContent  = jd.stages?.Building          ?? '—';
-    document.getElementById('d-balance').textContent   = jd.stages?.['Balance Due']   ?? '—';
     document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
+
+    // ── Active Deals (dynamic: sum of wonStages) ───────────────────────────
+    const activeDeals = jd.activeDealsCount ?? 0;
+    document.getElementById('d-deals').textContent = activeDeals;
+    document.getElementById('d-deals-sub').textContent =
+      jd.wonStages?.length ? jd.wonStages.join(' · ') : 'In deal pipeline';
+
+    // ── In Delivery (dynamic: first wonStage) ──────────────────────────────
+    if (jd.deliveryStage) {
+      document.getElementById('d-delivery-lbl').textContent = jd.deliveryStage;
+      document.getElementById('d-building').textContent     = jd.deliveryCount ?? '—';
+      document.getElementById('d-delivery-sub').textContent = jd.deliveryStage + ' stage';
+    } else {
+      document.getElementById('d-building').textContent     = '—';
+      document.getElementById('d-delivery-sub').textContent = 'No active stage';
+    }
+
+    // ── Balance Due (dynamic: second wonStage, hide card if none) ─────────
+    const balCard = document.getElementById('d-balance-card');
+    if (jd.balanceStage) {
+      balCard.style.display = '';
+      document.getElementById('d-balance-lbl').textContent = jd.balanceStage;
+      document.getElementById('d-balance').textContent     = jd.balanceCount ?? '—';
+      document.getElementById('d-balance-sub').textContent = jd.balanceStage + ' stage';
+    } else {
+      balCard.style.display = 'none';
+    }
 
     renderDonut(jp.sources);
     renderFunnel();

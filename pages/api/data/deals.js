@@ -107,6 +107,13 @@ export default async function handler(req, res) {
       .filter(s => boardGroups[s])
       .map(s => ({ stage: s, deals: boardGroups[s] }))
 
+    // ── Dynamic won-stage stats for stat cards ─────────────────────────────
+    // deliveryStage = first wonStage (e.g. "Building" / "Client Active")
+    // balanceStage  = second wonStage if it exists (e.g. "Balance Due")
+    const deliveryStage = WON_STAGES[0] || null
+    const balanceStage  = WON_STAGES[1] || null
+    const activeDealsCount = WON_STAGES.reduce((s, st) => s + (stages[st] || 0), 0)
+
     res.status(200).json({
       stages,
       stageOrder:      ALL_STAGES,
@@ -119,6 +126,12 @@ export default async function handler(req, res) {
       buildingValue,
       wonThisMonth,
       deliveredThisMonth,
+      // ── Stat card helpers ──
+      activeDealsCount,
+      deliveryStage,
+      deliveryCount: deliveryStage ? (stages[deliveryStage] || 0) : 0,
+      balanceStage,
+      balanceCount:  balanceStage  ? (stages[balanceStage]  || 0) : 0,
     })
   } catch (err) {
     console.error("deals:", err)
