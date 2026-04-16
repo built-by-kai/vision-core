@@ -17,7 +17,8 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
-  const CRM_DB = resolveDB(client, 'CRM_DB', '3188b289e31a81da8939cb08d15be667')
+  // Try LEADS first (new key), fall back to CRM_DB (legacy), then hardcoded default
+  const CRM_DB = resolveDB(client, 'LEADS', null) || resolveDB(client, 'CRM_DB', '3188b289e31a81da8939cb08d15be667')
 
   try {
 
@@ -154,14 +155,16 @@ export default async function handler(req, res) {
           sourceCounts[source] = (sourceCounts[source] || 0) + 1;
         }
 
+        const createdOn = page.created_time ? page.created_time.slice(0, 10) : null;
+
         // Follow-up tracking
         if (followUp) {
           if (followUp < todayStr) {
-            overdueFollowups.push({ name, company, funnel, date: followUp });
+            overdueFollowups.push({ name, company, funnel, date: followUp, createdOn });
           } else if (followUp === todayStr) {
-            todayFollowups.push({ name, company, funnel, date: followUp });
+            todayFollowups.push({ name, company, funnel, date: followUp, createdOn });
           } else if (followUp <= weekEndStr) {
-            weekFollowups.push({ name, company, funnel, date: followUp });
+            weekFollowups.push({ name, company, funnel, date: followUp, createdOn });
           }
         }
 
@@ -172,6 +175,7 @@ export default async function handler(req, res) {
             company,
             funnel,
             lastContacted: lastContact || 'Never',
+            createdOn,
           });
         }
       }
@@ -179,26 +183,24 @@ export default async function handler(req, res) {
       // Closed-Won
       if (funnel === 'Closed-Won') {
         totalWonAllTime++;
-        // Check if created/won within date range
-        const created = page.created_time.slice(0, 10);
-        if (created >= rangeStart && created <= rangeEnd) {
+        const created = page.created_time ? page.created_time.slice(0, 10) : null;
+        if (created && created >= rangeStart && created <= rangeEnd) {
           wonThisMonth++;
           revenueThisMonth += value;
         }
-        // Unpaid tracking
         if (!retainerPaid && value > 0) {
-          unpaidRetainer.push({ name, company, value });
+          unpaidRetainer.push({ name, company, value, createdOn: created });
         }
         if (!kolPaid && value > 0) {
-          unpaidKol.push({ name, company, value });
+          unpaidKol.push({ name, company, value, createdOn: created });
         }
       }
 
       // Closed-Lost
       if (funnel === 'Closed-Lost') {
         totalLostAllTime++;
-        const created = page.created_time.slice(0, 10);
-        if (created >= rangeStart && created <= rangeEnd) {
+        const created = page.created_time ? page.created_time.slice(0, 10) : null;
+        if (created && created >= rangeStart && created <= rangeEnd) {
           lostThisMonth++;
         }
       }
@@ -296,19 +298,20 @@ async function handleDealsView(req, res, headers, dbId) {
     const funnel = getStatus(props['Funnel']);
     if (!funnel) continue;
 
-    const name    = getTitle(props['Name']);
-    const value   = getNumber(props['Estimated Value']);
-    const source  = getSelect(props['Source']);
-    const company = getText(props['PIC Name']) || '';
-    const reasons = getMultiSelect(props['Why Not Closing?']);
-    const created = new Date(page.created_time);
+    const name      = getTitle(props['Name']);
+    const value     = getNumber(props['Estimated Value']);
+    const source    = getSelect(props['Source']);
+    const company   = getText(props['PIC Name']) || '';
+    const reasons   = getMultiSelect(props['Why Not Closing?']);
+    const created   = new Date(page.created_time);
+    const createdOn = page.created_time ? page.created_time.slice(0, 10) : null;
     const isThisMonth = created.getMonth() === currentMonth && created.getFullYear() === currentYear;
 
     if (funnel === 'Closed-Won') {
       wonTotal++;
       wonTotalValue += value;
       if (isThisMonth) { wonThisMonth++; wonThisMonthValue += value; }
-      wonDeals.push({ name, company, value, source: source || null, url: page.url });
+      wonDeals.push({ name, company, value, source: source || null, createdOn, url: page.url });
       if (source) {
         if (!wonSourceMap[source]) wonSourceMap[source] = { label: source, value: 0, count: 0 };
         wonSourceMap[source].value += value;
@@ -321,7 +324,7 @@ async function handleDealsView(req, res, headers, dbId) {
       lostTotalValue += value;
       if (isThisMonth) { lostThisMonth++; lostThisMonthValue += value; }
       const reason = reasons.length > 0 ? reasons.join(', ') : 'No reason given';
-      lostDeals.push({ name, company, value, reason, url: page.url });
+      lostDeals.push({ name, company, value, reason, createdOn, url: page.url });
       for (const r of reasons) {
         if (!lostReasonMap[r]) lostReasonMap[r] = { label: r, value: 0, count: 0 };
         lostReasonMap[r].value += value;
