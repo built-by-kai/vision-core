@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       const p     = deal.properties
       const stage = p[stageField]?.status?.name || p[stageField]?.select?.name || "Unknown"
       const name  = plain(p["Deal Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
-      const value = p["Total Value"]?.number || p["Estimated Value"]?.number || 0
+      const value = p["Total Value"]?.number || p["Estimated Value"]?.number || p["Deal Value"]?.number || p["Value"]?.number || p["Fee"]?.number || p["Contract Value"]?.number || 0
       const pkg   = p[packageField]?.select?.name || ""
       const d     = new Date(deal.created_time)
       const isThisMonth = d.getMonth() === month && d.getFullYear() === year

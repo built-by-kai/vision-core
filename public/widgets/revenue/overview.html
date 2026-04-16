@@ -59,14 +59,29 @@ body.light .s-delta-lbl{color:rgba(0,0,0,.3);}
 
 /* ── TOP PRODUCTS ── */
 .panel{padding:14px 16px;}
-.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fff;opacity:.85;}
 body.light .panel-title{color:#111;opacity:1;}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+/* category filter tabs */
+.cat-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;}
+.cat-tab{font-size:9.5px;font-weight:700;padding:2px 9px;border-radius:6px;cursor:pointer;transition:all .18s;background:transparent;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;}
+.cat-tab:hover{border-color:rgba(170,255,0,.22);color:rgba(170,255,0,.7);}
+.cat-tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
+body.light .cat-tab{border-color:rgba(0,0,0,.1);color:rgba(0,0,0,.38);}
+body.light .cat-tab.active{background:rgba(92,153,0,.1);border-color:rgba(92,153,0,.25);color:#5C9900;}
+/* category label on each row */
+.cat-badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:.05em;text-transform:uppercase;margin-left:5px;vertical-align:middle;}
+.cb-os{background:rgba(170,255,0,.08);color:rgba(170,255,0,.55);border:1px solid rgba(170,255,0,.13);}
+.cb-widgets{background:rgba(96,165,250,.07);color:rgba(96,165,250,.65);border:1px solid rgba(96,165,250,.13);}
+.cb-automations{background:rgba(255,160,80,.07);color:rgba(255,160,80,.65);border:1px solid rgba(255,160,80,.13);}
+body.light .cb-os{background:rgba(92,153,0,.08);color:#5C9900;border-color:rgba(92,153,0,.18);}
+body.light .cb-widgets{background:rgba(30,120,220,.07);color:#1E78DC;border-color:rgba(30,120,220,.18);}
+body.light .cb-automations{background:rgba(220,100,30,.07);color:#DC641E;border-color:rgba(220,100,30,.18);}
 .prod-table{width:100%;border-collapse:collapse;table-layout:fixed;}
 .prod-table col.col-num{width:22px;}
 .prod-table col.col-name{width:auto;}
-.prod-table col.col-bar{width:130px;}
+.prod-table col.col-bar{width:110px;}
 .prod-table col.col-pct{width:42px;}
 .prod-table th{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);padding-bottom:10px;text-align:left;}
 body.light .prod-table th{color:rgba(0,0,0,.28);}
@@ -222,6 +237,12 @@ body.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
       <span class="panel-title">Top Products</span>
       <span class="panel-badge" id="prod-month">—</span>
     </div>
+    <div class="cat-tabs">
+      <button class="cat-tab active" data-cat="all" onclick="filterProds('all')">All</button>
+      <button class="cat-tab" data-cat="os" onclick="filterProds('os')">OS</button>
+      <button class="cat-tab" data-cat="widgets" onclick="filterProds('widgets')">Widgets</button>
+      <button class="cat-tab" data-cat="automations" onclick="filterProds('automations')">Automations</button>
+    </div>
     <table class="prod-table">
       <colgroup>
         <col class="col-num"/><col class="col-name"/><col class="col-bar"/><col class="col-pct"/>
@@ -340,6 +361,61 @@ setTs();
 // ── Token from URL ──
 const _tok = new URLSearchParams(location.search).get('token') || '';
 function apiUrl(path){ return _tok ? path + '?token=' + encodeURIComponent(_tok) : path; }
+
+// ── Product category filter ──
+let allProds = [];
+let activeCat = 'all';
+
+function catBadgeCls(cat) {
+  if (cat === 'os')          return 'cat-badge cb-os';
+  if (cat === 'widgets')     return 'cat-badge cb-widgets';
+  if (cat === 'automations') return 'cat-badge cb-automations';
+  return '';
+}
+function catLabel(cat) {
+  if (cat === 'os')          return 'OS';
+  if (cat === 'widgets')     return 'Widget';
+  if (cat === 'automations') return 'Auto';
+  return '';
+}
+
+function filterProds(cat) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  renderProds();
+}
+
+function renderProds() {
+  const tbody = document.getElementById('prod-tbody');
+  if (!tbody) return;
+  const filtered = activeCat === 'all' ? allProds : allProds.filter(p => p.cat === activeCat);
+  if (!filtered.length) {
+    const msg = allProds.length === 0 ? 'No approved quotations yet' : 'No products in this category';
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">${msg}</td></tr>`;
+    return;
+  }
+  const maxPct = Math.max(...filtered.map(p => p.pct), 1);
+  tbody.innerHTML = filtered.map((p, i) => {
+    const badgeCls = catBadgeCls(p.cat);
+    const badgeHtml = badgeCls ? `<span class="${badgeCls}">${catLabel(p.cat)}</span>` : '';
+    return `
+      <tr>
+        <td><span class="prod-num">${i + 1}</span></td>
+        <td>
+          <span class="prod-name">${esc(p.name)}${badgeHtml}</span>
+          <span class="prod-sub">${esc(p.sub || '')}</span>
+        </td>
+        <td>
+          <div class="prod-bar-wrap">
+            <div class="prod-bar-track">
+              <div class="prod-bar-fill" style="width:${Math.round((p.pct / maxPct) * 100)}%"></div>
+            </div>
+          </div>
+        </td>
+        <td><span class="prod-pct">${p.pct || 0}%</span></td>
+      </tr>`;
+  }).join('');
+}
 
 // ── Target / Ring ──
 const TGT_KEY = 'opxio_comb_tgt';
@@ -615,32 +691,10 @@ async function loadData() {
     animBars(monthly);
 
     // ── Render top products dynamically ──────────────────────────────────
-    const tbody = document.getElementById('prod-tbody');
-    if (tbody) {
-      const prods = j.topProducts || [];
-      const pm = document.getElementById('prod-month');
-      if (pm) { const n = new Date(); pm.textContent = n.toLocaleString('default',{month:'short',year:'numeric'}); }
-      if (prods.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px 0;text-align:center;color:rgba(255,255,255,.18);font-size:11px;">No approved quotations yet</td></tr>';
-      } else {
-        tbody.innerHTML = prods.map((p, i) => `
-          <tr>
-            <td><span class="prod-num">${i + 1}</span></td>
-            <td>
-              <span class="prod-name">${esc(p.name)}</span>
-              <span class="prod-sub">${esc(p.sub || '')}</span>
-            </td>
-            <td>
-              <div class="prod-bar-wrap">
-                <div class="prod-bar-track">
-                  <div class="prod-bar-fill" style="width:${p.barPct || p.pct || 0}%"></div>
-                </div>
-              </div>
-            </td>
-            <td><span class="prod-pct">${p.pct || 0}%</span></td>
-          </tr>`).join('');
-      }
-    }
+    const pm = document.getElementById('prod-month');
+    if (pm) { const n = new Date(); pm.textContent = n.toLocaleString('default',{month:'short',year:'numeric'}); }
+    allProds = j.topProducts || [];
+    renderProds();
 
     // Build revData from monthly paid (lost = 0, no lost-deal revenue data yet)
     revData = monthly.map(m => ({ m: m.m.split(' ')[0], col: m.v, lost: 0 }));
