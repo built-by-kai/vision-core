@@ -46,6 +46,7 @@ export default async function handler(req, res) {
     let thisMonthLost      = 0
     let leadsPotentialValue = 0
     const sourceCounts     = {}
+    const lostLeads        = []
 
     // Determine "converted" and "lost" labels — last two stages if not explicitly named
     const wonLabel  = ALL_STAGES.find(s => /won|convert/i.test(s))  || ALL_STAGES[ALL_STAGES.length - 2] || "Converted"
@@ -67,6 +68,8 @@ export default async function handler(req, res) {
         boardGroups[stage].push({ name, pkg })
         leadsPotentialValue += leadVal
       }
+
+      if (stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage })
 
       if (isThisMonth) {
         thisMonthLeads++
@@ -117,6 +120,7 @@ export default async function handler(req, res) {
       totalLostLeads,
       lostLabel,
       leadsPotentialValue,
+      lostLeads,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),

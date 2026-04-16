@@ -66,7 +66,7 @@ body.light .f-bg{background:rgba(0,0,0,.05);}
 /* Leads colors — lighter lime */
 .lm     {background:rgba(170,255,0,.45);}
 .lm-won {background:rgba(170,255,0,.20);}
-.lm-lost{background:rgba(255,255,255,.05);}
+.lm-lost{background:rgba(255,107,107,.35);}
 /* Deals colors — deeper green */
 .dm          {background:rgba(100,200,0,.55);}
 .dm-delivered{background:rgba(100,200,0,.82);}
@@ -348,27 +348,42 @@ function renderDealsList() {
   const list = document.getElementById('deals-list');
   if (!dealsData) { list.innerHTML = '<div class="deals-empty">Loading…</div>'; return; }
 
-  const rows = dealsTab === 'won' ? (dealsData.wonDeals || []) : (dealsData.lostDeals || []);
-
-  if (!rows.length) {
-    list.innerHTML = `<div class="deals-empty">No ${dealsTab} deals</div>`;
-    return;
+  if (dealsTab === 'won') {
+    const rows = dealsData.wonDeals || [];
+    if (!rows.length) { list.innerHTML = '<div class="deals-empty">No won deals</div>'; return; }
+    list.innerHTML = rows.map(d => {
+      const val  = d.value ? fmtRM(d.value) : '—';
+      const meta = [d.stage, d.pkg].filter(Boolean).join(' · ');
+      return `<div class="deal-row">
+        <div class="deal-info">
+          <div class="deal-name">${esc(d.name)}</div>
+          ${meta ? `<div class="deal-meta">${esc(meta)}</div>` : ''}
+        </div>
+        <span class="deal-badge won">Won</span>
+        <span class="deal-val">${val}</span>
+      </div>`;
+    }).join('');
+  } else {
+    // Merge lost leads + lost deals
+    const lostD = (dealsData.lostDeals || []).map(d => ({ ...d, _type: 'deal' }));
+    const lostL = (pipeData?.lostLeads  || []).map(d => ({ ...d, _type: 'lead' }));
+    const rows  = [...lostD, ...lostL];
+    if (!rows.length) { list.innerHTML = '<div class="deals-empty">No lost leads or deals</div>'; return; }
+    list.innerHTML = rows.map(d => {
+      const val    = d.value ? fmtRM(d.value) : '—';
+      const reason = d.lostReason ? `<span style="color:#FF6B6B;"> · ${esc(d.lostReason)}</span>` : '';
+      const meta   = [d.stage, d.pkg].filter(Boolean).join(' · ');
+      const badge  = d._type === 'lead' ? 'Lead' : 'Deal';
+      return `<div class="deal-row">
+        <div class="deal-info">
+          <div class="deal-name">${esc(d.name)}</div>
+          <div class="deal-meta">${esc(meta)}${reason}</div>
+        </div>
+        <span class="deal-badge lost">${badge}</span>
+        <span class="deal-val">${val}</span>
+      </div>`;
+    }).join('');
   }
-
-  list.innerHTML = rows.map(d => {
-    const val = d.value ? fmtRM(d.value) : '—';
-    const meta = [d.stage, d.pkg].filter(Boolean).join(' · ');
-    const reason = dealsTab === 'lost' && d.lostReason
-      ? `<span style="color:#FF6B6B;margin-left:6px;font-size:9px;">· ${esc(d.lostReason)}</span>` : '';
-    return `<div class="deal-row">
-      <div class="deal-info">
-        <div class="deal-name">${esc(d.name)}</div>
-        ${meta ? `<div class="deal-meta">${esc(meta)}${reason}</div>` : ''}
-      </div>
-      <span class="deal-badge ${dealsTab === 'won' ? 'won' : 'lost'}">${dealsTab}</span>
-      <span class="deal-val">${val}</span>
-    </div>`;
-  }).join('');
 }
 
 // ── Data load ─────────────────────────────────────────────────────────────────
