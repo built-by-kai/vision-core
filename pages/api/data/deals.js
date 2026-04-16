@@ -69,6 +69,7 @@ export default async function handler(req, res) {
       const value = p["Total Value"]?.number || p["Estimated Value"]?.number || p["Deal Value"]?.number || p["Value"]?.number || p["Fee"]?.number || p["Contract Value"]?.number || 0
       const pkg   = p[packageField]?.select?.name || ""
       const lostReason = p["Lost Reason"]?.select?.name || null
+      const pageUrl    = `https://www.notion.so/${deal.id.replace(/-/g, "")}`
       const d     = new Date(deal.created_time)
       const isThisMonth = d.getMonth() === month && d.getFullYear() === year
 
@@ -81,9 +82,9 @@ export default async function handler(req, res) {
       }
       if (WON_STAGES.includes(stage)) {
         buildingValue += value
-        wonDeals.push({ name, value, stage, pkg })
+        wonDeals.push({ name, value, stage, pkg, url: pageUrl })
       }
-      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg })
+      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl })
       if (isThisMonth && stage === wonLabel)       wonThisMonth++
       if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
     }

@@ -66,7 +66,7 @@ body.light .f-bg{background:rgba(0,0,0,.05);}
 /* Leads colors — lighter lime */
 .lm     {background:rgba(170,255,0,.45);}
 .lm-won {background:rgba(170,255,0,.20);}
-.lm-lost{background:rgba(255,107,107,.35);}
+.lm-lost{background:rgba(251,146,60,.35);}
 /* Deals colors — deeper green */
 .dm          {background:rgba(100,200,0,.55);}
 .dm-delivered{background:rgba(100,200,0,.82);}
@@ -113,7 +113,8 @@ body.light .deal-name{color:rgba(0,0,0,.8);}
 body.light .deal-meta{color:rgba(0,0,0,.3);}
 .deal-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
 .deal-badge.won{background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.18);}
-.deal-badge.lost{background:rgba(255,107,107,.1);color:#FF6B6B;border:1px solid rgba(255,107,107,.18);}
+.deal-badge.lost{background:rgba(251,146,60,.12);color:#FB923C;border:1px solid rgba(251,146,60,.22);}
+.lost-reason{display:inline-block;font-size:9px;font-weight:700;color:#FB923C;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.18);border-radius:4px;padding:1px 6px;margin-top:4px;}
 .deal-val{font-size:12px;font-weight:900;color:rgba(255,255,255,.5);min-width:52px;text-align:right;flex-shrink:0;letter-spacing:-.4px;}
 body.light .deal-val{color:rgba(0,0,0,.4);}
 .deals-empty{padding:28px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.2);font-weight:600;}
@@ -176,9 +177,9 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
   <div class="card stat">
-    <div class="s-dot" style="background:#FF6B6B;opacity:.7;"></div>
+    <div class="s-dot" style="background:#FB923C;opacity:.7;"></div>
     <div class="s-lbl">Lost</div>
-    <div class="s-val" style="color:#FF6B6B;" id="d-lost">—</div>
+    <div class="s-val" style="color:#FB923C;" id="d-lost">—</div>
     <div class="s-sub" id="d-lost-sub">Leads + deals combined</div>
   </div>
   <div class="card stat">
@@ -354,7 +355,8 @@ function renderDealsList() {
     list.innerHTML = rows.map(d => {
       const val  = d.value ? fmtRM(d.value) : '—';
       const meta = [d.stage, d.pkg].filter(Boolean).join(' · ');
-      return `<div class="deal-row">
+      const click = d.url ? `onclick="window.open('${d.url}','_blank')" style="cursor:pointer;"` : '';
+      return `<div class="deal-row" ${click}>
         <div class="deal-info">
           <div class="deal-name">${esc(d.name)}</div>
           ${meta ? `<div class="deal-meta">${esc(meta)}</div>` : ''}
@@ -364,20 +366,21 @@ function renderDealsList() {
       </div>`;
     }).join('');
   } else {
-    // Merge lost leads + lost deals
     const lostD = (dealsData.lostDeals || []).map(d => ({ ...d, _type: 'deal' }));
     const lostL = (pipeData?.lostLeads  || []).map(d => ({ ...d, _type: 'lead' }));
     const rows  = [...lostD, ...lostL];
     if (!rows.length) { list.innerHTML = '<div class="deals-empty">No lost leads or deals</div>'; return; }
     list.innerHTML = rows.map(d => {
       const val    = d.value ? fmtRM(d.value) : '—';
-      const reason = d.lostReason ? `<span style="color:#FF6B6B;"> · ${esc(d.lostReason)}</span>` : '';
       const meta   = [d.stage, d.pkg].filter(Boolean).join(' · ');
+      const reason = d.lostReason ? `<div><span class="lost-reason">${esc(d.lostReason)}</span></div>` : '';
       const badge  = d._type === 'lead' ? 'Lead' : 'Deal';
-      return `<div class="deal-row">
+      const click  = d.url ? `onclick="window.open('${d.url}','_blank')" style="cursor:pointer;"` : '';
+      return `<div class="deal-row" ${click}>
         <div class="deal-info">
           <div class="deal-name">${esc(d.name)}</div>
-          <div class="deal-meta">${esc(meta)}${reason}</div>
+          ${meta ? `<div class="deal-meta">${esc(meta)}</div>` : ''}
+          ${reason}
         </div>
         <span class="deal-badge lost">${badge}</span>
         <span class="deal-val">${val}</span>
