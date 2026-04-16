@@ -114,17 +114,23 @@ body.light .pri-count{color:#111;}
 .pri-pct{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);width:28px;text-align:right;flex-shrink:0;}
 body.light .pri-pct{color:rgba(0,0,0,.2);}
 
-/* ── STATUS BARS (same style as priority) ── */
-.status-bars{display:flex;flex-direction:column;gap:10px;}
-.st-row{display:flex;align-items:center;gap:10px;}
-.st-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.st-label{font-size:11px;font-weight:700;width:70px;flex-shrink:0;color:rgba(255,255,255,.5);}
-body.light .st-label{color:rgba(0,0,0,.4);}
-.st-track{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;position:relative;}
-body.light .st-track{background:rgba(0,0,0,.05);}
-.st-fill{height:8px;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
-.st-count{font-size:12px;font-weight:800;color:#fff;width:28px;text-align:right;flex-shrink:0;}
-body.light .st-count{color:#111;}
+/* ── PROJECT PROGRESS LIST ── */
+.proj-scroll{max-height:260px;overflow-y:auto;padding-right:2px;}
+.proj-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+body.light .proj-item{border-bottom-color:rgba(0,0,0,.05);}
+.proj-item:last-child{border-bottom:none;}
+.proj-info{flex:1;min-width:0;}
+.proj-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .proj-name{color:#111;}
+.proj-meta{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .proj-meta{color:rgba(0,0,0,.3);}
+.proj-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
+body.light .proj-badge{background:rgba(0,0,0,.05);color:rgba(0,0,0,.35);}
+.proj-bar-wrap{width:52px;flex-shrink:0;}
+.proj-track{background:rgba(255,255,255,.06);border-radius:999px;height:5px;overflow:hidden;}
+body.light .proj-track{background:rgba(0,0,0,.06);}
+.proj-fill{height:5px;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.proj-pct{font-size:12px;font-weight:900;min-width:36px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
 
 
 .empty{padding:40px;text-align:center;font-size:12px;color:rgba(255,255,255,.18);}
@@ -193,12 +199,13 @@ body.light .empty{color:rgba(0,0,0,.18);}
     </div>
     <div class="pri-bars" id="pri-bars"></div>
   </div>
-  <!-- RIGHT: Project Status -->
+  <!-- RIGHT: Project Progress -->
   <div class="card panel">
     <div class="panel-hdr">
-      <span class="panel-title">Project Status</span>
+      <span class="panel-title">Project Progress</span>
+      <span class="panel-badge" id="proj-badge">—</span>
     </div>
-    <div class="status-bars" id="status-visual"></div>
+    <div class="proj-scroll" id="proj-list"></div>
   </div>
 </div>
 
@@ -363,29 +370,55 @@ function renderPriorities(pri){
   }).join('');
 }
 
-function renderStatusVisual(counts){
-  const items=[
-    {val:counts.active||0,lbl:'Active',color:'var(--g)'},
-    {val:counts.awaiting||0,lbl:'Awaiting',color:'var(--amber)'},
-    {val:counts.review||0,lbl:'In Review',color:'#60A5FA'},
-    {val:counts.hold||0,lbl:'On Hold',color:'rgba(255,255,255,.2)'},
-    {val:counts.done||0,lbl:'Completed',color:'#A78BFA'},
-  ];
-  const maxVal=Math.max(...items.map(i=>i.val),1);
+function renderProjectProgress(builds, completed){
+  // Show active/in-review/awaiting builds sorted by completion asc (lowest first — most at risk)
+  // Then append completed projects at the bottom
+  const active = (builds||[]).slice().sort((a,b)=>(a.overallPct||0)-(b.overallPct||0));
+  const done   = (completed||[]).slice(0,4); // show last 4 completed for context
 
-  let html='<div class="status-bars">';
-  items.forEach(i=>{
-    const w=Math.round((i.val/maxVal)*100);
-    html+=`<div class="st-row">
-      <div class="st-dot" style="background:${i.color}"></div>
-      <span class="st-label">${i.lbl}</span>
-      <div class="st-track"><div class="st-fill" style="width:${w}%;background:${i.color}"></div></div>
-      <span class="st-count">${i.val}</span>
+  const all = [...active, ...done];
+  document.getElementById('proj-badge').textContent=(active.length)+' active';
+
+  if(!all.length){
+    document.getElementById('proj-list').innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.18);padding:12px 0;">No projects yet</div>';
+    return;
+  }
+
+  const statusColor={active:'var(--g)',review:'#60A5FA',awaiting:'var(--amber)',hold:'rgba(255,255,255,.25)',done:'#A78BFA'};
+  const statusLabel={active:'Active',review:'Review',awaiting:'Awaiting',hold:'On Hold',done:'Done'};
+
+  function pctColor(pct){
+    if(pct>=80)return'#AAFF00';
+    if(pct>=50)return'#FBBF24';
+    return'#FF6B6B';
+  }
+
+  let html='';
+  for(const p of all){
+    const pct=p.overallPct||0;
+    const col=p.status==='done'?'#A78BFA':pctColor(pct);
+    const ts=p.taskSummary||{};
+    const taskInfo=ts.total>0?`${ts.done||0}/${ts.total} tasks done`:'No tasks';
+    const meta=[p.client,p.phase&&p.phase!=='—'?`Phase: ${p.phase}`:null].filter(Boolean).join(' · ')||taskInfo;
+    const badgeLabel=statusLabel[p.status]||p.status||'';
+    const badgeColor=statusColor[p.status]||'rgba(255,255,255,.25)';
+
+    html+=`<div class="proj-item">
+      <div class="proj-info">
+        <div class="proj-name" title="${esc(p.name)}">${esc(p.name)}</div>
+        <div class="proj-meta">${esc(meta)}</div>
+      </div>
+      <span class="proj-badge" style="color:${badgeColor};border:1px solid ${badgeColor}22;">${esc(badgeLabel)}</span>
+      <div class="proj-bar-wrap">
+        <div class="proj-track">
+          <div class="proj-fill" style="width:${Math.max(pct>0?4:0,pct)}%;background:${col};"></div>
+        </div>
+      </div>
+      <span class="proj-pct" style="color:${col};">${pct}%</span>
     </div>`;
-  });
-  html+='</div>';
+  }
 
-  document.getElementById('status-visual').innerHTML=html;
+  document.getElementById('proj-list').innerHTML=html;
 }
 
 function render(data){
@@ -395,7 +428,7 @@ function render(data){
   renderDonut(ov.projectTypes||[], ov.totalProjects||0);
   renderTaskRing(ov.taskStats||{});
   renderPriorities(ov.priorities||{});
-  renderStatusVisual(counts);
+  renderProjectProgress(data.builds||[], data.completed||[]);
 }
 
 async function loadData(){

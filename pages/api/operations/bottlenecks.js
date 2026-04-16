@@ -2,7 +2,7 @@
 // Queries Content Production DB + Tasks DB
 // Employee Hub DB for name resolution
 
-import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../lib/supabase"
 
 
 export default async function handler(req, res) {

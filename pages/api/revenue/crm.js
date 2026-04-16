@@ -3,7 +3,7 @@
 // Supports ?from=YYYY-MM-DD&to=YYYY-MM-DD date filtering for revenue
 // Environment variables: NOTION_API_KEY
 
-import { getClientByToken, getNotionToken, resolveDB } from "../../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
 
 export default async function handler(req, res) {
