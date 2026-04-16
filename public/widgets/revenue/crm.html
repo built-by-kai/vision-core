@@ -165,14 +165,14 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
-    <div class="s-lbl">Potential Value</div>
+    <div class="s-lbl" id="d-potential-lbl">Potential Value</div>
     <div class="s-val" id="d-potential">—</div>
-    <div class="s-sub">Pre-win deal value</div>
+    <div class="s-sub" id="d-potential-sub">Pre-win deal value</div>
   </div>
   <div class="card stat" id="d-delivery-card" style="display:none;">
     <div class="s-dot" style="background:#34D399;opacity:.7;"></div>
     <div class="s-lbl" id="d-delivery-lbl">In Delivery</div>
-    <div class="s-val green" id="d-building">—</div>
+    <div class="s-val" id="d-building">—</div>
     <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
   <div class="card stat">
@@ -386,7 +386,20 @@ async function loadData() {
     renderDealsList();
 
     document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
-    document.getElementById('d-potential').textContent = jd.potentialValue ? fmtRM(jd.potentialValue) : '—';
+    // Potential value: show pre-win if available, else fall back to active deal value
+    if (jd.potentialValue) {
+      document.getElementById('d-potential').textContent     = fmtRM(jd.potentialValue);
+      document.getElementById('d-potential-lbl').textContent = 'Potential Value';
+      document.getElementById('d-potential-sub').textContent = 'Pre-win deal value';
+    } else if (jd.buildingValue) {
+      document.getElementById('d-potential').textContent     = fmtRM(jd.buildingValue);
+      document.getElementById('d-potential-lbl').textContent = 'Active Deal Value';
+      document.getElementById('d-potential-sub').textContent = 'Won deals in progress';
+    } else {
+      document.getElementById('d-potential').textContent     = '—';
+      document.getElementById('d-potential-lbl').textContent = 'Deal Value';
+      document.getElementById('d-potential-sub').textContent = 'No active deals';
+    }
     document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
 
     // ── Active Deals (in-progress won stages, excluding delivered) ────────
