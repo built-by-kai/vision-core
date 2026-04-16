@@ -15,8 +15,9 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
-  const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
-  const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
+  const CONTENT_DB   = resolveDB(client, 'CONTENT_DB',   '3188b289e31a80e39bbbf1c01ffdd56b')
+  const TASKS_DB     = resolveDB(client, 'TASKS_DB',     '3348b289e31a80dc89e1eb7ba5b49b1a')
+  const EMPLOYEES_DB = resolveDB(client, 'EMPLOYEES_DB', null)  // null = use People field instead
 
   // ── Field name mapping (per-client overrides via Supabase field_map) ──────
   const F = {
@@ -77,9 +78,27 @@ export default async function handler(req, res) {
       return all;
     }
 
-    const getStatus  = p => p?.type === 'status' ? p.status?.name : null;
-    const getDate    = p => p?.type === 'date'   ? p.date?.start : null;
-    const getPeople  = p => p?.type === 'people' ? (p.people || []).map(u => u.name).filter(Boolean) : [];
+    const getStatus = p => p?.type === 'status' ? p.status?.name : null;
+    const getDate   = p => p?.type === 'date'   ? p.date?.start : null;
+
+    // Pre-fetch employees if client uses a relation-based assignee field
+    let employeeMap = {}; // { notionPageId → displayName }
+    if (EMPLOYEES_DB) {
+      const empPages = await queryAll(EMPLOYEES_DB).catch(() => []);
+      for (const ep of empPages) {
+        const titleProp = Object.values(ep.properties).find(v => v.type === 'title');
+        const name = titleProp ? (titleProp.title || []).map(t => t.plain_text).join('') : '';
+        if (name) employeeMap[ep.id] = name;
+      }
+    }
+
+    // Resolve assignee names from either a People field or a Relation-to-Employee field
+    const getAssignees = prop => {
+      if (!prop) return [];
+      if (prop.type === 'people')   return (prop.people   || []).map(u => u.name).filter(Boolean);
+      if (prop.type === 'relation') return (prop.relation || []).map(r => employeeMap[r.id]).filter(Boolean);
+      return [];
+    };
 
     const now       = new Date();
     const todayStr  = now.toISOString().slice(0, 10);
@@ -111,7 +130,7 @@ export default async function handler(req, res) {
       if (status === L.contentQC)           contentQC++;
 
       // Count active content per assignee
-      const people = getPeople(p[F.CONTENT_ASSIGNED]);
+      const people = getAssignees(p[F.CONTENT_ASSIGNED]);
       for (const name of people) {
         assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
       }
