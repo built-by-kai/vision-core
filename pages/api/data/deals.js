@@ -29,6 +29,8 @@ export default async function handler(req, res) {
     const _qy   = req.query.year  ? parseInt(req.query.year)      : null
     const month = (_qm !== null && !isNaN(_qm)) ? _qm : now.getMonth()
     const year  = (_qy !== null && !isNaN(_qy)) ? _qy : now.getFullYear()
+    // When a specific month is selected, filter ALL data by Created On
+    const monthFiltered = _qm !== null
 
     const [deals, proposals, quotations] = await Promise.all([
       queryDB(DEALS_DB,      null, notionToken),
@@ -78,18 +80,21 @@ export default async function handler(req, res) {
       const d     = new Date(deal.created_time)
       const isThisMonth = d.getMonth() === month && d.getFullYear() === year
 
-      if (stage in stages) stages[stage]++
+      // When month filter active, only count deals created in that month
+      const inScope = monthFiltered ? isThisMonth : true
 
-      if (POTENTIAL_STAGES.includes(stage)) {
+      if (inScope && stage in stages) stages[stage]++
+
+      if (inScope && POTENTIAL_STAGES.includes(stage)) {
         potentialValue += value
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, value, pkg })
       }
-      if (WON_STAGES.includes(stage)) {
+      if (inScope && WON_STAGES.includes(stage)) {
         buildingValue += value
         wonDeals.push({ name, value, stage, pkg, url: pageUrl, created: deal.created_time })
       }
-      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl, created: deal.created_time })
+      if (inScope && stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl, created: deal.created_time })
       if (isThisMonth && stage === wonLabel)       wonThisMonth++
       if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
       if (isThisMonth && stage === lostLabel)      { lostThisMonth++; lostValueThisMonth += value; }
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
     const activeWonStages  = WON_STAGES.filter(s => s !== deliveredLabel)
     const deliveryStage    = activeWonStages[0] || null   // e.g. "Building" / "Client Active"
     const balanceStage     = activeWonStages[1] || null   // e.g. "Balance Due" (Opxio only)
-    // Active Deals = only in-progress won stages, not delivered
+    // Active Deals = only in-progress won stages, not delivered (already month-scoped via stages)
     const activeDealsCount = activeWonStages.reduce((s, st) => s + (stages[st] || 0), 0)
 
     // ── Value totals ───────────────────────────────────────────────────────

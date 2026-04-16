@@ -32,6 +32,8 @@ export default async function handler(req, res) {
     const _qy   = req.query.year  ? parseInt(req.query.year)      : null
     const month = (_qm !== null && !isNaN(_qm)) ? _qm : now.getMonth()
     const year  = (_qy !== null && !isNaN(_qy)) ? _qy : now.getFullYear()
+    // When a specific month is selected, filter ALL data by Created On
+    const monthFiltered = _qm !== null
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
@@ -67,15 +69,19 @@ export default async function handler(req, res) {
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
 
-      if (stage in stages) stages[stage]++
+      // When month filter is active, only count leads created in that month
+      // When no filter (live view), count all leads for the funnel
+      const inScope = monthFiltered ? isThisMonth : true
 
-      if (ACTIVE_STAGES.includes(stage)) {
+      if (inScope && stage in stages) stages[stage]++
+
+      if (inScope && ACTIVE_STAGES.includes(stage)) {
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, pkg })
         leadsPotentialValue += leadVal
       }
 
-      if (stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
+      if (inScope && stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
 
       if (isThisMonth) {
         thisMonthLeads++
@@ -87,12 +93,14 @@ export default async function handler(req, res) {
       const mDate = new Date(year, month - 5, 1)
       if (created >= mDate && mKey in monthly) monthly[mKey]++
 
-      // Handle both multi_select and select Source field types
-      const srcs = p.Source?.multi_select || (p.Source?.select ? [p.Source.select] : [])
-      if (srcs.length) {
-        for (const s of srcs) sourceCounts[s.name] = (sourceCounts[s.name] || 0) + 1
-      } else {
-        sourceCounts["Other"] = (sourceCounts["Other"] || 0) + 1
+      // Sources — also scoped to selected month when filtered
+      if (inScope) {
+        const srcs = p.Source?.multi_select || (p.Source?.select ? [p.Source.select] : [])
+        if (srcs.length) {
+          for (const s of srcs) sourceCounts[s.name] = (sourceCounts[s.name] || 0) + 1
+        } else {
+          sourceCounts["Other"] = (sourceCounts["Other"] || 0) + 1
+        }
       }
     }
 
@@ -100,9 +108,14 @@ export default async function handler(req, res) {
       .filter(s => boardGroups[s])
       .map(s => ({ stage: s, leads: boardGroups[s] }))
 
+    // totalActive: when month-filtered, count only leads created that month in active stages
+    // when live, count all current active leads
     const totalActive = leads.filter(l => {
       const s = l.properties[stageField]?.status?.name || l.properties[stageField]?.select?.name || ""
-      return ACTIVE_STAGES.includes(s)
+      if (!ACTIVE_STAGES.includes(s)) return false
+      if (!monthFiltered) return true
+      const created = new Date(l.created_time)
+      return created.getMonth() === month && created.getFullYear() === year
     }).length
 
     const convTotal = thisMonthConverted + thisMonthLost
