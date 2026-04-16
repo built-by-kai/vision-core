@@ -1,10 +1,8 @@
 // Vercel Serverless Function — Content Production Stats
 // Returns broad overview stats for the stat card widget
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const CONTENT_DB_ID  = '3188b289e31a80e39bbbf1c01ffdd56b';
-const TASKS_DB_ID    = '3348b289e31a80dc89e1eb7ba5b49b1a';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,6 +15,8 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
+  const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
 
   try {
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
     // Fetch all active content (not Done) and all active tasks (not Done) in parallel
     const [contentPages, taskPages] = await Promise.all([
-      queryAll(CONTENT_DB_ID, {
+      queryAll(CONTENT_DB, {
         and: [
           {
             or: [
@@ -61,8 +61,8 @@ export default async function handler(req, res) {
             ]
           }
         ]
-      }).catch(() => queryAll(CONTENT_DB_ID)), // fallback: fetch all
-      queryAll(TASKS_DB_ID).catch(() => []),
+      }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
+      queryAll(TASKS_DB).catch(() => []),
     ]);
 
     // ── Content stats ──────────────────────────────────────────

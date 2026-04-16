@@ -2,10 +2,8 @@
 // Queries Tasks DB only (already shared with integration),
 // fetches individual employee pages by ID, groups stats per employee.
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const TASKS_DB_ID     = '3348b289e31a80dc89e1eb7ba5b49b1a';
-const EMPLOYEES_DB_ID = 'bc5b99b59468498e8a294149d6f03134';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,6 +16,8 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
+  const EMPLOYEE_DB = resolveDB(client, 'EMPLOYEE_DB', 'bc5b99b59468498e8a294149d6f03134')
 
   try {
 
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     do {
       const body = { page_size: 100 };
       if (cursor) body.start_cursor = cursor;
-      const r = await fetch(`https://api.notion.com/v1/databases/${TASKS_DB_ID}/query`, {
+      const r = await fetch(`https://api.notion.com/v1/databases/${TASKS_DB}/query`, {
         method: 'POST', headers, body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(`Tasks query failed: ${await r.text()}`);
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const empIdSet = new Set();
 
     try {
-      const empRes = await fetch(`https://api.notion.com/v1/databases/${EMPLOYEES_DB_ID}/query`, {
+      const empRes = await fetch(`https://api.notion.com/v1/databases/${EMPLOYEE_DB}/query`, {
         method: 'POST', headers, body: JSON.stringify({ page_size: 100 }),
       });
       if (empRes.ok) {

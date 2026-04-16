@@ -2,9 +2,8 @@
 // Queries Monthly Campaigns DB for active campaign metrics
 // Environment variables: NOTION_API_KEY
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const CAMPAIGNS_DB_ID = '3188b289e31a806bac9de1ee09aff2ad';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,6 +16,7 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const CAMPAIGNS_DB = resolveDB(client, 'CAMPAIGNS_DB', '3188b289e31a806bac9de1ee09aff2ad')
 
   try {
 
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       return 0;
     };
 
-    const campaigns = await queryAll(CAMPAIGNS_DB_ID);
+    const campaigns = await queryAll(CAMPAIGNS_DB);
 
     let activeCampaigns = 0;
     let totalDeliverables = 0;

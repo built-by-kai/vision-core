@@ -5,9 +5,8 @@
 // Only affects tasks linked to the same Content Production page — not globally
 // Environment variables: NOTION_API_KEY
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const TASKS_DB_ID = '3348b289e31a80dc89e1eb7ba5b49b1a';
 
 function formatDuration(minutes) {
   minutes = Math.abs(Math.round(minutes));
@@ -41,6 +40,7 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
 
   try {
 
@@ -142,7 +142,7 @@ export default async function handler(req, res) {
     const contentProductionId = contentProductionLinks[0].id;
 
     // Step 3: Find all tasks linked to the same Content Production page
-    const queryRes = await fetch(`https://api.notion.com/v1/databases/${TASKS_DB_ID}/query`, {
+    const queryRes = await fetch(`https://api.notion.com/v1/databases/${TASKS_DB}/query`, {
       method: 'POST',
       headers,
       body: JSON.stringify({

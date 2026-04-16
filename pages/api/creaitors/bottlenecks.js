@@ -2,11 +2,8 @@
 // Queries Content Production DB + Tasks DB
 // Employee Hub DB for name resolution
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const CONTENT_DB_ID  = '3188b289e31a80e39bbbf1c01ffdd56b';
-const TASKS_DB_ID    = '3348b289e31a80dc89e1eb7ba5b49b1a';
-const EMPLOYEE_DB_ID = 'bc5b99b59468498e8a294149d6f03134';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,6 +16,9 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
+  const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
+  const EMPLOYEE_DB = resolveDB(client, 'EMPLOYEE_DB', 'bc5b99b59468498e8a294149d6f03134')
 
   try {
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
 
     // Fetch all three DBs in parallel
     const [contentPages, taskPages, empPages] = await Promise.all([
-      queryAll(CONTENT_DB_ID, {
+      queryAll(CONTENT_DB, {
         or: [
           { property: 'Content Status', status: { equals: 'Revision Needed' } },
           { property: 'Content Status', status: { equals: 'Final QC Review' } },
@@ -79,13 +79,13 @@ export default async function handler(req, res) {
           { property: 'Content Status', status: { equals: 'Pre-Production' } },
         ],
       }),
-      queryAll(TASKS_DB_ID, {
+      queryAll(TASKS_DB, {
         or: [
           { property: 'Task Status', status: { equals: 'Pending QC Review' } },
           { property: 'Task Status', status: { equals: 'Review Needed' } },
         ],
       }),
-      queryAll(EMPLOYEE_DB_ID).catch(() => []),
+      queryAll(EMPLOYEE_DB).catch(() => []),
     ]);
 
     // Build employee name map: id -> first name

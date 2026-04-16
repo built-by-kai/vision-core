@@ -2,9 +2,8 @@
 // Queries Content Production DB only
 // Environment variables: NOTION_API_KEY
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const CONTENT_DB_ID = '3188b289e31a80e39bbbf1c01ffdd56b';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,6 +16,7 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
 
   try {
     const headers = {
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       return prop.date.start;
     };
 
-    const contentPages = await queryAll(CONTENT_DB_ID);
+    const contentPages = await queryAll(CONTENT_DB);
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());

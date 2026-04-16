@@ -2,9 +2,8 @@
 // Queries Sales CRM - Pipeline for active leads, follow-ups, won/lost
 // Environment variables: NOTION_API_KEY, NOTION_DATABASE_ID
 
-import { getClientByToken, getNotionToken } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
 
-const DATABASE_ID = process.env.NOTION_DATABASE_ID || '3188b289e31a81da8939cb08d15be667';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,6 +16,7 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token)
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
+  const CRM_DB = resolveDB(client, 'CRM_DB', '3188b289e31a81da8939cb08d15be667')
 
   try {
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       const body = { page_size: 100 };
       if (startCursor) body.start_cursor = startCursor;
 
-      const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+      const response = await fetch(`https://api.notion.com/v1/databases/${CRM_DB}/query`, {
         method: 'POST', headers, body: JSON.stringify(body),
       });
 
