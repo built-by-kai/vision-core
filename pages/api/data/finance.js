@@ -183,44 +183,49 @@ function normalisePkg(raw) {
     if (key.toLowerCase() === lower) return key
   }
 
-  // Common aliases
+  // Common aliases — old names, shorthand, and Notion slug variants
   const aliases = {
-    "sales os": "Revenue OS",
-    "revenue os": "Revenue OS",
-    "full os": "Business OS",
-    "ops os": "Operations OS",
-    "content os": "Marketing OS",
-    "team os": "Team OS",
-    "retention os": "Retention OS",
-    "starter os": "Micro Install",
-    "micro": "Micro Install",
-    "micro 1": "Micro Install — 1 Module",
-    "micro 2": "Micro Install — 2 Modules",
-    "micro 3": "Micro Install — 3 Modules",
+    // OS aliases
+    "sales os":              "Revenue OS",
+    "full os":               "Business OS (Revenue OS + Operations OS)",
+    "business os":           "Business OS (Revenue OS + Operations OS)",
+    "ops os":                "Operations OS",
+    "content os":            "Marketing OS",
+    "team os":               "Team OS",
+    "retention os":          "Retention OS",
+    "agency os":             "Agency OS (Business OS + Marketing OS)",
+    "intelligence os":       "Intelligence OS",
+    "micro install":         "Micro Install — 1 Module",
+    "starter os":            "Micro Install — 1 Module",
+    "micro":                 "Micro Install — 1 Module",
+    "micro 1":               "Micro Install — 1 Module",
+    "micro 2":               "Micro Install — 2 Modules",
+    "micro 3":               "Micro Install — 3 Modules",
     // Widgets
-    "dashboard": "Enhanced Dashboard",
-    "enhanced dashboard": "Enhanced Dashboard",
-    "custom widget": "Custom Widget",
-    "static dashboard": "Static Dashboard Hub",
-    // Automations
-    "project kickoff": "Project Kickoff",
-    "campaign kickoff": "Campaign Kickoff",
+    "dashboard":             "Enhanced Dashboard",
+    "custom widget":         "Custom Widget",
+    "performance dashboard": "Performance Dashboard Database",
+    // Kickoff automations (old names)
+    "project kickoff":           "Project Kickoff Automation",
+    "campaign kickoff":          "Campaign Kickoff Automation",
     "client onboarding kickoff": "Client Onboarding Kickoff",
-    "renewal kickoff": "Renewal Kickoff",
-    "hiring kickoff": "Hiring Kickoff",
-    // Add-ons
-    "document generation": "Document Generation",
-    "doc gen": "Document Generation",
-    "lead capture": "Lead Capture",
-    "whatsapp": "WhatsApp Automation",
-    "module expansion": "Module Expansion",
-    "client portal": "Client Portal View",
-    "ads platform": "Ads Platform Integration",
-    "payment gateway": "Payment Gateway Integration",
-    "google calendar": "Google Calendar Sync",
-    "google sheets": "Google Sheets Sync",
-    "kol tracker": "KOL & Influencer Tracker",
-    "client report": "Client Report Generator",
+    "renewal kickoff":           "Renewal Kickoff Automation",
+    "hiring kickoff":            "Hiring Kickoff Automation",
+    // Add-ons (old names)
+    "document generation":    "Document Generation Suite",
+    "doc gen":                "Document Generation Suite",
+    "lead capture":           "Lead Capture System",
+    "module expansion":       "Additional System Module",
+    "additional module":      "Additional System Module",
+    "client portal":          "Client Portal View",
+    "ads platform":           "Ads Platform Integration",
+    "ai agent":               "AI Agent Integration",
+    "api integration":        "API / External Integration",
+    "workflow integration":   "Automation & Workflow Integration (Make/N8N)",
+    "make automation":        "Automation & Workflow Integration (Make/N8N)",
+    "n8n automation":         "Automation & Workflow Integration (Make/N8N)",
+    "automation within":      "Automation — Within Database",
+    "automation cross":       "Automation — Cross-Database",
   }
   if (aliases[lower]) return aliases[lower]
 
@@ -228,47 +233,44 @@ function normalisePkg(raw) {
 }
 
 const PRODUCT_CATALOGUE = {
-  // ── OS Packages ──
-  "Business OS":      { sub: "Revenue + Operations",             cat: "os" },
-  "Agency OS":        { sub: "Revenue + Ops + Marketing",        cat: "os" },
-  "Revenue OS":       { sub: "Lead to cash — full cycle",        cat: "os" },
-  "Operations OS":    { sub: "Workflow & delivery",              cat: "os" },
-  "Marketing OS":     { sub: "Campaigns & content",              cat: "os" },
-  "Team OS":          { sub: "Team, hiring & performance",       cat: "os" },
-  "Retention OS":     { sub: "Retention & client health",        cat: "os" },
-  "Intelligence OS":  { sub: "Prospect & market intelligence",   cat: "os" },
-  "Micro Install":              { sub: "Entry point · 1–3 modules", cat: "os" },
-  "Micro Install — 1 Module":   { sub: "1 module entry point",     cat: "os" },
-  "Micro Install — 2 Modules":  { sub: "2 module entry point",     cat: "os" },
-  "Micro Install — 3 Modules":  { sub: "3 module entry point",     cat: "os" },
+  // ── OS Packages (Layer 1) ──────────────────────────────────────────────────
+  "Revenue OS":                            { sub: "Lead to cash — full cycle",        cat: "os" },
+  "Operations OS":                         { sub: "Workflow & delivery",              cat: "os" },
+  "Business OS (Revenue OS + Operations OS)": { sub: "Revenue + Operations",         cat: "os" },
+  "Marketing OS":                          { sub: "Campaigns, content & ads",        cat: "os" },
+  "Agency OS (Business OS + Marketing OS)":   { sub: "Revenue + Ops + Marketing",    cat: "os" },
+  "Team OS":                               { sub: "Hiring, onboarding & performance", cat: "os" },
+  "Retention OS":                          { sub: "Client health & renewals",         cat: "os" },
+  "Intelligence OS":                       { sub: "Prospect & market intelligence",   cat: "os" },
+  "Micro Install — 1 Module":              { sub: "Base OS + 1 module",               cat: "os" },
+  "Micro Install — 2 Modules":             { sub: "Base OS + 2 modules",              cat: "os" },
+  "Micro Install — 3 Modules":             { sub: "Base OS + 3 modules",              cat: "os" },
 
-  // ── Dashboard Widgets ──
-  "Static Dashboard Hub":       { sub: "Stat cards · included free",    cat: "widgets" },
-  "Enhanced Dashboard":         { sub: "Charts, trends, target donut",  cat: "widgets" },
-  "Custom Widget":              { sub: "Bespoke dashboard widget",      cat: "widgets" },
+  // ── Dashboard Widgets (Layer 2) ───────────────────────────────────────────
+  "Enhanced Dashboard":            { sub: "Charts, trends & KPI cards",    cat: "widgets" },
+  "Custom Widget":                 { sub: "Bespoke embeddable widget",      cat: "widgets" },
+  "Performance Dashboard Database":{ sub: "Intelligence KPI infrastructure", cat: "widgets" },
 
-  // ── Kickoff Automations ──
-  "Project Kickoff":            { sub: "Cross-system project trigger",         cat: "automations" },
-  "Campaign Kickoff":           { sub: "Cross-system campaign trigger",        cat: "automations" },
-  "Client Onboarding Kickoff":  { sub: "Cross-system onboarding trigger",      cat: "automations" },
-  "Renewal Kickoff":            { sub: "Cross-system renewal trigger",         cat: "automations" },
-  "Hiring Kickoff":             { sub: "Cross-system hiring trigger",          cat: "automations" },
+  // ── Kickoff Automations ───────────────────────────────────────────────────
+  "Project Kickoff Automation":    { sub: "Deal won → project auto-created",      cat: "automations" },
+  "Campaign Kickoff Automation":   { sub: "Campaign active → tasks auto-created", cat: "automations" },
+  "Client Onboarding Kickoff":     { sub: "New client → onboarding triggered",    cat: "automations" },
+  "Renewal Kickoff Automation":    { sub: "Contract expiry → renewal tasks",       cat: "automations" },
+  "Hiring Kickoff Automation":     { sub: "Role open → hiring tasks created",      cat: "automations" },
 
-  // ── Server & Integration Add-Ons ──
-  "Document Generation":        { sub: "PDF/doc generation",               cat: "automations" },
-  "Lead Capture":               { sub: "Inbound lead capture system",      cat: "automations" },
-  "WhatsApp Automation":        { sub: "WhatsApp workflow integration",    cat: "automations" },
-  "Client Report Generator":    { sub: "Automated client reports",         cat: "automations" },
-  "Ads Platform Integration":   { sub: "Meta / Google Ads sync",          cat: "automations" },
-  "Payment Gateway Integration":{ sub: "Payment system connection",        cat: "automations" },
-  "Google Calendar Sync":       { sub: "Calendar integration",             cat: "automations" },
-  "Google Sheets Sync":         { sub: "Sheets data sync",                 cat: "automations" },
+  // ── Integrations & Automation Add-Ons ────────────────────────────────────
+  "Automation — Within Database":          { sub: "Single-DB trigger & action",    cat: "automations" },
+  "Automation — Cross-Database":           { sub: "Multi-DB workflow automation",  cat: "automations" },
+  "Automation & Workflow Integration (Make/N8N)": { sub: "External workflow via Make or N8N", cat: "automations" },
+  "API / External Integration":            { sub: "REST API connection to any platform", cat: "automations" },
+  "Ads Platform Integration":              { sub: "Meta / Google / TikTok Ads sync", cat: "automations" },
+  "Lead Capture System":                   { sub: "Form or WhatsApp → CRM pipeline", cat: "automations" },
+  "Document Generation Suite":             { sub: "Automated PDF quotes & invoices", cat: "automations" },
+  "AI Agent Integration":                  { sub: "AI agent connected to Notion",    cat: "automations" },
 
-  // ── Module Add-Ons ──
-  "Module Expansion":           { sub: "Additional database module",   cat: "os" },
-  "KOL & Influencer Tracker":   { sub: "Influencer management",       cat: "os" },
-  "Client Portal View":         { sub: "Client-facing portal",        cat: "os" },
-  "Notion AI Agent Setup":      { sub: "AI agent configuration",      cat: "automations" },
+  // ── Module Add-Ons ────────────────────────────────────────────────────────
+  "Additional System Module":      { sub: "Extra database module",          cat: "os" },
+  "Client Portal View":            { sub: "Client-facing read-only portal", cat: "os" },
 }
 
 function pkgSubtitle(name) {
@@ -278,4 +280,4 @@ function pkgSubtitle(name) {
 function pkgCategory(name) {
   return PRODUCT_CATALOGUE[name]?.cat || "os"
 }
-// cache bust Thu Apr 16 2026
+// cache bust Thu Apr 16 2026 v2
