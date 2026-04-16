@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Staff Breakdown</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 28px;background:#191919;color:#fff;overflow-y:auto;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B35;
+  --planning:#C084FC;--shooting:#60A5FA;--editing:#FBBF24;--posting:#AAFF00;--other:rgba(255,255,255,.3);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.08);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:10px;padding:4px;width:fit-content;margin-bottom:6px;}
+.tab{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:7px;border:none;background:transparent;color:rgba(255,255,255,.3);cursor:pointer;transition:all .2s;}
+.tab:hover{color:rgba(255,255,255,.6);}
+.tab.active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.period-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-bottom:14px;min-height:16px;}
+
+/* Staff grid */
+.emp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:860px){.emp-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.emp-grid{grid-template-columns:1fr;}}
+
+/* Employee card */
+.emp-card{padding:20px 20px 18px;}
+
+.emp-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
+.emp-name{font-size:14px;font-weight:900;letter-spacing:-.02em;color:#fff;}
+.emp-role{font-size:10px;font-weight:600;color:rgba(255,255,255,.28);margin-top:3px;}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.dot-active{background:#AAFF00;box-shadow:0 0 6px rgba(170,255,0,.5);}
+.dot-inactive{background:#FF6B35;}
+.dot-leave{background:#FBBF24;box-shadow:0 0 5px rgba(251,191,36,.4);}
+
+/* Summary strip */
+.emp-summary{display:flex;align-items:baseline;gap:8px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);}
+.emp-total-num{font-size:36px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--g);}
+.emp-total-meta{display:flex;flex-direction:column;gap:2px;}
+.emp-total-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.28);}
+.emp-total-dur{font-size:12px;font-weight:700;color:rgba(255,255,255,.45);}
+
+/* Task type rows */
+.type-list{display:flex;flex-direction:column;gap:0;}
+.type-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.type-row:last-child{border-bottom:none;}
+.type-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.type-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.45);flex:1;}
+.type-dur{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);flex-shrink:0;min-width:44px;text-align:right;}
+.type-count{font-size:16px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
+
+/* Zero state styles */
+.type-row.zero .type-label{color:rgba(255,255,255,.2);}
+.type-row.zero .type-count{color:rgba(255,255,255,.15);}
+.type-row.zero .type-dot{opacity:.25;}
+
+/* Empty card */
+.emp-empty{padding:16px 0;font-size:11px;color:rgba(255,255,255,.2);font-weight:600;}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;min-height:160px;flex-direction:column;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid rgba(170,255,0,.12);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow">Opxio · Marketing OS</p>
+    <h1 class="h-title">Staff Task Breakdown</h1>
+  </div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" id="rb" onclick="loadData()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="week"  onclick="switchTab('week')">This Week</button>
+  <button class="tab"        data-tab="month" onclick="switchTab('month')">This Month</button>
+  <button class="tab"        data-tab="all"   onclick="switchTab('all')">All Time</button>
+</div>
+<div class="period-lbl" id="period-lbl"></div>
+
+<div id="dash">
+  <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+let _tab  = 'week';
+let _data = null;
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+const TYPE_CONFIG = [
+  { key:'planning', label:'Content Planning', color:'var(--planning)' },
+  { key:'shooting', label:'Content Shooting', color:'var(--shooting)' },
+  { key:'editing',  label:'Content Editing',  color:'var(--editing)'  },
+  { key:'posting',  label:'Content Posting',  color:'var(--posting)'  },
+];
+
+function dotClass(s){
+  if(s==='Active')   return 'dot-active';
+  if(s==='Inactive') return 'dot-inactive';
+  return 'dot-leave';
+}
+
+function renderCard(emp){
+  const d = emp[_tab] || {};
+  const total = d.total || {};
+
+  const hdr = `<div class="emp-hdr">
+    <div>
+      <div class="emp-name">${esc(emp.name)}</div>
+      ${emp.role ? `<div class="emp-role">${esc(emp.role)}</div>` : ''}
+    </div>
+    <div class="status-dot ${dotClass(emp.status)}"></div>
+  </div>`;
+
+  const hasDone = total.done > 0;
+  const periodLabel = _tab === 'week' ? 'this week' : _tab === 'month' ? 'this month' : 'all time';
+
+  if(!hasDone){
+    return `<div class="card emp-card">${hdr}
+      <div class="emp-empty">No completed tasks ${periodLabel}</div>
+    </div>`;
+  }
+
+  const summary = `<div class="emp-summary">
+    <div class="emp-total-num">${total.done}</div>
+    <div class="emp-total-meta">
+      <span class="emp-total-lbl">Tasks Done</span>
+      ${total.duration ? `<span class="emp-total-dur">${esc(total.duration)} total</span>` : ''}
+    </div>
+  </div>`;
+
+  let rows = `<div class="type-list">`;
+  for(const tc of TYPE_CONFIG){
+    const t = d[tc.key] || {};
+    const isZero = !t.done;
+    rows += `<div class="type-row${isZero?' zero':''}">
+      <div class="type-dot" style="background:${tc.color};"></div>
+      <span class="type-label">${esc(tc.label)}</span>
+      <span class="type-dur">${t.duration ? esc(t.duration) : '—'}</span>
+      <span class="type-count" style="color:${isZero?'rgba(255,255,255,.15)':tc.color};">${t.done || 0}</span>
+    </div>`;
+  }
+  rows += `</div>`;
+
+  return `<div class="card emp-card">${hdr}${summary}${rows}</div>`;
+}
+
+function render(data){
+  if(!data || !data.employees) return;
+
+  const lbl = document.getElementById('period-lbl');
+  if(_tab==='week'  && data.weekLabel)  lbl.textContent = data.weekLabel;
+  else if(_tab==='month' && data.monthLabel) lbl.textContent = data.monthLabel;
+  else lbl.textContent = '';
+
+  if(!data.employees.length){
+    document.getElementById('dash').innerHTML =
+      '<div class="loading"><div style="font-size:12px;color:rgba(255,255,255,.3);font-weight:700;">No staff data found</div></div>';
+    return;
+  }
+
+  let html = '<div class="emp-grid">';
+  for(const emp of data.employees) html += renderCard(emp);
+  html += '</div>';
+  document.getElementById('dash').innerHTML = html;
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+window.switchTab = function(tab){
+  _tab = tab;
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  if(_data) render(_data);
+};
+
+async function loadData(){
+  document.getElementById('rb').textContent = '↻ Refreshing…';
+  try{
+    const r = await fetch('/api/marketing/staff-breakdown?token='+_tok);
+    if(!r.ok) throw new Error('API '+r.status);
+    _data = await r.json();
+    render(_data);
+  }catch(e){
+    document.getElementById('dash').innerHTML = `
+      <div class="loading">
+        <div style="font-size:12px;color:#FF6B35;font-weight:700;">Failed to load</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;">${esc(e.message)}</div>
+      </div>`;
+  }finally{
+    document.getElementById('rb').textContent = '↻ Refresh';
+  }
+}
+
+loadData();
+setInterval(loadData, 600000);
+</script>
+</body>
+</html>
