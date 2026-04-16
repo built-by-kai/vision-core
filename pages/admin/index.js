@@ -22,8 +22,8 @@ const WIDGETS = [
 ]
 
 const OS_OPTIONS = [
-  { value: "revenue",      label: "Revenue OS",      color: "#fb923c" },
-  { value: "operations",   label: "Operations OS",   color: "#4ade80" },
+  { value: "revenue",      label: "Revenue OS",      color: "#4ade80" },
+  { value: "operations",   label: "Operations OS",   color: "#60a5fa" },
   { value: "business",     label: "Business OS",     color: "#a78bfa" },
   { value: "marketing",    label: "Marketing OS",    color: "#f472b6" },
   { value: "agency",       label: "Agency OS",       color: "#60a5fa" },
