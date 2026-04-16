@@ -83,16 +83,8 @@ export default async function handler(req, res) {
     const getStatus = p => p?.type === 'status' ? p.status?.name : null;
     const getDate   = p => p?.type === 'date'   ? p.date?.start : null;
 
-    // Pre-fetch employees if client uses a relation-based assignee field
+    // employeeMap built lazily after task pages are fetched (see below)
     let employeeMap = {}; // { notionPageId → displayName }
-    if (EMPLOYEES_DB) {
-      const empPages = await queryAll(EMPLOYEES_DB).catch(() => []);
-      for (const ep of empPages) {
-        const titleProp = Object.values(ep.properties).find(v => v.type === 'title');
-        const name = titleProp ? (titleProp.title || []).map(t => t.plain_text).join('') : '';
-        if (name) employeeMap[ep.id] = name;
-      }
-    }
 
     // Resolve assignee names from People, Relation, or Rollup-of-relations field
     const getAssignees = prop => {
@@ -120,6 +112,42 @@ export default async function handler(req, res) {
       }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
       queryAll(TASKS_DB).catch(() => []),
     ]);
+
+    // ── Build employee map: collect unique relation IDs from Tasks "Assigned To",
+    //    then fetch each page individually. This works even when the Employees DB
+    //    itself is not shared with the integration (individual page access is separate).
+    {
+      const assignedField = 'Assigned To'; // Creaitors Tasks DB field name
+      const seenIds = new Set();
+      for (const page of taskPages) {
+        const prop = page.properties[assignedField] || page.properties[F.CONTENT_ASSIGNED];
+        if (prop?.type === 'relation') {
+          for (const r of prop.relation || []) seenIds.add(r.id);
+        }
+        if (prop?.type === 'people') {
+          for (const u of prop.people || []) {
+            if (u.id && u.name) employeeMap[u.id] = u.name;
+          }
+        }
+      }
+      // Fetch any relation IDs we don't already have names for
+      const idsToFetch = [...seenIds].filter(id => !employeeMap[id]);
+      if (idsToFetch.length > 0) {
+        const fetched = await Promise.all(
+          idsToFetch.map(id =>
+            fetch(`https://api.notion.com/v1/pages/${id}`, { headers })
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null)
+          )
+        );
+        for (const ep of fetched) {
+          if (!ep || !ep.id) continue;
+          const titleProp = Object.values(ep.properties || {}).find(v => v.type === 'title');
+          const name = titleProp ? (titleProp.title || []).map(t => t.plain_text).join('') : '';
+          if (name) employeeMap[ep.id] = name;
+        }
+      }
+    }
 
     // ── Content stats ──────────────────────────────────────────
     let contentInMotion          = 0;

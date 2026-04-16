@@ -62,13 +62,15 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .ts-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
 .ts-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
 
-/* Content status mini cards */
-.cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-.cs-card{background:#252525;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;}
-.cs-card.active{border-color:rgba(255,255,255,.12);}
-.cs-count{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;}
-.cs-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.4);margin-top:5px;line-height:1.3;}
-.cs-bar{position:absolute;bottom:0;left:0;height:3px;border-radius:0 2px 0 0;transition:width .6s cubic-bezier(.4,0,.2,1);}
+/* Content Status — horizontal pipeline */
+.cs-pipeline{display:flex;flex-direction:column;gap:0;width:100%;}
+.cs-stage-row{display:flex;align-items:center;gap:0;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.045);position:relative;}
+.cs-stage-row:last-child{border-bottom:none;}
+.cs-stage-accent{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;margin-right:12px;}
+.cs-stage-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.45);flex:1;letter-spacing:-.01em;}
+.cs-stage-track{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.05);margin:0 12px;overflow:hidden;max-width:80px;}
+.cs-stage-fill{height:4px;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.cs-stage-num{font-size:20px;font-weight:900;letter-spacing:-1px;line-height:1;min-width:28px;text-align:right;flex-shrink:0;}
 
 /* Content by assignee bars */
 .assign-list{display:flex;flex-direction:column;gap:11px;}
@@ -202,16 +204,17 @@ function render(d){
       <span class="panel-title">Content Status</span>
       <span class="panel-badge">${d.contentInMotion || 0} active</span>
     </div>
-    <div class="cs-grid">`;
+    <div class="cs-pipeline">`;
   for(const label of contentStatuses){
     const count  = contentStatusCounts[label] || 0;
     const col    = statusColor(label);
     const active = count > 0;
-    const barW   = csTotal > 0 ? Math.round((count/csTotal)*100) : 0;
-    html += `<div class="cs-card${active?' active':''}">
-      <div class="cs-count" style="color:${active?col:'rgba(255,255,255,.2)'};">${count}</div>
-      <div class="cs-label">${esc(label)}</div>
-      ${active?`<div class="cs-bar" style="width:${Math.max(barW,8)}%;background:${col};opacity:.5;"></div>`:''}
+    const fillW  = csTotal > 0 ? Math.max(Math.round((count/csTotal)*100), count > 0 ? 6 : 0) : 0;
+    html += `<div class="cs-stage-row">
+      <div class="cs-stage-accent" style="background:${active?col:'rgba(255,255,255,.1)'};"></div>
+      <span class="cs-stage-name" style="${active?'color:rgba(255,255,255,.75);':''}">${esc(label)}</span>
+      <div class="cs-stage-track"><div class="cs-stage-fill" style="width:${fillW}%;background:${col};opacity:${active?.6:.2};"></div></div>
+      <span class="cs-stage-num" style="color:${active?col:'rgba(255,255,255,.15)'};">${count}</span>
     </div>`;
   }
   html += `</div></div>`;
