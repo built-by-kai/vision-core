@@ -406,17 +406,14 @@ async function loadData() {
       statRow.classList.remove('has-delivery');
     }
 
-    // ── Lost — combined leads + deals ─────────────────────────────────────
-    const lostLeads = jp.totalLostLeads ?? 0;
-    const lostDeals = jd.totalLostDeals ?? 0;
-    document.getElementById('d-lost').textContent    = lostLeads + lostDeals;
+    // ── Lost — combined leads + deals (month-specific) ───────────────────
+    const lostLeads = jp.thisMonthLost   ?? 0;
+    const lostDeals = jd.lostThisMonth   ?? 0;
+    document.getElementById('d-lost').textContent = lostLeads + lostDeals;
     document.getElementById('d-lost-sub').textContent =
       lostLeads + ' lead' + (lostLeads !== 1 ? 's' : '') +
       ' · ' + lostDeals + ' deal' + (lostDeals !== 1 ? 's' : '');
-    const lostValue = (jp.lostLeadsValue || 0) + (jd.lostValue || 0);
-    document.getElementById('d-lost-sub').textContent =
-      lostLeads + ' lead' + (lostLeads !== 1 ? 's' : '') +
-      ' · ' + lostDeals + ' deal' + (lostDeals !== 1 ? 's' : '');
+    const lostValue = (jp.lostLeadsValueThisMonth || 0) + (jd.lostValueThisMonth || 0);
     const lostValEl = document.getElementById('d-lost-val');
     if (lostValue) { lostValEl.textContent = fmtRM(lostValue); lostValEl.style.display = ''; }
     else { lostValEl.style.display = 'none'; }

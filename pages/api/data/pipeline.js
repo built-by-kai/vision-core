@@ -43,10 +43,11 @@ export default async function handler(req, res) {
       monthly[d.toLocaleString("default", { month: "short" })] = 0
     }
 
-    let thisMonthLeads     = 0
-    let thisMonthConverted = 0
-    let thisMonthLost      = 0
-    let leadsPotentialValue = 0
+    let thisMonthLeads         = 0
+    let thisMonthConverted     = 0
+    let thisMonthLost          = 0
+    let lostLeadsValueThisMonth = 0
+    let leadsPotentialValue    = 0
     const sourceCounts     = {}
     const lostLeads        = []
 
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
       if (isThisMonth) {
         thisMonthLeads++
         if (stage === wonLabel)  thisMonthConverted++
-        if (stage === lostLabel) thisMonthLost++
+        if (stage === lostLabel) { thisMonthLost++; lostLeadsValueThisMonth += leadVal; }
       }
 
       const mKey  = created.toLocaleString("default", { month: "short" })
@@ -127,6 +128,7 @@ export default async function handler(req, res) {
       lostLabel,
       leadsPotentialValue,
       lostLeadsValue,
+      lostLeadsValueThisMonth,
       lostLeads,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])

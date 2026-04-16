@@ -60,6 +60,8 @@ export default async function handler(req, res) {
     let buildingValue      = 0
     let wonThisMonth       = 0
     let deliveredThisMonth = 0
+    let lostThisMonth      = 0
+    let lostValueThisMonth = 0
     const boardGroups = {}
     const wonDeals  = []
     const lostDeals = []
@@ -90,6 +92,7 @@ export default async function handler(req, res) {
       if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl, created: deal.created_time })
       if (isThisMonth && stage === wonLabel)       wonThisMonth++
       if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
+      if (isThisMonth && stage === lostLabel)      { lostThisMonth++; lostValueThisMonth += value; }
     }
 
     // ── Proposals ──────────────────────────────────────────────────────────
@@ -146,7 +149,9 @@ export default async function handler(req, res) {
       wonThisMonth,
       deliveredThisMonth,
       // ── Stat card helpers ──
-      totalLostDeals: stages[lostLabel] || 0,
+      totalLostDeals:    stages[lostLabel] || 0,
+      lostThisMonth,
+      lostValueThisMonth,
       lostLabel,
       wonDeals,
       lostDeals,
