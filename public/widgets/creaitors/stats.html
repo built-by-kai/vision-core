@@ -10,7 +10,7 @@
   html, body { height: 100%; }
   body {
     font-family: 'Satoshi', -apple-system, sans-serif;
-    background: #0A0A0A;
+    background: #191919;
     padding: 14px;
   }
 
@@ -23,15 +23,15 @@
   @media(max-width:480px){ .grid{ grid-template-columns: 1fr; } }
 
   .card {
-    background: #111;
-    border: 1px solid #1E1E1E;
+    background: #1E1E1E;
+    border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
     padding: 18px 20px 16px;
     position: relative;
     overflow: hidden;
     transition: border-color 0.2s;
   }
-  .card:hover { border-color: #2A2A2A; }
+  .card:hover { border-color: rgba(255,255,255,0.12); }
 
   /* Lime green top-border accent */
   .card::before {
@@ -46,12 +46,12 @@
   .card:hover::before { opacity: 1; }
 
   /* Alert card (needs attention / overdue) */
-  .card.alert { border-color: rgba(239,68,68,0.25); }
-  .card.alert::before { background: #EF4444; opacity: 1; }
+  .card.alert { border-color: rgba(239,68,68,0.2); }
+  .card.alert:hover::before { background: #EF4444; }
   .card.alert .val { color: #F87171; }
+  .card.alert .dot { background: #EF4444; opacity: 0.7; }
 
   /* All-clear card */
-  .card.ok::before { background: #AAFF00; opacity: 1; }
   .card.ok .val { color: #AAFF00; }
 
   .label {
