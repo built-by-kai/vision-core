@@ -45,8 +45,8 @@ export default async function handler(req, res) {
   };
 
   const body = req.body || {};
-  const action = body.action;
-  const taskPageId = body.page_id || body.data?.id || body.source?.page_id;
+  const action = body.action || req.query.action;
+  const taskPageId = body.page_id || body.data?.id || body.source?.page_id || req.query.page_id;
 
   if (!action)     return res.status(400).json({ error: 'Missing action. Use: start | submit_qc | approve_qc | complete' });
   if (!taskPageId) return res.status(400).json({ error: 'Missing page_id in request body.' });
