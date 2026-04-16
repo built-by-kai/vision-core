@@ -44,6 +44,12 @@ export default async function handler(req, res) {
   const ACTIVE_STATUSES = client.labels?.contentActiveStatuses ||
     ['Pre-Production', 'In Production', 'Revision Needed', 'Final QC Review', 'Scripting', 'Recording', 'Editing']
 
+  // ── Ordered status lists (per-client, drives dynamic widget rendering) ────
+  const taskStatuses = client.labels?.taskStatuses ||
+    ['Not Started', 'In Progress', 'Pending QC', 'Revision', 'Done']
+  const contentStatuses = client.labels?.contentStatuses ||
+    ['Pre-Production', 'In Production', 'Final QC Review', 'Revision Needed', 'Ready for Posting', 'Done']
+
   try {
 
     const headers = {
@@ -109,22 +115,35 @@ export default async function handler(req, res) {
     }
 
     // ── Task stats ─────────────────────────────────────────────
-    let tasksTotal     = 0;
-    let tasksWaiting   = 0;
-    let tasksInProgress= 0;
-    let tasksQC        = 0;
-    let tasksRevision  = 0;
+    let tasksTotal       = 0;
+    let tasksWaiting     = 0;
+    let tasksInProgress  = 0;
+    let tasksQC          = 0;
+    let tasksRevision    = 0;
     let tasksDueThisWeek = 0;
-    let tasksOverdue   = 0;
+    let tasksOverdue     = 0;
+    let tasksDueToday    = 0;
+
+    // Per-status counts for dynamic widget rendering (includes Done)
+    const taskStatusCounts = {};
+    for (const s of taskStatuses) taskStatusCounts[s] = 0;
 
     for (const page of taskPages) {
       const p      = page.properties;
       const status = getStatus(p[F.TASK_STATUS]);
-      if (!status || status === L.taskDone) continue;
+      if (!status) continue;
 
       // Skip tasks not linked to any content production
       const contentRel = p[F.CONTENT_PRODUCTION]?.relation || [];
       if (contentRel.length === 0) continue;
+
+      // Count per status (includes Done — for the full status list in the widget)
+      if (Object.prototype.hasOwnProperty.call(taskStatusCounts, status)) {
+        taskStatusCounts[status]++;
+      }
+
+      // Active tasks = non-done (for the big number)
+      if (status === L.taskDone) continue;
 
       tasksTotal++;
       if (status === L.taskWaiting)                                                                   tasksWaiting++;
@@ -134,8 +153,9 @@ export default async function handler(req, res) {
 
       const dueDate = getDate(p[F.TASK_DUE]);
       if (dueDate) {
-        if (dueDate < todayStr)      tasksOverdue++;
-        else if (dueDate <= in7Days) tasksDueThisWeek++;
+        if (dueDate < todayStr)        tasksOverdue++;
+        else if (dueDate === todayStr) tasksDueToday++;
+        else if (dueDate <= in7Days)   tasksDueThisWeek++;
       }
     }
 
@@ -148,8 +168,14 @@ export default async function handler(req, res) {
       tasksTotal,
       tasksBreakdown: { waiting: tasksWaiting, inProgress: tasksInProgress, qc: tasksQC, revision: tasksRevision },
 
+      // Dynamic task status list (ordered, includes Done)
+      taskStatuses,
+      taskStatusCounts,
+      taskDoneStatus: L.taskDone,
+
       // Card 3: Due This Week
       dueThisWeek: contentDueThisWeek + tasksDueThisWeek,
+      dueToday: tasksDueToday,
       dueBreakdown: { content: contentDueThisWeek, tasks: tasksDueThisWeek },
 
       // Card 4: Needs Attention

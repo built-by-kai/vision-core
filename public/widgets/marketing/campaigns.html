@@ -156,9 +156,18 @@ const CONTENT_COLORS = {
   kol:     '#C084FC',
 };
 
+// Semantic color mapper — matches any client's status labels by keyword
+function statusColor(label){
+  const l = (label||'').toLowerCase();
+  if(l.includes('done') || l.includes('published') || l.includes('posting') || l.includes('posted')) return 'var(--g)';
+  if(l.includes('revision') || l.includes('review needed') || l.includes('overdue'))                 return 'var(--red)';
+  if(l.includes('qc') || l.includes('final') || l.includes('pending') || l.includes('approval'))     return 'var(--amber)';
+  if(l.includes('progress') || l.includes('production') || l.includes('ready') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
+  return 'rgba(255,255,255,.35)'; // not started, waiting, etc.
+}
+
 function render(camp, task){
   const cb = camp.contentBreakdown || {};
-  const tb = task.tasksBreakdown || {};
   const ab = task.attentionBreakdown || {};
   const totalTasks = task.tasksTotal || 0;
   const overdue = ab.overdue || 0;
@@ -273,13 +282,9 @@ function render(camp, task){
   // ── Bot row: task breakdown ──
   html += `<div class="bot-row">`;
 
-  // Task card
-  const statuses = [
-    {label:'In Progress', count:tb.inProgress||0, color:'#60A5FA'},
-    {label:'Waiting',     count:tb.waiting||0,    color:'rgba(255,255,255,.35)'},
-    {label:'QC Review',   count:tb.qc||0,         color:'#FBBF24'},
-    {label:'Revision',    count:tb.revision||0,   color:'#FF6B6B'},
-  ];
+  // Task card — dynamic statuses from API (ordered, includes Done)
+  const taskStatusList   = task.taskStatuses   || ['Not Started','In Progress','Pending QC','Revision','Done'];
+  const taskStatusCounts = task.taskStatusCounts || {};
 
   const dueWeekCount = task.dueThisWeek || 0;
 
@@ -298,15 +303,15 @@ function render(camp, task){
     </div>
     <div class="task-status-list">`;
 
-  for(const s of statuses){
-    const active = s.count > 0;
-    const dashColor = active ? s.color : 'rgba(255,255,255,.1)';
-    const countColor = active ? '#fff' : 'rgba(255,255,255,.25)';
+  for(const label of taskStatusList){
+    const count = taskStatusCounts[label] || 0;
+    const col   = statusColor(label);
+    const active = count > 0;
     html += `<div class="ts-row">
-      <div class="ts-dot" style="background:${s.color};${!active?'opacity:.35;':''}"></div>
-      <span class="ts-label">${s.label}</span>
-      <div class="ts-dash" style="background:${dashColor};"></div>
-      <span class="ts-count" style="color:${countColor};">${s.count}</span>
+      <div class="ts-dot" style="background:${col};${!active?'opacity:.35;':''}"></div>
+      <span class="ts-label">${esc(label)}</span>
+      <div class="ts-dash" style="background:${active?col:'rgba(255,255,255,.1)'};"></div>
+      <span class="ts-count" style="color:${active?'#fff':'rgba(255,255,255,.25)'};">${count}</span>
     </div>`;
   }
   html += `</div></div>`;
