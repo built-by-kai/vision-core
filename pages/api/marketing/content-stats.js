@@ -17,7 +17,8 @@ export default async function handler(req, res) {
   const NOTION_KEY = getNotionToken(client)
   const CONTENT_DB   = resolveDB(client, 'CONTENT_DB',   '3188b289e31a80e39bbbf1c01ffdd56b')
   const TASKS_DB     = resolveDB(client, 'TASKS_DB',     '3348b289e31a80dc89e1eb7ba5b49b1a')
-  const EMPLOYEES_DB = resolveDB(client, 'EMPLOYEES_DB', null)  // null = use People field instead
+  // Accept either key name; EMPLOYEES_DB takes priority over legacy EMPLOYEE_DB
+  const EMPLOYEES_DB = resolveDB(client, 'EMPLOYEES_DB', null) || resolveDB(client, 'EMPLOYEE_DB', null)
 
   // ── Field name mapping (per-client overrides via Supabase field_map) ──────
   const F = {
