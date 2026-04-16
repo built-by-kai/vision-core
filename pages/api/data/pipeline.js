@@ -28,8 +28,10 @@ export default async function handler(req, res) {
     const ACTIVE_STAGES = client.labels?.activeStages || ["Incoming","Contacted","Discovery Done"]
 
     const now   = new Date()
-    const year  = now.getFullYear()
-    const month = now.getMonth()
+    const _qm   = req.query.month ? parseInt(req.query.month) - 1 : null  // 1-12 → 0-11
+    const _qy   = req.query.year  ? parseInt(req.query.year)      : null
+    const month = (_qm !== null && !isNaN(_qm)) ? _qm : now.getMonth()
+    const year  = (_qy !== null && !isNaN(_qy)) ? _qy : now.getFullYear()
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
         leadsPotentialValue += leadVal
       }
 
-      if (stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl })
+      if (stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
 
       if (isThisMonth) {
         thisMonthLeads++

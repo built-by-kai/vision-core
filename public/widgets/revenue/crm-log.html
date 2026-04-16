@@ -58,6 +58,12 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .reason-pill{font-size:9px;font-weight:700;color:#FB923C;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.18);border-radius:4px;padding:2px 7px;margin-top:4px;display:inline-block;}
 .row-val{font-size:13px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:-.4px;}
 
+/* Month filter select */
+.mf-select{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.6);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;outline:none;transition:all .2s;appearance:none;-webkit-appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.mf-select:hover,.mf-select:focus{border-color:var(--gb);color:var(--g);}
+.mf-select option{background:#252525;color:#fff;}
+/* Filter badge shown in panel when a month is active */
+.filter-badge{font-size:9px;font-weight:700;padding:2px 9px;border-radius:5px;background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.2);display:none;}
 /* Empty / loading */
 .empty{padding:40px 0;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
 .loading{display:flex;align-items:center;justify-content:center;min-height:200px;flex-direction:column;gap:10px;}
@@ -75,6 +81,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
+    <select class="mf-select" id="month-filter" onchange="applyFilter()"></select>
     <button class="btn" id="rb" onclick="loadData()">↻ Refresh</button>
   </div>
 </div>
@@ -84,19 +91,22 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
     <div class="s-dot" style="background:var(--g);"></div>
     <span class="s-lbl">Won Deals</span>
     <div class="s-val" id="s-won">—</div>
-    <div class="s-sub" id="s-won-sub">—</div>
+    <div class="s-sub" id="s-won-sub">Active &amp; delivered</div>
+    <div class="s-sub" id="s-won-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Leads</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-leads">—</div>
-    <div class="s-sub" id="s-lost-leads-sub">Leads that didn't convert</div>
+    <div class="s-sub">Leads that didn't convert</div>
+    <div class="s-sub" id="s-lost-leads-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Deals</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-deals">—</div>
-    <div class="s-sub" id="s-lost-deals-sub">Deals that fell through</div>
+    <div class="s-sub">Deals that fell through</div>
+    <div class="s-sub" id="s-lost-deals-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--g);"></div>
@@ -107,9 +117,12 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 </div>
 
 <div class="card panel">
-  <div class="tabs">
-    <button class="tab won" id="t-won" onclick="setTab('won')">Won</button>
-    <button class="tab" id="t-lost" onclick="setTab('lost')">Lost</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab won" id="t-won" onclick="setTab('won')">Won</button>
+      <button class="tab" id="t-lost" onclick="setTab('lost')">Lost</button>
+    </div>
+    <span class="filter-badge" id="filter-badge"></span>
   </div>
   <div class="list" id="log-list">
     <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
@@ -131,6 +144,53 @@ let tab = 'won';
 let pipeData  = null;
 let dealsData = null;
 
+// ── Month filter ──────────────────────────────────────────────────────────────
+function buildMonthOptions() {
+  const sel = document.getElementById('month-filter');
+  sel.innerHTML = '';
+  const now = new Date();
+  const allOpt = document.createElement('option');
+  allOpt.value = ''; allOpt.textContent = 'All Time'; sel.appendChild(allOpt);
+  for (let i = 0; i < 18; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const lbl = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = lbl;
+    sel.appendChild(opt);
+  }
+}
+
+function getSelectedMonthYear() {
+  const v = document.getElementById('month-filter').value;
+  if (!v) return null;
+  const [y, m] = v.split('-').map(Number);
+  return { year: y, month: m - 1 };  // month is 0-indexed
+}
+
+function filterByMonth(items) {
+  const sel = getSelectedMonthYear();
+  if (!sel) return items;
+  return items.filter(d => {
+    if (!d.created) return true;
+    const dt = new Date(d.created);
+    return dt.getMonth() === sel.month && dt.getFullYear() === sel.year;
+  });
+}
+
+function applyFilter() {
+  const sel = getSelectedMonthYear();
+  const badge = document.getElementById('filter-badge');
+  if (sel) {
+    const lbl = document.getElementById('month-filter').options[document.getElementById('month-filter').selectedIndex].text;
+    badge.textContent = lbl; badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+  updateStats();
+  renderList();
+}
+
 function setTab(t) {
   tab = t;
   document.getElementById('t-won').className  = 'tab' + (t === 'won'  ? ' won'  : '');
@@ -143,7 +203,7 @@ function renderList() {
   if (!pipeData || !dealsData) return;
 
   if (tab === 'won') {
-    const rows = dealsData.wonDeals || [];
+    const rows = filterByMonth(dealsData.wonDeals || []);
     if (!rows.length) { el.innerHTML = '<div class="empty">No won deals yet</div>'; return; }
     el.innerHTML = rows.map(d => {
       const click = d.url ? `onclick="window.open('${d.url}','_blank')"` : '';
@@ -160,8 +220,8 @@ function renderList() {
       </div>`;
     }).join('');
   } else {
-    const lostD = (dealsData.lostDeals || []).map(d => ({ ...d, _type: 'deal' }));
-    const lostL = (pipeData.lostLeads  || []).map(d => ({ ...d, _type: 'lead' }));
+    const lostD = filterByMonth((dealsData.lostDeals || [])).map(d => ({ ...d, _type: 'deal' }));
+    const lostL = filterByMonth((pipeData.lostLeads  || [])).map(d => ({ ...d, _type: 'lead' }));
     const rows  = [...lostD, ...lostL];
     if (!rows.length) { el.innerHTML = '<div class="empty">No lost leads or deals</div>'; return; }
     el.innerHTML = rows.map(d => {
@@ -185,26 +245,37 @@ function renderList() {
   }
 }
 
-function withVal(base, val) {
-  return val ? base + ' · ' + fmtRM(val) : base;
+function showVal(id, val) {
+  const el = document.getElementById(id);
+  if (val) { el.textContent = fmtRM(val); el.style.display = ''; }
+  else { el.style.display = 'none'; }
 }
 
 function updateStats() {
   if (!pipeData || !dealsData) return;
-  const wonCount  = (dealsData.wonDeals  || []).length;
-  const lostLeads = (pipeData.lostLeads  || []).length;
-  const lostDeals = (dealsData.lostDeals || []).length;
+  const wonFiltered   = filterByMonth(dealsData.wonDeals  || []);
+  const lostLFiltered = filterByMonth(pipeData.lostLeads  || []);
+  const lostDFiltered = filterByMonth(dealsData.lostDeals || []);
+
+  const wonCount  = wonFiltered.length;
+  const lostLeads = lostLFiltered.length;
+  const lostDeals = lostDFiltered.length;
   const totalClosed = wonCount + lostDeals;
   const winRate = totalClosed > 0 ? Math.round((wonCount / totalClosed) * 100) : null;
 
   document.getElementById('s-won').textContent        = wonCount;
-  document.getElementById('s-won-sub').textContent    = withVal(wonCount === 1 ? '1 deal' : wonCount + ' deals', dealsData.wonValue);
+  document.getElementById('s-won-sub').textContent    = wonCount === 1 ? '1 deal' : wonCount + ' deals';
   document.getElementById('s-lost-leads').textContent = lostLeads;
-  document.getElementById('s-lost-leads-sub').textContent = withVal("Leads that didn't convert", pipeData.lostLeadsValue);
   document.getElementById('s-lost-deals').textContent = lostDeals;
-  document.getElementById('s-lost-deals-sub').textContent = withVal('Deals that fell through', dealsData.lostValue);
   document.getElementById('s-winrate').textContent    = winRate != null ? winRate + '%' : '—';
   document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  const wonVal  = wonFiltered.reduce((s, d) => s + (d.value || 0), 0);
+  const lostLVal = lostLFiltered.reduce((s, d) => s + (d.value || 0), 0);
+  const lostDVal = lostDFiltered.reduce((s, d) => s + (d.value || 0), 0);
+  showVal('s-won-val',        wonVal);
+  showVal('s-lost-leads-val', lostLVal);
+  showVal('s-lost-deals-val', lostDVal);
 }
 
 async function loadData() {
@@ -227,6 +298,7 @@ async function loadData() {
   }
 }
 
+buildMonthOptions();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 </script>

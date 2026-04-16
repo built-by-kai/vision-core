@@ -25,8 +25,10 @@ export default async function handler(req, res) {
     const packageField  = resolveField(client, "PACKAGE_FIELD", "Package Type")
 
     const now   = new Date()
-    const year  = now.getFullYear()
-    const month = now.getMonth()
+    const _qm   = req.query.month ? parseInt(req.query.month) - 1 : null  // 1-12 → 0-11
+    const _qy   = req.query.year  ? parseInt(req.query.year)      : null
+    const month = (_qm !== null && !isNaN(_qm)) ? _qm : now.getMonth()
+    const year  = (_qy !== null && !isNaN(_qy)) ? _qy : now.getFullYear()
 
     const [deals, proposals, quotations] = await Promise.all([
       queryDB(DEALS_DB,      null, notionToken),
@@ -83,9 +85,9 @@ export default async function handler(req, res) {
       }
       if (WON_STAGES.includes(stage)) {
         buildingValue += value
-        wonDeals.push({ name, value, stage, pkg, url: pageUrl })
+        wonDeals.push({ name, value, stage, pkg, url: pageUrl, created: deal.created_time })
       }
-      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl })
+      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg, url: pageUrl, created: deal.created_time })
       if (isThisMonth && stage === wonLabel)       wonThisMonth++
       if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
     }
