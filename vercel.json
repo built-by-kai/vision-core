@@ -21,6 +21,10 @@
     {
       "source": "/operations/:name",
       "destination": "/widgets/operations/:name.html"
+    },
+    {
+      "source": "/creaitors/:name",
+      "destination": "/widgets/creaitors/:name.html"
     }
   ],
   "headers": [
