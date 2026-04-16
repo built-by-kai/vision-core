@@ -94,7 +94,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div>
     <p class="eyebrow">Creaitors · Executive View</p>
-    <h1 class="h-title">Campaign &amp; Tasks</h1>
+    <h1 class="h-title">Campaign + Tasks</h1>
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
@@ -186,7 +186,7 @@ function render(camp, content){
         ? `<span style="color:var(--red);">${remC} left</span>`
         : `<span style="color:var(--g);">All done</span>`;
       const delivStr = c.planned > 0
-        ? (typeParts.length ? typeParts.join(' · ') + ' &nbsp;·&nbsp; ' + statusStr : statusStr)
+        ? (typeParts.length ? typeParts.join(' · ') + '  ·  ' + statusStr : statusStr)
         : '';
       html += `<div class="camp-item">
         <div class="camp-info">
