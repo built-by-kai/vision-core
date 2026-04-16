@@ -77,31 +77,32 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .camp-fill{height:5px;border-radius:999px;}
 .camp-pct{font-size:12px;font-weight:900;min-width:34px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
 
-/* Task breakdown — new style */
+/* Task breakdown */
 .task-card{padding:20px 22px;}
-.task-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:rgba(255,255,255,.25);margin-bottom:8px;}
 .task-big{font-size:52px;font-weight:900;letter-spacing:-3px;line-height:1;color:var(--g);}
-.task-big-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:14px;}
+.task-big-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#fff;margin-top:5px;margin-bottom:16px;}
 .task-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
-.task-mini{background:#252525;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px;text-align:center;}
-.task-mini-val{font-size:20px;font-weight:900;letter-spacing:-1px;line-height:1;}
-.task-mini-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-top:4px;}
-.task-status-list{display:flex;flex-direction:column;gap:9px;}
+.task-mini{background:#252525;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:11px 12px;text-align:center;}
+.task-mini-val{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.task-mini-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.35);margin-top:5px;}
+.task-status-list{display:flex;flex-direction:column;gap:10px;}
 .ts-row{display:flex;align-items:center;gap:9px;}
 .ts-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.ts-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.55);flex:1;}
+.ts-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);flex:1;}
 .ts-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
-.ts-count{font-size:13px;font-weight:900;letter-spacing:-.5px;min-width:20px;text-align:right;flex-shrink:0;}
+.ts-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
 
-/* Attention panel */
-.task-bars{display:flex;flex-direction:column;gap:10px;}
-.tb-row{display:flex;align-items:center;gap:8px;}
-.tb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.tb-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);width:80px;flex-shrink:0;}
-.tb-track{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
-.tb-fill{height:8px;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.tb-val{font-size:11px;font-weight:800;color:#fff;width:28px;text-align:right;flex-shrink:0;}
-.tb-pct{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);width:32px;text-align:right;flex-shrink:0;}
+/* Attention Required panel */
+.attn-big-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.attn-big{background:#252525;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:14px 12px;text-align:center;}
+.attn-big-val{font-size:26px;font-weight:900;letter-spacing:-1.5px;line-height:1;}
+.attn-big-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.35);margin-top:5px;}
+.attn-list{display:flex;flex-direction:column;gap:10px;}
+.attn-row{display:flex;align-items:center;gap:9px;}
+.attn-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.attn-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);flex:1;}
+.attn-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
+.attn-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
 
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:10px;}
@@ -272,24 +273,23 @@ function render(camp, task){
   // ── Bot row: task breakdown ──
   html += `<div class="bot-row">`;
 
-  // Task card — new style matching creaitors design
+  // Task card
   const statuses = [
     {label:'In Progress', count:tb.inProgress||0, color:'#60A5FA'},
-    {label:'Waiting',     count:tb.waiting||0,    color:'#FBBF24'},
-    {label:'QC Review',   count:tb.qc||0,         color:'#C084FC'},
+    {label:'Waiting',     count:tb.waiting||0,    color:'rgba(255,255,255,.35)'},
+    {label:'QC Review',   count:tb.qc||0,         color:'#FBBF24'},
     {label:'Revision',    count:tb.revision||0,   color:'#FF6B6B'},
   ];
 
   const dueWeekCount = task.dueThisWeek || 0;
 
   html += `<div class="card task-card">
-    <div class="task-eyebrow">Tasks</div>
     <div class="task-big">${totalTasks}</div>
     <div class="task-big-lbl">Active Tasks</div>
     <div class="task-mini-row">
       <div class="task-mini">
-        <div class="task-mini-val" style="color:#60A5FA;">${dueWeekCount}</div>
-        <div class="task-mini-lbl">Due Week</div>
+        <div class="task-mini-val" style="color:var(--g);">${dueWeekCount}</div>
+        <div class="task-mini-lbl">Due This Week</div>
       </div>
       <div class="task-mini">
         <div class="task-mini-val" style="color:${overdue>0?'#FF6B6B':'rgba(255,255,255,.3)'};">${overdue}</div>
@@ -301,9 +301,9 @@ function render(camp, task){
   for(const s of statuses){
     const active = s.count > 0;
     const dashColor = active ? s.color : 'rgba(255,255,255,.1)';
-    const countColor = active ? '#fff' : 'rgba(255,255,255,.2)';
+    const countColor = active ? '#fff' : 'rgba(255,255,255,.25)';
     html += `<div class="ts-row">
-      <div class="ts-dot" style="background:${s.color};${!active?'opacity:.3;':''}"></div>
+      <div class="ts-dot" style="background:${s.color};${!active?'opacity:.35;':''}"></div>
       <span class="ts-label">${s.label}</span>
       <div class="ts-dash" style="background:${dashColor};"></div>
       <span class="ts-count" style="color:${countColor};">${s.count}</span>
@@ -311,31 +311,46 @@ function render(camp, task){
   }
   html += `</div></div>`;
 
-  // Due / attention summary
+  // Attention Required panel
   const needsAttn = task.needsAttention || 0;
   const attnBreak = task.attentionBreakdown || {};
+  const overdueCount   = attnBreak.overdue   || 0;
+  const revisionCount  = attnBreak.revision  || 0;
+  const qcCount        = attnBreak.qc        || 0;
+  const dueTodayCount  = task.dueToday       || 0;
 
-  html += `<div class="card panel">
-    <div class="panel-hdr">
+  html += `<div class="card task-card">
+    <div class="panel-hdr" style="margin-bottom:14px;">
       <span class="panel-title">Attention Required</span>
-      ${needsAttn > 0 ? `<span class="panel-badge" style="color:#FF6B6B;border-color:rgba(255,107,107,.2);background:rgba(255,107,107,.08);">${needsAttn} items</span>` : `<span class="panel-badge">All clear</span>`}
+      ${needsAttn > 0
+        ? `<span class="panel-badge" style="color:#FF6B6B;border-color:rgba(255,107,107,.2);background:rgba(255,107,107,.08);">${needsAttn} items</span>`
+        : `<span class="panel-badge">All clear</span>`}
     </div>
-    <div class="task-bars">`;
+    <div class="attn-big-row">
+      <div class="attn-big">
+        <div class="attn-big-val" style="color:${overdueCount>0?'#FF6B6B':'rgba(255,255,255,.2)'};">${overdueCount}</div>
+        <div class="attn-big-lbl">Overdue</div>
+      </div>
+      <div class="attn-big">
+        <div class="attn-big-val" style="color:${dueTodayCount>0?'var(--g)':'rgba(255,255,255,.2)'};">${dueTodayCount}</div>
+        <div class="attn-big-lbl">Due Today</div>
+      </div>
+    </div>
+    <div class="attn-list">`;
 
-  const attnItems = [
-    {label:'Overdue',    count:attnBreak.overdue||0,   color:'#FF6B6B'},
-    {label:'Revision',   count:attnBreak.revision||0,  color:'#FBBF24'},
-    {label:'QC Pending', count:attnBreak.qc||0,        color:'#60A5FA'},
-    {label:'Due Today',  count:task.dueToday||0,       color:'rgba(255,255,255,.4)'},
+  const attnRows = [
+    {label:'Revision',   count:revisionCount, color:'#FBBF24'},
+    {label:'QC Pending', count:qcCount,       color:'#60A5FA'},
   ];
-  for(const a of attnItems){
-    const pct = needsAttn > 0 ? Math.round((a.count/needsAttn)*100) : 0;
-    html += `<div class="tb-row">
-      <div class="tb-dot" style="background:${a.color};"></div>
-      <span class="tb-label">${a.label}</span>
-      <div class="tb-track"><div class="tb-fill" style="width:${Math.max(pct>0?6:0,pct)}%;background:${a.color};"></div></div>
-      <span class="tb-val">${a.count}</span>
-      <span class="tb-pct">${pct > 0 ? pct+'%' : ''}</span>
+  for(const a of attnRows){
+    const active = a.count > 0;
+    const dashColor = active ? a.color : 'rgba(255,255,255,.1)';
+    const countColor = active ? '#fff' : 'rgba(255,255,255,.25)';
+    html += `<div class="attn-row">
+      <div class="attn-dot" style="background:${a.color};${!active?'opacity:.35;':''}"></div>
+      <span class="attn-label">${a.label}</span>
+      <div class="attn-dash" style="background:${dashColor};"></div>
+      <span class="attn-count" style="color:${countColor};">${a.count}</span>
     </div>`;
   }
   html += `</div></div>`;
