@@ -105,11 +105,9 @@ export default async function handler(req, res) {
     const todayStr  = now.toISOString().slice(0, 10);
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
-    // Fetch all active content (not Done) and all active tasks (not Done) in parallel
+    // Fetch ALL content (including Done so the status breakdown is complete) + all tasks in parallel
     const [contentPages, taskPages] = await Promise.all([
-      queryAll(CONTENT_DB, {
-        property: F.CONTENT_STATUS, status: { does_not_equal: L.contentDone }
-      }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
+      queryAll(CONTENT_DB).catch(() => []),
       queryAll(TASKS_DB).catch(() => []),
     ]);
 
@@ -162,13 +160,17 @@ export default async function handler(req, res) {
     for (const page of contentPages) {
       const p      = page.properties;
       const status = getStatus(p[F.CONTENT_STATUS]);
-      if (!status || status === L.contentDone) continue;
+      if (!status) continue;
+
+      // Always count every status (including Done) for the breakdown display
+      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
+
+      // Active/motion stats exclude Done
+      if (status === L.contentDone) continue;
 
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
       if (status === L.contentRevision)     contentRevision++;
       if (status === L.contentQC)           contentQC++;
-
-      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
 
       // Check if linked to a campaign
       const campaignRel = p[F.CAMPAIGN]?.relation || [];
