@@ -112,6 +112,7 @@ export default async function handler(req, res) {
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
+      _debug: { stageField, LEADS_DB, leadsCount: leads.length, fieldMap: client?.field_map },
     })
   } catch (err) {
     console.error("pipeline:", err)
