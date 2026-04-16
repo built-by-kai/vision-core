@@ -1,6 +1,7 @@
 // Vercel Serverless Function — Staff Task Breakdown
-// Per-assignee breakdown of Done tasks by type (Planning / Shooting / Editing / Posting)
-// with accumulated duration, filterable by week / month / all time.
+// Queries EMPLOYEE_DB for Active staff, then maps Done tasks by type
+// (Planning / Shooting / Editing / Posting) with accumulated duration,
+// filterable by week / month / all time.
 
 import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../lib/supabase"
 
@@ -24,6 +25,11 @@ function fmtDuration(mins) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+// Normalise UUID: strip hyphens for consistent comparison
+function normId(id) {
+  return (id || '').replace(/-/g, '');
+}
+
 const TYPES = ['planning', 'shooting', 'editing', 'posting', 'other'];
 
 function emptyBreakdown() {
@@ -42,6 +48,24 @@ function formatBreakdown(b) {
   return result;
 }
 
+// Paginate through an entire Notion database
+async function queryAll(dbId, headers, filter) {
+  let results = [], cursor;
+  do {
+    const body = { page_size: 100 };
+    if (cursor) body.start_cursor = cursor;
+    if (filter) body.filter = filter;
+    const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: 'POST', headers, body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`DB query failed (${dbId}): ${await r.text()}`);
+    const d = await r.json();
+    results = results.concat(d.results);
+    cursor = d.has_more ? d.next_cursor : undefined;
+  } while (cursor);
+  return results;
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -55,8 +79,9 @@ export default async function handler(req, res) {
   const client = await getClientByToken(token);
   if (!client) return res.status(403).json({ error: 'Invalid token' });
 
-  const NOTION_KEY = getNotionToken(client);
-  const TASKS_DB   = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a');
+  const NOTION_KEY  = getNotionToken(client);
+  const TASKS_DB    = resolveDB(client, 'TASKS_DB',    '3348b289e31a80dc89e1eb7ba5b49b1a');
+  const EMPLOYEE_DB = resolveDB(client, 'EMPLOYEE_DB', '78f0b17772964c018044a2dfdca6a5e8');
 
   const F = {
     TASK_STATUS:      resolveField(client, 'TASK_STATUS',       'Task Status'),
@@ -76,21 +101,30 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json',
     };
 
-    // ── 1. Fetch all tasks ────────────────────────────────────────────────────
-    let allTasks = [], cursor;
-    do {
-      const body = { page_size: 100 };
-      if (cursor) body.start_cursor = cursor;
-      const r = await fetch(`https://api.notion.com/v1/databases/${TASKS_DB}/query`, {
-        method: 'POST', headers, body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(`Tasks query failed: ${await r.text()}`);
-      const d = await r.json();
-      allTasks = allTasks.concat(d.results);
-      cursor = d.has_more ? d.next_cursor : undefined;
-    } while (cursor);
+    // ── 1. Fetch Active employees from EMPLOYEE_DB ────────────────────────────
+    const empPages = await queryAll(EMPLOYEE_DB, headers, {
+      property: 'Status',
+      select: { equals: 'Active' },
+    });
 
-    // ── 2. Time boundaries ────────────────────────────────────────────────────
+    // Build empMap keyed by normalised ID
+    const empMap = {};
+    for (const page of empPages) {
+      const p   = page.properties;
+      const id  = normId(page.id);
+      empMap[id] = {
+        name:   (p['Name']?.title || []).map(t => t.plain_text).join('') || 'Unknown',
+        role:   p['Role']?.select?.name || '',
+        status: p['Status']?.select?.name || 'Active',
+      };
+    }
+
+    const empIds = Object.keys(empMap); // normalised IDs
+
+    // ── 2. Fetch all tasks ────────────────────────────────────────────────────
+    const allTasks = await queryAll(TASKS_DB, headers);
+
+    // ── 3. Time boundaries ────────────────────────────────────────────────────
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -111,42 +145,18 @@ export default async function handler(req, res) {
     const monthStart = `${y}-${mo}-01`;
     const monthEnd   = `${y}-${mo}-${String(lastDay).padStart(2, '0')}`;
 
-    // ── 3. Collect unique assignee IDs from tasks ─────────────────────────────
-    const empIdSet = new Set();
-    for (const task of allTasks) {
-      for (const r of task.properties[F.ASSIGNED_TO]?.relation || []) {
-        empIdSet.add(r.id);
-      }
-    }
-
-    // ── 4. Fetch each employee page individually ──────────────────────────────
-    const empMap = {};
-    await Promise.all([...empIdSet].map(async id => {
-      try {
-        const r = await fetch(`https://api.notion.com/v1/pages/${id}`, { headers });
-        if (!r.ok) { empMap[id] = { name: 'Unknown', role: '', status: 'Active' }; return; }
-        const p = (await r.json()).properties;
-        empMap[id] = {
-          name:   (p['Name']?.title || []).map(t => t.plain_text).join('') || 'Unknown',
-          role:   p['Role']?.select?.name  || '',
-          status: p['Status']?.select?.name || 'Active',
-        };
-      } catch {
-        empMap[id] = { name: 'Unknown', role: '', status: 'Active' };
-      }
-    }));
-
-    // ── 5. Bucket tasks per employee ──────────────────────────────────────────
+    // ── 4. Initialise stats for every active employee ─────────────────────────
     const statsMap = {};
-    for (const id of empIdSet) {
+    for (const id of empIds) {
       statsMap[id] = { all: emptyBreakdown(), week: emptyBreakdown(), month: emptyBreakdown() };
     }
 
+    // ── 5. Bucket tasks ───────────────────────────────────────────────────────
     for (const task of allTasks) {
-      const tp = task.properties;
+      const tp     = task.properties;
       const status = tp[F.TASK_STATUS]?.status?.name || '';
 
-      // Only Done tasks that are linked to content production
+      // Only Done tasks linked to content production
       if (status !== DONE_STATUS) continue;
       const contentRel = tp[F.CONTENT_PROD]?.relation || [];
       if (contentRel.length === 0) continue;
@@ -157,8 +167,9 @@ export default async function handler(req, res) {
       const accMins  = tp[F.ACCUMULATED_MINS]?.number  || 0;
       const doneDate = doneRaw ? doneRaw.slice(0, 10) : null;
 
-      for (const { id: empId } of tp[F.ASSIGNED_TO]?.relation || []) {
-        if (!statsMap[empId]) continue;
+      for (const { id: rawId } of tp[F.ASSIGNED_TO]?.relation || []) {
+        const empId = normId(rawId);
+        if (!statsMap[empId]) continue; // not an active employee we track
 
         // All time
         statsMap[empId].all.total.done++;
@@ -184,9 +195,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 6. Build result array ─────────────────────────────────────────────────
-    const employees = [...empIdSet]
-      .filter(id => empMap[id]?.name && empMap[id].name !== 'Unknown' && empMap[id].name !== '')
+    // ── 6. Build result array — ALL active employees, even those with 0 tasks ─
+    const employees = empIds
+      .filter(id => empMap[id]?.name && empMap[id].name !== 'Unknown')
       .map(id => ({
         id,
         ...empMap[id],
