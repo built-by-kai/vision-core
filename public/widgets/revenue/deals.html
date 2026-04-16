@@ -64,7 +64,7 @@ body.light body.light body.light body.light ::-webkit-scrollbar{width:5px;}::-we
 </style></head><body>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-  <div><p class="eyebrow" id="_eyebrow" data-os="Revenue OS">OPXIO · Revenue OS</p><h1 class="h-title">Current Deals</h1></div>
+  <div><p class="eyebrow" id="_eyebrow" data-os="Revenue OS">REVENUE OS</p><h1 class="h-title">Current Deals</h1></div>
   <div style="display:flex;align-items:center;gap:6px;">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -150,10 +150,10 @@ setInterval(loadData, 5*60*1000);
 <script>
 (function(){
   const _c = new URLSearchParams(location.search).get('client');
-  if(_c){
-    const el = document.getElementById('_eyebrow');
-    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
-  }
+  const el = document.getElementById('_eyebrow');
+  if(!el) return;
+  if(_c) el.textContent = _c.toUpperCase() + ' · ' + el.dataset.os.toUpperCase();
+  else    el.textContent = el.dataset.os.toUpperCase();
 })();
 </script>
 </body></html>

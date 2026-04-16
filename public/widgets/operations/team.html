@@ -111,7 +111,7 @@ body.light .empty{color:rgba(0,0,0,.18);}
 </style></head><body>
 
 <div class="header">
-  <div><p class="eyebrow" id="_eyebrow" data-os="Operations OS">OPXIO · Operations OS</p><h1 class="h-title">Team Performance</h1></div>
+  <div><p class="eyebrow" id="_eyebrow" data-os="Operations OS">OPERATIONS OS</p><h1 class="h-title">Team Performance</h1></div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -275,10 +275,10 @@ setTs();loadData();setInterval(loadData,5*60*1000);
 <script>
 (function(){
   const _c = new URLSearchParams(location.search).get('client');
-  if(_c){
-    const el = document.getElementById('_eyebrow');
-    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
-  }
+  const el = document.getElementById('_eyebrow');
+  if(!el) return;
+  if(_c) el.textContent = _c.toUpperCase() + ' · ' + el.dataset.os.toUpperCase();
+  else    el.textContent = el.dataset.os.toUpperCase();
 })();
 </script>
 </body></html>

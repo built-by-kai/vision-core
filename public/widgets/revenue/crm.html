@@ -116,7 +116,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 
 <div class="top-bar">
   <div>
-    <p class="eyebrow" id="_eyebrow" data-os="Revenue OS">OPXIO · Revenue OS</p>
+    <p class="eyebrow" id="_eyebrow" data-os="Revenue OS">REVENUE OS</p>
     <h1 class="h-title">CRM &amp; Pipeline</h1>
   </div>
   <div class="top-right">
@@ -562,10 +562,10 @@ window.addEventListener('resize', drawChart);
 <script>
 (function(){
   const _c = new URLSearchParams(location.search).get('client');
-  if(_c){
-    const el = document.getElementById('_eyebrow');
-    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
-  }
+  const el = document.getElementById('_eyebrow');
+  if(!el) return;
+  if(_c) el.textContent = _c.toUpperCase() + ' · ' + el.dataset.os.toUpperCase();
+  else    el.textContent = el.dataset.os.toUpperCase();
 })();
 </script>
 </body></html>

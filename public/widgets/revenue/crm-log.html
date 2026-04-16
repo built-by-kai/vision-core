@@ -80,7 +80,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 
 <div class="header">
   <div>
-    <p class="eyebrow" id="_eyebrow" data-os="Revenue OS">OPXIO · Revenue OS</p>
+    <p class="eyebrow" id="_eyebrow" data-os="Revenue OS">REVENUE OS</p>
     <h1 class="h-title">Win / Loss Log</h1>
   </div>
   <div class="h-right">
@@ -359,10 +359,10 @@ setInterval(loadData, 5 * 60 * 1000);
 <script>
 (function(){
   const _c = new URLSearchParams(location.search).get('client');
-  if(_c){
-    const el = document.getElementById('_eyebrow');
-    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
-  }
+  const el = document.getElementById('_eyebrow');
+  if(!el) return;
+  if(_c) el.textContent = _c.toUpperCase() + ' · ' + el.dataset.os.toUpperCase();
+  else    el.textContent = el.dataset.os.toUpperCase();
 })();
 </script>
 </body>
