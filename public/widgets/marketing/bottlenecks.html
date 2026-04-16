@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#F87171;--orange:#FB923C;--blue:#60A5FA;--teal:#2DD4BF;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--orange:#FB923C;--blue:#60A5FA;--teal:#2DD4BF;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
 
@@ -24,7 +24,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 .h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 .ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
-.total-badge{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px;background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.total-badge{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px;background:rgba(255,107,107,.12);color:var(--red);border:1px solid rgba(255,107,107,.2);}
 .total-badge.none{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 
 /* Summary stat chips */
@@ -55,7 +55,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .row-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
 .badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;}
 .badge{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 7px;border-radius:5px;white-space:nowrap;}
-.badge-overdue{background:rgba(248,113,113,.12);color:var(--red);}
+.badge-overdue{background:rgba(255,107,107,.12);color:var(--red);}
 .badge-today{background:rgba(251,146,60,.12);color:var(--orange);}
 .badge-revision{background:rgba(251,191,36,.1);color:var(--amber);}
 .badge-qc-content{background:rgba(96,165,250,.1);color:var(--blue);}
@@ -108,7 +108,7 @@ function fmtDate(d){
 }
 
 const CHIP_COLORS = {
-  overdue:    {val:'var(--red)',   bg:'rgba(248,113,113,.12)',  border:'rgba(248,113,113,.2)'},
+  overdue:    {val:'var(--red)',   bg:'rgba(255,107,107,.12)',  border:'rgba(255,107,107,.2)'},
   dueToday:   {val:'var(--orange)',bg:'rgba(251,146,60,.12)',   border:'rgba(251,146,60,.2)'},
   revisions:  {val:'var(--amber)', bg:'rgba(251,191,36,.1)',    border:'rgba(251,191,36,.18)'},
   contentQC:  {val:'var(--blue)',  bg:'rgba(96,165,250,.1)',    border:'rgba(96,165,250,.18)'},
