@@ -58,12 +58,21 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .reason-pill{font-size:9px;font-weight:700;color:#FB923C;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.18);border-radius:4px;padding:2px 7px;margin-top:4px;display:inline-block;}
 .row-val{font-size:13px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:-.4px;}
 
-/* Month filter select */
-.mf-select{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.6);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;outline:none;transition:all .2s;appearance:none;-webkit-appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
-.mf-select:hover,.mf-select:focus{border-color:var(--gb);color:var(--g);}
-.mf-select option{background:#252525;color:#fff;}
-/* Filter badge shown in panel when a month is active */
+/* Month nav arrows */
+.mn-wrap{display:flex;align-items:center;gap:3px;}
+.mn-btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;transition:all .2s;padding:0;}
+.mn-btn:hover:not(:disabled){border-color:var(--gb);color:var(--g);}
+.mn-btn:disabled{opacity:.25;cursor:default;}
+.mn-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);min-width:78px;text-align:center;background:#252525;border:1px solid rgba(255,255,255,.09);border-radius:6px;padding:4px 6px;white-space:nowrap;}
+/* Filter badge in panel */
 .filter-badge{font-size:9px;font-weight:700;padding:2px 9px;border-radius:5px;background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.2);display:none;}
+/* Lost reasons card */
+.reason-bar-track{background:rgba(255,255,255,.05);border-radius:999px;height:6px;overflow:hidden;flex:1;}
+.reason-bar-fill{height:6px;border-radius:999px;background:var(--orange);transition:width .6s cubic-bezier(.4,0,.2,1);}
+.reason-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.reason-row:last-child{margin-bottom:0;}
+.reason-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);min-width:0;flex:0 0 auto;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.reason-count{font-size:13px;font-weight:900;color:#fff;min-width:18px;text-align:right;flex-shrink:0;}
 /* Empty / loading */
 .empty{padding:40px 0;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
 .loading{display:flex;align-items:center;justify-content:center;min-height:200px;flex-direction:column;gap:10px;}
@@ -81,7 +90,11 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
-    <select class="mf-select" id="month-filter" onchange="applyFilter()"></select>
+    <div class="mn-wrap">
+      <button class="mn-btn" onclick="mnPrev()" title="Previous month">‹</button>
+      <span class="mn-lbl" id="mn-lbl">All Time</span>
+      <button class="mn-btn" id="mn-next" onclick="mnNext()" title="Next month">›</button>
+    </div>
     <button class="btn" id="rb" onclick="loadData()">↻ Refresh</button>
   </div>
 </div>
@@ -116,6 +129,8 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
   </div>
 </div>
 
+<div id="reasons-card" class="card panel" style="margin-bottom:12px;display:none;"></div>
+
 <div class="card panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
     <div class="tabs" style="margin-bottom:0;">
@@ -144,51 +159,97 @@ let tab = 'won';
 let pipeData  = null;
 let dealsData = null;
 
-// ── Month filter ──────────────────────────────────────────────────────────────
-function buildMonthOptions() {
-  const sel = document.getElementById('month-filter');
-  sel.innerHTML = '';
-  const now = new Date();
-  const allOpt = document.createElement('option');
-  allOpt.value = ''; allOpt.textContent = 'All Time'; sel.appendChild(allOpt);
-  for (let i = 0; i < 18; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const val = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    const lbl = d.toLocaleString('default', { month: 'short', year: 'numeric' });
-    const opt = document.createElement('option');
-    opt.value = val; opt.textContent = lbl;
-    sel.appendChild(opt);
-  }
+// ── Month nav state ───────────────────────────────────────────────────────────
+let filterMonth = null; // null = All Time, or { year, month 0-indexed }
+
+function fmtMonthLbl(fm) {
+  if (!fm) return 'All Time';
+  return new Date(fm.year, fm.month, 1).toLocaleString('default', {month:'short', year:'numeric'});
 }
 
-function getSelectedMonthYear() {
-  const v = document.getElementById('month-filter').value;
-  if (!v) return null;
-  const [y, m] = v.split('-').map(Number);
-  return { year: y, month: m - 1 };  // month is 0-indexed
+function updateMonthNav() {
+  document.getElementById('mn-lbl').textContent = fmtMonthLbl(filterMonth);
+  const now = new Date();
+  const atFuture = filterMonth && (filterMonth.year > now.getFullYear() || (filterMonth.year === now.getFullYear() && filterMonth.month >= now.getMonth()));
+  document.getElementById('mn-next').disabled = !filterMonth || atFuture;
+  const badge = document.getElementById('filter-badge');
+  if (filterMonth) { badge.textContent = fmtMonthLbl(filterMonth); badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+}
+
+function mnPrev() {
+  const now = new Date();
+  if (!filterMonth) filterMonth = { year: now.getFullYear(), month: now.getMonth() };
+  else filterMonth = { ...filterMonth };
+  filterMonth.month--;
+  if (filterMonth.month < 0) { filterMonth.month = 11; filterMonth.year--; }
+  updateMonthNav();
+  applyFilter();
+}
+
+function mnNext() {
+  if (!filterMonth) return;
+  filterMonth = { ...filterMonth };
+  filterMonth.month++;
+  if (filterMonth.month > 11) { filterMonth.month = 0; filterMonth.year++; }
+  const now = new Date();
+  if (filterMonth.year > now.getFullYear() || (filterMonth.year === now.getFullYear() && filterMonth.month > now.getMonth())) {
+    filterMonth = null;
+  }
+  updateMonthNav();
+  applyFilter();
 }
 
 function filterByMonth(items) {
-  const sel = getSelectedMonthYear();
-  if (!sel) return items;
+  if (!filterMonth) return items;
   return items.filter(d => {
-    if (!d.created) return true;
+    if (!d.created) return false;
     const dt = new Date(d.created);
-    return dt.getMonth() === sel.month && dt.getFullYear() === sel.year;
+    return dt.getMonth() === filterMonth.month && dt.getFullYear() === filterMonth.year;
   });
 }
 
 function applyFilter() {
-  const sel = getSelectedMonthYear();
-  const badge = document.getElementById('filter-badge');
-  if (sel) {
-    const lbl = document.getElementById('month-filter').options[document.getElementById('month-filter').selectedIndex].text;
-    badge.textContent = lbl; badge.style.display = '';
-  } else {
-    badge.style.display = 'none';
-  }
   updateStats();
   renderList();
+  renderLostReasons();
+}
+
+// ── Lost Reasons ──────────────────────────────────────────────────────────────
+function renderLostReasons() {
+  const card = document.getElementById('reasons-card');
+  if (!pipeData || !dealsData) { card.style.display = 'none'; return; }
+
+  const allLost = [
+    ...filterByMonth(pipeData.lostLeads  || []),
+    ...filterByMonth(dealsData.lostDeals || []),
+  ];
+
+  const counts = {};
+  for (const d of allLost) {
+    if (!d.lostReason) continue;
+    const parts = d.lostReason.split(',').map(s => s.trim()).filter(Boolean);
+    for (const r of parts) counts[r] = (counts[r] || 0) + 1;
+  }
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) { card.style.display = 'none'; return; }
+
+  const max = sorted[0][1];
+  card.style.display = '';
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);">Why Deals Are Lost</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(255,107,53,.1);color:var(--orange);border:1px solid rgba(255,107,53,.2);">${sorted[0][0]}</span>
+    </div>
+    ${sorted.map(([reason, count]) => {
+      const pct = Math.max(Math.round((count / max) * 100), 6);
+      return `<div class="reason-row">
+        <span class="reason-name" title="${esc(reason)}">${esc(reason)}</span>
+        <div class="reason-bar-track"><div class="reason-bar-fill" style="width:${pct}%;"></div></div>
+        <span class="reason-count">${count}</span>
+      </div>`;
+    }).join('')}`;
 }
 
 function setTab(t) {
@@ -290,6 +351,7 @@ async function loadData() {
     [pipeData, dealsData] = await Promise.all([rp.json(), rd.json()]);
     updateStats();
     renderList();
+    renderLostReasons();
   } catch(e) {
     document.getElementById('log-list').innerHTML =
       `<div class="empty">Failed to load — ${esc(e.message)}</div>`;
@@ -298,7 +360,7 @@ async function loadData() {
   }
 }
 
-buildMonthOptions();
+updateMonthNav();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 </script>

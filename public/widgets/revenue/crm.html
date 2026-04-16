@@ -14,10 +14,13 @@ body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
 .btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:.2px;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
-.mf-select{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.6);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;outline:none;transition:all .2s;appearance:none;-webkit-appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
-.mf-select:hover,.mf-select:focus{border-color:var(--gb);color:var(--g);}
-.mf-select option{background:#252525;color:#fff;}
-body.light .mf-select{background-color:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.5);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.3)'/%3E%3C/svg%3E");}
+.mn-wrap{display:flex;align-items:center;gap:3px;}
+.mn-btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;transition:all .2s;padding:0;line-height:1;}
+.mn-btn:hover:not(:disabled){border-color:var(--gb);color:var(--g);}
+.mn-btn:disabled{opacity:.25;cursor:default;}
+.mn-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);min-width:78px;text-align:center;background:#252525;border:1px solid rgba(255,255,255,.09);border-radius:6px;padding:4px 6px;white-space:nowrap;}
+body.light .mn-btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
+body.light .mn-lbl{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.5);}
 /* Top bar */
 .top-bar{display:flex;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
 .top-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
@@ -118,7 +121,11 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </div>
   <div class="top-right">
     <span class="ts" id="ts"></span>
-    <select class="mf-select" id="month-filter" onchange="doRefresh()"></select>
+    <div class="mn-wrap">
+      <button class="mn-btn" onclick="mnPrev()" title="Previous month">‹</button>
+      <span class="mn-lbl" id="mn-lbl">This Month</span>
+      <button class="mn-btn" id="mn-next" onclick="mnNext()" title="Next month" disabled>›</button>
+    </div>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
     <button class="btn" onclick="toggleLight()" id="lb">☀ Light</button>
   </div>
@@ -161,7 +168,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-dot"></div>
     <div class="s-lbl">Conv. Rate</div>
     <div class="s-val" id="d-conv">—</div>
-    <div class="s-sub">Leads converted this month</div>
+    <div class="s-sub" id="d-conv-sub">Leads converted this month</div>
   </div>
 </div>
 
@@ -199,32 +206,54 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
+
+// ── Month nav state (null = current month live) ──────────────────────────────
+let filterMonth = null; // { year, month 0-indexed } or null for current month
+
+function fmtMonthLbl(fm) {
+  if (!fm) return 'This Month';
+  return new Date(fm.year, fm.month, 1).toLocaleString('default', {month:'short', year:'numeric'});
+}
+
+function updateMonthNav() {
+  document.getElementById('mn-lbl').textContent = fmtMonthLbl(filterMonth);
+  const now = new Date();
+  const atNow = !filterMonth || (filterMonth.year === now.getFullYear() && filterMonth.month === now.getMonth());
+  const nextBtn = document.getElementById('mn-next');
+  nextBtn.disabled = atNow;
+}
+
+function mnPrev() {
+  const now = new Date();
+  if (!filterMonth) filterMonth = { year: now.getFullYear(), month: now.getMonth() };
+  filterMonth = { ...filterMonth };
+  filterMonth.month--;
+  if (filterMonth.month < 0) { filterMonth.month = 11; filterMonth.year--; }
+  updateMonthNav();
+  doRefresh();
+}
+
+function mnNext() {
+  if (!filterMonth) return;
+  filterMonth = { ...filterMonth };
+  filterMonth.month++;
+  if (filterMonth.month > 11) { filterMonth.month = 0; filterMonth.year++; }
+  const now = new Date();
+  if (filterMonth.year > now.getFullYear() || (filterMonth.year === now.getFullYear() && filterMonth.month >= now.getMonth())) {
+    filterMonth = null;
+  }
+  updateMonthNav();
+  doRefresh();
+}
+
 function apiUrl(p) {
-  const v   = document.getElementById('month-filter')?.value || '';
   const params = new URLSearchParams();
   if (_tok) params.set('token', _tok);
-  if (v) { const [y, m] = v.split('-'); params.set('month', m); params.set('year', y); }
+  if (filterMonth) { params.set('month', filterMonth.month + 1); params.set('year', filterMonth.year); }
   const qs = params.toString();
   return qs ? p + '?' + qs : p;
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function buildMonthOptions() {
-  const sel = document.getElementById('month-filter');
-  sel.innerHTML = '';
-  const now = new Date();
-  const allOpt = document.createElement('option');
-  allOpt.value = ''; allOpt.textContent = 'All Time'; sel.appendChild(allOpt);
-  for (let i = 0; i < 18; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const val = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    const lbl = d.toLocaleString('default', { month: 'short', year: 'numeric' });
-    const opt = document.createElement('option');
-    opt.value = val; opt.textContent = lbl;
-    if (i === 0) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
 
 let light = false;
 let funnelMode = 'leads';
@@ -353,6 +382,7 @@ async function loadData() {
     document.getElementById('d-potential-lbl').textContent = potLbl;
     document.getElementById('d-potential-sub').textContent = potSub;
     document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
+    document.getElementById('d-conv-sub').textContent = fmtMonthLbl(filterMonth) + ' · leads';
 
     // ── Active Deals (in-progress won stages, excluding delivered) ────────
     document.getElementById('d-deals').textContent = jd.activeDealsCount ?? '—';
@@ -409,7 +439,7 @@ function doRefresh() {
   loadData().then(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; });
 }
 
-buildMonthOptions();
+updateMonthNav();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 
