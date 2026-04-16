@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Content Pipeline</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 28px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#C084FC;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+
+/* KPI cards */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:560px){.g3{grid-template-columns:1fr 1fr;}}
+.stat{padding:16px 18px;position:relative;overflow:hidden;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.7;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:10px;display:block;}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-val.red{color:var(--red);}
+.s-val.amber{color:var(--amber);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+
+/* Rows */
+.mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:680px){.mid-row{grid-template-columns:1fr;}}
+.bot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:680px){.bot-row{grid-template-columns:1fr;}}
+.panel{padding:20px 22px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+
+/* Horizontal bar chart */
+.hbar-list{display:flex;flex-direction:column;gap:11px;}
+.hbar-row{display:flex;align-items:center;gap:10px;}
+.hbar-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.hbar-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.55);width:90px;flex-shrink:0;}
+.hbar-track{flex:1;height:9px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+.hbar-fill{height:9px;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.hbar-val{font-size:12px;font-weight:800;color:#fff;width:22px;text-align:right;flex-shrink:0;}
+.hbar-pct{font-size:9px;font-weight:600;color:rgba(255,255,255,.22);width:32px;text-align:right;flex-shrink:0;}
+
+/* Stacked pipeline bar */
+.pipeline-wrap{margin-bottom:20px;}
+.pipeline-track{display:flex;height:14px;border-radius:999px;overflow:hidden;gap:2px;}
+.pipeline-seg{height:14px;transition:width .7s cubic-bezier(.4,0,.2,1);border-radius:2px;}
+.pipeline-legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:12px;}
+.pl-item{display:flex;align-items:center;gap:6px;}
+.pl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pl-lbl{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);}
+.pl-count{font-size:10px;font-weight:800;color:#fff;margin-left:2px;}
+
+/* Task breakdown — same dash style */
+.task-dash-list{display:flex;flex-direction:column;gap:10px;}
+.td-row{display:flex;align-items:center;gap:9px;}
+.td-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.td-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);flex:1;}
+.td-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
+.td-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
+
+/* Mini stats for tasks */
+.task-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.task-mini{background:#252525;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:11px 10px;text-align:center;}
+.task-mini-val{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.task-mini-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-top:5px;}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;min-height:180px;flex-direction:column;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid rgba(170,255,0,.15);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow">Opxio · Marketing OS</p>
+    <h1 class="h-title">Content Pipeline</h1>
+  </div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" id="rb" onclick="render()">↻ Refresh</button>
+  </div>
+</div>
+
+<div id="dash">
+  <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
+</div>
+
+<script>
+// ── Mock data (replace with /api/marketing/content-pipeline?token= when ready) ──
+const DATA = {
+  publishingThisWeek: 4,
+  overdueContent: 2,
+  awaitingApproval: 3,
+
+  // Stacked pipeline: content pieces by stage
+  pipeline: [
+    { label: 'Brief',       count: 5,  color: 'rgba(96,165,250,.7)' },
+    { label: 'In Progress', count: 8,  color: '#AAFF00' },
+    { label: 'Review',      count: 3,  color: '#FBBF24' },
+    { label: 'Approved',    count: 2,  color: '#C084FC' },
+    { label: 'Published',   count: 12, color: 'rgba(255,255,255,.18)' },
+  ],
+
+  // Content by assignee
+  byAssignee: [
+    { name: 'Aiman',  count: 6, color: '#AAFF00' },
+    { name: 'Sofea',  count: 5, color: '#60A5FA' },
+    { name: 'Hana',   count: 4, color: '#FBBF24' },
+    { name: 'Danial', count: 3, color: '#C084FC' },
+    { name: 'Izzat',  count: 2, color: 'rgba(255,255,255,.3)' },
+  ],
+
+  // Tasks
+  tasks: {
+    notStarted:  4,
+    inProgress:  7,
+    pendingQC:   2,
+    revision:    1,
+    done:       15,
+  },
+};
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function render(){
+  const d = DATA;
+  const pipelineTotal = d.pipeline.reduce((a,p)=>a+p.count,0) || 1;
+  const assigneeMax   = Math.max(...d.byAssignee.map(a=>a.count), 1);
+  const taskTotal     = Object.values(d.tasks).reduce((a,v)=>a+v,0) || 1;
+
+  let html = '';
+
+  // ── KPI Cards ──
+  html += `<div class="g3">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Publishing This Week</span>
+      <div class="s-val">${d.publishingThisWeek}</div>
+      <div class="s-sub">Scheduled to publish</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--red);box-shadow:0 0 6px rgba(255,107,107,.35);"></div>
+      <span class="s-lbl">Overdue Content</span>
+      <div class="s-val red">${d.overdueContent}</div>
+      <div class="s-sub">Past publish date, not live</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--amber);"></div>
+      <span class="s-lbl">Awaiting Approval</span>
+      <div class="s-val amber">${d.awaitingApproval}</div>
+      <div class="s-sub">In approval / review stage</div>
+    </div>
+  </div>`;
+
+  // ── Section: Pipeline ──
+  html += `<div class="sec-lbl">Production</div>
+  <div class="mid-row">`;
+
+  // Production Status — stacked bar + breakdown bars
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Production Status</span>
+      <span class="panel-badge">${pipelineTotal} pieces</span>
+    </div>
+    <div class="pipeline-wrap">
+      <div class="pipeline-track">`;
+  for(const p of d.pipeline){
+    const w = (p.count/pipelineTotal*100).toFixed(1);
+    if(p.count > 0) html += `<div class="pipeline-seg" style="width:${w}%;background:${p.color};flex-shrink:0;" title="${p.label}: ${p.count}"></div>`;
+  }
+  html += `</div>
+      <div class="pipeline-legend">`;
+  for(const p of d.pipeline){
+    html += `<div class="pl-item">
+      <div class="pl-dot" style="background:${p.color};"></div>
+      <span class="pl-lbl">${esc(p.label)}</span>
+      <span class="pl-count">${p.count}</span>
+    </div>`;
+  }
+  html += `</div></div>
+    <div class="hbar-list">`;
+  for(const p of d.pipeline){
+    const w = Math.round((p.count / Math.max(...d.pipeline.map(x=>x.count),1))*100);
+    const pct = Math.round((p.count/pipelineTotal)*100);
+    html += `<div class="hbar-row">
+      <div class="hbar-dot" style="background:${p.color};"></div>
+      <span class="hbar-lbl">${esc(p.label)}</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(p.count>0?6:0,w)}%;background:${p.color};"></div></div>
+      <span class="hbar-val">${p.count}</span>
+      <span class="hbar-pct">${pct}%</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Content by Assignee
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Content by Assignee</span>
+      <span class="panel-badge">${d.byAssignee.reduce((a,x)=>a+x.count,0)} in production</span>
+    </div>
+    <div class="hbar-list">`;
+  for(const a of d.byAssignee){
+    const w = Math.round((a.count/assigneeMax)*100);
+    html += `<div class="hbar-row">
+      <div class="hbar-dot" style="background:${a.color};"></div>
+      <span class="hbar-lbl">${esc(a.name)}</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(w,a.count>0?8:0)}%;background:${a.color};"></div></div>
+      <span class="hbar-val">${a.count}</span>
+      <span class="hbar-pct"></span>
+    </div>`;
+  }
+  html += `</div></div>`;
+  html += `</div>`; // mid-row
+
+  // ── Section: Tasks ──
+  html += `<div class="sec-lbl">Tasks</div>
+  <div class="bot-row">`;
+
+  // Task mini stats
+  const t = d.tasks;
+  const activeTaskCount = t.inProgress + t.pendingQC + t.revision + t.notStarted;
+
+  html += `<div class="card panel">
+    <div class="panel-hdr"><span class="panel-title">Task Overview</span></div>
+    <div class="task-mini-row">
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:var(--g);">${activeTaskCount}</div>
+        <div class="task-mini-lbl">Active</div>
+      </div>
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:${t.pendingQC>0?'#FBBF24':'rgba(255,255,255,.2)'};">${t.pendingQC}</div>
+        <div class="task-mini-lbl">Pending QC</div>
+      </div>
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:${t.revision>0?'var(--red)':'rgba(255,255,255,.2)'};">${t.revision}</div>
+        <div class="task-mini-lbl">Revision</div>
+      </div>
+    </div>
+    <div class="task-dash-list">`;
+
+  const taskRows = [
+    { label: 'In Progress',  count: t.inProgress,  color: '#60A5FA' },
+    { label: 'Not Started',  count: t.notStarted,  color: 'rgba(255,255,255,.3)' },
+    { label: 'Pending QC',   count: t.pendingQC,   color: '#FBBF24' },
+    { label: 'Revision',     count: t.revision,    color: 'var(--red)' },
+    { label: 'Done',         count: t.done,        color: 'rgba(170,255,0,.4)' },
+  ];
+  for(const r of taskRows){
+    const active = r.count > 0;
+    html += `<div class="td-row">
+      <div class="td-dot" style="background:${r.color};${!active?'opacity:.3;':''}"></div>
+      <span class="td-lbl">${r.label}</span>
+      <div class="td-dash" style="background:${active?r.color:'rgba(255,255,255,.1)'};"></div>
+      <span class="td-count" style="color:${active?'#fff':'rgba(255,255,255,.25)'};">${r.count}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Task completion ring (SVG)
+  const pctDone = taskTotal > 0 ? Math.round((t.done/taskTotal)*100) : 0;
+  const CIRC = 2*Math.PI*42;
+  const doneFrac = t.done/taskTotal;
+  const ipFrac   = t.inProgress/taskTotal;
+
+  html += `<div class="card panel">
+    <div class="panel-hdr"><span class="panel-title">Task Completion</span></div>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;overflow:visible;">
+        <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="12"/>
+        ${doneFrac>0?`<circle cx="55" cy="55" r="42" fill="none" stroke="var(--g)" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="${Math.max(doneFrac*CIRC-2,1)} ${CIRC}"
+          transform="rotate(-90 55 55)" style="transition:all .8s"/>`:``}
+        ${ipFrac>0?`<circle cx="55" cy="55" r="42" fill="none" stroke="var(--amber)" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="${Math.max(ipFrac*CIRC-2,1)} ${CIRC}"
+          transform="rotate(${-90+doneFrac*360} 55 55)" style="transition:all .8s"/>`:``}
+        <text x="55" y="51" text-anchor="middle" font-family="Satoshi,sans-serif" font-size="20" font-weight="900" fill="var(--g)" letter-spacing="-1">${pctDone}%</text>
+        <text x="55" y="64" text-anchor="middle" font-family="Satoshi,sans-serif" font-size="7.5" font-weight="700" fill="rgba(255,255,255,.3)" text-transform="uppercase" letter-spacing="1">Complete</text>
+      </svg>
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">Done</span>
+          <span style="font-size:14px;font-weight:900;color:var(--g);">${t.done}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">In Progress</span>
+          <span style="font-size:14px;font-weight:900;color:var(--amber);">${t.inProgress}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">Total</span>
+          <span style="font-size:14px;font-weight:900;color:#fff;">${taskTotal}</span>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.05);"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">Pending QC</span>
+          <span style="font-size:14px;font-weight:900;color:${t.pendingQC>0?'#FBBF24':'rgba(255,255,255,.25)'};">${t.pendingQC}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">Revision</span>
+          <span style="font-size:14px;font-weight:900;color:${t.revision>0?'var(--red)':'rgba(255,255,255,.25)'};">${t.revision}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  html += `</div>`; // bot-row
+
+  document.getElementById('dash').innerHTML = html;
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Campaign Status</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 28px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--blue:#60A5FA;--purple:#C084FC;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+
+/* KPI cards */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:560px){.g3{grid-template-columns:1fr 1fr;}}
+.stat{padding:16px 18px;position:relative;overflow:hidden;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.7;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:10px;display:block;}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-val.red{color:var(--red);}
+.s-val.amber{color:var(--amber);}
+.s-val.white{color:#fff;}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+
+/* Mid row */
+.mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:680px){.mid-row{grid-template-columns:1fr;}}
+.panel{padding:20px 22px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+
+/* Horizontal bar chart (status) */
+.hbar-list{display:flex;flex-direction:column;gap:12px;}
+.hbar-row{display:flex;align-items:center;gap:10px;}
+.hbar-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);width:78px;flex-shrink:0;}
+.hbar-track{flex:1;height:10px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+.hbar-fill{height:10px;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.hbar-val{font-size:12px;font-weight:800;color:#fff;width:22px;text-align:right;flex-shrink:0;}
+.hbar-sub{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);width:36px;text-align:right;flex-shrink:0;}
+
+/* Budget utilisation — stacked bars per campaign */
+.budget-list{display:flex;flex-direction:column;gap:14px;}
+.budget-row{}
+.budget-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.budget-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.budget-pct{font-size:11px;font-weight:800;flex-shrink:0;margin-left:8px;}
+.budget-track{height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;position:relative;}
+.budget-spent{height:8px;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.budget-meta{display:flex;justify-content:space-between;margin-top:5px;}
+.budget-spent-lbl{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);}
+.budget-alloc-lbl{font-size:9px;font-weight:600;color:rgba(255,255,255,.2);}
+
+/* Campaign list table */
+.camp-table{width:100%;border-collapse:collapse;}
+.camp-table th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.25);padding:0 0 10px;text-align:left;}
+.camp-table th:last-child{text-align:right;}
+.camp-table td{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);padding:8px 0;border-top:1px solid rgba(255,255,255,.04);}
+.camp-table td:last-child{text-align:right;}
+.status-chip{font-size:9px;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-block;}
+.chip-live{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.chip-planning{background:rgba(96,165,250,.12);color:var(--blue);}
+.chip-paused{background:rgba(251,191,36,.1);color:var(--amber);}
+.chip-done{background:rgba(255,255,255,.07);color:rgba(255,255,255,.35);}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;min-height:180px;flex-direction:column;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid rgba(170,255,0,.15);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow">Opxio · Marketing OS</p>
+    <h1 class="h-title">Campaign Status</h1>
+  </div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" id="rb" onclick="render()">↻ Refresh</button>
+  </div>
+</div>
+
+<div id="dash">
+  <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
+</div>
+
+<script>
+// ── Mock data (replace with /api/marketing/campaign-status?token= when ready) ──
+const DATA = {
+  activeCampaigns: 3,
+  endingThisMonth: 1,
+  totalBudget: 24500,
+  currency: 'RM',
+  statusBreakdown: [
+    { label: 'Live',      count: 3, color: '#AAFF00' },
+    { label: 'Planning',  count: 2, color: '#60A5FA' },
+    { label: 'Paused',    count: 1, color: '#FBBF24' },
+    { label: 'Completed', count: 5, color: 'rgba(255,255,255,.2)' },
+  ],
+  budgetItems: [
+    { name: 'HMNS Twin Date 4.4',  spent: 3200,  allocated: 5000,  color: '#AAFF00' },
+    { name: 'Ramadan Campaign',    spent: 1800,  allocated: 3500,  color: '#60A5FA' },
+    { name: 'Summer KOL Push',     spent: 4100,  allocated: 8000,  color: '#FBBF24' },
+  ],
+  campaigns: [
+    { name: 'HMNS Twin Date 4.4',  status: 'Live',     end: '4 Apr 2026',  budget: 5000,  client: 'HMNS' },
+    { name: 'Ramadan Campaign',    status: 'Live',     end: '10 Apr 2026', budget: 3500,  client: 'Brandlab' },
+    { name: 'Summer KOL Push',     status: 'Live',     end: '30 Apr 2026', budget: 8000,  client: 'Aura Skin' },
+    { name: 'Q2 Brand Refresh',    status: 'Planning', end: '15 May 2026', budget: 4200,  client: 'Nelo' },
+    { name: 'Influencer Sprint',   status: 'Planning', end: '20 May 2026', budget: 3800,  client: 'Klarity' },
+    { name: 'Flash Sale Blast',    status: 'Paused',   end: '—',           budget: 2100,  client: 'HMNS' },
+  ],
+};
+
+function fmt(n){ return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'')+'k' : String(n); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function chipClass(s){
+  if(s==='Live')      return 'chip-live';
+  if(s==='Planning')  return 'chip-planning';
+  if(s==='Paused')    return 'chip-paused';
+  return 'chip-done';
+}
+
+function render(){
+  const d = DATA;
+  const maxStatus = Math.max(...d.statusBreakdown.map(s=>s.count), 1);
+
+  let html = '';
+
+  // ── KPI Cards ──
+  html += `<div class="g3">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Active Campaigns</span>
+      <div class="s-val">${d.activeCampaigns}</div>
+      <div class="s-sub">Currently running</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--amber);"></div>
+      <span class="s-lbl">Ending This Month</span>
+      <div class="s-val amber">${d.endingThisMonth}</div>
+      <div class="s-sub">Campaign${d.endingThisMonth!==1?'s':''} closing soon</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Total Budget in Play</span>
+      <div class="s-val white" style="font-size:26px;">${d.currency} ${fmt(d.totalBudget)}</div>
+      <div class="s-sub">Across active campaigns</div>
+    </div>
+  </div>`;
+
+  // ── Section: Charts ──
+  html += `<div class="sec-lbl">Breakdown</div>
+  <div class="mid-row">`;
+
+  // Campaigns by Status
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Campaigns by Status</span>
+      <span class="panel-badge">${d.statusBreakdown.reduce((a,s)=>a+s.count,0)} total</span>
+    </div>
+    <div class="hbar-list">`;
+  for(const s of d.statusBreakdown){
+    const w = Math.round((s.count/maxStatus)*100);
+    const pct = Math.round((s.count/d.statusBreakdown.reduce((a,x)=>a+x.count,0))*100);
+    html += `<div class="hbar-row">
+      <span class="hbar-lbl">${esc(s.label)}</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(w,s.count>0?6:0)}%;background:${s.color};"></div></div>
+      <span class="hbar-val">${s.count}</span>
+      <span class="hbar-sub" style="color:rgba(255,255,255,.2);">${pct}%</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Budget Utilisation
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Budget Utilisation</span>
+      <span class="panel-badge">Active only</span>
+    </div>
+    <div class="budget-list">`;
+  for(const b of d.budgetItems){
+    const pct = b.allocated > 0 ? Math.round((b.spent/b.allocated)*100) : 0;
+    const pctColor = pct >= 85 ? 'var(--red)' : pct >= 60 ? 'var(--amber)' : b.color;
+    html += `<div class="budget-row">
+      <div class="budget-hdr">
+        <span class="budget-name">${esc(b.name)}</span>
+        <span class="budget-pct" style="color:${pctColor};">${pct}%</span>
+      </div>
+      <div class="budget-track">
+        <div class="budget-spent" style="width:${pct}%;background:${pctColor};"></div>
+      </div>
+      <div class="budget-meta">
+        <span class="budget-spent-lbl">Spent: ${d.currency} ${b.spent.toLocaleString()}</span>
+        <span class="budget-alloc-lbl">/ ${d.currency} ${b.allocated.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+  html += `</div>`; // mid-row
+
+  // ── Campaign Table ──
+  html += `<div class="sec-lbl">All Campaigns</div>
+  <div class="card panel">
+    <table class="camp-table">
+      <thead><tr>
+        <th>Campaign</th>
+        <th>Client</th>
+        <th>Status</th>
+        <th>End Date</th>
+        <th>Budget</th>
+      </tr></thead>
+      <tbody>`;
+  for(const c of d.campaigns){
+    html += `<tr>
+      <td style="font-weight:700;color:rgba(255,255,255,.85);">${esc(c.name)}</td>
+      <td style="color:rgba(255,255,255,.4);">${esc(c.client)}</td>
+      <td><span class="status-chip ${chipClass(c.status)}">${esc(c.status)}</span></td>
+      <td style="color:rgba(255,255,255,.4);">${esc(c.end)}</td>
+      <td style="font-weight:700;">${d.currency} ${c.budget.toLocaleString()}</td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+
+  document.getElementById('dash').innerHTML = html;
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+render();
+</script>
+</body>
+</html>
