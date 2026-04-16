@@ -2,10 +2,10 @@
 // Called by a Notion button on the Dashboard Clients database.
 // Reads the row's properties from Notion and upserts into Supabase.
 //
-// Notion button sends:
-//   POST https://dashboard.opxio.io/api/sync-client?secret=<SYNC_SECRET>
-//   Body: { "data": { "id": "{{page_id}}" } }
-//   (Notion wraps the payload in a "data" key)
+// Notion button config:
+//   Action: "Send data to URL"
+//   URL:    https://dashboard.opxio.io/api/sync-client?secret=opxio-sync-2026
+//   Method: POST  (Notion auto-sends { "data": { "id": "{{page_id}}" } })
 
 import { createClient } from "@supabase/supabase-js"
 
@@ -35,35 +35,102 @@ function plain(richText) {
   return (richText || []).map(t => t.plain_text).join("").trim()
 }
 
-function parseJsonField(val) {
-  if (!val) return null
-  try { return JSON.parse(val) } catch { return null }
+function tryParseJson(str) {
+  if (!str) return null
+  try { return JSON.parse(str) } catch { return null }
 }
+
+// Build the Supabase row from Notion page properties.
+// Notion DB schema → Supabase clients table:
+//
+//  Client Name (title)      → client_name
+//  Slug        (text)       → slug          [unique key]
+//  Access Token(text)       → access_token
+//  Notion Token(text)       → notion_token
+//  Status      (select)     → status
+//  Stage Field (text)       → field_map.STAGE_FIELD
+//  Lead Stages (text/JSON)  → labels.stages + labels.activeStages
+//  Deal Stages (text/JSON)  → labels.dealAllStages + labels.dealPotentialStages + labels.dealWonStages
+//  Leads DB ID (text)       → databases.LEADS
+//  Deals DB ID (text)       → databases.DEALS
+//  Invoice DB ID (text)     → databases.INVOICE
+//  Projects DB ID (text)    → databases.PROJECTS
+//  Proposals DB ID (text)   → databases.PROPOSALS
+//  Quotations DB ID (text)  → databases.QUOTATIONS
 
 function mapPageToRow(page) {
   const p = page.properties
 
-  const clientName   = plain(p["Client Name"]?.title  || p.Name?.title || [])
-  const slug         = plain(p["Slug"]?.rich_text      || [])
-  const accessToken  = plain(p["Access Token"]?.rich_text || [])
-  const notionToken  = plain(p["Notion Token"]?.rich_text || [])
-  const statusVal    = p["Status"]?.select?.name || "active"
-  const databasesRaw = plain(p["Databases"]?.rich_text  || [])
-  const labelsRaw    = plain(p["Labels"]?.rich_text      || [])
-  const fieldMapRaw  = plain(p["Field Map"]?.rich_text   || [])
+  const clientName   = plain(p["Client Name"]?.title || [])
+  const slug         = plain(p["Slug"]?.rich_text     || [])
 
   if (!slug) throw new Error("Row is missing a Slug — cannot sync without a unique key.")
 
+  const accessToken  = plain(p["Access Token"]?.rich_text  || []) || null
+  const notionToken  = plain(p["Notion Token"]?.rich_text  || []) || null
+  const statusVal    = p["Status"]?.select?.name || "active"
+  const stageField   = plain(p["Stage Field"]?.rich_text   || []) || null
+
+  // DB IDs → databases JSONB
+  const leadsDbId      = plain(p["Leads DB ID"]?.rich_text     || []) || null
+  const dealsDbId      = plain(p["Deals DB ID"]?.rich_text     || []) || null
+  const invoiceDbId    = plain(p["Invoice DB ID"]?.rich_text   || []) || null
+  const projectsDbId   = plain(p["Projects DB ID"]?.rich_text  || []) || null
+  const proposalsDbId  = plain(p["Proposals DB ID"]?.rich_text || []) || null
+  const quotationsDbId = plain(p["Quotations DB ID"]?.rich_text|| []) || null
+
+  // Build databases object — only include non-empty values
+  const databases = {}
+  if (leadsDbId)      databases.LEADS      = leadsDbId
+  if (dealsDbId)      databases.DEALS      = dealsDbId
+  if (invoiceDbId)    databases.INVOICE    = invoiceDbId
+  if (projectsDbId)   databases.PROJECTS   = projectsDbId
+  if (proposalsDbId)  databases.PROPOSALS  = proposalsDbId
+  if (quotationsDbId) databases.QUOTATIONS = quotationsDbId
+
+  // Lead Stages → labels.stages + labels.activeStages
+  // Stored as JSON in Notion text field:
+  // { "stages": [...], "activeStages": [...] }  OR just a plain JSON array for stages
+  const leadStagesRaw = plain(p["Lead Stages"]?.rich_text || [])
+  const leadStagesObj = tryParseJson(leadStagesRaw)
+
+  // Deal Stages → labels.deal* fields
+  // Stored as JSON: { "all": [...], "potential": [...], "won": [...], "wonLabel": "...", "deliveredLabel": "..." }
+  const dealStagesRaw = plain(p["Deal Stages"]?.rich_text || [])
+  const dealStagesObj = tryParseJson(dealStagesRaw)
+
+  // Build labels object
+  const labels = {}
+  if (leadStagesObj) {
+    if (Array.isArray(leadStagesObj)) {
+      labels.stages = leadStagesObj
+    } else {
+      if (leadStagesObj.stages)       labels.stages       = leadStagesObj.stages
+      if (leadStagesObj.activeStages) labels.activeStages = leadStagesObj.activeStages
+    }
+  }
+  if (dealStagesObj) {
+    if (dealStagesObj.all)            labels.dealAllStages       = dealStagesObj.all
+    if (dealStagesObj.potential)      labels.dealPotentialStages = dealStagesObj.potential
+    if (dealStagesObj.won)            labels.dealWonStages       = dealStagesObj.won
+    if (dealStagesObj.wonLabel)       labels.dealWonLabel        = dealStagesObj.wonLabel
+    if (dealStagesObj.deliveredLabel) labels.dealDeliveredLabel  = dealStagesObj.deliveredLabel
+  }
+
+  // Build field_map
+  const field_map = {}
+  if (stageField) field_map.STAGE_FIELD = stageField
+
   return {
-    client_name:   clientName || slug,
+    client_name:  clientName || slug,
     slug,
-    access_token:  accessToken || null,
-    notion_token:  notionToken || null,
-    status:        statusVal.toLowerCase() === "inactive" ? "inactive" : "active",
-    databases:     parseJsonField(databasesRaw),
-    labels:        parseJsonField(labelsRaw),
-    field_map:     parseJsonField(fieldMapRaw),
-    updated_at:    new Date().toISOString(),
+    access_token: accessToken,
+    notion_token: notionToken,
+    status:       ["active","inactive","paused"].includes(statusVal) ? statusVal : "active",
+    databases:    Object.keys(databases).length > 0 ? databases : null,
+    labels:       Object.keys(labels).length > 0 ? labels : null,
+    field_map:    Object.keys(field_map).length > 0 ? field_map : null,
+    updated_at:   new Date().toISOString(),
   }
 }
 
@@ -73,16 +140,15 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
-  // ── Secret check ──────────────────────────────────────────────────────────
+  // Secret check
   const secret = req.query.secret
   if (!secret || secret !== SYNC_SECRET) {
     return res.status(401).json({ error: "Unauthorized" })
   }
 
   try {
-    // ── Extract page ID from Notion button payload ─────────────────────────
-    // Notion sends: { "data": { "id": "page-uuid", ... } }
-    // or sometimes at top level: { "id": "page-uuid" }
+    // Notion button sends: { "data": { "id": "page-uuid", ... } }
+    // Fallback: bare { "id": "..." } or ?pageId= query param
     const body   = req.body || {}
     const pageId = body?.data?.id || body?.id || req.query.pageId
 
@@ -90,11 +156,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing page ID. Expected body.data.id from Notion button." })
     }
 
-    // ── Fetch the Notion page ─────────────────────────────────────────────
     const page = await getNotionPage(pageId)
     const row  = mapPageToRow(page)
 
-    // ── Upsert into Supabase ──────────────────────────────────────────────
     const { error } = await supabase()
       .from("clients")
       .upsert(row, { onConflict: "slug" })
@@ -106,6 +170,8 @@ export default async function handler(req, res) {
       ok: true,
       synced: row.slug,
       client: row.client_name,
+      databases: row.databases,
+      labels: row.labels,
     })
 
   } catch (err) {
