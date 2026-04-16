@@ -19,9 +19,6 @@ export default async function handler(req, res) {
   const NOTION_KEY = getNotionToken(client)
 
   try {
-      return res.status(500).json({ error: 'NOTION_API_KEY not set' });
-    }
-
     const headers = {
       'Authorization': `Bearer ${NOTION_KEY}`,
       'Notion-Version': '2022-06-28',
