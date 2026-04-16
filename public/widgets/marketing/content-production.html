@@ -158,9 +158,9 @@ function render(d){
       <div class="s-sub">${dueToday > 0 ? dueToday + ' due today' : 'None due today'}</div>
     </div>
     <div class="card stat">
-      <div class="s-dot" style="background:var(--g);"></div>
+      <div class="s-dot" style="background:${dueWeek > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
       <span class="s-lbl">Due This Week</span>
-      <div class="s-val">${dueWeek}</div>
+      <div class="s-val" style="${dueWeek > 0 ? 'color:var(--orange);' : ''}">${dueWeek}</div>
       <div class="s-sub">Content &amp; tasks combined</div>
     </div>
     <div class="card stat">
