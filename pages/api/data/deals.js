@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const DEALS_DB      = resolveDB(client, "DEALS",      DB.DEALS)
     const PROPOSALS_DB  = resolveDB(client, "PROPOSALS",  DB.PROPOSALS)
     const QUOTATIONS_DB = resolveDB(client, "QUOTATIONS", DB.QUOTATIONS)
-    const stageField    = resolveField(client, "STAGE_FIELD",   "Stage")
+    const stageField    = resolveField(client, "DEAL_STAGE_FIELD", null) || resolveField(client, "STAGE_FIELD", "Stage")
     const packageField  = resolveField(client, "PACKAGE_FIELD", "Package Type")
 
     const now   = new Date()
