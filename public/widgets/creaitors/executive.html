@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Opxio — Executive Overview</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
@@ -79,7 +80,6 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .f-fill{height:100%;border-radius:6px;background:rgba(170,255,0,.4);}
 .f-fill.lost{background:rgba(251,146,60,.4);}
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.5);width:22px;text-align:right;flex-shrink:0;}
-.funnel-sub-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.2);margin-bottom:10px;}
 
 /* Win/Loss log */
 .wl-tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;}
@@ -100,6 +100,34 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+
+/* ── EDIT DRAWER ─────────────────────────────────────────────────────────── */
+.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+.edit-drawer{background:#1A1A1A;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:24px 24px 32px;max-height:90vh;overflow-y:auto;}
+.drawer-handle{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:99px;margin:0 auto 20px;}
+.drawer-title{font-size:16px;font-weight:900;color:#fff;letter-spacing:-.3px;margin-bottom:4px;}
+.drawer-sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:20px;}
+.sect-list{display:flex;flex-direction:column;gap:6px;margin-bottom:24px;}
+.sect-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#242424;border:1px solid rgba(255,255,255,.07);border-radius:10px;cursor:grab;user-select:none;transition:border-color .2s,background .2s;}
+.sect-item:active{cursor:grabbing;}
+.sect-item.sortable-ghost{opacity:.4;}
+.sect-item.sortable-chosen{background:#2A2A2A;border-color:var(--gb);}
+.drag-handle{color:rgba(255,255,255,.2);font-size:14px;flex-shrink:0;cursor:grab;}
+.sect-toggle{flex-shrink:0;}
+.sect-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--g);cursor:pointer;}
+.sect-info{flex:1;min-width:0;}
+.sect-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);}
+.sect-desc{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px;}
+.sect-os{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:4px;background:rgba(170,255,0,.08);color:rgba(170,255,0,.6);border:1px solid rgba(170,255,0,.12);flex-shrink:0;}
+.drawer-actions{display:flex;gap:8px;}
+.btn-save{flex:1;background:var(--g);border:none;color:#000;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:900;padding:12px;border-radius:10px;cursor:pointer;transition:opacity .2s;letter-spacing:-.2px;}
+.btn-save:hover{opacity:.88;}
+.btn-save:disabled{opacity:.4;cursor:default;}
+.btn-cancel{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.5);font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;padding:12px 18px;border-radius:10px;cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{border-color:rgba(255,255,255,.18);color:#fff;}
+.save-msg{font-size:11px;text-align:center;font-weight:700;padding:8px;border-radius:7px;margin-top:10px;display:none;}
+.save-msg.ok{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+.save-msg.err{background:rgba(241,113,113,.1);color:var(--red);border:1px solid rgba(241,113,113,.2);}
 </style>
 </head>
 <body>
@@ -119,13 +147,37 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
   <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
 </div>
 
+<!-- Edit drawer (shown when ?edit=1) -->
+<div class="edit-overlay" id="edit-overlay" style="display:none;" onclick="closeEdit(event)">
+  <div class="edit-drawer" onclick="event.stopPropagation()">
+    <div class="drawer-handle"></div>
+    <div class="drawer-title">Configure Dashboard</div>
+    <div class="drawer-sub">Toggle sections on / off and drag to reorder</div>
+    <div class="sect-list" id="sect-list"></div>
+    <div class="drawer-actions">
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn-save" id="btn-save" onclick="saveConfig()">Save Changes</button>
+    </div>
+    <div class="save-msg" id="save-msg"></div>
+  </div>
+</div>
+
 <script>
-const _tok      = new URLSearchParams(location.search).get('token') || '';
-const _client   = new URLSearchParams(location.search).get('client') || 'Creaitors';
-const _sections = (new URLSearchParams(location.search).get('sections') || 'campaign,content')
-  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+const _tok    = new URLSearchParams(location.search).get('token') || '';
+const _client = new URLSearchParams(location.search).get('client') || 'Creaitors';
+const _edit   = new URLSearchParams(location.search).get('edit') === '1';
 
 document.getElementById('eyebrow').textContent = 'OPXIO · ' + _client.toUpperCase();
+
+// ── Available sections catalog ────────────────────────────────────────────
+const SECTIONS_CATALOG = [
+  { id: 'campaign', label: 'Campaign Stats',     desc: 'Active campaigns, completion rate, deliverable progress', os: 'Marketing OS' },
+  { id: 'content',  label: 'Content Production', desc: 'Content in motion, status breakdown, due this week',      os: 'Marketing OS' },
+  { id: 'crm',      label: 'Revenue Pipeline',   desc: 'Lead & deal funnels, potential value, conv. rate',        os: 'Revenue OS'   },
+  { id: 'crm-log',  label: 'Win / Loss Log',      desc: 'Won deals, lost leads/deals, win rate, top reason',      os: 'Revenue OS'   },
+];
+
+let _sections = ['campaign', 'content']; // overwritten by API
 
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -133,20 +185,13 @@ function fmtDate(d){
   if(!d) return null;
   return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 }
-
-function pctColor(p){
-  if(p >= 80) return 'var(--g)';
-  if(p >= 50) return 'var(--amber)';
-  return 'var(--red)';
-}
-
+function pctColor(p){ return p >= 80 ? 'var(--g)' : p >= 50 ? 'var(--amber)' : 'var(--red)'; }
 function fmtRM(n){
   if(!n) return '—';
   if(n >= 1000000) return 'RM '+(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
   if(n >= 1000)    return 'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
   return 'RM '+Math.round(n).toLocaleString();
 }
-
 function csColor(l){
   const lc = (l||'').toLowerCase();
   if(lc.includes('done') || lc.includes('published'))                              return 'var(--g)';
@@ -155,13 +200,12 @@ function csColor(l){
   if(lc.includes('revision'))                                                        return 'var(--red)';
   return 'rgba(170,255,0,.5)';
 }
-
 function tsColor(l){
   const lc = (l||'').toLowerCase();
-  if(lc.includes('done'))        return 'var(--g)';
-  if(lc.includes('pending qc'))  return 'var(--amber)';
-  if(lc.includes('review'))      return 'var(--red)';
-  if(lc.includes('ready'))       return 'var(--orange)';
+  if(lc.includes('done'))       return 'var(--g)';
+  if(lc.includes('pending qc')) return 'var(--amber)';
+  if(lc.includes('review'))     return 'var(--red)';
+  if(lc.includes('ready'))      return 'var(--orange)';
   return 'rgba(170,255,0,.5)';
 }
 
@@ -207,12 +251,12 @@ function renderCampaign(d){
   if(camps.length){
     h += `<div class="scroll">`;
     for(const c of camps){
-      const col   = pctColor(c.pct);
+      const col = pctColor(c.pct);
       const start = fmtDate(c.startDate), end = fmtDate(c.endDate);
       const dateStr = start && end ? `${start} – ${end}` : start||end||'';
-      const remC  = (c.planned||0) - (c.done||0);
+      const remC = (c.planned||0) - (c.done||0);
       const TYPE_LABELS = {videos:'Videos',posters:'Posters',live:'Live',kol:'KOL'};
-      const cb2   = c.contentBreakdown || {};
+      const cb2 = c.contentBreakdown || {};
       const typeParts = Object.entries(TYPE_LABELS)
         .filter(([k]) => (cb2[k]?.planned||0) > 0)
         .map(([k,lbl]) => `<span style="color:rgba(255,255,255,.55);font-weight:700;">${cb2[k].planned} ${lbl}</span>`);
@@ -220,8 +264,7 @@ function renderCampaign(d){
         ? `<span style="color:var(--red);">${remC} left</span>`
         : `<span style="color:var(--g);">All done</span>`;
       const delivStr = c.planned > 0
-        ? (typeParts.length ? typeParts.join(' · ') + ' · ' + statusStr : statusStr)
-        : '';
+        ? (typeParts.length ? typeParts.join(' · ') + ' · ' + statusStr : statusStr) : '';
       h += `<div class="camp-item">
         <div class="camp-info">
           <div class="camp-name">${esc(c.name)}</div>
@@ -272,22 +315,17 @@ function renderContent(d){
       <span class="s-lbl">Needs Attention</span>
       <div class="s-val ${attn > 0 ? 'red' : ''}">${attn}</div>
       <div class="s-sub">${attn > 0 ? [
-        ab.overdue  > 0 ? ab.overdue+' overdue'  : '',
-        ab.revision > 0 ? ab.revision+' revision' : '',
-        ab.qc       > 0 ? ab.qc+' QC'            : '',
+        ab.overdue  > 0 ? ab.overdue+' overdue'   : '',
+        ab.revision > 0 ? ab.revision+' revision'  : '',
+        ab.qc       > 0 ? ab.qc+' QC'             : '',
       ].filter(Boolean).join(' · ') : 'All clear'}</div>
     </div>
   </div>`;
 
-  // Content status bars
-  const cStatuses = d.contentStatuses || [];
-  const cCounts   = d.contentStatusCounts || {};
-  const csMax     = Math.max(...cStatuses.map(s => cCounts[s]||0), 1);
-
-  // Task status bars
-  const tStatuses  = d.taskStatuses || [];
-  const tCounts    = d.taskStatusCounts || {};
-  const tsMax      = Math.max(...tStatuses.map(s => tCounts[s]||0), 1);
+  const cStatuses = d.contentStatuses || [], cCounts = d.contentStatusCounts || {};
+  const csMax = Math.max(...cStatuses.map(s => cCounts[s]||0), 1);
+  const tStatuses = d.taskStatuses || [], tCounts = d.taskStatusCounts || {};
+  const tsMax = Math.max(...tStatuses.map(s => tCounts[s]||0), 1);
   const activeTask = tStatuses.filter(s => (tCounts[s]||0) > 0);
 
   h += `<div class="mid-row">
@@ -299,18 +337,14 @@ function renderContent(d){
   const activeCt = cStatuses.filter(s => (cCounts[s]||0) > 0);
   if(activeCt.length){
     for(const s of activeCt){
-      const cnt = cCounts[s]||0;
-      const pct = Math.round((cnt/csMax)*100);
-      const col = csColor(s);
+      const cnt = cCounts[s]||0, pct = Math.round((cnt/csMax)*100), col = csColor(s);
       h += `<div class="cs-row">
         <span class="cs-lbl">${esc(s)}</span>
         <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
         <span class="cs-count" style="color:${col};">${cnt}</span>
       </div>`;
     }
-  } else {
-    h += `<div class="empty">No active content</div>`;
-  }
+  } else { h += `<div class="empty">No active content</div>`; }
   h += `</div>
     <div class="card panel">
       <div class="panel-hdr">
@@ -319,44 +353,35 @@ function renderContent(d){
       </div>`;
   if(activeTask.length){
     for(const s of activeTask){
-      const cnt = tCounts[s]||0;
-      const pct = Math.round((cnt/tsMax)*100);
-      const col = tsColor(s);
+      const cnt = tCounts[s]||0, pct = Math.round((cnt/tsMax)*100), col = tsColor(s);
       h += `<div class="cs-row">
         <span class="cs-lbl">${esc(s)}</span>
         <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
         <span class="cs-count" style="color:${col};">${cnt}</span>
       </div>`;
     }
-  } else {
-    h += `<div class="empty">No active tasks</div>`;
-  }
+  } else { h += `<div class="empty">No active tasks</div>`; }
   return h + `</div></div>`;
 }
 
-// ── SECTION: CRM (Revenue pipeline) ──────────────────────────────────────────
+// ── SECTION: CRM ─────────────────────────────────────────────────────────────
 function renderCRM(pipe, deals){
   const potVal = deals.potentialValue || pipe.leadsPotentialValue || deals.buildingValue || 0;
-
-  // Build funnel HTML
   function funnelHTML(stages, order, lostLabel){
     const maxN = Math.max(...order.map(k => stages[k]||0), 1);
     return order.map(key => {
-      const n   = stages[key]||0;
-      const pct = Math.max(Math.round((n/maxN)*100), n>0 ? 5 : 0);
-      const cls = (lostLabel && key === lostLabel) ? ' lost' : '';
+      const n = stages[key]||0, pct = Math.max(Math.round((n/maxN)*100), n>0?5:0);
       return `<div class="f-row">
         <span class="f-lbl">${esc(key)}</span>
-        <div class="f-bg"><div class="f-fill${cls}" style="width:${pct}%;"></div></div>
+        <div class="f-bg"><div class="f-fill${lostLabel&&key===lostLabel?' lost':''}" style="width:${pct}%;"></div></div>
         <span class="f-n">${n||''}</span>
       </div>`;
     }).join('');
   }
+  const lS = pipe.stages||{}, lO = pipe.stageOrder||Object.keys(lS);
+  const dS = deals.stages||{}, dO = deals.stageOrder||Object.keys(dS);
 
-  const lStages = pipe.stages || {}, lOrder = pipe.stageOrder || Object.keys(lStages);
-  const dStages = deals.stages || {}, dOrder = deals.stageOrder || Object.keys(dStages);
-
-  let h = `<div class="sec-lbl">Revenue</div>
+  return `<div class="sec-lbl">Revenue</div>
   <div class="g4">
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
@@ -373,7 +398,7 @@ function renderCRM(pipe, deals){
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
       <span class="s-lbl">Potential Value</span>
-      <div class="s-val" style="font-size:${potVal >= 1000 ? '22px' : '30px'};">${potVal ? fmtRM(potVal) : '—'}</div>
+      <div class="s-val" style="font-size:${potVal>=1000?'22px':'30px'};">${potVal?fmtRM(potVal):'—'}</div>
       <div class="s-sub">Pre-win deal value</div>
     </div>
     <div class="card stat">
@@ -389,41 +414,42 @@ function renderCRM(pipe, deals){
         <span class="panel-title">Lead Pipeline</span>
         <span class="panel-badge">${pipe.totalActive||0} leads</span>
       </div>
-      ${funnelHTML(lStages, lOrder, pipe.lostLabel)}
+      ${funnelHTML(lS, lO, pipe.lostLabel)}
     </div>
     <div class="card panel">
       <div class="panel-hdr">
         <span class="panel-title">Deal Pipeline</span>
         <span class="panel-badge">${deals.activeDealsCount||0} deals</span>
       </div>
-      ${funnelHTML(dStages, dOrder, deals.lostLabel)}
+      ${funnelHTML(dS, dO, deals.lostLabel)}
     </div>
   </div>`;
-  return h;
 }
 
-// ── SECTION: CRM-LOG (Win/Loss log) ──────────────────────────────────────────
+// ── SECTION: CRM-LOG ─────────────────────────────────────────────────────────
 function renderCRMLog(pipe, deals){
-  const wonDeals  = deals.wonDeals  || [];
-  const lostLeads = pipe.lostLeads  || [];
-  const lostDeals = deals.lostDeals || [];
+  const wonDeals  = deals.wonDeals  || [], lostLeads = pipe.lostLeads  || [], lostDeals = deals.lostDeals || [];
   const lostTotal = lostLeads.length + lostDeals.length;
   const totalClosed = wonDeals.length + lostDeals.length;
   const winRate   = totalClosed > 0 ? Math.round((wonDeals.length/totalClosed)*100) : null;
   const wonValue  = wonDeals.reduce((s,d) => s+(d.value||0), 0);
-
-  // Top lost reason
-  const rCounts = {};
+  const rCounts   = {};
   for(const d of [...lostLeads, ...lostDeals]){
     if(!d.lostReason) continue;
     d.lostReason.split(',').map(s=>s.trim()).filter(Boolean).forEach(r => rCounts[r]=(rCounts[r]||0)+1);
   }
   const topReason = Object.entries(rCounts).sort((a,b)=>b[1]-a[1])[0];
 
-  // Only show "Revenue" label if crm section didn't already add it
-  let h = _sections.includes('crm') ? '' : `<div class="sec-lbl">Revenue</div>`;
+  window._wlData = {
+    won:  wonDeals.slice(0,8),
+    lost: [...lostDeals.map(d=>({...d,_t:'deal'})), ...lostLeads.map(d=>({...d,_t:'lead'}))].slice(0,8),
+  };
 
-  h += `<div class="g4">
+  // Skip "Revenue" label if crm already added it
+  const secLabel = _sections.includes('crm') ? '' : `<div class="sec-lbl">Revenue</div>`;
+
+  return `${secLabel}
+  <div class="g4">
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
       <span class="s-lbl">Won Deals</span>
@@ -446,29 +472,21 @@ function renderCRMLog(pipe, deals){
       <div class="s-dot" style="background:${topReason?'var(--orange)':'var(--g)'};"></div>
       <span class="s-lbl">Top Lost Reason</span>
       <div style="font-size:14px;font-weight:900;color:var(--orange);line-height:1.3;margin-bottom:5px;">${topReason?esc(topReason[0]):'—'}</div>
-      <div class="s-sub">${topReason ? topReason[1]+' occurrence'+(topReason[1]>1?'s':'') : 'No data'}</div>
+      <div class="s-sub">${topReason?topReason[1]+' occurrence'+(topReason[1]>1?'s':''):'No data'}</div>
     </div>
-  </div>`;
-
-  // Store for tab switching
-  window._wlData = {
-    won:  wonDeals.slice(0,8),
-    lost: [...lostDeals.map(d=>({...d,_t:'deal'})), ...lostLeads.map(d=>({...d,_t:'lead'}))].slice(0,8),
-  };
-
-  h += `<div class="full-row card panel">
+  </div>
+  <div class="full-row card panel">
     <div class="panel-hdr" style="margin-bottom:0;">
       <span class="panel-title">Win / Loss Log</span>
     </div>
     <div style="margin-top:14px;">
       <div class="wl-tabs">
         <button class="wl-tab won" id="wlt-won" onclick="wlTab('won')">Won (${window._wlData.won.length})</button>
-        <button class="wl-tab"     id="wlt-lost" onclick="wlTab('lost')">Lost (${window._wlData.lost.length})</button>
+        <button class="wl-tab"    id="wlt-lost" onclick="wlTab('lost')">Lost (${window._wlData.lost.length})</button>
       </div>
       <div id="wl-list"></div>
     </div>
   </div>`;
-  return h;
 }
 
 let _wlTab = 'won';
@@ -479,8 +497,7 @@ window.wlTab = function(t){
   renderWLList();
 };
 function renderWLList(){
-  const el = document.getElementById('wl-list');
-  if(!el) return;
+  const el = document.getElementById('wl-list'); if(!el) return;
   const rows = (window._wlData||{})[_wlTab] || [];
   if(!rows.length){ el.innerHTML = `<div class="empty">No ${_wlTab} entries</div>`; return; }
   el.innerHTML = rows.map(d => {
@@ -488,48 +505,140 @@ function renderWLList(){
     const badge = _wlTab === 'won'
       ? `<span class="wl-badge wl-badge-won">${esc(d.stage||'Won')}</span>`
       : `<span class="wl-badge wl-badge-lost">${d._t==='lead'?'Lead':'Deal'}</span>`;
-    return `<div class="wl-item" ${click}>
-      <span class="wl-name">${esc(d.name)}</span>
-      ${badge}
-      <span class="wl-val">${d.value ? fmtRM(d.value) : ''}</span>
-    </div>`;
+    return `<div class="wl-item" ${click}><span class="wl-name">${esc(d.name)}</span>${badge}<span class="wl-val">${d.value?fmtRM(d.value):''}</span></div>`;
   }).join('');
+}
+
+// ── EDIT DRAWER ───────────────────────────────────────────────────────────────
+function openEdit(){
+  const list = document.getElementById('sect-list');
+  // Build items: active sections first (in order), then inactive ones
+  const activeSecs = _sections.filter(id => SECTIONS_CATALOG.find(s => s.id === id));
+  const inactiveSecs = SECTIONS_CATALOG.filter(s => !_sections.includes(s.id));
+  const ordered = [
+    ...activeSecs.map(id => SECTIONS_CATALOG.find(s => s.id === id)),
+    ...inactiveSecs,
+  ];
+  list.innerHTML = ordered.map(s => `
+    <div class="sect-item" data-id="${s.id}">
+      <span class="drag-handle">⠿</span>
+      <div class="sect-toggle">
+        <input type="checkbox" id="chk-${s.id}" ${_sections.includes(s.id) ? 'checked' : ''}>
+      </div>
+      <div class="sect-info">
+        <div class="sect-name">${s.label}</div>
+        <div class="sect-desc">${s.desc}</div>
+      </div>
+      <span class="sect-os">${s.os}</span>
+    </div>`).join('');
+
+  // Init SortableJS
+  if(window.Sortable){
+    new Sortable(list, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+    });
+  }
+  document.getElementById('save-msg').style.display = 'none';
+  document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function closeEdit(e){
+  if(e && e.target !== document.getElementById('edit-overlay')) return;
+  document.getElementById('edit-overlay').style.display = 'none';
+}
+
+async function saveConfig(){
+  const btn = document.getElementById('btn-save');
+  const msg = document.getElementById('save-msg');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  // Collect ordered + checked sections
+  const items = document.querySelectorAll('#sect-list .sect-item');
+  const sections = [];
+  items.forEach(item => {
+    const id  = item.dataset.id;
+    const chk = item.querySelector('input[type=checkbox]');
+    if(chk && chk.checked) sections.push(id);
+  });
+
+  if(!sections.length){
+    msg.textContent = 'Select at least one section.';
+    msg.className = 'save-msg err'; msg.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Save Changes';
+    return;
+  }
+
+  try{
+    const r = await fetch('/api/executive/config?token='+_tok, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sections }),
+    });
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.error || 'Save failed');
+    _sections = j.sections;
+    msg.textContent = '✓ Saved! Reloading…';
+    msg.className = 'save-msg ok'; msg.style.display = 'block';
+    setTimeout(() => { document.getElementById('edit-overlay').style.display = 'none'; load(); }, 1200);
+  } catch(e){
+    msg.textContent = e.message;
+    msg.className = 'save-msg err'; msg.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
 }
 
 // ── LOAD ─────────────────────────────────────────────────────────────────────
 async function load(){
   document.getElementById('rb').textContent = '↻ Refreshing…';
 
-  const needCampaign = _sections.includes('campaign');
-  const needContent  = _sections.includes('content');
-  const needRevenue  = _sections.includes('crm') || _sections.includes('crm-log');
-
-  const fetchMap = {};
-  if(needCampaign) fetchMap.campaign = fetch('/api/creaitors/campaign-stats?token='+_tok).then(r=>r.json());
-  if(needContent)  fetchMap.content  = fetch('/api/creaitors/content-stats?token='+_tok).then(r=>r.json());
-  if(needRevenue){
-    fetchMap.pipe  = fetch('/api/data/pipeline?token='+_tok).then(r=>r.json());
-    fetchMap.deals = fetch('/api/data/deals?token='+_tok).then(r=>r.json());
-  }
-
   try{
+    // Step 1: fetch config from API (falls back to default on error)
+    try{
+      const cr = await fetch('/api/executive/config?token='+_tok);
+      if(cr.ok){
+        const cj = await cr.json();
+        if(Array.isArray(cj.sections) && cj.sections.length) _sections = cj.sections;
+      }
+    } catch(e){ /* use default */ }
+
+    // Step 2: fetch data for active sections (parallel, deduplicated)
+    const needCampaign = _sections.includes('campaign');
+    const needContent  = _sections.includes('content');
+    const needRevenue  = _sections.includes('crm') || _sections.includes('crm-log');
+
+    const fetchMap = {};
+    if(needCampaign) fetchMap.campaign = fetch('/api/creaitors/campaign-stats?token='+_tok).then(r=>r.json());
+    if(needContent)  fetchMap.content  = fetch('/api/creaitors/content-stats?token='+_tok).then(r=>r.json());
+    if(needRevenue){
+      fetchMap.pipe  = fetch('/api/data/pipeline?token='+_tok).then(r=>r.json());
+      fetchMap.deals = fetch('/api/data/deals?token='+_tok).then(r=>r.json());
+    }
+
     const keys    = Object.keys(fetchMap);
     const results = await Promise.all(keys.map(k => fetchMap[k]));
     const data    = {};
     keys.forEach((k,i) => data[k] = results[i]);
 
+    // Step 3: render sections in saved order
     let html = '';
     for(const sec of _sections){
-      if(sec === 'campaign' && data.campaign)              html += renderCampaign(data.campaign);
-      if(sec === 'content'  && data.content)               html += renderContent(data.content);
-      if(sec === 'crm'      && data.pipe && data.deals)    html += renderCRM(data.pipe, data.deals);
-      if(sec === 'crm-log'  && data.pipe && data.deals)    html += renderCRMLog(data.pipe, data.deals);
+      if(sec === 'campaign' && data.campaign)           html += renderCampaign(data.campaign);
+      if(sec === 'content'  && data.content)            html += renderContent(data.content);
+      if(sec === 'crm'      && data.pipe && data.deals) html += renderCRM(data.pipe, data.deals);
+      if(sec === 'crm-log'  && data.pipe && data.deals) html += renderCRMLog(data.pipe, data.deals);
     }
 
-    document.getElementById('dash').innerHTML = html || `<div class="empty">No sections configured — add ?sections=campaign,content</div>`;
+    document.getElementById('dash').innerHTML = html || `<div class="empty" style="margin-top:20px;">No sections configured.<br><br>Open <strong>?edit=1</strong> to configure.</div>`;
     document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 
     if(_sections.includes('crm-log')) renderWLList();
+
+    // Open edit drawer if ?edit=1
+    if(_edit) openEdit();
 
   } catch(e){
     document.getElementById('dash').innerHTML = `
