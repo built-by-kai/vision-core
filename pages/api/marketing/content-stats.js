@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     CONTENT_STATUS:     resolveField(client, 'CONTENT_STATUS',     'Content Status'),
     CONTENT_DUE:        resolveField(client, 'CONTENT_DUE',        'Content Due'),
     PUBLISH_DUE:        resolveField(client, 'PUBLISH_DUE',        'Publish Due'),
+    CONTENT_ASSIGNED:   resolveField(client, 'CONTENT_ASSIGNED',   'Assigned To'),
     TASK_STATUS:        resolveField(client, 'TASK_STATUS',        'Task Status'),
     TASK_DUE:           resolveField(client, 'TASK_DUE',           'Task Due'),
     CONTENT_PRODUCTION: resolveField(client, 'CONTENT_PRODUCTION', 'Content Production'),
@@ -76,8 +77,9 @@ export default async function handler(req, res) {
       return all;
     }
 
-    const getStatus = p => p?.type === 'status' ? p.status?.name : null;
-    const getDate   = p => p?.type === 'date'   ? p.date?.start : null;
+    const getStatus  = p => p?.type === 'status' ? p.status?.name : null;
+    const getDate    = p => p?.type === 'date'   ? p.date?.start : null;
+    const getPeople  = p => p?.type === 'people' ? (p.people || []).map(u => u.name).filter(Boolean) : [];
 
     const now       = new Date();
     const todayStr  = now.toISOString().slice(0, 10);
@@ -97,6 +99,7 @@ export default async function handler(req, res) {
     let contentQC         = 0;
     let contentOverdue    = 0;
     let contentDueThisWeek= 0;
+    const assigneeCounts  = {};
 
     for (const page of contentPages) {
       const p      = page.properties;
@@ -107,12 +110,24 @@ export default async function handler(req, res) {
       if (status === L.contentRevision)     contentRevision++;
       if (status === L.contentQC)           contentQC++;
 
+      // Count active content per assignee
+      const people = getPeople(p[F.CONTENT_ASSIGNED]);
+      for (const name of people) {
+        assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
+      }
+
       const deadline = getDate(p[F.CONTENT_DUE]) || getDate(p[F.PUBLISH_DUE]);
       if (deadline) {
         if (deadline < todayStr) contentOverdue++;
         else if (deadline <= in7Days) contentDueThisWeek++;
       }
     }
+
+    // Sort assignees by count desc, cap at 8
+    const byAssignee = Object.entries(assigneeCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
 
     // ── Task stats ─────────────────────────────────────────────
     let tasksTotal       = 0;
@@ -163,6 +178,7 @@ export default async function handler(req, res) {
       // Card 1: Content in Motion
       contentInMotion,
       contentBreakdown: { revision: contentRevision, qc: contentQC },
+      byAssignee,
 
       // Card 2: Active Tasks
       tasksTotal,
