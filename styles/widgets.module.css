@@ -168,6 +168,22 @@
   text-align: right;
 }
 
+/* ── Widget Embed List ─────────────────────────────────── */
+.widgetEmbedList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.widgetIframe {
+  width: 100%;
+  min-height: 420px;
+  border: none;
+  border-radius: 8px;
+  display: block;
+}
+
 /* ── Skeletons ─────────────────────────────────────────── */
 .skeletonRow {
   display: grid;
