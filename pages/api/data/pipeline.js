@@ -44,6 +44,7 @@ export default async function handler(req, res) {
     let thisMonthLeads     = 0
     let thisMonthConverted = 0
     let thisMonthLost      = 0
+    let leadsPotentialValue = 0
     const sourceCounts     = {}
 
     // Determine "converted" and "lost" labels — last two stages if not explicitly named
@@ -55,6 +56,7 @@ export default async function handler(req, res) {
       const stage = p[stageField]?.status?.name || p[stageField]?.select?.name || "Unknown"
       const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
       const pkg   = p["OS Interest"]?.select?.name || p["Interested In"]?.multi_select?.map(x => x.name).join(", ") || ""
+      const leadVal = p["Potential Value"]?.number || p["Estimated Value"]?.number || p["Value"]?.number || p["Deal Value"]?.number || 0
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
 
@@ -63,6 +65,7 @@ export default async function handler(req, res) {
       if (ACTIVE_STAGES.includes(stage)) {
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, pkg })
+        leadsPotentialValue += leadVal
       }
 
       if (isThisMonth) {
@@ -113,6 +116,7 @@ export default async function handler(req, res) {
       thisMonthWon:        thisMonthConverted,
       totalLostLeads,
       lostLabel,
+      leadsPotentialValue,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),

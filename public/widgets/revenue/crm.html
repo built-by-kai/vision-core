@@ -386,20 +386,19 @@ async function loadData() {
     renderDealsList();
 
     document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
-    // Potential value: show pre-win if available, else fall back to active deal value
-    if (jd.potentialValue) {
-      document.getElementById('d-potential').textContent     = fmtRM(jd.potentialValue);
-      document.getElementById('d-potential-lbl').textContent = 'Potential Value';
-      document.getElementById('d-potential-sub').textContent = 'Pre-win deal value';
-    } else if (jd.buildingValue) {
-      document.getElementById('d-potential').textContent     = fmtRM(jd.buildingValue);
-      document.getElementById('d-potential-lbl').textContent = 'Active Deal Value';
-      document.getElementById('d-potential-sub').textContent = 'Won deals in progress';
-    } else {
-      document.getElementById('d-potential').textContent     = '—';
-      document.getElementById('d-potential-lbl').textContent = 'Deal Value';
-      document.getElementById('d-potential-sub').textContent = 'No active deals';
-    }
+    // Potential value: deals pipeline first, then leads pipeline, then active deal value
+    const potVal = jd.potentialValue || jp.leadsPotentialValue || jd.buildingValue || 0;
+    const potLbl = jd.potentialValue     ? 'Potential Value'
+                 : jp.leadsPotentialValue ? 'Leads Potential'
+                 : jd.buildingValue       ? 'Active Deal Value'
+                 : 'Deal Value';
+    const potSub = jd.potentialValue     ? 'Pre-win deal value'
+                 : jp.leadsPotentialValue ? 'From active leads'
+                 : jd.buildingValue       ? 'Won deals in progress'
+                 : 'No active deals';
+    document.getElementById('d-potential').textContent     = potVal ? fmtRM(potVal) : '—';
+    document.getElementById('d-potential-lbl').textContent = potLbl;
+    document.getElementById('d-potential-sub').textContent = potSub;
     document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
 
     // ── Active Deals (in-progress won stages, excluding delivered) ────────
