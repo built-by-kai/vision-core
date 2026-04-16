@@ -159,12 +159,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Sort assignees by count desc, cap at 8
-    const byAssignee = Object.entries(assigneeCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-
     // ── Task stats ─────────────────────────────────────────────
     let tasksTotal       = 0;
     let tasksWaiting     = 0;
@@ -202,6 +196,14 @@ export default async function handler(req, res) {
       if (status === L.taskQC)                                                                        tasksQC++;
       if (status === L.taskRevision)                                                                  tasksRevision++;
 
+      // Count active tasks per assignee (from Tasks DB "Assigned To" relation/people)
+      if (status !== L.taskDone) {
+        const taskPeople = getAssignees(p['Assigned To'] || p[F.CONTENT_ASSIGNED]);
+        for (const name of taskPeople) {
+          assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
+        }
+      }
+
       const dueDate = getDate(p[F.TASK_DUE]);
       if (dueDate) {
         if (dueDate < todayStr)        tasksOverdue++;
@@ -209,6 +211,12 @@ export default async function handler(req, res) {
         else if (dueDate <= in7Days)   tasksDueThisWeek++;
       }
     }
+
+    // Sort assignees by count desc, cap at 8
+    const byAssignee = Object.entries(assigneeCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
 
     return res.status(200).json({
       // Card 1: Content in Motion
