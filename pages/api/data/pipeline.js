@@ -20,7 +20,8 @@ export default async function handler(req, res) {
     const notionToken = getNotionToken(client)
     // Resolve LEADS DB — try uppercase key first, then lowercase fallback
     const LEADS_DB    = client?.databases?.["LEADS"] || client?.databases?.["leads"] || resolveDB(client, "LEADS", DB.LEADS)
-    const stageField  = resolveField(client, "STAGE_FIELD", "Stage")
+    // LEAD_STAGE_FIELD takes priority (for clients where lead stage ≠ deal stage, e.g. Creaitors uses "Funnel")
+    const stageField  = resolveField(client, "LEAD_STAGE_FIELD", null) || resolveField(client, "STAGE_FIELD", "Stage")
 
     // Stage config — from client labels or Opxio defaults
     const ALL_STAGES    = client.labels?.stages    || ["Incoming","Contacted","Discovery Done","Converted","Lost"]
