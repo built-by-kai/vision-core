@@ -203,6 +203,17 @@ export default async function handler(req, res) {
 
     // ── COMPLETE TASK ─────────────────────────────────────────────────────────
     if (action === 'complete') {
+      const isPostingTask = /posting/i.test(taskName);
+      if (isPostingTask) {
+        const postingLink = props['Posting Link']?.url || null;
+        if (!postingLink?.trim()) {
+          return res.status(422).json({
+            error: 'Posting Link required.',
+            message: `Cannot complete "${taskName}" — paste the posting link before marking done.`,
+          });
+        }
+      }
+
       const startedOnRaw     = props['Task Started On']?.date?.start || null;
       const doneOnRaw        = props['Task Done On']?.date?.start || null;
       const accMins          = props['Accumulated Mins']?.number || 0;
