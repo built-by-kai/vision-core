@@ -59,6 +59,8 @@ export default async function handler(req, res) {
     let wonThisMonth       = 0
     let deliveredThisMonth = 0
     const boardGroups = {}
+    const wonDeals  = []
+    const lostDeals = []
 
     for (const deal of deals) {
       const p     = deal.properties
@@ -66,6 +68,7 @@ export default async function handler(req, res) {
       const name  = plain(p["Deal Name"]?.title || p.Name?.title || p.Title?.title || []) || "Untitled"
       const value = p["Total Value"]?.number || p["Estimated Value"]?.number || p["Deal Value"]?.number || p["Value"]?.number || p["Fee"]?.number || p["Contract Value"]?.number || 0
       const pkg   = p[packageField]?.select?.name || ""
+      const lostReason = p["Lost Reason"]?.select?.name || null
       const d     = new Date(deal.created_time)
       const isThisMonth = d.getMonth() === month && d.getFullYear() === year
 
@@ -76,7 +79,11 @@ export default async function handler(req, res) {
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, value, pkg })
       }
-      if (WON_STAGES.includes(stage)) buildingValue += value
+      if (WON_STAGES.includes(stage)) {
+        buildingValue += value
+        wonDeals.push({ name, value, stage, pkg })
+      }
+      if (stage === lostLabel) lostDeals.push({ name, value, lostReason, pkg })
       if (isThisMonth && stage === wonLabel)       wonThisMonth++
       if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
     }
@@ -133,6 +140,8 @@ export default async function handler(req, res) {
       // ── Stat card helpers ──
       totalLostDeals: stages[lostLabel] || 0,
       lostLabel,
+      wonDeals,
+      lostDeals,
       activeDealsCount,
       activeWonStages,
       deliveryStage,
