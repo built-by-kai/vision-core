@@ -93,7 +93,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 
 <div class="header">
   <div>
-    <p class="eyebrow">Opxio · Creaitors</p>
+    <p class="eyebrow" id="eyebrow">OPXIO.IO · CREAITORS</p>
     <h1 class="h-title">Executive View</h1>
   </div>
   <div class="h-right">
@@ -272,8 +272,17 @@ async function load(){
   }
 }
 
+// Set client name from ?client= param
+const _client = new URLSearchParams(location.search).get('client') || 'Creaitors';
+document.getElementById('eyebrow').textContent = 'OPXIO.IO · ' + _client.toUpperCase();
+
 load();
 setInterval(load, 600000);
 </script>
+
+<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">
+  Widgets by Opxio.io
+</div>
+
 </body>
 </html>
