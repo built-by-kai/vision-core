@@ -11,71 +11,72 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:12px 12px 20px;backg
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B35;
   --planning:#C084FC;--shooting:#60A5FA;--editing:#FBBF24;--posting:#AAFF00;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
 
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:12px;}
-
-.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.4);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s;}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.38);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .18s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 
 /* Header */
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:2px;}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:1px;}
 .h-title{font-size:17px;font-weight:900;color:#fff;letter-spacing:-.03em;}
 .h-right{display:flex;align-items:center;gap:6px;}
-.ts{font-size:10px;color:rgba(255,255,255,.16);font-weight:500;}
+.ts{font-size:9.5px;color:rgba(255,255,255,.15);font-weight:500;}
 
 /* Tabs */
 .tabs{display:flex;gap:3px;background:rgba(255,255,255,.04);border-radius:8px;padding:3px;width:fit-content;margin-bottom:5px;}
-.tab{font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.28);cursor:pointer;transition:all .18s;}
-.tab:hover{color:rgba(255,255,255,.55);}
+.tab{font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.26);cursor:pointer;transition:all .18s;}
+.tab:hover{color:rgba(255,255,255,.5);}
 .tab.active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
-.period-lbl{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.16);margin-bottom:12px;min-height:14px;}
+.period-lbl{font-size:9px;font-weight:600;color:rgba(255,255,255,.16);margin-bottom:12px;min-height:13px;font-variant-numeric:tabular-nums;}
 
-/* Grid */
-.emp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-@media(max-width:800px){.emp-grid{grid-template-columns:repeat(2,1fr);}}
+/* 4-column grid */
+.emp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media(max-width:900px){.emp-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:480px){.emp-grid{grid-template-columns:1fr;}}
 
 /* Card */
-.emp-card{padding:14px;}
+.emp-card{padding:14px 14px 12px;}
 
-/* Header row */
-.emp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+/* Card header */
+.emp-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:12px;}
+.emp-info{min-width:0;flex:1;}
 .emp-name{font-size:12px;font-weight:900;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.emp-role{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);margin-top:1px;}
-.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:8px;}
-.dot-active{background:#AAFF00;box-shadow:0 0 5px rgba(170,255,0,.5);}
-.dot-inactive{background:#FF6B35;}
-.dot-leave{background:#FBBF24;}
+.emp-role{font-size:9px;font-weight:600;color:rgba(255,255,255,.24);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.sdot-on{background:#AAFF00;box-shadow:0 0 5px rgba(170,255,0,.45);}
+.sdot-off{background:#FF6B35;}
+.sdot-lv{background:#FBBF24;}
 
 /* Summary */
-.emp-summary{display:flex;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
-.emp-done-num{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
-.emp-done-meta{display:flex;flex-direction:column;gap:1px;}
-.emp-done-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);}
-.emp-done-dur{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);}
+.emp-sum{display:flex;align-items:baseline;gap:6px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
+.sum-num{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.sum-meta{display:flex;flex-direction:column;gap:1px;padding-bottom:1px;}
+.sum-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.22);}
+.sum-dur{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.38);}
 
 /* Type rows */
-.type-list{display:flex;flex-direction:column;gap:0;}
-.type-row{display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.035);}
+.type-list{display:flex;flex-direction:column;}
+.type-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.035);}
 .type-row:last-child{border-bottom:none;}
-.type-dot{width:6px;height:6px;border-radius:50%;}
-.type-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.type-dur{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);text-align:right;}
-.type-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:18px;text-align:right;}
-.type-row.zero .type-label{color:rgba(255,255,255,.18);}
-.type-row.zero .type-count{color:rgba(255,255,255,.13);}
-.type-row.zero .type-dot{opacity:.2;}
+.tdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.tlbl{font-size:10px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tdur{font-size:9px;font-weight:600;color:rgba(255,255,255,.22);flex-shrink:0;min-width:36px;text-align:right;}
+.tnum{font-size:13px;font-weight:900;letter-spacing:-.5px;flex-shrink:0;min-width:16px;text-align:right;}
+
+.type-row.zero .tlbl{color:rgba(255,255,255,.16);}
+.type-row.zero .tnum{color:rgba(255,255,255,.12);}
+.type-row.zero .tdot{opacity:.18;}
 
 /* Empty */
-.emp-empty{font-size:10px;color:rgba(255,255,255,.2);font-weight:600;padding:4px 0;}
+.emp-empty{font-size:10px;color:rgba(255,255,255,.18);font-weight:600;}
 
 /* Loading */
-.loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:8px;}
-.spinner{width:16px;height:16px;border:2px solid rgba(170,255,0,.1);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+.loading{display:flex;align-items:center;justify-content:center;min-height:100px;flex-direction:column;gap:8px;}
+.spinner{width:15px;height:15px;border:2px solid rgba(170,255,0,.1);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{font-size:10px;color:rgba(255,255,255,.22);font-weight:600;}
+.loading-text{font-size:10px;color:rgba(255,255,255,.2);font-weight:600;}
 </style>
 </head>
 <body>
@@ -104,111 +105,103 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:12px 12px 20px;backg
 
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
-let _tab  = 'week';
-let _data = null;
+let _tab = 'week', _data = null;
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// Format ISO date range "2026-04-14 – 2026-04-20" → "14-04-2026 – 20-04-2026"
-function fmtDateRange(label){
+function fmtRange(label){
   if(!label) return '';
-  return label.replace(/(\d{4})-(\d{2})-(\d{2})/g, (_,y,m,d)=>`${d}-${m}-${y}`);
+  return label.replace(/(\d{4})-(\d{2})-(\d{2})/g,(_,y,m,d)=>`${d}-${m}-${y}`);
 }
 
-const TYPE_CONFIG = [
-  { key:'planning', label:'Planning', color:'var(--planning)' },
-  { key:'shooting', label:'Shooting', color:'var(--shooting)' },
-  { key:'editing',  label:'Editing',  color:'var(--editing)'  },
-  { key:'posting',  label:'Posting',  color:'var(--posting)'  },
+const TYPES = [
+  {key:'planning',label:'Planning',col:'var(--planning)'},
+  {key:'shooting',label:'Shooting',col:'var(--shooting)'},
+  {key:'editing', label:'Editing', col:'var(--editing)' },
+  {key:'posting', label:'Posting', col:'var(--posting)' },
 ];
 
-function dotClass(s){
-  if(s==='Active')   return 'dot-active';
-  if(s==='Inactive') return 'dot-inactive';
-  return 'dot-leave';
-}
+function sdotClass(s){return s==='Active'?'sdot-on':s==='Inactive'?'sdot-off':'sdot-lv';}
 
 function renderCard(emp){
-  const d     = emp[_tab] || {};
-  const total = d.total  || {};
-  const periodLabel = _tab==='week' ? 'this week' : _tab==='month' ? 'this month' : 'all time';
+  const d = emp[_tab] || {};
+  const tot = d.total || {};
+  const pl = _tab==='week'?'this week':_tab==='month'?'this month':'all time';
 
   const hdr = `<div class="emp-hdr">
-    <div style="min-width:0;flex:1;">
+    <div class="emp-info">
       <div class="emp-name">${esc(emp.name)}</div>
-      ${emp.role ? `<div class="emp-role">${esc(emp.role)}</div>` : ''}
+      ${emp.role?`<div class="emp-role">${esc(emp.role)}</div>`:''}
     </div>
-    <div class="status-dot ${dotClass(emp.status)}"></div>
+    <div class="sdot ${sdotClass(emp.status)}"></div>
   </div>`;
 
-  if(!total.done){
-    return `<div class="card emp-card">${hdr}<div class="emp-empty">No tasks done ${periodLabel}</div></div>`;
+  if(!tot.done){
+    return `<div class="card emp-card">${hdr}<div class="emp-empty">No tasks done ${pl}</div></div>`;
   }
 
-  const summary = `<div class="emp-summary">
-    <div class="emp-done-num">${total.done}</div>
-    <div class="emp-done-meta">
-      <span class="emp-done-lbl">Tasks Done</span>
-      ${total.duration ? `<span class="emp-done-dur">${esc(total.duration)}</span>` : ''}
+  const sum = `<div class="emp-sum">
+    <span class="sum-num">${tot.done}</span>
+    <div class="sum-meta">
+      <span class="sum-lbl">Tasks Done</span>
+      ${tot.duration?`<span class="sum-dur">${esc(tot.duration)}</span>`:''}
     </div>
   </div>`;
 
-  let rows = `<div class="type-list">`;
-  for(const tc of TYPE_CONFIG){
-    const t = d[tc.key] || {};
-    const z = !t.done;
-    rows += `<div class="type-row${z?' zero':''}">
-      <div class="type-dot" style="background:${tc.color};"></div>
-      <span class="type-label">${esc(tc.label)}</span>
-      <span class="type-dur">${t.duration ? esc(t.duration) : '—'}</span>
-      <span class="type-count" style="color:${z?'rgba(255,255,255,.13)':tc.color};">${t.done||0}</span>
+  let rows='<div class="type-list">';
+  for(const t of TYPES){
+    const td=d[t.key]||{};
+    const z=!td.done;
+    rows+=`<div class="type-row${z?' zero':''}">
+      <div class="tdot" style="background:${t.col};"></div>
+      <span class="tlbl" style="${z?'':'color:rgba(255,255,255,.5);'}">${t.label}</span>
+      <span class="tdur">${td.duration?esc(td.duration):'—'}</span>
+      <span class="tnum" style="color:${z?'rgba(255,255,255,.12)':t.col};">${td.done||0}</span>
     </div>`;
   }
-  rows += `</div>`;
+  rows+='</div>';
 
-  return `<div class="card emp-card">${hdr}${summary}${rows}</div>`;
+  return `<div class="card emp-card">${hdr}${sum}${rows}</div>`;
 }
 
 function render(data){
   if(!data?.employees) return;
-
-  const lbl = document.getElementById('period-lbl');
-  if(_tab==='week')  lbl.textContent = fmtDateRange(data.weekLabel  || '');
-  else if(_tab==='month') lbl.textContent = data.monthLabel || '';
-  else lbl.textContent = '';
+  const lbl=document.getElementById('period-lbl');
+  if(_tab==='week') lbl.textContent=fmtRange(data.weekLabel||'');
+  else if(_tab==='month') lbl.textContent=data.monthLabel||'';
+  else lbl.textContent='';
 
   if(!data.employees.length){
-    document.getElementById('dash').innerHTML = '<div class="loading"><div style="font-size:11px;color:rgba(255,255,255,.25);font-weight:700;">No staff data found</div></div>';
+    document.getElementById('dash').innerHTML='<div class="loading"><div style="font-size:11px;color:rgba(255,255,255,.22);font-weight:700;">No staff data</div></div>';
     return;
   }
-
-  let html = '<div class="emp-grid">';
-  for(const emp of data.employees) html += renderCard(emp);
-  html += '</div>';
-  document.getElementById('dash').innerHTML = html;
-  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  let html='<div class="emp-grid">';
+  for(const e of data.employees) html+=renderCard(e);
+  html+='</div>';
+  document.getElementById('dash').innerHTML=html;
+  document.getElementById('ts').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 
-window.switchTab = function(tab){
-  _tab = tab;
+window.switchTab=function(tab){
+  _tab=tab;
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
   if(_data) render(_data);
 };
 
 async function loadData(){
-  document.getElementById('rb').textContent = '↻ Refreshing…';
+  document.getElementById('rb').textContent='↻ Refreshing…';
   try{
-    const r = await fetch('/api/marketing/staff-breakdown?token='+_tok);
+    const r=await fetch('/api/marketing/staff-breakdown?token='+_tok);
     if(!r.ok) throw new Error('API '+r.status);
-    _data = await r.json();
+    _data=await r.json();
     render(_data);
   }catch(e){
-    document.getElementById('dash').innerHTML = `<div class="loading">
+    document.getElementById('dash').innerHTML=`<div class="loading">
       <div style="font-size:11px;color:#FF6B35;font-weight:700;">Failed to load</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.22);margin-top:4px;">${esc(e.message)}</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.2);margin-top:4px;">${esc(e.message)}</div>
     </div>`;
   }finally{
-    document.getElementById('rb').textContent = '↻ Refresh';
+    document.getElementById('rb').textContent='↻ Refresh';
   }
 }
 
