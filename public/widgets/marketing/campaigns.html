@@ -34,7 +34,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 .s-val.red{color:var(--red);}
 .s-val.amber{color:var(--amber);}
-.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+.s-sub{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.38);margin-top:6px;}
 
 /* Mid row */
 .mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
@@ -64,13 +64,14 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .camp-item:last-child{border-bottom:none;}
 .camp-info{flex:1;min-width:0;}
 .camp-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.camp-dates{font-size:9.5px;font-weight:600;color:rgba(170,255,0,.5);margin-top:2px;white-space:nowrap;}
+.camp-dates{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);margin-top:2px;white-space:nowrap;}
 .camp-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--gm);color:var(--g);border:1px solid rgba(170,255,0,.15);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
 .camp-bar-wrap{width:56px;flex-shrink:0;}
 .camp-track{background:rgba(255,255,255,.05);border-radius:999px;height:5px;overflow:hidden;}
 .camp-fill{height:5px;border-radius:999px;}
 .camp-pct{font-size:12px;font-weight:900;min-width:34px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
-.camp-delivs{font-size:9px;font-weight:700;color:rgba(170,255,0,.45);margin-top:2px;}
+.camp-delivs{font-size:10px;font-weight:600;color:rgba(255,255,255,.38);margin-top:3px;line-height:1.5;}
+.camp-delivs .dl{color:rgba(255,255,255,.55);font-weight:700;}
 
 /* Loading / empty */
 .loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:10px;}
@@ -170,9 +171,19 @@ function render(camp){
       const start  = fmtDate(c.startDate);
       const end    = fmtDate(c.endDate);
       const dateStr = start && end ? `${start} – ${end}` : start || end || '';
-      const remC   = (c.planned || 0) - (c.done || 0);
+      const remC = (c.planned || 0) - (c.done || 0);
+      // Build per-type breakdown string e.g. "7 Videos · 3 Posters"
+      const TYPE_LABELS = {videos:'Videos', posters:'Posters', live:'Live', kol:'KOL'};
+      const cb2 = c.contentBreakdown || {};
+      const typeParts = Object.entries(TYPE_LABELS)
+        .filter(([k]) => (cb2[k]?.planned || 0) > 0)
+        .map(([k, lbl]) => `<span class="dl">${cb2[k].planned} ${lbl}</span>`);
+      const typeStr = typeParts.join(' · ');
+      const statusStr = remC > 0
+        ? `<span style="color:var(--lost);">${remC} left</span>`
+        : `<span style="color:var(--g);">All done</span>`;
       const delivStr = c.planned > 0
-        ? `${c.done}/${c.planned} deliverables${remC > 0 ? ' · <span style="color:var(--lost);">' + remC + ' left</span>' : ' · <span style="color:var(--g);">done</span>'}`
+        ? (typeStr ? typeStr + ' &nbsp;·&nbsp; ' + statusStr : statusStr)
         : '';
       html += `<div class="camp-item">
         <div class="camp-info">
