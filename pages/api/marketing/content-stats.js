@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     CONTENT_DUE:        resolveField(client, 'CONTENT_DUE',        'Content Due'),
     PUBLISH_DUE:        resolveField(client, 'PUBLISH_DUE',        'Publish Due'),
     CONTENT_ASSIGNED:   resolveField(client, 'CONTENT_ASSIGNED',   'Assigned To'),
+    CAMPAIGN:           resolveField(client, 'CAMPAIGN',           'Campaign'),
     TASK_STATUS:        resolveField(client, 'TASK_STATUS',        'Task Status'),
     TASK_DUE:           resolveField(client, 'TASK_DUE',           'Task Due'),
     CONTENT_PRODUCTION: resolveField(client, 'CONTENT_PRODUCTION', 'Content Production'),
@@ -114,12 +115,13 @@ export default async function handler(req, res) {
     ]);
 
     // ── Content stats ──────────────────────────────────────────
-    let contentInMotion   = 0;
-    let contentRevision   = 0;
-    let contentQC         = 0;
-    let contentOverdue    = 0;
-    let contentDueThisWeek= 0;
-    const assigneeCounts  = {};
+    let contentInMotion          = 0;
+    let contentLinkedToCampaign  = 0;
+    let contentRevision          = 0;
+    let contentQC                = 0;
+    let contentOverdue           = 0;
+    let contentDueThisWeek       = 0;
+    const assigneeCounts         = {};
 
     for (const page of contentPages) {
       const p      = page.properties;
@@ -129,6 +131,10 @@ export default async function handler(req, res) {
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
       if (status === L.contentRevision)     contentRevision++;
       if (status === L.contentQC)           contentQC++;
+
+      // Check if linked to a campaign
+      const campaignRel = p[F.CAMPAIGN]?.relation || [];
+      if (campaignRel.length > 0) contentLinkedToCampaign++;
 
       // Count active content per assignee
       const people = getAssignees(p[F.CONTENT_ASSIGNED]);
@@ -197,6 +203,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       // Card 1: Content in Motion
       contentInMotion,
+      contentLinkedToCampaign,
       contentBreakdown: { revision: contentRevision, qc: contentQC },
       byAssignee,
 
