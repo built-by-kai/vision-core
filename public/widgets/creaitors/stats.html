@@ -202,6 +202,20 @@ function render() {
 
       <div class="card">
         <div class="dot"></div>
+        <div class="label">Active Campaigns</div>
+        <div class="val">${fmt(c.activeCampaigns)}</div>
+        <div class="sub">${campSub}</div>
+      </div>
+
+      <div class="card">
+        <div class="dot"></div>
+        <div class="label">Avg Completion</div>
+        <div class="val">${c.avgCompletion != null ? c.avgCompletion + '%' : '—'}</div>
+        <div class="sub">${compSub}</div>
+      </div>
+
+      <div class="card">
+        <div class="dot"></div>
         <div class="label">Content in Motion</div>
         <div class="val">${fmt(d.contentInMotion)}</div>
         <div class="sub">${sub1}</div>
@@ -226,20 +240,6 @@ function render() {
         <div class="label">Needs Attention</div>
         <div class="val">${fmt(d.needsAttention)}</div>
         <div class="sub">${sub4}</div>
-      </div>
-
-      <div class="card">
-        <div class="dot"></div>
-        <div class="label">Active Campaigns</div>
-        <div class="val">${fmt(c.activeCampaigns)}</div>
-        <div class="sub">${campSub}</div>
-      </div>
-
-      <div class="card">
-        <div class="dot"></div>
-        <div class="label">Avg Completion</div>
-        <div class="val">${c.avgCompletion != null ? c.avgCompletion + '%' : '—'}</div>
-        <div class="sub">${compSub}</div>
       </div>
 
     </div>`;
