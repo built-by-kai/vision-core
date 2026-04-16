@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
       const pkg        = p["OS Interest"]?.select?.name || p["Interested In"]?.multi_select?.map(x => x.name).join(", ") || ""
       const leadVal    = p["Potential Value"]?.number || p["Estimated Value"]?.number || p["Value"]?.number || p["Deal Value"]?.number || 0
-      const lostReason = p["Why Not Closing?"]?.select?.name || p["Lost Reason"]?.select?.name || null
+      const lostReason = p["Lost Reason"]?.select?.name || p["Why Not Closing?"]?.select?.name || null
       const pageUrl    = `https://www.notion.so/${lead.id.replace(/-/g, "")}`
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
