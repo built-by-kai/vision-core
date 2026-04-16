@@ -84,22 +84,19 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
     <div class="s-dot" style="background:var(--g);"></div>
     <span class="s-lbl">Won Deals</span>
     <div class="s-val" id="s-won">—</div>
-    <div class="s-sub" id="s-won-sub">Active &amp; delivered</div>
-    <div class="s-sub" id="s-won-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
+    <div class="s-sub" id="s-won-sub">—</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Leads</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-leads">—</div>
-    <div class="s-sub">Leads that didn't convert</div>
-    <div class="s-sub" id="s-lost-leads-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
+    <div class="s-sub" id="s-lost-leads-sub">Leads that didn't convert</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Deals</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-deals">—</div>
-    <div class="s-sub">Deals that fell through</div>
-    <div class="s-sub" id="s-lost-deals-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
+    <div class="s-sub" id="s-lost-deals-sub">Deals that fell through</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--g);"></div>
@@ -188,10 +185,8 @@ function renderList() {
   }
 }
 
-function showVal(id, val) {
-  const el = document.getElementById(id);
-  if (val) { el.textContent = fmtRM(val); el.style.display = ''; }
-  else { el.style.display = 'none'; }
+function withVal(base, val) {
+  return val ? base + ' · ' + fmtRM(val) : base;
 }
 
 function updateStats() {
@@ -203,15 +198,13 @@ function updateStats() {
   const winRate = totalClosed > 0 ? Math.round((wonCount / totalClosed) * 100) : null;
 
   document.getElementById('s-won').textContent        = wonCount;
-  document.getElementById('s-won-sub').textContent    = wonCount === 1 ? '1 deal' : wonCount + ' deals';
+  document.getElementById('s-won-sub').textContent    = withVal(wonCount === 1 ? '1 deal' : wonCount + ' deals', dealsData.wonValue);
   document.getElementById('s-lost-leads').textContent = lostLeads;
+  document.getElementById('s-lost-leads-sub').textContent = withVal("Leads that didn't convert", pipeData.lostLeadsValue);
   document.getElementById('s-lost-deals').textContent = lostDeals;
+  document.getElementById('s-lost-deals-sub').textContent = withVal('Deals that fell through', dealsData.lostValue);
   document.getElementById('s-winrate').textContent    = winRate != null ? winRate + '%' : '—';
   document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-
-  showVal('s-won-val',        dealsData.wonValue  || 0);
-  showVal('s-lost-leads-val', pipeData.lostLeadsValue || 0);
-  showVal('s-lost-deals-val', dealsData.lostValue || 0);
 }
 
 async function loadData() {
