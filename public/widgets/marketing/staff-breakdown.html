@@ -26,44 +26,44 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 20px;backg
 
 /* Card header bar */
 .card-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 14px;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;gap:10px;}
-.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);}
+.card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);}
 .card-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.period-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);font-variant-numeric:tabular-nums;}
+.period-lbl{font-size:12px;font-weight:600;color:rgba(255,255,255,.25);font-variant-numeric:tabular-nums;}
 
 /* Tabs inside card */
 .tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;}
-.tab{font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 13px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.28);cursor:pointer;transition:all .18s;}
+.tab{font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;padding:5px 13px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.28);cursor:pointer;transition:all .18s;}
 .tab.active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 
 /* Column headers */
-.col-hdr{display:grid;grid-template-columns:150px 1fr 1fr 1fr 1fr 72px 80px;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.05);gap:8px;}
-.ch{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.25);text-align:center;}
+.col-hdr{display:grid;grid-template-columns:160px 1fr 1fr 1fr 1fr 72px 90px;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.05);gap:8px;}
+.ch{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.25);text-align:center;}
 .ch:first-child{text-align:left;}
 .ch.accent{color:rgba(255,255,255,.35);}
 
 /* Staff row */
-.staff-row{display:grid;grid-template-columns:150px 1fr 1fr 1fr 1fr 72px 80px;align-items:center;padding:13px 20px;border-bottom:1px solid rgba(255,255,255,.04);gap:8px;transition:background .15s;}
+.staff-row{display:grid;grid-template-columns:160px 1fr 1fr 1fr 1fr 72px 90px;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.04);gap:8px;transition:background .15s;}
 .staff-row:last-child{border-bottom:none;}
 .staff-row:hover{background:rgba(255,255,255,.02);}
 
 /* Name cell */
 .s-name{display:flex;align-items:center;gap:8px;min-width:0;}
-.s-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.s-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .s-dot-on{background:#AAFF00;box-shadow:0 0 5px rgba(170,255,0,.5);}
 .s-dot-off{background:#FF6B35;}
 .s-dot-lv{background:#FBBF24;}
-.s-label{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.s-role{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s-label{font-size:14px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s-role{font-size:11px;font-weight:600;color:rgba(255,255,255,.28);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* Type cell */
 .type-cell{text-align:center;}
-.type-num{font-size:18px;font-weight:900;letter-spacing:-.5px;line-height:1;}
-.type-dur{font-size:10px;font-weight:600;color:rgba(255,255,255,.22);margin-top:3px;}
+.type-num{font-size:20px;font-weight:900;letter-spacing:-.5px;line-height:1;}
+.type-dur{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);margin-top:3px;}
 
 /* Total cell */
 .total-cell{text-align:center;}
-.total-num{font-size:22px;font-weight:900;letter-spacing:-1px;color:var(--g);line-height:1;}
-.total-dur-val{font-size:12px;font-weight:700;line-height:1;}
+.total-num{font-size:24px;font-weight:900;letter-spacing:-1px;color:var(--g);line-height:1;}
+.total-dur-val{font-size:13px;font-weight:700;line-height:1;}
 
 /* Zero state */
 .zero-num{color:rgba(255,255,255,.12);}

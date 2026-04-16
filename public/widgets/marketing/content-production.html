@@ -116,10 +116,11 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 // Semantic color by status label keyword
 function statusColor(label){
   const l = (label||'').toLowerCase();
-  if(l.includes('done') || l.includes('published') || l.includes('posted')) return 'var(--g)';
-  if(l.includes('ready for posting') || l.includes('ready to work'))         return 'var(--g)';
+  if(l.includes('done') || l.includes('published'))                          return 'var(--g)';
+  if(l.includes('ready for posting') || l.includes('ready to work'))         return '#FB923C';
   if(l.includes('revision') || l.includes('review needed'))                  return 'var(--red)';
-  if(l.includes('qc') || l.includes('final') || l.includes('pending'))       return 'var(--amber)';
+  if(l.includes('pending qc') || l.includes('qc review') || l.includes('final qc')) return 'var(--amber)';
+  if(l.includes('qc') || l.includes('pending'))                              return 'var(--amber)';
   if(l.includes('progress') || l.includes('production') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
   if(l.includes('not started') || l.includes('waiting') || l.includes('pre-production')) return 'rgba(255,255,255,.35)';
   return 'rgba(255,255,255,.35)';
