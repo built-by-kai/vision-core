@@ -124,6 +124,13 @@ export default async function handler(req, res) {
 
     // ── SUBMIT QC ─────────────────────────────────────────────────────────────
     if (action === 'submit_qc') {
+      if (/posting/i.test(taskName)) {
+        return res.status(400).json({
+          error: 'Not applicable.',
+          message: 'Content Posting does not need to submit for review. Use Complete Task instead.',
+        });
+      }
+
       const startedOnRaw  = props['Task Started On']?.date?.start || null;
       const accMins       = props['Accumulated Mins']?.number || 0;
       const cycleMins     = startedOnRaw ? (new Date(now) - new Date(startedOnRaw)) / 60000 : 0;
