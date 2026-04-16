@@ -2,7 +2,7 @@
 // Queries Content Production DB + Tasks DB
 // Employee Hub DB for name resolution
 
-import { getClientByToken, getNotionToken, resolveDB } from "../../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../../lib/supabase"
 
 
 export default async function handler(req, res) {
@@ -19,6 +19,35 @@ export default async function handler(req, res) {
   const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
   const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
   const EMPLOYEE_DB = resolveDB(client, 'EMPLOYEE_DB', 'bc5b99b59468498e8a294149d6f03134')
+
+  // ── Field name mapping ────────────────────────────────────────────────────
+  const F = {
+    CONTENT_STATUS:     resolveField(client, 'CONTENT_STATUS',     'Content Status'),
+    CONTENT_TITLE:      resolveField(client, 'CONTENT_TITLE',      'Content Title'),
+    CONTENT_DUE:        resolveField(client, 'CONTENT_DUE',        'Content Due'),
+    PUBLISH_DUE:        resolveField(client, 'PUBLISH_DUE',        'Publish Due'),
+    CHANNEL:            resolveField(client, 'CHANNEL',            'Channel'),
+    CONTENT_TYPE:       resolveField(client, 'CONTENT_TYPE',       'Content Type'),
+    ASSIGNED_BY:        resolveField(client, 'ASSIGNED_BY',        'Assigned By'),
+    CLIENT:             resolveField(client, 'CLIENT',             'Client'),
+    CAMPAIGN:           resolveField(client, 'CAMPAIGN',           'Campaign'),
+    TASK_TITLE:         resolveField(client, 'TASK_TITLE',         'Task List'),
+    TASK_STATUS:        resolveField(client, 'TASK_STATUS',        'Task Status'),
+    TASK_DUE:           resolveField(client, 'TASK_DUE',           'Task Due'),
+    QC_NOTES:           resolveField(client, 'QC_NOTES',           'QC Notes'),
+    ASSIGNED_TO:        resolveField(client, 'ASSIGNED_TO',        'Assigned To'),
+    CONTENT_PRODUCTION: resolveField(client, 'CONTENT_PRODUCTION', 'Content Production'),
+  }
+
+  // ── Status label mapping ──────────────────────────────────────────────────
+  const L = {
+    contentRevision:   resolveLabel(client, 'contentRevisionStatus',  'Revision Needed'),
+    contentQC:         resolveLabel(client, 'contentQCStatus',        'Final QC Review'),
+    contentInProd:     resolveLabel(client, 'contentInProdStatus',    'In Production'),
+    contentPreProd:    resolveLabel(client, 'contentPreProdStatus',   'Pre-Production'),
+    taskQC:            resolveLabel(client, 'taskQCStatus',           'Pending QC Review'),
+    taskRevision:      resolveLabel(client, 'taskRevisionStatus',     'Review Needed'),
+  }
 
   try {
 
@@ -73,16 +102,16 @@ export default async function handler(req, res) {
     const [contentPages, taskPages, empPages] = await Promise.all([
       queryAll(CONTENT_DB, {
         or: [
-          { property: 'Content Status', status: { equals: 'Revision Needed' } },
-          { property: 'Content Status', status: { equals: 'Final QC Review' } },
-          { property: 'Content Status', status: { equals: 'In Production' } },
-          { property: 'Content Status', status: { equals: 'Pre-Production' } },
+          { property: F.CONTENT_STATUS, status: { equals: L.contentRevision } },
+          { property: F.CONTENT_STATUS, status: { equals: L.contentQC } },
+          { property: F.CONTENT_STATUS, status: { equals: L.contentInProd } },
+          { property: F.CONTENT_STATUS, status: { equals: L.contentPreProd } },
         ],
       }),
       queryAll(TASKS_DB, {
         or: [
-          { property: 'Task Status', status: { equals: 'Pending QC Review' } },
-          { property: 'Task Status', status: { equals: 'Review Needed' } },
+          { property: F.TASK_STATUS, status: { equals: L.taskQC } },
+          { property: F.TASK_STATUS, status: { equals: L.taskRevision } },
         ],
       }),
       queryAll(EMPLOYEE_DB).catch(() => []),
@@ -102,8 +131,8 @@ export default async function handler(req, res) {
     // Batch-resolve campaign + client page names
     const pageIdSet = new Set();
     for (const p of contentPages) {
-      getRelIds(p.properties['Campaign']).slice(0, 1).forEach(id => pageIdSet.add(id));
-      getRelIds(p.properties['Client']).slice(0, 1).forEach(id => pageIdSet.add(id));
+      getRelIds(p.properties[F.CAMPAIGN]).slice(0, 1).forEach(id => pageIdSet.add(id));
+      getRelIds(p.properties[F.CLIENT]).slice(0, 1).forEach(id => pageIdSet.add(id));
     }
     const pageNameCache = {};
     await Promise.all(Array.from(pageIdSet).map(async id => {
@@ -123,35 +152,35 @@ export default async function handler(req, res) {
     // Content Production bottlenecks
     for (const page of contentPages) {
       const p        = page.properties;
-      const status   = getStatus(p['Content Status']);
-      const title    = getTitle(p['Content Title']) || 'Untitled';
-      const deadline = getDate(p['Content Due']) || getDate(p['Publish Due']);
-      const channel  = getMultiSelect(p['Channel']);
-      const type     = getMultiSelect(p['Content Type']);
+      const status   = getStatus(p[F.CONTENT_STATUS]);
+      const title    = getTitle(p[F.CONTENT_TITLE]) || 'Untitled';
+      const deadline = getDate(p[F.CONTENT_DUE]) || getDate(p[F.PUBLISH_DUE]);
+      const channel  = getMultiSelect(p[F.CHANNEL]);
+      const type     = getMultiSelect(p[F.CONTENT_TYPE]);
 
-      const people   = resolveNames(getRelIds(p['Assigned By']));
-      const clientId = getRelIds(p['Client'])[0];
-      const client   = clientId ? (pageNameCache[clientId] || null) : null;
+      const people   = resolveNames(getRelIds(p[F.ASSIGNED_BY]));
+      const clientId = getRelIds(p[F.CLIENT])[0];
+      const clientName = clientId ? (pageNameCache[clientId] || null) : null;
 
       const isOverdue  = deadline && deadline < todayStr;
       const isDueToday = deadline === todayStr;
       const daysOverdue = isOverdue ? Math.floor((now - new Date(deadline)) / 86400000) : 0;
 
       const reasons = [];
-      if (status === 'Revision Needed') reasons.push('Revision');
-      if (status === 'Final QC Review') reasons.push('QC Review');
+      if (status === L.contentRevision) reasons.push('Revision');
+      if (status === L.contentQC)       reasons.push('QC Review');
       if (isOverdue)  reasons.push('Overdue');
       if (isDueToday) reasons.push('Due Today');
 
       if (reasons.length === 0) continue;
 
-      contentItems.push({ title, status, deadline, daysOverdue, channel, type, people, client, reasons, url: page.url });
+      contentItems.push({ title, status, deadline, daysOverdue, channel, type, people, client: clientName, reasons, url: page.url });
     }
 
     // Batch-resolve Content Production names for tasks
     const taskContentIds = new Set();
     for (const page of taskPages) {
-      getRelIds(page.properties['Content Production']).slice(0, 1).forEach(id => taskContentIds.add(id));
+      getRelIds(page.properties[F.CONTENT_PRODUCTION]).slice(0, 1).forEach(id => taskContentIds.add(id));
     }
     const contentNameCache = {};
     await Promise.all(Array.from(taskContentIds).map(async id => {
@@ -168,13 +197,13 @@ export default async function handler(req, res) {
     // Task QC bottlenecks
     for (const page of taskPages) {
       const p       = page.properties;
-      const title   = getTitle(p['Task List']) || 'Untitled Task';
-      const status  = getStatus(p['Task Status']);
-      const dueDate = getDate(p['Task Due']);
-      const qcNotes = p['QC Notes']?.rich_text?.map(t => t.plain_text).join('') || null;
-      const people  = resolveNames(getRelIds(p['Assigned To']));
-      const campaign = getRollupText(p['Campaign']) || null;
-      const contentId = getRelIds(p['Content Production'])[0];
+      const title   = getTitle(p[F.TASK_TITLE]) || 'Untitled Task';
+      const status  = getStatus(p[F.TASK_STATUS]);
+      const dueDate = getDate(p[F.TASK_DUE]);
+      const qcNotes = p[F.QC_NOTES]?.rich_text?.map(t => t.plain_text).join('') || null;
+      const people  = resolveNames(getRelIds(p[F.ASSIGNED_TO]));
+      const campaign = getRollupText(p[F.CAMPAIGN]) || null;
+      const contentId = getRelIds(p[F.CONTENT_PRODUCTION])[0];
       const contentName = contentId ? (contentNameCache[contentId] || null) : null;
 
       const isOverdue   = dueDate && dueDate < todayStr;
@@ -182,8 +211,8 @@ export default async function handler(req, res) {
       const daysOverdue = isOverdue ? Math.floor((now - new Date(dueDate)) / 86400000) : 0;
 
       const reasons = [];
-      if (status === 'Pending QC Review') reasons.push('Pending QC');
-      if (status === 'Review Needed')     reasons.push('Revision');
+      if (status === L.taskQC)       reasons.push('Pending QC');
+      if (status === L.taskRevision) reasons.push('Revision');
       if (isOverdue)  reasons.push('Overdue');
       if (isDueToday) reasons.push('Due Today');
 

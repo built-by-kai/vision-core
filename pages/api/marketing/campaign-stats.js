@@ -2,7 +2,7 @@
 // Queries Monthly Campaigns DB for active campaign metrics
 // Environment variables: NOTION_API_KEY
 
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../lib/supabase"
 
 
 export default async function handler(req, res) {
@@ -17,6 +17,31 @@ export default async function handler(req, res) {
   if (!client) return res.status(403).json({ error: 'Invalid token' })
   const NOTION_KEY = getNotionToken(client)
   const CAMPAIGNS_DB = resolveDB(client, 'CAMPAIGNS_DB', '3188b289e31a806bac9de1ee09aff2ad')
+
+  // ── Field name mapping ────────────────────────────────────────────────────
+  const F = {
+    CAMPAIGN_STATUS:         resolveField(client, 'CAMPAIGN_STATUS',         'Campaign Status'),
+    CAMPAIGN_TYPE:           resolveField(client, 'CAMPAIGN_TYPE',           'Campaign Type'),
+    CAMPAIGN_NAME:           resolveField(client, 'CAMPAIGN_NAME',           'Campaign Name'),
+    CLIENT:                  resolveField(client, 'CLIENT',                  'Client'),
+    START_DATE:              resolveField(client, 'START_DATE',              'Start Date'),
+    END_DATE:                resolveField(client, 'END_DATE',                'End Date'),
+    VIDEOS:                  resolveField(client, 'VIDEOS',                  'Videos'),
+    POSTERS:                 resolveField(client, 'POSTERS',                 'Posters'),
+    LIVE_SESSION:            resolveField(client, 'LIVE_SESSION',            'Live Session'),
+    KOL_POSTS:               resolveField(client, 'KOL_POSTS',              'KOL Posts'),
+    VIDEOS_COMPLETED:        resolveField(client, 'VIDEOS_COMPLETED',        'Videos Completed'),
+    POSTERS_COMPLETED:       resolveField(client, 'POSTERS_COMPLETED',       'Posters Completed'),
+    LIVESTREAMS_COMPLETED:   resolveField(client, 'LIVESTREAMS_COMPLETED',   'Livestreams Completed'),
+    KOL_COMPLETED:           resolveField(client, 'KOL_COMPLETED',           'KOL Postings Completed'),
+    LIVE_GMV:                resolveField(client, 'LIVE_GMV',                'Overall Live GMV'),
+    LIVE_HOURS:              resolveField(client, 'LIVE_HOURS',              'Overall Live Hours'),
+    LIVE_ORDERS:             resolveField(client, 'LIVE_ORDERS',             'Overall Live Orders'),
+    LIVE_SESSIONS:           resolveField(client, 'LIVE_SESSIONS',           'Overall Live Sessions'),
+  }
+
+  // ── Status label mapping ──────────────────────────────────────────────────
+  const campaignActiveStatus = resolveLabel(client, 'campaignActiveStatus', 'Active')
 
   try {
 
@@ -103,34 +128,34 @@ export default async function handler(req, res) {
 
     for (const page of campaigns) {
       const props = page.properties;
-      const status = getStatus(props['Campaign Status']);
-      const type   = getSelect(props['Campaign Type']);
-      const name   = getTitle(props['Campaign Name']);
+      const status = getStatus(props[F.CAMPAIGN_STATUS]);
+      const type   = getSelect(props[F.CAMPAIGN_TYPE]);
+      const name   = getTitle(props[F.CAMPAIGN_NAME]);
 
-      if (status !== 'Active') continue;
+      if (status !== campaignActiveStatus) continue;
 
       activeCampaigns++;
       if (type) typeCounts[type] = (typeCounts[type] || 0) + 1;
 
       // Client name from rollup
-      const client = getRollupText(props['Client']) || null;
+      const clientName = getRollupText(props[F.CLIENT]) || null;
 
       // Dates
-      const startDate = getDate(props['Start Date']);
-      const endDate   = getDate(props['End Date']);
+      const startDate = getDate(props[F.START_DATE]);
+      const endDate   = getDate(props[F.END_DATE]);
 
       // Planned
-      const videos   = getNumber(props['Videos']);
-      const posters  = getNumber(props['Posters']);
-      const live     = getNumber(props['Live Session']);
-      const kolPosts = getNumber(props['KOL Posts']);
+      const videos   = getNumber(props[F.VIDEOS]);
+      const posters  = getNumber(props[F.POSTERS]);
+      const live     = getNumber(props[F.LIVE_SESSION]);
+      const kolPosts = getNumber(props[F.KOL_POSTS]);
       const planned  = videos + posters + live + kolPosts;
 
       // Completed
-      const videosDone  = getRollupNumber(props['Videos Completed']);
-      const postersDone = getRollupNumber(props['Posters Completed']);
-      const liveDone    = getRollupNumber(props['Livestreams Completed']);
-      const kolDone     = getRollupNumber(props['KOL Postings Completed']);
+      const videosDone  = getRollupNumber(props[F.VIDEOS_COMPLETED]);
+      const postersDone = getRollupNumber(props[F.POSTERS_COMPLETED]);
+      const liveDone    = getRollupNumber(props[F.LIVESTREAMS_COMPLETED]);
+      const kolDone     = getRollupNumber(props[F.KOL_COMPLETED]);
       const done        = videosDone + postersDone + liveDone + kolDone;
 
       totalDeliverables += planned;
@@ -141,17 +166,17 @@ export default async function handler(req, res) {
       livePlanned += live;       liveCompleted += liveDone;
       kolPlanned += kolPosts;    kolCompleted += kolDone;
 
-      totalLiveGMV      += getRollupNumber(props['Overall Live GMV']);
-      totalLiveHours    += getRollupNumber(props['Overall Live Hours']);
-      totalLiveOrders   += getRollupNumber(props['Overall Live Orders']);
-      totalLiveSessions += getRollupNumber(props['Overall Live Sessions']);
+      totalLiveGMV      += getRollupNumber(props[F.LIVE_GMV]);
+      totalLiveHours    += getRollupNumber(props[F.LIVE_HOURS]);
+      totalLiveOrders   += getRollupNumber(props[F.LIVE_ORDERS]);
+      totalLiveSessions += getRollupNumber(props[F.LIVE_SESSIONS]);
 
       if (planned > 0) completionRates.push(Math.round((done / planned) * 100));
 
       campaignDetails.push({
         name,
         type: type || 'N/A',
-        client,
+        client: clientName,
         startDate,
         endDate,
         planned,

@@ -2,7 +2,7 @@
 // Queries Tasks DB only (already shared with integration),
 // fetches individual employee pages by ID, groups stats per employee.
 
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../lib/supabase"
 
 
 export default async function handler(req, res) {
@@ -18,6 +18,28 @@ export default async function handler(req, res) {
   const NOTION_KEY = getNotionToken(client)
   const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
   const EMPLOYEE_DB = resolveDB(client, 'EMPLOYEE_DB', 'bc5b99b59468498e8a294149d6f03134')
+
+  // ── Field name mapping ────────────────────────────────────────────────────
+  const F = {
+    TASK_STATUS:     resolveField(client, 'TASK_STATUS',     'Task Status'),
+    TASK_DUE:        resolveField(client, 'TASK_DUE',        'Task Due'),
+    ACCUMULATED_MINS:resolveField(client, 'ACCUMULATED_MINS','Accumulated Mins'),
+    TASK_DONE_ON:    resolveField(client, 'TASK_DONE_ON',    'Task Done On'),
+    TASK_STARTED_ON: resolveField(client, 'TASK_STARTED_ON', 'Task Started On'),
+    ASSIGNED_TO:     resolveField(client, 'ASSIGNED_TO',     'Assigned To'),
+    EMP_NAME:        resolveField(client, 'EMP_NAME',        'Name'),
+    EMP_ROLE:        resolveField(client, 'EMP_ROLE',        'Role'),
+    EMP_DEPT:        resolveField(client, 'EMP_DEPT',        'Department'),
+    EMP_STATUS:      resolveField(client, 'EMP_STATUS',      'Status'),
+  }
+
+  // ── Status label mapping ──────────────────────────────────────────────────
+  const L = {
+    taskDone:       resolveLabel(client, 'taskDoneStatus',       'Done'),
+    taskInProgress: resolveLabel(client, 'taskInProgressStatus', 'In progress'),
+    taskQC:         resolveLabel(client, 'taskQCStatus',         'Pending QC Review'),
+    taskRevision:   resolveLabel(client, 'taskRevisionStatus',   'Review Needed'),
+  }
 
   try {
 
@@ -55,10 +77,10 @@ export default async function handler(req, res) {
           const p = emp.properties;
           empIdSet.add(emp.id);
           empMap[emp.id] = {
-            name:   p['Name']?.title?.map(t => t.plain_text).join('') || 'Unknown',
-            role:   p['Role']?.select?.name || '',
-            dept:   p['Department']?.select?.name || '',
-            status: p['Status']?.select?.name || 'Active',
+            name:   p[F.EMP_NAME]?.title?.map(t => t.plain_text).join('') || 'Unknown',
+            role:   p[F.EMP_ROLE]?.select?.name || '',
+            dept:   p[F.EMP_DEPT]?.select?.name || '',
+            status: p[F.EMP_STATUS]?.select?.name || 'Active',
             email:  p['Email']?.email || '',
             phone:  p['Phone']?.phone_number || '',
           };
@@ -68,7 +90,7 @@ export default async function handler(req, res) {
 
     // Also collect any employee IDs found in tasks (catches employees not in hub)
     allTasks.forEach(task => {
-      const assigned = task.properties['Assigned To']?.relation || [];
+      const assigned = task.properties[F.ASSIGNED_TO]?.relation || [];
       assigned.forEach(r => empIdSet.add(r.id));
     });
 
@@ -82,10 +104,10 @@ export default async function handler(req, res) {
         }
         const p = (await r.json()).properties;
         empMap[empId] = {
-          name:   p['Name']?.title?.map(t => t.plain_text).join('') || 'Unknown',
-          role:   p['Role']?.select?.name || '',
-          dept:   p['Department']?.select?.name || '',
-          status: p['Status']?.select?.name || 'Active',
+          name:   p[F.EMP_NAME]?.title?.map(t => t.plain_text).join('') || 'Unknown',
+          role:   p[F.EMP_ROLE]?.select?.name || '',
+          dept:   p[F.EMP_DEPT]?.select?.name || '',
+          status: p[F.EMP_STATUS]?.select?.name || 'Active',
           email:  p['Email']?.email || '',
           phone:  p['Phone']?.phone_number || '',
           tasks:  [],
@@ -131,12 +153,12 @@ export default async function handler(req, res) {
 
     allTasks.forEach(task => {
       const tp = task.properties;
-      const taskStatus = tp['Task Status']?.status?.name || '';
-      const dueRaw     = tp['Task Due']?.date?.start || null;
-      const accMins    = tp['Accumulated Mins']?.number || 0;
-      const doneRaw    = tp['Task Done On']?.date?.start || null;
-      const startedRaw = tp['Task Started On']?.date?.start || null;
-      const assigned   = tp['Assigned To']?.relation || [];
+      const taskStatus = tp[F.TASK_STATUS]?.status?.name || '';
+      const dueRaw     = tp[F.TASK_DUE]?.date?.start || null;
+      const accMins    = tp[F.ACCUMULATED_MINS]?.number || 0;
+      const doneRaw    = tp[F.TASK_DONE_ON]?.date?.start || null;
+      const startedRaw = tp[F.TASK_STARTED_ON]?.date?.start || null;
+      const assigned   = tp[F.ASSIGNED_TO]?.relation || [];
 
       const doneDate    = doneRaw ? doneRaw.slice(0, 10) : null;
       const startedDate = startedRaw ? startedRaw.slice(0, 10) : null;
@@ -150,11 +172,11 @@ export default async function handler(req, res) {
         s.total++;
         s.totalMins += accMins;
 
-        if      (taskStatus === 'Done')               s.done++;
-        else if (taskStatus === 'In progress')        s.inProgress++;
-        else if (taskStatus === 'Pending QC Review')  s.pendingQC++;
-        else if (taskStatus === 'Review Needed')      s.reviewNeeded++;
-        else                                          s.notStarted++;
+        if      (taskStatus === L.taskDone)       s.done++;
+        else if (taskStatus === L.taskInProgress) s.inProgress++;
+        else if (taskStatus === L.taskQC)         s.pendingQC++;
+        else if (taskStatus === L.taskRevision)   s.reviewNeeded++;
+        else                                      s.notStarted++;
 
         if (dueRaw && taskStatus !== 'Done') {
           const due = new Date(dueRaw); due.setHours(0,0,0,0);

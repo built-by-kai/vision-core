@@ -75,7 +75,23 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .camp-fill{height:5px;border-radius:999px;}
 .camp-pct{font-size:11px;font-weight:800;min-width:34px;text-align:right;flex-shrink:0;}
 
-/* Task breakdown bars */
+/* Task breakdown — new style */
+.task-card{padding:20px 22px;}
+.task-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:rgba(255,255,255,.25);margin-bottom:8px;}
+.task-big{font-size:52px;font-weight:900;letter-spacing:-3px;line-height:1;color:var(--g);}
+.task-big-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:14px;}
+.task-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.task-mini{background:#252525;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px;text-align:center;}
+.task-mini-val{font-size:20px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.task-mini-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-top:4px;}
+.task-status-list{display:flex;flex-direction:column;gap:9px;}
+.ts-row{display:flex;align-items:center;gap:9px;}
+.ts-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ts-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.55);flex:1;}
+.ts-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
+.ts-count{font-size:13px;font-weight:900;letter-spacing:-.5px;min-width:20px;text-align:right;flex-shrink:0;}
+
+/* Attention panel */
 .task-bars{display:flex;flex-direction:column;gap:10px;}
 .tb-row{display:flex;align-items:center;gap:8px;}
 .tb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -242,30 +258,41 @@ function render(camp, task){
   // ── Bot row: task breakdown ──
   html += `<div class="bot-row">`;
 
-  // Task status bars
+  // Task card — new style matching creaitors design
   const statuses = [
-    {label:'In Progress', count:tb.inProgress||0, color:'#AAFF00'},
+    {label:'In Progress', count:tb.inProgress||0, color:'#60A5FA'},
     {label:'Waiting',     count:tb.waiting||0,    color:'#FBBF24'},
-    {label:'QC Review',   count:tb.qc||0,         color:'#60A5FA'},
+    {label:'QC Review',   count:tb.qc||0,         color:'#C084FC'},
     {label:'Revision',    count:tb.revision||0,   color:'#FF6B6B'},
-    {label:'Done',        count:tb.done||0,        color:'rgba(170,255,0,.35)'},
   ];
 
-  html += `<div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Task Status</span>
-      <span class="panel-badge">${totalTasks} total</span>
+  const dueWeekCount = task.dueThisWeek || 0;
+
+  html += `<div class="card task-card">
+    <div class="task-eyebrow">Tasks</div>
+    <div class="task-big">${totalTasks}</div>
+    <div class="task-big-lbl">Active Tasks</div>
+    <div class="task-mini-row">
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:#60A5FA;">${dueWeekCount}</div>
+        <div class="task-mini-lbl">Due Week</div>
+      </div>
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:${overdue>0?'#FF6B6B':'rgba(255,255,255,.3)'};">${overdue}</div>
+        <div class="task-mini-lbl">Overdue</div>
+      </div>
     </div>
-    <div class="task-bars">`;
+    <div class="task-status-list">`;
 
   for(const s of statuses){
-    const pct = totalTasks > 0 ? Math.round((s.count/totalTasks)*100) : 0;
-    html += `<div class="tb-row">
-      <div class="tb-dot" style="background:${s.color};"></div>
-      <span class="tb-label">${s.label}</span>
-      <div class="tb-track"><div class="tb-fill" style="width:${Math.max(pct>0?6:0,pct)}%;background:${s.color};"></div></div>
-      <span class="tb-val">${s.count}</span>
-      <span class="tb-pct">${pct}%</span>
+    const active = s.count > 0;
+    const dashColor = active ? s.color : 'rgba(255,255,255,.1)';
+    const countColor = active ? '#fff' : 'rgba(255,255,255,.2)';
+    html += `<div class="ts-row">
+      <div class="ts-dot" style="background:${s.color};${!active?'opacity:.3;':''}"></div>
+      <span class="ts-label">${s.label}</span>
+      <div class="ts-dash" style="background:${dashColor};"></div>
+      <span class="ts-count" style="color:${countColor};">${s.count}</span>
     </div>`;
   }
   html += `</div></div>`;

@@ -1,7 +1,7 @@
 // Vercel Serverless Function — Content Production Stats
 // Returns broad overview stats for the stat card widget
 
-import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supabase"
+import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel } from "../../../lib/supabase"
 
 
 export default async function handler(req, res) {
@@ -17,6 +17,32 @@ export default async function handler(req, res) {
   const NOTION_KEY = getNotionToken(client)
   const CONTENT_DB = resolveDB(client, 'CONTENT_DB', '3188b289e31a80e39bbbf1c01ffdd56b')
   const TASKS_DB = resolveDB(client, 'TASKS_DB', '3348b289e31a80dc89e1eb7ba5b49b1a')
+
+  // ── Field name mapping (per-client overrides via Supabase field_map) ──────
+  const F = {
+    CONTENT_STATUS:     resolveField(client, 'CONTENT_STATUS',     'Content Status'),
+    CONTENT_DUE:        resolveField(client, 'CONTENT_DUE',        'Content Due'),
+    PUBLISH_DUE:        resolveField(client, 'PUBLISH_DUE',        'Publish Due'),
+    TASK_STATUS:        resolveField(client, 'TASK_STATUS',        'Task Status'),
+    TASK_DUE:           resolveField(client, 'TASK_DUE',           'Task Due'),
+    CONTENT_PRODUCTION: resolveField(client, 'CONTENT_PRODUCTION', 'Content Production'),
+  }
+
+  // ── Status label mapping (per-client overrides via Supabase labels) ───────
+  const L = {
+    contentDone:      resolveLabel(client, 'contentDoneStatus',      'Done'),
+    contentRevision:  resolveLabel(client, 'contentRevisionStatus',  'Revision Needed'),
+    contentQC:        resolveLabel(client, 'contentQCStatus',        'Final QC Review'),
+    taskDone:         resolveLabel(client, 'taskDoneStatus',         'Done'),
+    taskWaiting:      resolveLabel(client, 'taskWaitingStatus',      'Waiting'),
+    taskInProgress:   resolveLabel(client, 'taskInProgressStatus',   'In progress'),
+    taskReadyToWork:  resolveLabel(client, 'taskReadyToWorkStatus',  'Ready to Work'),
+    taskNotStarted:   resolveLabel(client, 'taskNotStartedStatus',   'Not started'),
+    taskQC:           resolveLabel(client, 'taskQCStatus',           'Pending QC Review'),
+    taskRevision:     resolveLabel(client, 'taskRevisionStatus',     'Review Needed'),
+  }
+  const ACTIVE_STATUSES = client.labels?.contentActiveStatuses ||
+    ['Pre-Production', 'In Production', 'Revision Needed', 'Final QC Review', 'Scripting', 'Recording', 'Editing']
 
   try {
 
@@ -54,20 +80,12 @@ export default async function handler(req, res) {
     // Fetch all active content (not Done) and all active tasks (not Done) in parallel
     const [contentPages, taskPages] = await Promise.all([
       queryAll(CONTENT_DB, {
-        and: [
-          {
-            or: [
-              { property: 'Content Status', status: { does_not_equal: 'Done' } },
-            ]
-          }
-        ]
+        property: F.CONTENT_STATUS, status: { does_not_equal: L.contentDone }
       }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
       queryAll(TASKS_DB).catch(() => []),
     ]);
 
     // ── Content stats ──────────────────────────────────────────
-    const ACTIVE_STATUSES = ['Pre-Production', 'In Production', 'Revision Needed', 'Final QC Review', 'Scripting', 'Recording', 'Editing'];
-
     let contentInMotion   = 0;
     let contentRevision   = 0;
     let contentQC         = 0;
@@ -76,14 +94,14 @@ export default async function handler(req, res) {
 
     for (const page of contentPages) {
       const p      = page.properties;
-      const status = getStatus(p['Content Status']);
-      if (!status || status === 'Done') continue;
+      const status = getStatus(p[F.CONTENT_STATUS]);
+      if (!status || status === L.contentDone) continue;
 
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
-      if (status === 'Revision Needed')     contentRevision++;
-      if (status === 'Final QC Review')     contentQC++;
+      if (status === L.contentRevision)     contentRevision++;
+      if (status === L.contentQC)           contentQC++;
 
-      const deadline = getDate(p['Content Due']) || getDate(p['Publish Due']);
+      const deadline = getDate(p[F.CONTENT_DUE]) || getDate(p[F.PUBLISH_DUE]);
       if (deadline) {
         if (deadline < todayStr) contentOverdue++;
         else if (deadline <= in7Days) contentDueThisWeek++;
@@ -91,8 +109,6 @@ export default async function handler(req, res) {
     }
 
     // ── Task stats ─────────────────────────────────────────────
-    const TASK_ACTIVE = ['Not started', 'Waiting', 'Ready to Work', 'Pending QC Review', 'Review Needed', 'In Progress'];
-
     let tasksTotal     = 0;
     let tasksWaiting   = 0;
     let tasksInProgress= 0;
@@ -103,20 +119,20 @@ export default async function handler(req, res) {
 
     for (const page of taskPages) {
       const p      = page.properties;
-      const status = getStatus(p['Task Status']);
-      if (!status || status === 'Done') continue;
+      const status = getStatus(p[F.TASK_STATUS]);
+      if (!status || status === L.taskDone) continue;
 
       // Skip tasks not linked to any content production
-      const contentRel = p['Content Production']?.relation || [];
+      const contentRel = p[F.CONTENT_PRODUCTION]?.relation || [];
       if (contentRel.length === 0) continue;
 
       tasksTotal++;
-      if (status === 'Waiting')              tasksWaiting++;
-      if (status === 'Ready to Work' || status === 'In progress' || status === 'Not started') tasksInProgress++;
-      if (status === 'Pending QC Review')    tasksQC++;
-      if (status === 'Review Needed')        tasksRevision++;
+      if (status === L.taskWaiting)                                                                   tasksWaiting++;
+      if (status === L.taskReadyToWork || status === L.taskInProgress || status === L.taskNotStarted) tasksInProgress++;
+      if (status === L.taskQC)                                                                        tasksQC++;
+      if (status === L.taskRevision)                                                                  tasksRevision++;
 
-      const dueDate = getDate(p['Task Due']);
+      const dueDate = getDate(p[F.TASK_DUE]);
       if (dueDate) {
         if (dueDate < todayStr)      tasksOverdue++;
         else if (dueDate <= in7Days) tasksDueThisWeek++;
