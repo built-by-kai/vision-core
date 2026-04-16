@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       const name  = plain(p["Lead Name"]?.title || p.Name?.title || []) || "Untitled"
       const pkg        = p["OS Interest"]?.select?.name || p["Interested In"]?.multi_select?.map(x => x.name).join(", ") || ""
       const leadVal    = p["Potential Value"]?.number || p["Estimated Value"]?.number || p["Value"]?.number || p["Deal Value"]?.number || 0
-      const lostReason = p["Lost Reason"]?.select?.name || p["Why Not Closing?"]?.select?.name || null
+      const lostReason = p["Lost Reason"]?.select?.name || p["Lost Reason"]?.rich_text?.[0]?.plain_text || p["Why Not Closing?"]?.select?.name || p["Why Not Closing?"]?.rich_text?.[0]?.plain_text || null
       const pageUrl    = `https://www.notion.so/${lead.id.replace(/-/g, "")}`
       const created = new Date(lead.created_time)
       const isThisMonth = created.getMonth() === month && created.getFullYear() === year
@@ -104,7 +104,8 @@ export default async function handler(req, res) {
     const convTotal = thisMonthConverted + thisMonthLost
     const convRate  = convTotal > 0 ? Math.round((thisMonthConverted / convTotal) * 100) : null
 
-    const totalLostLeads = stages[lostLabel] || 0
+    const totalLostLeads  = stages[lostLabel] || 0
+    const lostLeadsValue  = lostLeads.reduce((s, d) => s + (d.value || 0), 0)
 
     res.status(200).json({
       stages,
@@ -122,6 +123,7 @@ export default async function handler(req, res) {
       totalLostLeads,
       lostLabel,
       leadsPotentialValue,
+      lostLeadsValue,
       lostLeads,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])

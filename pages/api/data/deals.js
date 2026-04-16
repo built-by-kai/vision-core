@@ -126,6 +126,10 @@ export default async function handler(req, res) {
     // Active Deals = only in-progress won stages, not delivered
     const activeDealsCount = activeWonStages.reduce((s, st) => s + (stages[st] || 0), 0)
 
+    // ── Value totals ───────────────────────────────────────────────────────
+    const wonValue  = wonDeals.reduce((s, d) => s + (d.value || 0), 0)
+    const lostValue = lostDeals.reduce((s, d) => s + (d.value || 0), 0)
+
     res.status(200).json({
       stages,
       stageOrder:      ALL_STAGES,
@@ -149,6 +153,8 @@ export default async function handler(req, res) {
       deliveryCount: deliveryStage ? (stages[deliveryStage] || 0) : 0,
       balanceStage,
       balanceCount:  balanceStage  ? (stages[balanceStage]  || 0) : 0,
+      wonValue,
+      lostValue,
     })
   } catch (err) {
     console.error("deals:", err)

@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--orange:#FB923C;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--orange:#FF6B35;--orangem:rgba(255,107,53,.12);}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
 
@@ -85,18 +85,21 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
     <span class="s-lbl">Won Deals</span>
     <div class="s-val" id="s-won">—</div>
     <div class="s-sub" id="s-won-sub">Active &amp; delivered</div>
+    <div class="s-sub" id="s-won-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Leads</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-leads">—</div>
     <div class="s-sub">Leads that didn't convert</div>
+    <div class="s-sub" id="s-lost-leads-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Lost Deals</span>
     <div class="s-val" style="color:var(--orange);" id="s-lost-deals">—</div>
     <div class="s-sub">Deals that fell through</div>
+    <div class="s-sub" id="s-lost-deals-val" style="color:var(--orange);opacity:.7;font-weight:700;margin-top:3px;display:none;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--g);"></div>
@@ -185,6 +188,12 @@ function renderList() {
   }
 }
 
+function showVal(id, val) {
+  const el = document.getElementById(id);
+  if (val) { el.textContent = fmtRM(val); el.style.display = ''; }
+  else { el.style.display = 'none'; }
+}
+
 function updateStats() {
   if (!pipeData || !dealsData) return;
   const wonCount  = (dealsData.wonDeals  || []).length;
@@ -199,6 +208,10 @@ function updateStats() {
   document.getElementById('s-lost-deals').textContent = lostDeals;
   document.getElementById('s-winrate').textContent    = winRate != null ? winRate + '%' : '—';
   document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  showVal('s-won-val',        dealsData.wonValue  || 0);
+  showVal('s-lost-leads-val', pipeData.lostLeadsValue || 0);
+  showVal('s-lost-deals-val', dealsData.lostValue || 0);
 }
 
 async function loadData() {

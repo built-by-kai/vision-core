@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.12);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
 .card:hover{border-color:rgba(170,255,0,.1);}
@@ -63,18 +63,13 @@ body.light .f-lbl{color:rgba(0,0,0,.4);}
 .f-bg{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,.04);overflow:hidden;}
 body.light .f-bg{background:rgba(0,0,0,.05);}
 .f-fill{height:100%;border-radius:7px;transition:width .55s cubic-bezier(.4,0,.2,1);}
-/* Leads colors — lighter lime */
+/* Funnel bar colors */
 .lm     {background:rgba(170,255,0,.45);}
-.lm-won {background:rgba(170,255,0,.45);}
-.lm-lost{background:rgba(251,146,60,.35);}
-/* Deals colors — deeper green */
-.dm          {background:rgba(100,200,0,.55);}
-.dm-delivered{background:rgba(100,200,0,.82);}
-.dm-lost     {background:rgba(255,255,255,.05);}
+.lm-lost{background:rgba(255,107,53,.55);}
+.dm     {background:rgba(170,255,0,.45);}
 body.light .lm     {background:rgba(92,153,0,.35);}
-body.light .lm-won {background:rgba(92,153,0,.16);}
 body.light .dm     {background:rgba(61,122,0,.40);}
-body.light .dm-delivered{background:rgba(61,122,0,.68);}
+body.light .lm-lost{background:rgba(200,70,20,.45);}
 
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.6);width:24px;text-align:right;flex-shrink:0;}
 body.light .f-n{color:rgba(0,0,0,.5);}
@@ -136,6 +131,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-lbl">Active Deals</div>
     <div class="s-val" id="d-deals">—</div>
     <div class="s-sub" id="d-deals-sub">In deal pipeline</div>
+    <div class="s-sub" id="d-deals-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:3px;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
@@ -144,16 +140,17 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-sub" id="d-potential-sub">Pre-win deal value</div>
   </div>
   <div class="card stat" id="d-delivery-card" style="display:none;">
-    <div class="s-dot" style="background:#34D399;opacity:.7;"></div>
+    <div class="s-dot"></div>
     <div class="s-lbl" id="d-delivery-lbl">In Delivery</div>
     <div class="s-val" id="d-building">—</div>
     <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
   <div class="card stat">
-    <div class="s-dot" style="background:#FB923C;opacity:.7;"></div>
+    <div class="s-dot" style="background:var(--lost);"></div>
     <div class="s-lbl">Lost</div>
-    <div class="s-val" style="color:#FB923C;" id="d-lost">—</div>
+    <div class="s-val" style="color:var(--lost);" id="d-lost">—</div>
     <div class="s-sub" id="d-lost-sub">Leads + deals combined</div>
+    <div class="s-sub" id="d-lost-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:3px;"></div>
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
@@ -264,19 +261,16 @@ function renderDonut(sources) {
 }
 
 // ── Dynamic funnel — renders whatever stageOrder the API returns ─────────────
-function renderDynamicFunnel(stages, stageOrder, label) {
+function renderDynamicFunnel(stages, stageOrder, label, lostLabel) {
   if (!stageOrder || !stageOrder.length) stageOrder = Object.keys(stages);
-  const lastIdx  = stageOrder.length - 1;
-  const lastIdx2 = stageOrder.length - 2;
   const maxN  = Math.max(...stageOrder.map(k => stages[k] || 0), 1);
   const total = stageOrder.reduce((s, k) => s + (stages[k] || 0), 0);
   document.getElementById('fb').textContent = total + ' ' + (label || 'leads');
-  document.getElementById('funnel').innerHTML = stageOrder.map((key, i) => {
+  document.getElementById('funnel').innerHTML = stageOrder.map((key) => {
     const n   = stages[key] || 0;
     const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
-    const cls = i === lastIdx  ? 'lm-lost'
-              : i === lastIdx2 ? 'lm-won'
-              : 'lm';
+    const isLost = lostLabel && key === lostLabel;
+    const cls = isLost ? 'lm-lost' : (funnelMode === 'deals' ? 'dm' : 'lm');
     return `<div class="f-row">
       <span class="f-lbl">${key}</span>
       <div class="f-bg"><div class="f-fill ${cls}" style="width:${pct}%;"></div></div>
@@ -290,13 +284,15 @@ function renderFunnel() {
     renderDynamicFunnel(
       (pipeData && pipeData.stages) || {},
       (pipeData && pipeData.stageOrder) || null,
-      'leads'
+      'leads',
+      pipeData && pipeData.lostLabel
     );
   } else {
     renderDynamicFunnel(
       (dealsData && dealsData.stages) || {},
       (dealsData && dealsData.stageOrder) || null,
-      'deals'
+      'deals',
+      dealsData && dealsData.lostLabel
     );
   }
 }
@@ -333,6 +329,9 @@ async function loadData() {
     document.getElementById('d-deals').textContent = jd.activeDealsCount ?? '—';
     document.getElementById('d-deals-sub').textContent =
       jd.activeWonStages?.length ? jd.activeWonStages.join(' · ') : 'In deal pipeline';
+    if (jd.wonValue) {
+      document.getElementById('d-deals-val').textContent = fmtRM(jd.wonValue);
+    }
 
     // ── In Delivery card — show only when >1 active won stage (e.g. Opxio) ─
     const delivCard = document.getElementById('d-delivery-card');
@@ -355,6 +354,14 @@ async function loadData() {
     document.getElementById('d-lost-sub').textContent =
       lostLeads + ' lead' + (lostLeads !== 1 ? 's' : '') +
       ' · ' + lostDeals + ' deal' + (lostDeals !== 1 ? 's' : '');
+    const lostValue = (jp.lostLeadsValue || 0) + (jd.lostValue || 0);
+    const lostValEl = document.getElementById('d-lost-val');
+    if (lostValue) {
+      lostValEl.textContent = fmtRM(lostValue);
+      lostValEl.style.display = '';
+    } else {
+      lostValEl.style.display = 'none';
+    }
 
     renderDonut(jp.sources);
     renderFunnel();
