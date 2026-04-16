@@ -9,7 +9,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#F87171;--orange:#FB923C;--blue:#60A5FA;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--orange:#FB923C;--blue:#60A5FA;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
 
@@ -166,8 +166,33 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 const _tok    = new URLSearchParams(location.search).get('token') || '';
 const _client = new URLSearchParams(location.search).get('client') || 'Creaitors';
 const _edit   = new URLSearchParams(location.search).get('edit') === '1';
+const _role   = (new URLSearchParams(location.search).get('role') || '').toLowerCase();
 
-document.getElementById('eyebrow').textContent = 'OPXIO · ' + _client.toUpperCase();
+// Role presets — bypass saved config when ?role= is set
+const ROLE_PRESETS = {
+  executive: ['campaign', 'content', 'crm', 'crm-log'],
+  sales:     ['crm', 'crm-log'],
+  pm:        ['campaign', 'content'],
+};
+const ROLE_LABELS = {
+  executive: 'Executive',
+  sales:     'Sales',
+  pm:        'Project Manager',
+};
+
+// Eyebrow: client name + role label if role is set, else just client name
+(function(){
+  const el = document.getElementById('eyebrow');
+  if(!el) return;
+  const roleLabel = ROLE_LABELS[_role] ? ' · ' + ROLE_LABELS[_role].toUpperCase() : '';
+  // Default label while client info loads
+  el.textContent = _client.toUpperCase() + roleLabel;
+  if(!_tok) return;
+  fetch('/api/client/info?token=' + _tok)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + roleLabel; })
+    .catch(() => {});
+})();
 
 // ── Available sections catalog ────────────────────────────────────────────
 const SECTIONS_CATALOG = [
@@ -596,14 +621,19 @@ async function load(){
   document.getElementById('rb').textContent = '↻ Refreshing…';
 
   try{
-    // Step 1: fetch config from API (falls back to default on error)
-    try{
-      const cr = await fetch('/api/executive/config?token='+_tok);
-      if(cr.ok){
-        const cj = await cr.json();
-        if(Array.isArray(cj.sections) && cj.sections.length) _sections = cj.sections;
-      }
-    } catch(e){ /* use default */ }
+    // Step 1: resolve sections — role preset overrides saved config
+    if(_role && ROLE_PRESETS[_role]){
+      _sections = ROLE_PRESETS[_role];
+    } else {
+      // No role: fetch config from API (falls back to default on error)
+      try{
+        const cr = await fetch('/api/executive/config?token='+_tok);
+        if(cr.ok){
+          const cj = await cr.json();
+          if(Array.isArray(cj.sections) && cj.sections.length) _sections = cj.sections;
+        }
+      } catch(e){ /* use default */ }
+    }
 
     // Step 2: fetch data for active sections (parallel, deduplicated)
     const needCampaign = _sections.includes('campaign');
