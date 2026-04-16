@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;--lost:#FF6B35;--lostm:rgba(255,107,53,.12);}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
 
@@ -56,6 +56,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .prog-fill{height:8px;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
 .prog-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:4px;}
 .prog-sub.done{color:var(--g);}
+.prog-sub.rem{color:var(--lost);}
 
 /* Campaign list */
 .camp-scroll{max-height:300px;overflow-y:auto;padding-right:2px;}
@@ -69,6 +70,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .camp-track{background:rgba(255,255,255,.05);border-radius:999px;height:5px;overflow:hidden;}
 .camp-fill{height:5px;border-radius:999px;}
 .camp-pct{font-size:12px;font-weight:900;min-width:34px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
+.camp-delivs{font-size:9px;font-weight:700;color:rgba(255,255,255,.22);margin-top:2px;}
 
 /* Loading / empty */
 .loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:10px;}
@@ -144,9 +146,9 @@ function render(camp){
       <div class="s-sub">of ${camp.totalDeliverables || 0} total deliverables</div>
     </div>
     <div class="card stat">
-      <div class="s-dot" style="background:${remaining > 0 ? 'var(--amber)' : 'var(--g)'};"></div>
+      <div class="s-dot" style="background:${remaining > 0 ? 'var(--lost)' : 'var(--g)'};"></div>
       <span class="s-lbl">Remaining</span>
-      <div class="s-val ${remaining > 0 ? 'amber' : ''}">${remaining}</div>
+      <div class="s-val" style="${remaining > 0 ? 'color:var(--lost);' : ''}">${remaining}</div>
       <div class="s-sub">Deliverables still open</div>
     </div>
   </div>`;
@@ -154,7 +156,46 @@ function render(camp){
   html += `<div class="sec-lbl">Breakdown</div>`;
   html += `<div class="mid-row">`;
 
-  // ── Content breakdown ──
+  // ── Campaign list (LEFT) ──
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Campaign Progress</span>
+      <span class="panel-badge">${camp.activeCampaigns || 0} active</span>
+    </div>`;
+
+  if(camp.campaignDetails && camp.campaignDetails.length > 0){
+    html += `<div class="camp-scroll">`;
+    for(const c of camp.campaignDetails){
+      const col    = pctColor(c.pct);
+      const start  = fmtDate(c.startDate);
+      const end    = fmtDate(c.endDate);
+      const dateStr = start && end ? `${start} – ${end}` : start || end || '';
+      const remC   = (c.planned || 0) - (c.done || 0);
+      const delivStr = c.planned > 0
+        ? `${c.done}/${c.planned} deliverables${remC > 0 ? ' · <span style="color:var(--lost);">' + remC + ' left</span>' : ' · <span style="color:var(--g);">done</span>'}`
+        : '';
+      html += `<div class="camp-item">
+        <div class="camp-info">
+          <div class="camp-name" title="${esc(c.name)}">${esc(c.name)}</div>
+          ${dateStr ? `<div class="camp-dates">${esc(dateStr)}</div>` : ''}
+          ${delivStr ? `<div class="camp-delivs">${delivStr}</div>` : ''}
+        </div>
+        <span class="camp-type">${esc(c.type||'')}</span>
+        <div class="camp-bar-wrap">
+          <div class="camp-track">
+            <div class="camp-fill" style="width:${Math.max(c.pct>0?4:0,c.pct)}%;background:${col};"></div>
+          </div>
+        </div>
+        <span class="camp-pct" style="color:${col};">${c.pct}%</span>
+      </div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="empty">No active campaigns</div>`;
+  }
+  html += `</div>`;
+
+  // ── Content breakdown (RIGHT) ──
   html += `<div class="card panel">
     <div class="panel-hdr">
       <span class="panel-title">Content Breakdown</span>
@@ -164,7 +205,7 @@ function render(camp){
   const types = [
     {key:'videos',  label:'Videos'},
     {key:'posters', label:'Posters'},
-    {key:'live',    label:'Livestreams'},
+    {key:'live',    label:'Live Sessions'},
     {key:'kol',     label:'KOL Posts'},
   ];
   for(const tp of types){
@@ -180,43 +221,9 @@ function render(camp){
         <div class="prog-fill" style="width:${pct}%;background:${CONTENT_COLORS[tp.key]};"></div>
       </div>
       ${rem > 0
-        ? `<div class="prog-sub">${rem} remaining</div>`
+        ? `<div class="prog-sub rem">${rem} remaining</div>`
         : `<div class="prog-sub done">All done</div>`}
     </div>`;
-  }
-  html += `</div>`;
-
-  // ── Campaign list ──
-  html += `<div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Campaign Progress</span>
-      <span class="panel-badge">${camp.activeCampaigns || 0} active</span>
-    </div>`;
-
-  if(camp.campaignDetails && camp.campaignDetails.length > 0){
-    html += `<div class="camp-scroll">`;
-    for(const c of camp.campaignDetails){
-      const col    = pctColor(c.pct);
-      const start  = fmtDate(c.startDate);
-      const end    = fmtDate(c.endDate);
-      const dateStr = start && end ? `${start} – ${end}` : start || end || '';
-      html += `<div class="camp-item">
-        <div class="camp-info">
-          <div class="camp-name" title="${esc(c.name)}">${esc(c.name)}</div>
-          ${dateStr ? `<div class="camp-dates">${esc(dateStr)}</div>` : ''}
-        </div>
-        <span class="camp-type">${esc(c.type||'')}</span>
-        <div class="camp-bar-wrap">
-          <div class="camp-track">
-            <div class="camp-fill" style="width:${Math.max(c.pct>0?4:0,c.pct)}%;background:${col};"></div>
-          </div>
-        </div>
-        <span class="camp-pct" style="color:${col};">${c.pct}%</span>
-      </div>`;
-    }
-    html += `</div>`;
-  } else {
-    html += `<div class="empty">No active campaigns</div>`;
   }
   html += `</div>`;
 
