@@ -8,8 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 20px;background:#191919;color:#fff;overflow-y:auto;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B35;
-  --plan:#C084FC;--shoot:#60A5FA;--edit:#FBBF24;--post:#AAFF00;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
 
@@ -108,10 +107,10 @@ function fmtRange(label){
 }
 
 const TYPES = [
-  {key:'planning', label:'Planning', col:'var(--plan)'},
-  {key:'shooting', label:'Shooting', col:'var(--shoot)'},
-  {key:'editing',  label:'Editing',  col:'var(--edit)'},
-  {key:'posting',  label:'Posting',  col:'var(--post)'},
+  {key:'planning', label:'Planning', col:'var(--g)'},
+  {key:'shooting', label:'Shooting', col:'var(--g)'},
+  {key:'editing',  label:'Editing',  col:'var(--g)'},
+  {key:'posting',  label:'Posting',  col:'var(--g)'},
 ];
 
 function sdot(s){return s==='Active'?'s-dot-on':s==='Inactive'?'s-dot-off':'s-dot-lv';}
