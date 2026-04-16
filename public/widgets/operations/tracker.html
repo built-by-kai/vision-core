@@ -358,11 +358,15 @@ setTs();loadData();setInterval(loadData,5*60*1000);
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 <script>
 (function(){
-  const _c = new URLSearchParams(location.search).get('client');
   const el = document.getElementById('_eyebrow');
   if(!el) return;
-  if(_c) el.textContent = _c.toUpperCase() + ' · ' + el.dataset.os.toUpperCase();
-  else    el.textContent = el.dataset.os.toUpperCase();
+  el.textContent = el.dataset.os.toUpperCase(); // default until API responds
+  const tok = new URLSearchParams(location.search).get('token');
+  if(!tok) return;
+  fetch('/api/client/info?token=' + tok)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · ' + el.dataset.os.toUpperCase(); })
+    .catch(() => {});
 })();
 </script>
 </body></html>
