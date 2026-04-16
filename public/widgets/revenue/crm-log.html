@@ -125,8 +125,8 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
   <div class="card stat" id="s-reason-card" style="display:none;">
     <div class="s-dot" style="background:var(--orange);"></div>
     <span class="s-lbl">Top Lost Reason</span>
-    <div class="s-val" style="color:var(--orange);font-size:22px;letter-spacing:-.8px;" id="s-reason-count">—</div>
-    <div class="s-sub truncate" id="s-reason-name" style="margin-top:7px;"></div>
+    <div id="s-reason-name" style="font-size:13px;font-weight:900;color:var(--orange);line-height:1.35;margin-bottom:6px;">—</div>
+    <div class="s-sub" id="s-reason-count"></div>
   </div>
 </div>
 
@@ -232,11 +232,14 @@ function renderLostReasons() {
   }
 
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  if (!sorted.length) { card.style.display = 'none'; return; }
-
   card.style.display = '';
-  document.getElementById('s-reason-count').textContent = sorted[0][1];
+  if (!sorted.length) {
+    document.getElementById('s-reason-name').textContent  = '—';
+    document.getElementById('s-reason-count').textContent = 'No data this period';
+    return;
+  }
   document.getElementById('s-reason-name').textContent  = sorted[0][0];
+  document.getElementById('s-reason-count').textContent = sorted[0][1] + (sorted[0][1] === 1 ? ' occurrence' : ' occurrences');
 }
 
 function setTab(t) {
