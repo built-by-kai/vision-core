@@ -116,7 +116,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 
 <div class="top-bar">
   <div>
-    <p class="eyebrow">OPXIO · Revenue OS</p>
+    <p class="eyebrow" id="_eyebrow" data-os="Revenue OS">OPXIO · Revenue OS</p>
     <h1 class="h-title">CRM &amp; Pipeline</h1>
   </div>
   <div class="top-right">
@@ -559,5 +559,14 @@ window.addEventListener('load', () => setTimeout(drawChart, 80));
 window.addEventListener('resize', drawChart);
 </script>
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+<script>
+(function(){
+  const _c = new URLSearchParams(location.search).get('client');
+  if(_c){
+    const el = document.getElementById('_eyebrow');
+    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
+  }
+})();
+</script>
 </body></html>
 

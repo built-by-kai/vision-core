@@ -195,7 +195,7 @@ function render() {
 
   document.getElementById('root').innerHTML = `
     <div class="header">
-      <div><p class="eyebrow">OPXIO · Marketing OS</p><h1 class="h-title">Content Stats</h1></div>
+      <div><p class="eyebrow" id="_eyebrow" data-os="Marketing OS">OPXIO · Marketing OS</p><h1 class="h-title">Content Stats</h1></div>
       <button class="refresh-btn" onclick="load()">↺ Refresh</button>
     </div>
     <div class="grid">
@@ -274,5 +274,14 @@ setInterval(load, 600000);
 </script>
 
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+<script>
+(function(){
+  const _c = new URLSearchParams(location.search).get('client');
+  if(_c){
+    const el = document.getElementById('_eyebrow');
+    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
+  }
+})();
+</script>
 </body>
 </html>

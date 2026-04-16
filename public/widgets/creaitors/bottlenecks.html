@@ -80,7 +80,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div style="display:flex;align-items:center;">
     <div>
-      <p class="eyebrow">OPXIO · Marketing OS</p>
+      <p class="eyebrow" id="_eyebrow" data-os="Marketing OS">OPXIO · Marketing OS</p>
       <h1 class="h-title" style="display:inline;">Bottlenecks</h1>
     </div>
     <span class="total-badge none" id="tbadge">—</span>
@@ -255,5 +255,14 @@ setInterval(loadData, 600000);
 </script>
 
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+<script>
+(function(){
+  const _c = new URLSearchParams(location.search).get('client');
+  if(_c){
+    const el = document.getElementById('_eyebrow');
+    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
+  }
+})();
+</script>
 </body>
 </html>

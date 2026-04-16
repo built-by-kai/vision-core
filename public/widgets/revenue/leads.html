@@ -61,7 +61,7 @@ body.light .foot-item{color:rgba(0,0,0,.32);border-color:rgba(0,0,0,.05);}
 </style></head><body>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-  <div><p class="eyebrow">OPXIO · Revenue OS</p><h1 class="h-title">Leads</h1></div>
+  <div><p class="eyebrow" id="_eyebrow" data-os="Revenue OS">OPXIO · Revenue OS</p><h1 class="h-title">Leads</h1></div>
   <div style="display:flex;align-items:center;gap:6px;">
     <span class="ts" id="ts"></span>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
@@ -146,4 +146,13 @@ function doRefresh(){ const b=document.getElementById('rb'); b.textContent='↻'
 setInterval(loadData, 5*60*1000);
 </script>
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+<script>
+(function(){
+  const _c = new URLSearchParams(location.search).get('client');
+  if(_c){
+    const el = document.getElementById('_eyebrow');
+    if(el) el.textContent = 'OPXIO · ' + _c.toUpperCase() + ' · ' + el.dataset.os;
+  }
+})();
+</script>
 </body></html>
