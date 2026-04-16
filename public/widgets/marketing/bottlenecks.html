@@ -12,21 +12,21 @@ body{font-family:'Inter',-apple-system,sans-serif;padding:16px;transition:backgr
 #root{flex:1;overflow-y:auto;padding-right:4px;}
 #root::-webkit-scrollbar{width:4px;}
 #root::-webkit-scrollbar-track{background:transparent;}
-#root::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px;}
+#root::-webkit-scrollbar-thumb{background:#2e2e2e;border-radius:3px;}
 
 /* Dark (default) */
 body{background:#191919;color:#e8e8e8;}
 
 .card{background:linear-gradient(145deg,#1E1E1E,#252525);border:1px solid rgba(255,255,255,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.15);border-radius:14px;transition:all 0.25s ease;}
-.card:hover{border-color:rgba(170,255,0,.15);}
+.card:hover{border-color:rgba(255,255,255,0.12);}
 
 .top-bar{display:flex;align-items:center;margin-bottom:14px;gap:8px;}
 .top-left{display:flex;align-items:center;gap:8px;}
 .top-right{display:flex;align-items:center;gap:6px;}
 .title{font-size:14px;font-weight:700;letter-spacing:-0.3px;color:#fff;}
 .total-badge{font-size:10px;font-weight:700;background:rgba(239,68,68,0.12);color:#F87171;padding:2px 8px;border-radius:20px;}
-.total-badge.none{background:rgba(170,255,0,.12);color:#AAFF00;}
-.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.25);}
+.total-badge.none{background:rgba(52,211,153,0.1);color:#34D399;}
+.ts{font-size:10px;font-weight:500;color:#3a3a3a;}
 .toggle-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;line-height:1;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;background:#2A2A2A;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);}
 .toggle-btn:hover{border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.8);}
 
@@ -46,7 +46,7 @@ body{background:#191919;color:#e8e8e8;}
 .card-blue .s-accent{background:#60A5FA;}
 .card-teal .chip-value,.card-teal .chip-label{color:#2DD4BF;}
 .card-teal .s-accent{background:#2DD4BF;}
-.card-green .chip-value,.card-green .chip-label{color:#AAFF00;}
+.card-green .chip-value,.card-green .chip-label{color:#34D399;}
 .card-green .s-accent{background:#34D399;}
 
 /* Section cards */
@@ -74,27 +74,27 @@ body{background:#191919;color:#e8e8e8;}
 .badge-revision{background:rgba(234,179,8,0.1);color:#EAB308;}
 .badge-qc-content{background:rgba(96,165,250,0.1);color:#60A5FA;}
 .badge-qc-task{background:rgba(45,212,191,0.1);color:#2DD4BF;}
-.date-text{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.3);}
+.date-text{font-size:9.5px;font-weight:500;color:#444;}
 
 .scroll-area{max-height:300px;overflow-y:auto;padding-right:4px;}
 .scroll-area::-webkit-scrollbar{width:4px;}
 .scroll-area::-webkit-scrollbar-track{background:transparent;}
-.scroll-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px;}
+.scroll-area::-webkit-scrollbar-thumb{background:#2e2e2e;border-radius:3px;}
 
 /* Empty state */
 .empty-card{padding:40px 20px;text-align:center;}
 .empty-icon{font-size:28px;margin-bottom:8px;opacity:0.6;}
-.empty-text{font-size:14px;font-weight:700;color:#AAFF00;}
-.empty-sub{font-size:11px;color:rgba(255,255,255,.25);margin-top:4px;}
+.empty-text{font-size:14px;font-weight:700;color:#34D399;}
+.empty-sub{font-size:11px;color:#3a3a3a;margin-top:4px;}
 
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:100px;flex-direction:column;gap:10px;}
-.spinner{width:20px;height:20px;border:2px solid rgba(170,255,0,.1);border-top-color:#AAFF00;border-radius:50%;animation:spin 0.8s linear infinite;}
+.spinner{width:20px;height:20px;border:2px solid rgba(128,128,128,0.15);border-top-color:#666;border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{font-size:11px;color:rgba(255,255,255,.3);}
+.loading-text{font-size:11px;color:#666;}
 
 #lbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:9999;pointer-events:none;background:transparent;}
-#lbar.on{background:#AAFF00;animation:lbar-anim 1.2s ease-in-out infinite;}
+#lbar.on{background:linear-gradient(90deg,#F87171,#FB923C,#FBBF24);animation:lbar-anim 1.2s ease-in-out infinite;}
 @keyframes lbar-anim{0%{opacity:1;transform:scaleX(0);transform-origin:left}60%{opacity:1;transform:scaleX(0.85);transform-origin:left}100%{opacity:0;transform:scaleX(1);transform-origin:left}}
 
 /* ====== LIGHT MODE ====== */
@@ -106,14 +106,14 @@ body.light .toggle-btn{background:#F3F4F6;border:1px solid rgba(0,0,0,0.08);colo
 body.light .toggle-btn:hover{border-color:rgba(0,0,0,0.15);color:rgba(0,0,0,0.6);}
 body.light .ts{color:#ccc;}
 body.light .total-badge{background:rgba(239,68,68,0.08);color:#DC2626;}
-body.light .total-badge.none{background:rgba(170,255,0,.1);color:#5C9900;}
+body.light .total-badge.none{background:rgba(22,163,74,0.08);color:#16A34A;}
 
 body.light .card-red .chip-value,body.light .card-red .chip-label{color:#DC2626;}
 body.light .card-orange .chip-value,body.light .card-orange .chip-label{color:#EA580C;}
 body.light .card-yellow .chip-value,body.light .card-yellow .chip-label{color:#B45309;}
 body.light .card-blue .chip-value,body.light .card-blue .chip-label{color:#1D4ED8;}
 body.light .card-teal .chip-value,body.light .card-teal .chip-label{color:#0F766E;}
-body.light .card-green .chip-value,body.light .card-green .chip-label{color:#AAFF00;}
+body.light .card-green .chip-value,body.light .card-green .chip-label{color:#059669;}
 
 body.light .section-title{color:rgba(0,0,0,0.35);}
 body.light .row{border-bottom-color:rgba(0,0,0,0.04);}
@@ -127,7 +127,7 @@ body.light .badge-today{background:rgba(249,115,22,0.08);color:#EA580C;}
 body.light .badge-revision{background:rgba(202,138,4,0.08);color:#B45309;}
 body.light .badge-qc-content{background:rgba(37,99,235,0.08);color:#1D4ED8;}
 body.light .badge-qc-task{background:rgba(13,148,136,0.08);color:#0F766E;}
-body.light .empty-text{color:#AAFF00;}
+body.light .empty-text{color:#059669;}
 body.light .empty-sub{color:#bbb;}
 body.light .scroll-area::-webkit-scrollbar-thumb{background:#e0e0e0;}
 body.light #root::-webkit-scrollbar-thumb{background:#e0e0e0;}
@@ -260,7 +260,7 @@ async function loadData(){
   var btn=document.getElementById('rbtn');if(btn){btn.disabled=true;btn.textContent='Loading...';}
   try{
     if(!_data){try{var c=JSON.parse(localStorage.getItem('btl-cache'));if(c){render(c);}}catch(e){}}
-    var res=await fetch('/api/creaitors/bottlenecks?token='+_tok);
+    var res=await fetch('/api/marketing/bottlenecks?token='+_tok);
     if(!res.ok)throw new Error('API error '+res.status);
     _data=await res.json();
     try{localStorage.setItem('btl-cache',JSON.stringify(_data));}catch(e){}
