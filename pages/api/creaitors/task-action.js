@@ -216,7 +216,7 @@ export default async function handler(req, res) {
         if (!postingLink?.trim()) {
           return res.status(422).json({
             error: 'Posting Link required.',
-            message: `Cannot complete "${taskName}" — paste the posting link before marking done.`,
+            message: `"${taskName}" cannot be completed yet — the content hasn't been posted. Paste the live posting link first, then mark as done.`,
           });
         }
       }
