@@ -112,6 +112,7 @@ export default async function handler(req, res) {
         } catch (e) { console.error('Campaign cascade (non-fatal):', e.message); }
       }
 
+      await clearActionMessage(taskPageId);
       return res.status(200).json({
         success: true, action,
         message: isQcRejection
@@ -125,10 +126,7 @@ export default async function handler(req, res) {
     // ── SUBMIT QC ─────────────────────────────────────────────────────────────
     if (action === 'submit_qc') {
       if (/posting/i.test(taskName)) {
-        return res.status(400).json({
-          error: 'Not applicable.',
-          message: 'Content Posting does not need to submit for review. Use Complete Task instead.',
-        });
+        return actionError(taskPageId, 'Content Posting does not need to submit for review. Use Complete Task instead.');
       }
 
       const startedOnRaw  = props['Task Started On']?.date?.start || null;
@@ -144,6 +142,7 @@ export default async function handler(req, res) {
         'Duration Display': { rich_text: [{ type: 'text', text: { content: durationDisplay } }] },
       });
 
+      await clearActionMessage(taskPageId);
       return res.status(200).json({
         success: true, action,
         message: `"${taskName}" submitted for QC. Total time: ${durationDisplay}.`,
@@ -160,9 +159,7 @@ export default async function handler(req, res) {
       const contentId        = contentLinks[0]?.id || null;
 
       if (currentStatus !== 'Pending QC Review') {
-        return res.status(400).json({
-          error: `"${taskName}" is not in Pending QC Review (current: "${currentStatus}"). Cannot approve.`,
-        });
+        return actionError(taskPageId, `"${taskName}" is not in Pending QC Review (currently: "${currentStatus}"). Cannot approve.`);
       }
 
       let nextTask = null;
@@ -196,6 +193,7 @@ export default async function handler(req, res) {
         }
       } catch (e) { console.error('Approve QC cascade (non-fatal):', e.message); }
 
+      await clearActionMessage(taskPageId);
       return res.status(200).json({
         success: true, action,
         message: cascadeResult?.lastTask
@@ -214,10 +212,7 @@ export default async function handler(req, res) {
       if (isPostingTask) {
         const postingLink = props['Posting Link']?.url || null;
         if (!postingLink?.trim()) {
-          return res.status(422).json({
-            error: 'Posting Link required.',
-            message: `"${taskName}" cannot be completed yet — the content hasn't been posted. Paste the live posting link first, then mark as done.`,
-          });
+          return actionError(taskPageId, `"${taskName}" cannot be completed yet — the content hasn't been posted. Paste the live posting link first, then mark as done.`);
         }
       }
 
@@ -245,6 +240,7 @@ export default async function handler(req, res) {
       });
 
       if (!contentLinks.length || currentOrder === null) {
+        await clearActionMessage(taskPageId);
         return res.status(200).json({
           success: true, action,
           message: `"${taskName}" completed (${durationDisplay || 'no timer'}). No cascade needed.`,
@@ -263,6 +259,7 @@ export default async function handler(req, res) {
 
       if (!nextTask) {
         try { await patch(contentId, { 'Content Status': { status: { name: 'Done' } } }); } catch (e) { /* non-fatal */ }
+        await clearActionMessage(taskPageId);
         return res.status(200).json({
           success: true, action,
           message: `"${taskName}" completed — all tasks done. Content marked Done.`,
@@ -273,6 +270,7 @@ export default async function handler(req, res) {
       const nextTaskName = nextTask.properties['Task List']?.title?.map(t => t.plain_text).join('') || '';
       await patch(nextTask.id, { 'Task Status': { status: { name: 'Ready to Work' } } });
 
+      await clearActionMessage(taskPageId);
       return res.status(200).json({
         success: true, action,
         message: `"${taskName}" completed (${durationDisplay || 'no timer'}) → "${nextTaskName}" is now Ready to Work.`,
@@ -288,11 +286,28 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 
-  // ── Helper ────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function patch(pageId, properties) {
     return fetch(`https://api.notion.com/v1/pages/${pageId}`, {
       method: 'PATCH', headers,
       body: JSON.stringify({ properties }),
     });
+  }
+
+  // Write error to Action Message field and return 200 (Notion shows success, user sees message on page)
+  async function actionError(pageId, message) {
+    try {
+      await patch(pageId, {
+        'Action Message': { rich_text: [{ type: 'text', text: { content: message } }] },
+      });
+    } catch (e) { console.error('actionError write failed:', e.message); }
+    return res.status(200).json({ success: false, message });
+  }
+
+  // Clear Action Message on successful action so it doesn't linger
+  async function clearActionMessage(pageId) {
+    try {
+      await patch(pageId, { 'Action Message': { rich_text: [] } });
+    } catch (e) { /* non-fatal */ }
   }
 }
