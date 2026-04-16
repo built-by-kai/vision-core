@@ -80,7 +80,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div style="display:flex;align-items:center;">
     <div>
-      <p class="eyebrow" id="_eyebrow" data-os="Marketing OS">MARKETING OS</p>
+      <p class="eyebrow" id="_eyebrow"></p>
       <h1 class="h-title" style="display:inline;">Bottlenecks</h1>
     </div>
     <span class="total-badge none" id="tbadge">—</span>
@@ -259,12 +259,11 @@ setInterval(loadData, 600000);
 (function(){
   const el = document.getElementById('_eyebrow');
   if(!el) return;
-  el.textContent = el.dataset.os.toUpperCase(); // default until API responds
   const tok = new URLSearchParams(location.search).get('token');
   if(!tok) return;
   fetch('/api/client/info?token=' + tok)
     .then(r => r.ok ? r.json() : null)
-    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · ' + el.dataset.os.toUpperCase(); })
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase(); })
     .catch(() => {});
 })();
 </script>
