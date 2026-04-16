@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Creaitors — Executive</title>
+<title>Opxio — Executive Overview</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B6B;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#F87171;--orange:#FB923C;--blue:#60A5FA;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
 
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
 .card:hover{border-color:rgba(170,255,0,.1);}
@@ -24,8 +24,11 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
 .h-right{display:flex;align-items:center;gap:6px;}
 
-/* Stat row */
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+/* Section label */
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+
+/* Stat grid */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
 @media(max-width:640px){.g4{grid-template-columns:repeat(2,1fr);}}
 .stat{padding:16px 18px;position:relative;overflow:hidden;}
 .s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.6;}
@@ -33,56 +36,66 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
 .s-val.red{color:var(--red);}
 .s-val.amber{color:var(--amber);}
-.s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.35);margin-top:6px;}
+.s-val.orange{color:var(--orange);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
 
-/* Main layout */
-.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
-.mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* Panels */
+.mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 @media(max-width:680px){.mid-row{grid-template-columns:1fr;}}
-
-/* Panel */
+.full-row{margin-bottom:10px;}
 .panel{padding:20px 22px;}
-.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
 .panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
-.panel-badge.red{background:rgba(255,107,107,.12);color:var(--red);border-color:rgba(255,107,107,.2);}
-.panel-badge.amber{background:rgba(251,191,36,.12);color:var(--amber);border-color:rgba(251,191,36,.2);}
+.panel-badge.amber{background:rgba(251,191,36,.1);color:var(--amber);border-color:rgba(251,191,36,.18);}
 
 /* Campaign list */
-.camp-scroll{max-height:260px;overflow-y:auto;padding-right:2px;}
+.scroll{max-height:240px;overflow-y:auto;padding-right:2px;}
 .camp-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
 .camp-item:last-child{border-bottom:none;}
 .camp-info{flex:1;min-width:0;}
 .camp-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .camp-dates{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);margin-top:2px;}
 .camp-delivs{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);margin-top:2px;}
-.camp-delivs .dl{color:rgba(255,255,255,.55);font-weight:700;}
 .camp-type{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--gm);color:var(--g);border:1px solid rgba(170,255,0,.15);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
-.camp-bar-wrap{width:52px;flex-shrink:0;}
+.camp-bar-wrap{width:48px;flex-shrink:0;}
 .camp-track{background:rgba(255,255,255,.05);border-radius:999px;height:5px;overflow:hidden;}
 .camp-fill{height:5px;border-radius:999px;}
-.camp-pct{font-size:12px;font-weight:900;min-width:34px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
-.empty{padding:24px;text-align:center;font-size:12px;color:rgba(255,255,255,.2);}
+.camp-pct{font-size:12px;font-weight:900;min-width:32px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
 
-/* Task status list */
-.task-status-list{display:flex;flex-direction:column;gap:12px;}
-.ts-row{display:flex;align-items:center;gap:10px;}
-.ts-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.ts-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.45);flex:1;}
-.ts-bar-wrap{width:80px;flex-shrink:0;}
-.ts-track{background:rgba(255,255,255,.05);border-radius:999px;height:4px;overflow:hidden;}
-.ts-fill{height:4px;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1);}
-.ts-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;color:#fff;flex-shrink:0;}
+/* Status bars */
+.cs-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.cs-row:last-child{margin-bottom:0;}
+.cs-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cs-track{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:999px;overflow:hidden;}
+.cs-fill{height:6px;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+.cs-count{font-size:13px;font-weight:900;min-width:22px;text-align:right;flex-shrink:0;letter-spacing:-.3px;}
 
-/* Divider in task panel */
-.task-divider{height:1px;background:rgba(255,255,255,.05);margin:16px 0;}
+/* Pipeline funnel */
+.f-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.f-row:last-child{margin-bottom:0;}
+.f-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.4);width:90px;flex-shrink:0;line-height:1.25;}
+.f-bg{flex:1;height:24px;border-radius:6px;background:rgba(255,255,255,.04);overflow:hidden;}
+.f-fill{height:100%;border-radius:6px;background:rgba(170,255,0,.4);}
+.f-fill.lost{background:rgba(251,146,60,.4);}
+.f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.5);width:22px;text-align:right;flex-shrink:0;}
+.funnel-sub-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.2);margin-bottom:10px;}
 
-/* Due week mini stat */
-.due-mini{display:flex;align-items:baseline;gap:6px;margin-bottom:16px;}
-.due-mini-val{font-size:32px;font-weight:900;letter-spacing:-1.5px;color:var(--amber);}
-.due-mini-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);}
+/* Win/Loss log */
+.wl-tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;}
+.wl-tab{background:transparent;border:none;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .18s;}
+.wl-tab.won{background:rgba(170,255,0,.14);color:#AAFF00;}
+.wl-tab.lost{background:rgba(251,146,60,.14);color:#FB923C;}
+.wl-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.wl-item:last-child{border-bottom:none;}
+.wl-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.75);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;flex-shrink:0;}
+.wl-badge-won{background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.2);}
+.wl-badge-lost{background:rgba(251,146,60,.1);color:#FB923C;border:1px solid rgba(251,146,60,.2);}
+.wl-val{font-size:12px;font-weight:700;color:rgba(255,255,255,.35);flex-shrink:0;}
 
-/* Loading */
+/* Misc */
+.empty{padding:24px;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
 .loading{display:flex;align-items:center;justify-content:center;min-height:160px;flex-direction:column;gap:10px;}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -93,8 +106,8 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 
 <div class="header">
   <div>
-    <p class="eyebrow" id="eyebrow">OPXIO · CREAITORS</p>
-    <h1 class="h-title">Executive View</h1>
+    <p class="eyebrow" id="eyebrow">OPXIO</p>
+    <h1 class="h-title">Executive Overview</h1>
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
@@ -107,9 +120,14 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 </div>
 
 <script>
-const _tok = new URLSearchParams(location.search).get('token') || '';
+const _tok      = new URLSearchParams(location.search).get('token') || '';
+const _client   = new URLSearchParams(location.search).get('client') || 'Creaitors';
+const _sections = (new URLSearchParams(location.search).get('sections') || 'campaign,content')
+  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+document.getElementById('eyebrow').textContent = 'OPXIO · ' + _client.toUpperCase();
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function fmtDate(d){
   if(!d) return null;
@@ -117,172 +135,417 @@ function fmtDate(d){
 }
 
 function pctColor(p){
-  if(p >= 80) return '#AAFF00';
-  if(p >= 50) return '#FBBF24';
-  return '#FF6B6B';
+  if(p >= 80) return 'var(--g)';
+  if(p >= 50) return 'var(--amber)';
+  return 'var(--red)';
 }
 
-function render(camp, content){
-  const remaining = camp.remainingDeliverables || 0;
-  const attn      = content.needsAttention || 0;
-  const attnBreak = content.attentionBreakdown || {};
+function fmtRM(n){
+  if(!n) return '—';
+  if(n >= 1000000) return 'RM '+(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n >= 1000)    return 'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return 'RM '+Math.round(n).toLocaleString();
+}
 
-  // ── Stat row ──
-  let html = `<div class="g4">
+function csColor(l){
+  const lc = (l||'').toLowerCase();
+  if(lc.includes('done') || lc.includes('published'))                              return 'var(--g)';
+  if(lc.includes('ready for posting') || lc.includes('ready to work'))             return 'var(--orange)';
+  if(lc.includes('pending qc') || lc.includes('qc review') || lc.includes('final qc')) return 'var(--amber)';
+  if(lc.includes('revision'))                                                        return 'var(--red)';
+  return 'rgba(170,255,0,.5)';
+}
+
+function tsColor(l){
+  const lc = (l||'').toLowerCase();
+  if(lc.includes('done'))        return 'var(--g)';
+  if(lc.includes('pending qc'))  return 'var(--amber)';
+  if(lc.includes('review'))      return 'var(--red)';
+  if(lc.includes('ready'))       return 'var(--orange)';
+  return 'rgba(170,255,0,.5)';
+}
+
+// ── SECTION: CAMPAIGN ────────────────────────────────────────────────────────
+function renderCampaign(d){
+  const remaining = d.remainingDeliverables || 0;
+  const attn      = d.needsAttention || 0;
+
+  let h = `<div class="sec-lbl">Campaigns</div>
+  <div class="g4">
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
       <span class="s-lbl">Active Campaigns</span>
-      <div class="s-val">${camp.activeCampaigns ?? '—'}</div>
-      <div class="s-sub">${remaining > 0 ? remaining + ' deliverables left' : 'All delivered'}</div>
+      <div class="s-val">${d.activeCampaigns ?? '—'}</div>
+      <div class="s-sub">${remaining > 0 ? remaining+' deliverables left' : 'All delivered'}</div>
     </div>
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
       <span class="s-lbl">Avg Completion</span>
-      <div class="s-val">${camp.avgCompletion != null ? camp.avgCompletion + '%' : '—'}</div>
-      <div class="s-sub">${camp.completedDeliverables || 0} of ${camp.totalDeliverables || 0} done</div>
+      <div class="s-val">${d.avgCompletion != null ? d.avgCompletion+'%' : '—'}</div>
+      <div class="s-sub">${d.completedDeliverables||0} of ${d.totalDeliverables||0} done</div>
     </div>
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
-      <span class="s-lbl">Active Tasks</span>
-      <div class="s-val">${content.tasksTotal ?? '—'}</div>
-      <div class="s-sub">${content.dueThisWeek || 0} due this week</div>
+      <span class="s-lbl">Completed</span>
+      <div class="s-val">${d.completedDeliverables ?? '—'}</div>
+      <div class="s-sub">of ${d.totalDeliverables||0} total deliverables</div>
     </div>
     <div class="card stat">
       <div class="s-dot" style="background:${attn > 0 ? 'var(--red)' : 'var(--g)'};"></div>
       <span class="s-lbl">Needs Attention</span>
       <div class="s-val ${attn > 0 ? 'red' : ''}">${attn}</div>
-      <div class="s-sub">${attn > 0 ? [
-        attnBreak.overdue > 0 ? attnBreak.overdue + ' overdue' : '',
-        attnBreak.revision > 0 ? attnBreak.revision + ' revision' : '',
-        attnBreak.qc > 0 ? attnBreak.qc + ' QC' : '',
-      ].filter(Boolean).join(' · ') : 'All clear'}</div>
+      <div class="s-sub">${attn > 0 ? 'items flagged' : 'All clear'}</div>
     </div>
   </div>`;
 
-  html += `<div class="sec-lbl">Breakdown</div>`;
-  html += `<div class="mid-row">`;
-
-  // ── Campaign list (LEFT) ──
-  html += `<div class="card panel">
+  const camps = d.campaignDetails || [];
+  h += `<div class="full-row card panel">
     <div class="panel-hdr">
       <span class="panel-title">Campaign Progress</span>
-      <span class="panel-badge">${camp.activeCampaigns || 0} active</span>
+      <span class="panel-badge">${d.activeCampaigns||0} active</span>
     </div>`;
-
-  if(camp.campaignDetails && camp.campaignDetails.length > 0){
-    html += `<div class="camp-scroll">`;
-    for(const c of camp.campaignDetails){
-      const col    = pctColor(c.pct);
-      const start  = fmtDate(c.startDate);
-      const end    = fmtDate(c.endDate);
-      const dateStr = start && end ? `${start} – ${end}` : start || end || '';
-      const remC   = (c.planned || 0) - (c.done || 0);
+  if(camps.length){
+    h += `<div class="scroll">`;
+    for(const c of camps){
+      const col   = pctColor(c.pct);
+      const start = fmtDate(c.startDate), end = fmtDate(c.endDate);
+      const dateStr = start && end ? `${start} – ${end}` : start||end||'';
+      const remC  = (c.planned||0) - (c.done||0);
       const TYPE_LABELS = {videos:'Videos',posters:'Posters',live:'Live',kol:'KOL'};
-      const cb2 = c.contentBreakdown || {};
+      const cb2   = c.contentBreakdown || {};
       const typeParts = Object.entries(TYPE_LABELS)
-        .filter(([k]) => (cb2[k]?.planned || 0) > 0)
-        .map(([k,lbl]) => `<span class="dl">${cb2[k].planned} ${lbl}</span>`);
+        .filter(([k]) => (cb2[k]?.planned||0) > 0)
+        .map(([k,lbl]) => `<span style="color:rgba(255,255,255,.55);font-weight:700;">${cb2[k].planned} ${lbl}</span>`);
       const statusStr = remC > 0
         ? `<span style="color:var(--red);">${remC} left</span>`
         : `<span style="color:var(--g);">All done</span>`;
       const delivStr = c.planned > 0
-        ? (typeParts.length ? typeParts.join(' · ') + '  ·  ' + statusStr : statusStr)
+        ? (typeParts.length ? typeParts.join(' · ') + ' · ' + statusStr : statusStr)
         : '';
-      html += `<div class="camp-item">
+      h += `<div class="camp-item">
         <div class="camp-info">
-          <div class="camp-name" title="${esc(c.name)}">${esc(c.name)}</div>
+          <div class="camp-name">${esc(c.name)}</div>
           ${dateStr ? `<div class="camp-dates">${esc(dateStr)}</div>` : ''}
           ${delivStr ? `<div class="camp-delivs">${delivStr}</div>` : ''}
         </div>
-        <span class="camp-type">${esc(c.type||'')}</span>
+        ${c.type ? `<span class="camp-type">${esc(c.type)}</span>` : ''}
         <div class="camp-bar-wrap">
           <div class="camp-track"><div class="camp-fill" style="width:${Math.max(c.pct>0?4:0,c.pct)}%;background:${col};"></div></div>
         </div>
         <span class="camp-pct" style="color:${col};">${c.pct}%</span>
       </div>`;
     }
-    html += `</div>`;
+    h += `</div>`;
   } else {
-    html += `<div class="empty">No active campaigns</div>`;
+    h += `<div class="empty">No active campaigns</div>`;
   }
-  html += `</div>`;
-
-  // ── Task status (RIGHT) ──
-  const tb = content.tasksBreakdown || {};
-  const taskStatuses = [
-    { label: 'In Progress', count: tb.inProgress || 0, color: '#AAFF00' },
-    { label: 'Waiting',     count: tb.waiting    || 0, color: '#FBBF24' },
-    { label: 'QC Review',   count: tb.qc         || 0, color: '#60A5FA' },
-    { label: 'Revision',    count: tb.revision   || 0, color: '#FF6B6B' },
-  ];
-  const maxCount = Math.max(...taskStatuses.map(s => s.count), 1);
-  const attnBadge = attn > 0
-    ? `<span class="panel-badge red">${attn} flagged</span>`
-    : `<span class="panel-badge">All clear</span>`;
-
-  html += `<div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Task Overview</span>
-      ${attnBadge}
-    </div>
-    <div class="due-mini">
-      <span class="due-mini-val">${content.dueThisWeek || 0}</span>
-      <span class="due-mini-lbl">Due This Week</span>
-    </div>
-    <div class="task-divider"></div>
-    <div class="task-status-list">`;
-
-  for(const s of taskStatuses){
-    const pct = Math.round((s.count / maxCount) * 100);
-    html += `<div class="ts-row">
-      <div class="ts-dot" style="background:${s.color};opacity:.7;"></div>
-      <span class="ts-label">${s.label}</span>
-      <div class="ts-bar-wrap">
-        <div class="ts-track"><div class="ts-fill" style="width:${pct}%;background:${s.color};opacity:.5;"></div></div>
-      </div>
-      <span class="ts-count" style="color:${s.count > 0 ? s.color : 'rgba(255,255,255,.25)'};">${s.count}</span>
-    </div>`;
-  }
-
-  html += `</div></div>`; // task-status-list + panel
-  html += `</div>`; // mid-row
-
-  document.getElementById('dash').innerHTML = html;
-  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  return h + `</div>`;
 }
 
+// ── SECTION: CONTENT PRODUCTION ──────────────────────────────────────────────
+function renderContent(d){
+  const attn = d.needsAttention || 0;
+  const ab   = d.attentionBreakdown || {};
+
+  let h = `<div class="sec-lbl">Content Production</div>
+  <div class="g4">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Content In Motion</span>
+      <div class="s-val">${d.contentInMotion ?? '—'}</div>
+      <div class="s-sub">${d.contentBreakdown?.revision||0} revision · ${d.contentBreakdown?.qc||0} QC</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--amber);"></div>
+      <span class="s-lbl">Active Tasks</span>
+      <div class="s-val amber">${d.tasksTotal ?? '—'}</div>
+      <div class="s-sub">${d.dueBreakdown?.tasks||0} due this week</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Due This Week</span>
+      <div class="s-val">${d.dueThisWeek ?? '—'}</div>
+      <div class="s-sub">${d.dueBreakdown?.content||0} content · ${d.dueBreakdown?.tasks||0} tasks</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${attn > 0 ? 'var(--red)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Needs Attention</span>
+      <div class="s-val ${attn > 0 ? 'red' : ''}">${attn}</div>
+      <div class="s-sub">${attn > 0 ? [
+        ab.overdue  > 0 ? ab.overdue+' overdue'  : '',
+        ab.revision > 0 ? ab.revision+' revision' : '',
+        ab.qc       > 0 ? ab.qc+' QC'            : '',
+      ].filter(Boolean).join(' · ') : 'All clear'}</div>
+    </div>
+  </div>`;
+
+  // Content status bars
+  const cStatuses = d.contentStatuses || [];
+  const cCounts   = d.contentStatusCounts || {};
+  const csMax     = Math.max(...cStatuses.map(s => cCounts[s]||0), 1);
+
+  // Task status bars
+  const tStatuses  = d.taskStatuses || [];
+  const tCounts    = d.taskStatusCounts || {};
+  const tsMax      = Math.max(...tStatuses.map(s => tCounts[s]||0), 1);
+  const activeTask = tStatuses.filter(s => (tCounts[s]||0) > 0);
+
+  h += `<div class="mid-row">
+    <div class="card panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Content Status</span>
+        <span class="panel-badge">${d.contentInMotion||0} active</span>
+      </div>`;
+  const activeCt = cStatuses.filter(s => (cCounts[s]||0) > 0);
+  if(activeCt.length){
+    for(const s of activeCt){
+      const cnt = cCounts[s]||0;
+      const pct = Math.round((cnt/csMax)*100);
+      const col = csColor(s);
+      h += `<div class="cs-row">
+        <span class="cs-lbl">${esc(s)}</span>
+        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
+        <span class="cs-count" style="color:${col};">${cnt}</span>
+      </div>`;
+    }
+  } else {
+    h += `<div class="empty">No active content</div>`;
+  }
+  h += `</div>
+    <div class="card panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Task Status</span>
+        <span class="panel-badge ${(d.tasksBreakdown?.revision||0)+(d.tasksBreakdown?.qc||0)>0?'amber':''}">${d.tasksTotal||0} active</span>
+      </div>`;
+  if(activeTask.length){
+    for(const s of activeTask){
+      const cnt = tCounts[s]||0;
+      const pct = Math.round((cnt/tsMax)*100);
+      const col = tsColor(s);
+      h += `<div class="cs-row">
+        <span class="cs-lbl">${esc(s)}</span>
+        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
+        <span class="cs-count" style="color:${col};">${cnt}</span>
+      </div>`;
+    }
+  } else {
+    h += `<div class="empty">No active tasks</div>`;
+  }
+  return h + `</div></div>`;
+}
+
+// ── SECTION: CRM (Revenue pipeline) ──────────────────────────────────────────
+function renderCRM(pipe, deals){
+  const potVal = deals.potentialValue || pipe.leadsPotentialValue || deals.buildingValue || 0;
+
+  // Build funnel HTML
+  function funnelHTML(stages, order, lostLabel){
+    const maxN = Math.max(...order.map(k => stages[k]||0), 1);
+    return order.map(key => {
+      const n   = stages[key]||0;
+      const pct = Math.max(Math.round((n/maxN)*100), n>0 ? 5 : 0);
+      const cls = (lostLabel && key === lostLabel) ? ' lost' : '';
+      return `<div class="f-row">
+        <span class="f-lbl">${esc(key)}</span>
+        <div class="f-bg"><div class="f-fill${cls}" style="width:${pct}%;"></div></div>
+        <span class="f-n">${n||''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const lStages = pipe.stages || {}, lOrder = pipe.stageOrder || Object.keys(lStages);
+  const dStages = deals.stages || {}, dOrder = deals.stageOrder || Object.keys(dStages);
+
+  let h = `<div class="sec-lbl">Revenue</div>
+  <div class="g4">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Active Leads</span>
+      <div class="s-val">${pipe.totalActive ?? '—'}</div>
+      <div class="s-sub">In lead pipeline</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Active Deals</span>
+      <div class="s-val">${deals.activeDealsCount ?? '—'}</div>
+      <div class="s-sub">${deals.wonValue ? fmtRM(deals.wonValue) : 'In deal pipeline'}</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Potential Value</span>
+      <div class="s-val" style="font-size:${potVal >= 1000 ? '22px' : '30px'};">${potVal ? fmtRM(potVal) : '—'}</div>
+      <div class="s-sub">Pre-win deal value</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Conv. Rate</span>
+      <div class="s-val">${pipe.convRate != null ? pipe.convRate+'%' : '—'}</div>
+      <div class="s-sub">Leads this month</div>
+    </div>
+  </div>
+  <div class="mid-row">
+    <div class="card panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Lead Pipeline</span>
+        <span class="panel-badge">${pipe.totalActive||0} leads</span>
+      </div>
+      ${funnelHTML(lStages, lOrder, pipe.lostLabel)}
+    </div>
+    <div class="card panel">
+      <div class="panel-hdr">
+        <span class="panel-title">Deal Pipeline</span>
+        <span class="panel-badge">${deals.activeDealsCount||0} deals</span>
+      </div>
+      ${funnelHTML(dStages, dOrder, deals.lostLabel)}
+    </div>
+  </div>`;
+  return h;
+}
+
+// ── SECTION: CRM-LOG (Win/Loss log) ──────────────────────────────────────────
+function renderCRMLog(pipe, deals){
+  const wonDeals  = deals.wonDeals  || [];
+  const lostLeads = pipe.lostLeads  || [];
+  const lostDeals = deals.lostDeals || [];
+  const lostTotal = lostLeads.length + lostDeals.length;
+  const totalClosed = wonDeals.length + lostDeals.length;
+  const winRate   = totalClosed > 0 ? Math.round((wonDeals.length/totalClosed)*100) : null;
+  const wonValue  = wonDeals.reduce((s,d) => s+(d.value||0), 0);
+
+  // Top lost reason
+  const rCounts = {};
+  for(const d of [...lostLeads, ...lostDeals]){
+    if(!d.lostReason) continue;
+    d.lostReason.split(',').map(s=>s.trim()).filter(Boolean).forEach(r => rCounts[r]=(rCounts[r]||0)+1);
+  }
+  const topReason = Object.entries(rCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  // Only show "Revenue" label if crm section didn't already add it
+  let h = _sections.includes('crm') ? '' : `<div class="sec-lbl">Revenue</div>`;
+
+  h += `<div class="g4">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Won Deals</span>
+      <div class="s-val">${wonDeals.length}</div>
+      <div class="s-sub">${wonValue ? fmtRM(wonValue) : 'All time'}</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--orange);"></div>
+      <span class="s-lbl">Lost</span>
+      <div class="s-val orange">${lostTotal}</div>
+      <div class="s-sub">${lostLeads.length} leads · ${lostDeals.length} deals</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Win Rate</span>
+      <div class="s-val">${winRate != null ? winRate+'%' : '—'}</div>
+      <div class="s-sub">Won vs total closed</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${topReason?'var(--orange)':'var(--g)'};"></div>
+      <span class="s-lbl">Top Lost Reason</span>
+      <div style="font-size:14px;font-weight:900;color:var(--orange);line-height:1.3;margin-bottom:5px;">${topReason?esc(topReason[0]):'—'}</div>
+      <div class="s-sub">${topReason ? topReason[1]+' occurrence'+(topReason[1]>1?'s':'') : 'No data'}</div>
+    </div>
+  </div>`;
+
+  // Store for tab switching
+  window._wlData = {
+    won:  wonDeals.slice(0,8),
+    lost: [...lostDeals.map(d=>({...d,_t:'deal'})), ...lostLeads.map(d=>({...d,_t:'lead'}))].slice(0,8),
+  };
+
+  h += `<div class="full-row card panel">
+    <div class="panel-hdr" style="margin-bottom:0;">
+      <span class="panel-title">Win / Loss Log</span>
+    </div>
+    <div style="margin-top:14px;">
+      <div class="wl-tabs">
+        <button class="wl-tab won" id="wlt-won" onclick="wlTab('won')">Won (${window._wlData.won.length})</button>
+        <button class="wl-tab"     id="wlt-lost" onclick="wlTab('lost')">Lost (${window._wlData.lost.length})</button>
+      </div>
+      <div id="wl-list"></div>
+    </div>
+  </div>`;
+  return h;
+}
+
+let _wlTab = 'won';
+window.wlTab = function(t){
+  _wlTab = t;
+  document.getElementById('wlt-won').className  = 'wl-tab' + (t==='won'  ? ' won'  : '');
+  document.getElementById('wlt-lost').className = 'wl-tab' + (t==='lost' ? ' lost' : '');
+  renderWLList();
+};
+function renderWLList(){
+  const el = document.getElementById('wl-list');
+  if(!el) return;
+  const rows = (window._wlData||{})[_wlTab] || [];
+  if(!rows.length){ el.innerHTML = `<div class="empty">No ${_wlTab} entries</div>`; return; }
+  el.innerHTML = rows.map(d => {
+    const click = d.url ? `style="cursor:pointer;" onclick="window.open('${d.url}','_blank')"` : '';
+    const badge = _wlTab === 'won'
+      ? `<span class="wl-badge wl-badge-won">${esc(d.stage||'Won')}</span>`
+      : `<span class="wl-badge wl-badge-lost">${d._t==='lead'?'Lead':'Deal'}</span>`;
+    return `<div class="wl-item" ${click}>
+      <span class="wl-name">${esc(d.name)}</span>
+      ${badge}
+      <span class="wl-val">${d.value ? fmtRM(d.value) : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── LOAD ─────────────────────────────────────────────────────────────────────
 async function load(){
   document.getElementById('rb').textContent = '↻ Refreshing…';
+
+  const needCampaign = _sections.includes('campaign');
+  const needContent  = _sections.includes('content');
+  const needRevenue  = _sections.includes('crm') || _sections.includes('crm-log');
+
+  const fetchMap = {};
+  if(needCampaign) fetchMap.campaign = fetch('/api/creaitors/campaign-stats?token='+_tok).then(r=>r.json());
+  if(needContent)  fetchMap.content  = fetch('/api/creaitors/content-stats?token='+_tok).then(r=>r.json());
+  if(needRevenue){
+    fetchMap.pipe  = fetch('/api/data/pipeline?token='+_tok).then(r=>r.json());
+    fetchMap.deals = fetch('/api/data/deals?token='+_tok).then(r=>r.json());
+  }
+
   try{
-    const [r1, r2] = await Promise.all([
-      fetch('/api/creaitors/campaign-stats?token='+_tok),
-      fetch('/api/creaitors/content-stats?token='+_tok),
-    ]);
-    if(!r1.ok) throw new Error('campaign-stats '+r1.status);
-    if(!r2.ok) throw new Error('content-stats '+r2.status);
-    render(await r1.json(), await r2.json());
+    const keys    = Object.keys(fetchMap);
+    const results = await Promise.all(keys.map(k => fetchMap[k]));
+    const data    = {};
+    keys.forEach((k,i) => data[k] = results[i]);
+
+    let html = '';
+    for(const sec of _sections){
+      if(sec === 'campaign' && data.campaign)              html += renderCampaign(data.campaign);
+      if(sec === 'content'  && data.content)               html += renderContent(data.content);
+      if(sec === 'crm'      && data.pipe && data.deals)    html += renderCRM(data.pipe, data.deals);
+      if(sec === 'crm-log'  && data.pipe && data.deals)    html += renderCRMLog(data.pipe, data.deals);
+    }
+
+    document.getElementById('dash').innerHTML = html || `<div class="empty">No sections configured — add ?sections=campaign,content</div>`;
+    document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+    if(_sections.includes('crm-log')) renderWLList();
+
   } catch(e){
     document.getElementById('dash').innerHTML = `
       <div class="loading">
-        <div style="font-size:12px;color:#FF6B6B;font-weight:700;">Failed to load</div>
+        <div style="font-size:12px;color:var(--red);font-weight:700;">Failed to load</div>
         <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;">${esc(e.message)}</div>
       </div>`;
-  } finally{
+  } finally {
     document.getElementById('rb').textContent = '↻ Refresh';
   }
 }
-
-// Set client name from ?client= param
-const _client = new URLSearchParams(location.search).get('client') || 'Creaitors';
-document.getElementById('eyebrow').textContent = 'OPXIO · ' + _client.toUpperCase();
 
 load();
 setInterval(load, 600000);
 </script>
 
-<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">
-  Widgets by Opxio.io
-</div>
-
+<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 </body>
 </html>
