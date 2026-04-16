@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Win / Loss Log</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--orange:#FB923C;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+@media(max-width:620px){.stat-row{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:16px 18px;position:relative;overflow:hidden;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.6;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+
+/* Panel */
+.panel{padding:20px 22px;}
+
+/* Tabs */
+.tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;width:fit-content;margin-bottom:18px;}
+.tab{background:transparent;border:none;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .18s;letter-spacing:.04em;}
+.tab.won{background:rgba(170,255,0,.14);color:#AAFF00;}
+.tab.lost{background:rgba(251,146,60,.14);color:#FB923C;}
+
+/* Deal rows */
+.list{display:flex;flex-direction:column;gap:1px;}
+.row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s;border-radius:6px;margin:0 -6px;padding-left:6px;padding-right:6px;}
+.row:last-child{border-bottom:none;}
+.row:hover{background:rgba(255,255,255,.03);}
+.row-info{flex:1;min-width:0;}
+.row-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.row-meta{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);}
+.row-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.badge-won{background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.2);}
+.badge-lost-lead{background:rgba(251,146,60,.1);color:#FB923C;border:1px solid rgba(251,146,60,.2);}
+.badge-lost-deal{background:rgba(251,146,60,.16);color:#FB923C;border:1px solid rgba(251,146,60,.25);}
+.badge-stage{font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.07);}
+.reason-pill{font-size:9px;font-weight:700;color:#FB923C;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.18);border-radius:4px;padding:2px 7px;margin-top:4px;display:inline-block;}
+.row-val{font-size:13px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:-.4px;}
+
+/* Empty / loading */
+.empty{padding:40px 0;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
+.loading{display:flex;align-items:center;justify-content:center;min-height:200px;flex-direction:column;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow">Opxio · Revenue OS</p>
+    <h1 class="h-title">Win / Loss Log</h1>
+  </div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" id="rb" onclick="loadData()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="card stat">
+    <div class="s-dot" style="background:var(--g);"></div>
+    <span class="s-lbl">Won Deals</span>
+    <div class="s-val" id="s-won">—</div>
+    <div class="s-sub" id="s-won-sub">Active &amp; delivered</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="background:var(--orange);"></div>
+    <span class="s-lbl">Lost Leads</span>
+    <div class="s-val" style="color:var(--orange);" id="s-lost-leads">—</div>
+    <div class="s-sub">Leads that didn't convert</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="background:var(--orange);"></div>
+    <span class="s-lbl">Lost Deals</span>
+    <div class="s-val" style="color:var(--orange);" id="s-lost-deals">—</div>
+    <div class="s-sub">Deals that fell through</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot" style="background:var(--g);"></div>
+    <span class="s-lbl">Win Rate</span>
+    <div class="s-val" id="s-winrate">—</div>
+    <div class="s-sub">Won vs total closed</div>
+  </div>
+</div>
+
+<div class="card panel">
+  <div class="tabs">
+    <button class="tab won" id="t-won" onclick="setTab('won')">Won</button>
+    <button class="tab" id="t-lost" onclick="setTab('lost')">Lost</button>
+  </div>
+  <div class="list" id="log-list">
+    <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
+  </div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+function apiUrl(p){ return p + (_tok ? '?token=' + encodeURIComponent(_tok) : ''); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtRM(n){
+  if(!n) return '—';
+  if(n >= 1000000) return 'RM ' + (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1000)    return 'RM ' + (n/1000).toFixed(0) + 'K';
+  return 'RM ' + Math.round(n).toLocaleString();
+}
+
+let tab = 'won';
+let pipeData  = null;
+let dealsData = null;
+
+function setTab(t) {
+  tab = t;
+  document.getElementById('t-won').className  = 'tab' + (t === 'won'  ? ' won'  : '');
+  document.getElementById('t-lost').className = 'tab' + (t === 'lost' ? ' lost' : '');
+  renderList();
+}
+
+function renderList() {
+  const el = document.getElementById('log-list');
+  if (!pipeData || !dealsData) return;
+
+  if (tab === 'won') {
+    const rows = dealsData.wonDeals || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">No won deals yet</div>'; return; }
+    el.innerHTML = rows.map(d => {
+      const click = d.url ? `onclick="window.open('${d.url}','_blank')"` : '';
+      const meta  = [d.pkg].filter(Boolean).join(' · ');
+      return `<div class="row" ${click}>
+        <div class="row-info">
+          <div class="row-name">${esc(d.name)}</div>
+          ${meta ? `<div class="row-meta">${esc(meta)}</div>` : ''}
+        </div>
+        <div class="row-right">
+          <span class="badge badge-won">${esc(d.stage)}</span>
+          <span class="row-val">${fmtRM(d.value)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    const lostD = (dealsData.lostDeals || []).map(d => ({ ...d, _type: 'deal' }));
+    const lostL = (pipeData.lostLeads  || []).map(d => ({ ...d, _type: 'lead' }));
+    const rows  = [...lostD, ...lostL];
+    if (!rows.length) { el.innerHTML = '<div class="empty">No lost leads or deals</div>'; return; }
+    el.innerHTML = rows.map(d => {
+      const click  = d.url ? `onclick="window.open('${d.url}','_blank')"` : '';
+      const meta   = [d.pkg].filter(Boolean).join(' · ');
+      const bClass = d._type === 'lead' ? 'badge-lost-lead' : 'badge-lost-deal';
+      const bLabel = d._type === 'lead' ? 'Lead' : 'Deal';
+      const reason = d.lostReason ? `<div><span class="reason-pill">${esc(d.lostReason)}</span></div>` : '';
+      return `<div class="row" ${click}>
+        <div class="row-info">
+          <div class="row-name">${esc(d.name)}</div>
+          ${meta ? `<div class="row-meta">${esc(meta)}</div>` : ''}
+          ${reason}
+        </div>
+        <div class="row-right">
+          <span class="badge ${bClass}">${bLabel}</span>
+          <span class="row-val">${fmtRM(d.value)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function updateStats() {
+  if (!pipeData || !dealsData) return;
+  const wonCount  = (dealsData.wonDeals  || []).length;
+  const lostLeads = (pipeData.lostLeads  || []).length;
+  const lostDeals = (dealsData.lostDeals || []).length;
+  const totalClosed = wonCount + lostDeals;
+  const winRate = totalClosed > 0 ? Math.round((wonCount / totalClosed) * 100) : null;
+
+  document.getElementById('s-won').textContent        = wonCount;
+  document.getElementById('s-won-sub').textContent    = wonCount === 1 ? '1 deal' : wonCount + ' deals';
+  document.getElementById('s-lost-leads').textContent = lostLeads;
+  document.getElementById('s-lost-deals').textContent = lostDeals;
+  document.getElementById('s-winrate').textContent    = winRate != null ? winRate + '%' : '—';
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadData() {
+  document.getElementById('rb').textContent = '↻ Refreshing…';
+  document.getElementById('log-list').innerHTML =
+    '<div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>';
+  try {
+    const [rp, rd] = await Promise.all([
+      fetch(apiUrl('/api/data/pipeline')),
+      fetch(apiUrl('/api/data/deals')),
+    ]);
+    [pipeData, dealsData] = await Promise.all([rp.json(), rd.json()]);
+    updateStats();
+    renderList();
+  } catch(e) {
+    document.getElementById('log-list').innerHTML =
+      `<div class="empty">Failed to load — ${esc(e.message)}</div>`;
+  } finally {
+    document.getElementById('rb').textContent = '↻ Refresh';
+  }
+}
+
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>

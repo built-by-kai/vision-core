@@ -92,33 +92,6 @@ body.light .l-name{color:rgba(0,0,0,.5);}
 .l-val{font-size:13px;font-weight:900;color:#fff;}
 body.light .l-val{color:#111;}
 /* Chart */
-/* Won / Lost deals panel */
-.deals-panel{padding:20px 22px;margin-top:10px;}
-.deals-tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;width:fit-content;margin-bottom:16px;}
-body.light .deals-tabs{background:rgba(0,0,0,.06);}
-.dtab{background:transparent;border:none;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .18s;letter-spacing:.04em;}
-body.light .dtab{color:rgba(0,0,0,.35);}
-.dtab.won-active{background:rgba(170,255,0,.14);color:#AAFF00;}
-.dtab.lost-active{background:rgba(255,107,107,.14);color:#FF6B6B;}
-body.light .dtab.won-active{background:rgba(92,153,0,.12);color:#4A8000;}
-body.light .dtab.lost-active{background:rgba(200,50,50,.1);color:#C00;}
-.deals-list{display:flex;flex-direction:column;gap:1px;max-height:220px;overflow-y:auto;padding-right:2px;}
-.deal-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
-body.light .deal-row{border-color:rgba(0,0,0,.05);}
-.deal-row:last-child{border-bottom:none;}
-.deal-info{flex:1;min-width:0;}
-.deal-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .deal-name{color:rgba(0,0,0,.8);}
-.deal-meta{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);margin-top:2px;}
-body.light .deal-meta{color:rgba(0,0,0,.3);}
-.deal-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
-.deal-badge.won{background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.18);}
-.deal-badge.lost{background:rgba(251,146,60,.12);color:#FB923C;border:1px solid rgba(251,146,60,.22);}
-.lost-reason{display:inline-block;font-size:9px;font-weight:700;color:#FB923C;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.18);border-radius:4px;padding:1px 6px;margin-top:4px;}
-.deal-val{font-size:12px;font-weight:900;color:rgba(255,255,255,.5);min-width:52px;text-align:right;flex-shrink:0;letter-spacing:-.4px;}
-body.light .deal-val{color:rgba(0,0,0,.4);}
-.deals-empty{padding:28px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.2);font-weight:600;}
-body.light .deals-empty{color:rgba(0,0,0,.25);}
 .chart-card{padding:22px 24px;margin-top:10px;}
 .chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .chart-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
@@ -211,14 +184,6 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </div>
 </div>
 
-<div class="card deals-panel">
-  <div class="deals-tabs">
-    <button class="dtab won-active" id="dt-won" onclick="setDealsTab('won')">Won</button>
-    <button class="dtab" id="dt-lost" onclick="setDealsTab('lost')">Lost</button>
-  </div>
-  <div class="deals-list" id="deals-list"></div>
-</div>
-
 <div class="card chart-card">
   <div class="chart-hdr">
     <span class="chart-title">Leads Incoming by Month</span>
@@ -237,7 +202,6 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 
 let light = false;
 let funnelMode = 'leads';
-let dealsTab = 'won';
 let pipeData = null;
 let dealsData = null;
 let chartData = [];
@@ -337,58 +301,6 @@ function renderFunnel() {
   }
 }
 
-// ── Won / Lost deals list ──────────────────────────────────────────────────────
-function setDealsTab(tab) {
-  dealsTab = tab;
-  document.getElementById('dt-won').className  = 'dtab' + (tab === 'won'  ? ' won-active'  : '');
-  document.getElementById('dt-lost').className = 'dtab' + (tab === 'lost' ? ' lost-active' : '');
-  renderDealsList();
-}
-
-function renderDealsList() {
-  const list = document.getElementById('deals-list');
-  if (!dealsData) { list.innerHTML = '<div class="deals-empty">Loading…</div>'; return; }
-
-  if (dealsTab === 'won') {
-    const rows = dealsData.wonDeals || [];
-    if (!rows.length) { list.innerHTML = '<div class="deals-empty">No won deals</div>'; return; }
-    list.innerHTML = rows.map(d => {
-      const val  = d.value ? fmtRM(d.value) : '—';
-      const meta = [d.stage, d.pkg].filter(Boolean).join(' · ');
-      const click = d.url ? `onclick="window.open('${d.url}','_blank')" style="cursor:pointer;"` : '';
-      return `<div class="deal-row" ${click}>
-        <div class="deal-info">
-          <div class="deal-name">${esc(d.name)}</div>
-          ${meta ? `<div class="deal-meta">${esc(meta)}</div>` : ''}
-        </div>
-        <span class="deal-badge won">Won</span>
-        <span class="deal-val">${val}</span>
-      </div>`;
-    }).join('');
-  } else {
-    const lostD = (dealsData.lostDeals || []).map(d => ({ ...d, _type: 'deal' }));
-    const lostL = (pipeData?.lostLeads  || []).map(d => ({ ...d, _type: 'lead' }));
-    const rows  = [...lostD, ...lostL];
-    if (!rows.length) { list.innerHTML = '<div class="deals-empty">No lost leads or deals</div>'; return; }
-    list.innerHTML = rows.map(d => {
-      const val    = d.value ? fmtRM(d.value) : '—';
-      const meta   = [d.stage, d.pkg].filter(Boolean).join(' · ');
-      const reason = d.lostReason ? `<div><span class="lost-reason">${esc(d.lostReason)}</span></div>` : '';
-      const badge  = d._type === 'lead' ? 'Lead' : 'Deal';
-      const click  = d.url ? `onclick="window.open('${d.url}','_blank')" style="cursor:pointer;"` : '';
-      return `<div class="deal-row" ${click}>
-        <div class="deal-info">
-          <div class="deal-name">${esc(d.name)}</div>
-          ${meta ? `<div class="deal-meta">${esc(meta)}</div>` : ''}
-          ${reason}
-        </div>
-        <span class="deal-badge lost">${badge}</span>
-        <span class="deal-val">${val}</span>
-      </div>`;
-    }).join('');
-  }
-}
-
 // ── Data load ─────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
@@ -400,8 +312,6 @@ async function loadData() {
 
     pipeData  = jp;
     dealsData = jd;
-
-    renderDealsList();
 
     document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
     // Potential value: deals pipeline first, then leads pipeline, then active deal value
