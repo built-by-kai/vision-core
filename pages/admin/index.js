@@ -23,13 +23,13 @@ const WIDGETS = [
   { url: "/operations/projects", label: "Projects",          dbs: ["PROJECTS","PHASES"],                  os: "operations", tier: "base" },
 ]
 
-const OS_TYPES = ["business","sales","operations","marketing","intelligence"]
+const OS_TYPES = ["revenue","operations","business","marketing","agency","team","retention","intelligence","micro"]
 
 const EMPTY_CLIENT = {
-  client_name: "", slug: "", os_type: [], notion_token: "", status: "active",
+  client_name: "", slug: "", os_type: [], notion_token: "", notion_workspace_id: "", status: "active",
   databases: {},
   field_map: { STAGE_FIELD: "", STATUS_FIELD: "", PACKAGE_FIELD: "", TYPE_FIELD: "", INVOICE_TYPE_FIELD: "" },
-  labels: { stages: "", activeStages: "" },
+  labels: { stages: "", activeStages: "", dealAll: "", dealPotential: "", dealWon: "", dealWonLabel: "", dealDeliveredLabel: "" },
   monthly_fee: 0, next_renewal: "",
   custom_widgets: [],
   installed_os: {},
@@ -104,22 +104,30 @@ export default function AdminPage() {
   useEffect(() => { if (authed) loadClients() }, [authed])
 
   function clientFromForm(c) {
+    const splitCSV = str => str?.trim() ? str.split(",").map(s=>s.trim()).filter(Boolean) : undefined
+    const labels = {}
+    const ls = splitCSV(c.labels?.stages);          if (ls) labels.stages = ls
+    const las = splitCSV(c.labels?.activeStages);   if (las) labels.activeStages = las
+    const da = splitCSV(c.labels?.dealAll);          if (da) labels.dealAllStages = da
+    const dp = splitCSV(c.labels?.dealPotential);   if (dp) labels.dealPotentialStages = dp
+    const dw = splitCSV(c.labels?.dealWon);         if (dw) labels.dealWonStages = dw
+    if (c.labels?.dealWonLabel?.trim())       labels.dealWonLabel       = c.labels.dealWonLabel.trim()
+    if (c.labels?.dealDeliveredLabel?.trim()) labels.dealDeliveredLabel = c.labels.dealDeliveredLabel.trim()
+
     return {
-      client_name:  c.client_name,
-      slug:         c.slug,
-      os_type:      c.os_type || [],
-      notion_token: c.notion_token || "",
-      status:       c.status,
-      databases:    Object.fromEntries(Object.entries(c.databases||{}).filter(([,v]) => v?.trim())),
-      field_map:    Object.fromEntries(["STAGE_FIELD","STATUS_FIELD","PACKAGE_FIELD","TYPE_FIELD","INVOICE_TYPE_FIELD"].filter(k => c.field_map?.[k]?.trim()).map(k => [k, c.field_map[k].trim()])),
-      labels: {
-        ...(c.labels?.stages?.trim()       ? { stages:       c.labels.stages.split(",").map(s=>s.trim()).filter(Boolean) } : {}),
-        ...(c.labels?.activeStages?.trim() ? { activeStages: c.labels.activeStages.split(",").map(s=>s.trim()).filter(Boolean) } : {}),
-      },
-      monthly_fee:    Number(c.monthly_fee) || 0,
-      next_renewal:   c.next_renewal || null,
-      custom_widgets: c.custom_widgets || [],
-      installed_os:   c.installed_os   || {},
+      client_name:          c.client_name,
+      slug:                 c.slug,
+      os_type:              c.os_type || [],
+      notion_token:         c.notion_token || "",
+      notion_workspace_id:  c.notion_workspace_id || null,
+      status:               c.status,
+      databases:            Object.fromEntries(Object.entries(c.databases||{}).filter(([,v]) => v?.trim())),
+      field_map:            Object.fromEntries(["STAGE_FIELD","STATUS_FIELD","PACKAGE_FIELD","TYPE_FIELD","INVOICE_TYPE_FIELD"].filter(k => c.field_map?.[k]?.trim()).map(k => [k, c.field_map[k].trim()])),
+      labels,
+      monthly_fee:          Number(c.monthly_fee) || 0,
+      next_renewal:         c.next_renewal || null,
+      custom_widgets:       c.custom_widgets || [],
+      installed_os:         c.installed_os   || {},
     }
   }
 
@@ -131,12 +139,13 @@ export default function AdminPage() {
   function openEdit(c) {
     setSelected(c.slug)
     setForm({
-      client_name:  c.client_name,
-      slug:         c.slug,
-      os_type:      c.os_type || [],
-      notion_token: c.notion_token || "",
-      status:       c.status || "active",
-      databases:    { ...(c.databases||{}) },
+      client_name:         c.client_name,
+      slug:                c.slug,
+      os_type:             c.os_type || [],
+      notion_token:        c.notion_token || "",
+      notion_workspace_id: c.notion_workspace_id || "",
+      status:              c.status || "active",
+      databases:           { ...(c.databases||{}) },
       field_map: {
         STAGE_FIELD:        c.field_map?.STAGE_FIELD        || "",
         STATUS_FIELD:       c.field_map?.STATUS_FIELD       || "",
@@ -145,8 +154,13 @@ export default function AdminPage() {
         INVOICE_TYPE_FIELD: c.field_map?.INVOICE_TYPE_FIELD || "",
       },
       labels: {
-        stages:       (c.labels?.stages||[]).join(", "),
-        activeStages: (c.labels?.activeStages||[]).join(", "),
+        stages:            (c.labels?.stages||[]).join(", "),
+        activeStages:      (c.labels?.activeStages||[]).join(", "),
+        dealAll:           (c.labels?.dealAllStages||[]).join(", "),
+        dealPotential:     (c.labels?.dealPotentialStages||[]).join(", "),
+        dealWon:           (c.labels?.dealWonStages||[]).join(", "),
+        dealWonLabel:      c.labels?.dealWonLabel       || "",
+        dealDeliveredLabel:c.labels?.dealDeliveredLabel || "",
       },
       monthly_fee:    c.monthly_fee || 0,
       next_renewal:   c.next_renewal ? c.next_renewal.slice(0,10) : "",
@@ -159,7 +173,7 @@ export default function AdminPage() {
   // helpers
   const setDB    = (k,v) => setForm(f => ({ ...f, databases: { ...f.databases, [k]: v } }))
   const setFM    = (k,v) => setForm(f => ({ ...f, field_map: { ...f.field_map, [k]: v } }))
-  const setLbl   = (k,v) => setForm(f => ({ ...f, labels: { ...f.labels, [k]: v } }))
+  const setLbl   = (k,v) => setForm(f => ({ ...f, labels:    { ...f.labels,    [k]: v } }))
   const toggleOS = (os)  => setForm(f => ({ ...f, os_type: f.os_type.includes(os) ? f.os_type.filter(x=>x!==os) : [...f.os_type, os] }))
   const toggleWidget = (url) => setForm(f => ({ ...f, custom_widgets: f.custom_widgets.includes(url) ? f.custom_widgets.filter(u=>u!==url) : [...f.custom_widgets, url] }))
 
@@ -382,9 +396,15 @@ export default function AdminPage() {
 
                 {/* ── Notion ── */}
                 <span style={s.secLabel}>Notion<span style={s.secNote}>— client's own integration key (preferred) or leave blank to use Opxio shared key</span></span>
-                <div style={s.fieldWrap}>
-                  <label style={s.lbl}>API Token</label>
-                  <input style={s.input} value={form.notion_token} onChange={e=>setForm(f=>({...f,notion_token:e.target.value}))} placeholder="ntn_..." />
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>API Token</label>
+                    <input style={s.input} value={form.notion_token} onChange={e=>setForm(f=>({...f,notion_token:e.target.value}))} placeholder="ntn_..." />
+                  </div>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>Workspace ID<span style={{ ...s.secNote, fontSize:10 }}> optional</span></label>
+                    <input style={s.input} value={form.notion_workspace_id||""} onChange={e=>setForm(f=>({...f,notion_workspace_id:e.target.value}))} placeholder="workspace uuid" />
+                  </div>
                 </div>
 
                 {/* ── DB IDs ── */}
@@ -445,15 +465,42 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Pipeline stages */}
-                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>CRM Pipeline — stage order</div>
+                {/* Lead stages */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", marginBottom:8 }}>CRM — Lead Stages</div>
                 <div style={s.fieldWrap}>
-                  <label style={s.lbl}>All Stages<span style={{ ...s.secNote, fontSize:10 }}> comma-separated — last two = won / lost</span></label>
-                  <input style={s.input} value={form.labels.stages||""} onChange={e=>setLbl("stages",e.target.value)} placeholder="Lead, Contacted, Qualified, Closed-Won, Closed-Lost" />
+                  <label style={s.lbl}>All Stages<span style={{ ...s.secNote, fontSize:10 }}> comma-separated</span></label>
+                  <input style={s.input} value={form.labels.stages||""} onChange={e=>setLbl("stages",e.target.value)} placeholder="Lead, Contacted, Qualified, Converted-Won, Closed-Lost" />
                 </div>
                 <div style={s.fieldWrap}>
                   <label style={s.lbl}>Active Stages<span style={{ ...s.secNote, fontSize:10 }}> pre-close stages shown on funnel board</span></label>
                   <input style={s.input} value={form.labels.activeStages||""} onChange={e=>setLbl("activeStages",e.target.value)} placeholder="Lead, Contacted, Qualified" />
+                </div>
+
+                {/* Deal stages */}
+                <div style={{ fontSize:10, fontWeight:700, color:"rgba(170,255,0,.5)", textTransform:"uppercase", letterSpacing:".08em", margin:"16px 0 8px" }}>Deals — Deal Stages</div>
+                <div style={s.fieldWrap}>
+                  <label style={s.lbl}>All Deal Stages<span style={{ ...s.secNote, fontSize:10 }}> comma-separated</span></label>
+                  <input style={s.input} value={form.labels.dealAll||""} onChange={e=>setLbl("dealAll",e.target.value)} placeholder="Incoming, Negotiation, Proposal, Client Active, Delivered–Closed, Lost" />
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>Potential Stages<span style={{ ...s.secNote, fontSize:10 }}> pre-won</span></label>
+                    <input style={s.input} value={form.labels.dealPotential||""} onChange={e=>setLbl("dealPotential",e.target.value)} placeholder="Incoming, Negotiation, Proposal" />
+                  </div>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>Won Stages<span style={{ ...s.secNote, fontSize:10 }}> active build</span></label>
+                    <input style={s.input} value={form.labels.dealWon||""} onChange={e=>setLbl("dealWon",e.target.value)} placeholder="Client Active, Delivered–Closed" />
+                  </div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>Won Label<span style={{ ...s.secNote, fontSize:10 }}> first won stage for "won this month"</span></label>
+                    <input style={s.input} value={form.labels.dealWonLabel||""} onChange={e=>setLbl("dealWonLabel",e.target.value)} placeholder="Client Active" />
+                  </div>
+                  <div style={s.fieldWrap}>
+                    <label style={s.lbl}>Delivered Label<span style={{ ...s.secNote, fontSize:10 }}> completed stage name</span></label>
+                    <input style={s.input} value={form.labels.dealDeliveredLabel||""} onChange={e=>setLbl("dealDeliveredLabel",e.target.value)} placeholder="Delivered–Closed" />
+                  </div>
                 </div>
 
                 {/* ── Access token ── */}
