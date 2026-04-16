@@ -23,8 +23,8 @@
       "destination": "/widgets/operations/:name.html"
     },
     {
-      "source": "/creaitors/:name",
-      "destination": "/widgets/creaitors/:name.html"
+      "source": "/marketing/:name",
+      "destination": "/widgets/marketing/:name.html"
     }
   ],
   "headers": [

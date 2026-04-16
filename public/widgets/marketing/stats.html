@@ -253,8 +253,8 @@ async function load() {
     </div>`;
   try {
     const [r1, r2] = await Promise.all([
-      fetch('/api/creaitors/content-stats?token=' + _tok),
-      fetch('/api/creaitors/campaign-stats?token=' + _tok)
+      fetch('/api/marketing/content-stats?token=' + _tok),
+      fetch('/api/marketing/campaign-stats?token=' + _tok)
     ]);
     if (!r1.ok) throw new Error('API ' + r1.status);
     _content = await r1.json();
