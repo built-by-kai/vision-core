@@ -111,11 +111,12 @@ export default async function handler(req, res) {
       .map(s => ({ stage: s, deals: boardGroups[s] }))
 
     // ── Dynamic won-stage stats for stat cards ─────────────────────────────
-    // deliveryStage = first wonStage (e.g. "Building" / "Client Active")
-    // balanceStage  = second wonStage if it exists (e.g. "Balance Due")
-    const deliveryStage = WON_STAGES[0] || null
-    const balanceStage  = WON_STAGES[1] || null
-    const activeDealsCount = WON_STAGES.reduce((s, st) => s + (stages[st] || 0), 0)
+    // activeWonStages = wonStages minus the delivered stage (delivered = done, not "active")
+    const activeWonStages  = WON_STAGES.filter(s => s !== deliveredLabel)
+    const deliveryStage    = activeWonStages[0] || null   // e.g. "Building" / "Client Active"
+    const balanceStage     = activeWonStages[1] || null   // e.g. "Balance Due" (Opxio only)
+    // Active Deals = only in-progress won stages, not delivered
+    const activeDealsCount = activeWonStages.reduce((s, st) => s + (stages[st] || 0), 0)
 
     res.status(200).json({
       stages,
@@ -133,6 +134,7 @@ export default async function handler(req, res) {
       totalLostDeals: stages[lostLabel] || 0,
       lostLabel,
       activeDealsCount,
+      activeWonStages,
       deliveryStage,
       deliveryCount: deliveryStage ? (stages[deliveryStage] || 0) : 0,
       balanceStage,

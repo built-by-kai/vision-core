@@ -25,6 +25,7 @@ body.light .h-title{color:#111;}
 body.light .ts{color:rgba(0,0,0,.22);}
 /* Stat row */
 .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat-row.has-delivery{grid-template-columns:repeat(6,1fr);}
 .stat{padding:18px 18px 16px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;}
 .stat:hover::before{opacity:1;}
@@ -101,8 +102,8 @@ body.light .chart-title{color:rgba(0,0,0,.7);}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
 body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
 /* Responsive */
-@media(max-width:900px){.stat-row{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:1100px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:64px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -141,6 +142,12 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-lbl">Potential Value</div>
     <div class="s-val" id="d-potential">—</div>
     <div class="s-sub">Pre-win deal value</div>
+  </div>
+  <div class="card stat" id="d-delivery-card" style="display:none;">
+    <div class="s-dot" style="background:#34D399;opacity:.7;"></div>
+    <div class="s-lbl" id="d-delivery-lbl">In Delivery</div>
+    <div class="s-val green" id="d-building">—</div>
+    <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:#FF6B6B;opacity:.7;"></div>
@@ -309,10 +316,24 @@ async function loadData() {
     document.getElementById('d-potential').textContent = jd.potentialValue ? fmtRM(jd.potentialValue) : '—';
     document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
 
-    // ── Active Deals (dynamic: sum of wonStages) ───────────────────────────
+    // ── Active Deals (in-progress won stages, excluding delivered) ────────
     document.getElementById('d-deals').textContent = jd.activeDealsCount ?? '—';
     document.getElementById('d-deals-sub').textContent =
-      jd.wonStages?.length ? jd.wonStages.join(' · ') : 'In deal pipeline';
+      jd.activeWonStages?.length ? jd.activeWonStages.join(' · ') : 'In deal pipeline';
+
+    // ── In Delivery card — show only when >1 active won stage (e.g. Opxio) ─
+    const delivCard = document.getElementById('d-delivery-card');
+    const statRow   = document.querySelector('.stat-row');
+    if (jd.deliveryStage && (jd.activeWonStages?.length || 0) > 1) {
+      delivCard.style.display = '';
+      statRow.classList.add('has-delivery');
+      document.getElementById('d-delivery-lbl').textContent = jd.deliveryStage;
+      document.getElementById('d-building').textContent     = jd.deliveryCount ?? '—';
+      document.getElementById('d-delivery-sub').textContent = jd.deliveryStage + ' stage';
+    } else {
+      delivCard.style.display = 'none';
+      statRow.classList.remove('has-delivery');
+    }
 
     // ── Lost — combined leads + deals ─────────────────────────────────────
     const lostLeads = jp.totalLostLeads ?? 0;
