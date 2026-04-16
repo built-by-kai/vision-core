@@ -186,9 +186,14 @@ function normalisePkg(raw) {
   // Common aliases
   const aliases = {
     "sales os": "Revenue OS",
+    "revenue os": "Revenue OS",
     "full os": "Business OS",
     "ops os": "Operations OS",
     "content os": "Marketing OS",
+    "people os": "People OS",
+    "team os": "People OS",
+    "client success os": "Client Success OS",
+    "retention os": "Client Success OS",
     "starter os": "Micro Install",
     "micro": "Micro Install",
     "micro 1": "Micro Install — 1 Module",
@@ -226,14 +231,14 @@ function normalisePkg(raw) {
 
 const PRODUCT_CATALOGUE = {
   // ── OS Packages ──
-  "Business OS":      { sub: "Revenue + Operations",             cat: "os" },
-  "Agency OS":        { sub: "Revenue + Ops + Marketing",        cat: "os" },
-  "Revenue OS":       { sub: "Pipeline & revenue",               cat: "os" },
-  "Operations OS":    { sub: "Workflow & delivery",              cat: "os" },
-  "Marketing OS":     { sub: "Campaigns & content",             cat: "os" },
-  "Team OS":          { sub: "People & performance",            cat: "os" },
-  "Retention OS":     { sub: "Health & renewals",               cat: "os" },
-  "Intelligence OS":  { sub: "Prospect intelligence",           cat: "os" },
+  "Business OS":        { sub: "Revenue + Operations",             cat: "os" },
+  "Agency OS":          { sub: "Revenue + Ops + Marketing",        cat: "os" },
+  "Revenue OS":         { sub: "Lead to cash — full cycle",        cat: "os" },
+  "Operations OS":      { sub: "Workflow & delivery",              cat: "os" },
+  "Marketing OS":       { sub: "Campaigns & content",              cat: "os" },
+  "People OS":          { sub: "Team, hiring & performance",       cat: "os" },
+  "Client Success OS":  { sub: "Retention & client health",        cat: "os" },
+  "Intelligence OS":    { sub: "Prospect & market intelligence",   cat: "os" },
   "Micro Install":              { sub: "Entry point · 1–3 modules", cat: "os" },
   "Micro Install — 1 Module":   { sub: "1 module entry point",     cat: "os" },
   "Micro Install — 2 Modules":  { sub: "2 module entry point",     cat: "os" },
@@ -275,4 +280,4 @@ function pkgSubtitle(name) {
 function pkgCategory(name) {
   return PRODUCT_CATALOGUE[name]?.cat || "os"
 }
-// cache bust Tue Apr 15 2026
+// cache bust Thu Apr 16 2026

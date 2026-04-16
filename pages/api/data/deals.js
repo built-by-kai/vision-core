@@ -34,21 +34,23 @@ export default async function handler(req, res) {
       queryDB(QUOTATIONS_DB, null, notionToken).catch(() => []),
     ])
 
-    // ── Deals stage breakdown ──────────────────────────────────────────────
-    const POTENTIAL_STAGES = ["Incoming", "Discovery Done", "Awaiting Deposit"]
-    const WON_STAGES       = ["Building", "Balance Due", "Delivered"]
+    // ── Deals stage breakdown — dynamic via client.labels ─────────────────
+    const DEFAULT_ALL_STAGES = [
+      "Incoming","Discovery Done","Quotation Issued","Quotation Approved",
+      "Awaiting Deposit","Building","Balance Due","Delivered","Lost",
+    ]
+    const DEFAULT_POTENTIAL = ["Incoming", "Discovery Done", "Awaiting Deposit"]
+    const DEFAULT_WON       = ["Building", "Balance Due", "Delivered"]
+    const DEFAULT_WON_LABEL  = "Building"
+    const DEFAULT_DEL_LABEL  = "Delivered"
 
-    const stages = {
-      "Incoming":           0,
-      "Discovery Done":     0,
-      "Quotation Issued":   0,
-      "Quotation Approved": 0,
-      "Awaiting Deposit":   0,
-      "Building":           0,
-      "Balance Due":        0,
-      "Delivered":          0,
-      "Lost":               0,
-    }
+    const ALL_STAGES       = client.labels?.dealAllStages       || DEFAULT_ALL_STAGES
+    const POTENTIAL_STAGES = client.labels?.dealPotentialStages || DEFAULT_POTENTIAL
+    const WON_STAGES       = client.labels?.dealWonStages       || DEFAULT_WON
+    const wonLabel         = client.labels?.dealWonLabel        || DEFAULT_WON_LABEL
+    const deliveredLabel   = client.labels?.dealDeliveredLabel  || DEFAULT_DEL_LABEL
+
+    const stages = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
 
     let potentialValue     = 0
     let buildingValue      = 0
@@ -73,8 +75,8 @@ export default async function handler(req, res) {
         boardGroups[stage].push({ name, value, pkg })
       }
       if (WON_STAGES.includes(stage)) buildingValue += value
-      if (isThisMonth && stage === "Building") wonThisMonth++
-      if (isThisMonth && stage === "Delivered")   deliveredThisMonth++
+      if (isThisMonth && stage === wonLabel)       wonThisMonth++
+      if (isThisMonth && stage === deliveredLabel) deliveredThisMonth++
     }
 
     // ── Proposals ──────────────────────────────────────────────────────────
@@ -108,6 +110,9 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       stages,
+      stageOrder:      ALL_STAGES,
+      potentialStages: POTENTIAL_STAGES,
+      wonStages:       WON_STAGES,
       board,
       proposals: { ...propStats, pipelineValue: propValue },
       quotations: quotStats,
