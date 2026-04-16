@@ -155,7 +155,7 @@ body.light .empty{color:rgba(0,0,0,.18);}
 </div>
 
 <!-- MID ROW -->
-<div class="sec-lbl">Breakdown</div>
+<div class="sec-lbl">Projects</div>
 <div class="mid-row">
   <!-- LEFT: Project Types Donut -->
   <div class="card panel">
@@ -172,33 +172,6 @@ body.light .empty{color:rgba(0,0,0,.18);}
       <div class="donut-legend" id="donut-legend"></div>
     </div>
   </div>
-  <!-- RIGHT: Task Completion Ring + Bars -->
-  <div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Task Status</span>
-    </div>
-    <div class="task-wrap">
-      <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110" id="task-ring-svg">
-        <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="12"/>
-        <!-- Arcs drawn by JS -->
-        <text x="55" y="51" text-anchor="middle" class="ring-center" id="ring-pct">0%</text>
-        <text x="55" y="64" text-anchor="middle" class="ring-center-sub">Complete</text>
-      </svg>
-      <div class="task-bars" id="task-bars"></div>
-    </div>
-  </div>
-</div>
-
-<!-- BOTTOM ROW -->
-<div class="sec-lbl">Details</div>
-<div class="bot-row">
-  <!-- LEFT: Priority Distribution -->
-  <div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Task Priority</span>
-    </div>
-    <div class="pri-bars" id="pri-bars"></div>
-  </div>
   <!-- RIGHT: Project Progress -->
   <div class="card panel">
     <div class="panel-hdr">
@@ -206,6 +179,39 @@ body.light .empty{color:rgba(0,0,0,.18);}
       <span class="panel-badge" id="proj-badge">—</span>
     </div>
     <div class="proj-scroll" id="proj-list"></div>
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="sec-lbl">Tasks</div>
+<div class="bot-row">
+  <!-- LEFT: Task Status Ring + Bars -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Task Status</span>
+    </div>
+    <div class="task-wrap">
+      <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110" id="task-ring-svg">
+        <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="12"/>
+        <text x="55" y="51" text-anchor="middle" class="ring-center" id="ring-pct">0%</text>
+        <text x="55" y="64" text-anchor="middle" class="ring-center-sub">Complete</text>
+      </svg>
+      <div class="task-bars" id="task-bars"></div>
+    </div>
+  </div>
+  <!-- RIGHT: Task Priority Ring + Bars -->
+  <div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Task Priority</span>
+    </div>
+    <div class="task-wrap">
+      <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110" id="pri-ring-svg">
+        <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="12"/>
+        <text x="55" y="51" text-anchor="middle" class="ring-center" id="pri-ring-val">—</text>
+        <text x="55" y="64" text-anchor="middle" class="ring-center-sub">High Pri</text>
+      </svg>
+      <div class="task-bars" id="pri-bars"></div>
+    </div>
   </div>
 </div>
 
@@ -350,22 +356,54 @@ function renderTaskRing(ts){
 }
 
 function renderPriorities(pri){
-  const total=(pri.High||0)+(pri.Medium||0)+(pri.Low||0)+(pri.None||0)||1;
-  const items=[
-    {label:'High',count:pri.High||0,cls:'pri-high',color:'var(--red)'},
-    {label:'Medium',count:pri.Medium||0,cls:'pri-medium',color:'var(--amber)'},
-    {label:'Low',count:pri.Low||0,cls:'pri-low',color:'rgba(170,255,0,.5)'},
-    {label:'None',count:pri.None||0,cls:'pri-none',color:'rgba(255,255,255,.12)'},
+  const high=pri.High||0, med=pri.Medium||0, low=pri.Low||0, none=pri.None||0;
+  const total=high+med+low+none||1;
+
+  // Draw priority ring
+  const svg=document.getElementById('pri-ring-svg');
+  svg.querySelectorAll('.pri-arc').forEach(e=>e.remove());
+  document.getElementById('pri-ring-val').textContent=high>0?high:'0';
+
+  const priItems=[
+    {val:high,color:'var(--red)'},
+    {val:med, color:'var(--amber)'},
+    {val:low, color:'rgba(170,255,0,.6)'},
+    {val:none,color:'rgba(255,255,255,.1)'},
   ];
-  document.getElementById('pri-bars').innerHTML=items.map(i=>{
-    const w=Math.round((i.count/total)*100);
-    const pct=Math.round((i.count/total)*100);
-    return`<div class="pri-row">
-      <div class="pri-dot" style="background:${i.color}"></div>
-      <span class="pri-label">${i.label}</span>
-      <div class="pri-track"><div class="pri-fill ${i.cls}" style="width:${w}%"></div></div>
-      <span class="pri-count">${i.count}</span>
-      <span class="pri-pct">${pct}%</span>
+  let offset=0;
+  priItems.forEach(item=>{
+    if(item.val<=0)return;
+    const frac=item.val/total;
+    const len=frac*CIRC;
+    const arc=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    arc.setAttribute('class','pri-arc');
+    arc.setAttribute('cx','55');arc.setAttribute('cy','55');arc.setAttribute('r','42');
+    arc.setAttribute('fill','none');arc.setAttribute('stroke',item.color);
+    arc.setAttribute('stroke-width','12');arc.setAttribute('stroke-linecap','round');
+    arc.setAttribute('stroke-dasharray',`${Math.max(len-2,1)} ${CIRC}`);
+    arc.setAttribute('transform',`rotate(${-90+offset*360} 55 55)`);
+    arc.style.transition='all .8s cubic-bezier(.4,0,.2,1)';
+    svg.insertBefore(arc,svg.querySelector('text'));
+    offset+=frac;
+  });
+
+  // Same bar style as task status
+  const barItems=[
+    {label:'High',    val:high, color:'var(--red)',             dot:'var(--red)'},
+    {label:'Medium',  val:med,  color:'var(--amber)',           dot:'var(--amber)'},
+    {label:'Low',     val:low,  color:'rgba(170,255,0,.6)',     dot:'rgba(170,255,0,.6)'},
+    {label:'No Pri',  val:none, color:'rgba(255,255,255,.12)',  dot:'rgba(255,255,255,.15)'},
+  ];
+  const barMax=Math.max(...barItems.map(s=>s.val),1);
+  document.getElementById('pri-bars').innerHTML=barItems.map(s=>{
+    const w=Math.round((s.val/barMax)*100);
+    const pct=Math.round((s.val/total)*100);
+    return`<div class="tb-row">
+      <div class="tb-dot" style="background:${s.dot}"></div>
+      <span class="tb-label">${s.label}</span>
+      <div class="tb-track"><div class="tb-fill" style="width:${w}%;background:${s.color}"></div></div>
+      <span class="tb-val">${s.val}</span>
+      <span class="tb-pct">${pct}%</span>
     </div>`;
   }).join('');
 }
