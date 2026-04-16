@@ -36,8 +36,7 @@ export default async function handler(req, res) {
 
     // ── Deals stage breakdown — dynamic via client.labels ─────────────────
     const DEFAULT_ALL_STAGES = [
-      "Incoming","Discovery Done","Quotation Issued","Quotation Approved",
-      "Awaiting Deposit","Building","Balance Due","Delivered","Lost",
+      "Incoming","Discovery Done","Awaiting Deposit","Building","Balance Due","Delivered","Lost",
     ]
     const DEFAULT_POTENTIAL = ["Incoming", "Discovery Done", "Awaiting Deposit"]
     const DEFAULT_WON       = ["Building", "Balance Due", "Delivered"]

@@ -620,7 +620,7 @@ export default function Onboarding() {
                     <ChipGroup multi name="li" options={['Name', 'What they need', 'Budget', 'Where they found us', 'When they messaged', 'Whether we followed up', 'Company name']} value={form.leadInfo} onChange={v => set('leadInfo', v)} />
                   </Field>
                   <Field label="Pipeline stages">
-                    <ChipGroup name="ps" options={['Use default — Incoming → Contacted → Qualified → Converted → Lost', 'I have my own stages']} value={form.pipelineStages} onChange={v => set('pipelineStages', v)} />
+                    <ChipGroup name="ps" options={['Use default — Incoming → Contacted → Discovery Done → Converted → Lost', 'I have my own stages']} value={form.pipelineStages} onChange={v => set('pipelineStages', v)} />
                     {form.pipelineStages === 'I have my own stages' && (
                       <div style={{ marginTop: 10 }}>
                         <StageBuilder items={form.customStages} onChange={v => set('customStages', v)} placeholder="Stage name" />

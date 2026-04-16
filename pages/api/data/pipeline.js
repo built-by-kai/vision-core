@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     const stageField  = resolveField(client, "STAGE_FIELD", "Stage")
 
     // Stage config — from client labels or Opxio defaults
-    const ALL_STAGES    = client.labels?.stages    || ["Incoming","Contacted","Discovery Done","Awaiting Deposit","Converted","Lost"]
-    const ACTIVE_STAGES = client.labels?.activeStages || ["Incoming","Contacted","Discovery Done","Awaiting Deposit"]
+    const ALL_STAGES    = client.labels?.stages    || ["Incoming","Contacted","Discovery Done","Converted","Lost"]
+    const ACTIVE_STAGES = client.labels?.activeStages || ["Incoming","Contacted","Discovery Done"]
 
     const now   = new Date()
     const year  = now.getFullYear()
