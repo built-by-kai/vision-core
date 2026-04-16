@@ -209,7 +209,7 @@ function render(d){
   html += `</div></div>`;
 
   // ── Content Production Status ──
-  const csTotal = contentStatuses.reduce((s,l)=>s+(contentStatusCounts[l]||0),0);
+  const csMax = Math.max(...contentStatuses.map(l => contentStatusCounts[l] || 0), 1);
   html += `<div class="card panel">
     <div class="panel-hdr">
       <span class="panel-title">Content Status</span>
@@ -218,18 +218,18 @@ function render(d){
   for(const label of contentStatuses){
     const count = contentStatusCounts[label] || 0;
     const col   = statusColor(label);
-    const pct   = csTotal > 0 ? Math.round((count / csTotal) * 100) : 0;
+    const pct   = Math.round((count / csMax) * 100);
     const isDone   = label.toLowerCase().includes('done') || label.toLowerCase().includes('ready for posting');
     const isFlag   = label.toLowerCase().includes('revision') || label.toLowerCase().includes('review needed');
     const subClass = count > 0 ? (isDone ? 'done' : isFlag ? 'flag' : '') : '';
-    const subText  = count === 0 ? 'None' : isDone ? `${count} ready` : isFlag ? `${count} need attention` : `${count} in this stage`;
+    const subText  = count === 0 ? 'None' : isDone ? `${count} ready` : isFlag ? `${count} need attention` : `${count} pieces`;
     html += `<div class="prog-row">
       <div class="prog-header">
         <span class="prog-label">${esc(label)}</span>
         <span class="prog-count" style="color:${count>0?col:'rgba(255,255,255,.25)'};">${count}</span>
       </div>
       <div class="prog-track">
-        <div class="prog-fill" style="width:${count > 0 ? Math.max(pct, 4) : 0}%;background:${col};"></div>
+        <div class="prog-fill" style="width:${count > 0 ? Math.max(pct, 4) : 0}%;background:${col};opacity:${count>0?'.8':'.3'};"></div>
       </div>
       <div class="prog-sub ${subClass}">${subText}</div>
     </div>`;
