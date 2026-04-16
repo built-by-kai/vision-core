@@ -212,7 +212,7 @@ export default async function handler(req, res) {
       if (isPostingTask) {
         const postingLink = props['Posting Link']?.url || null;
         if (!postingLink?.trim()) {
-          return actionError(taskPageId, `"${taskName}" cannot be completed yet — the content hasn't been posted. Paste the live posting link first, then mark as done.`);
+          return actionError(taskPageId, `Cannot complete "${taskName}" — make sure the Posting Link has been filled before marking as done.`);
         }
       }
 
