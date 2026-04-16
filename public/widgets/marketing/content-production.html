@@ -38,8 +38,9 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .s-sub.g{color:var(--g);}
 
 /* Bot row */
-.bot-row{display:grid;grid-template-columns:300px 1fr;gap:10px;margin-top:10px;}
-@media(max-width:680px){.bot-row{grid-template-columns:1fr;}}
+.bot-row{display:grid;grid-template-columns:300px 1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:900px){.bot-row{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.bot-row{grid-template-columns:1fr;}}
 
 /* Panel */
 .panel{padding:20px 22px;}
@@ -102,10 +103,12 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 // Semantic color by status label keyword
 function statusColor(label){
   const l = (label||'').toLowerCase();
-  if(l.includes('done') || l.includes('published') || l.includes('posting') || l.includes('posted')) return 'var(--g)';
-  if(l.includes('revision') || l.includes('review needed'))                                           return 'var(--red)';
-  if(l.includes('qc') || l.includes('final') || l.includes('pending') || l.includes('approval'))     return 'var(--amber)';
-  if(l.includes('progress') || l.includes('production') || l.includes('ready') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
+  if(l.includes('done') || l.includes('published') || l.includes('posted')) return 'var(--g)';
+  if(l.includes('ready for posting') || l.includes('ready to work'))         return 'var(--g)';
+  if(l.includes('revision') || l.includes('review needed'))                  return 'var(--red)';
+  if(l.includes('qc') || l.includes('final') || l.includes('pending'))       return 'var(--amber)';
+  if(l.includes('progress') || l.includes('production') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
+  if(l.includes('not started') || l.includes('waiting') || l.includes('pre-production')) return 'rgba(255,255,255,.35)';
   return 'rgba(255,255,255,.35)';
 }
 
@@ -118,8 +121,10 @@ function render(d){
   const assignees      = d.byAssignee || [];
   const assigneeMax    = Math.max(...assignees.map(a => a.count), 1);
   const assigneeTotal  = assignees.reduce((s, a) => s + a.count, 0);
-  const taskStatuses   = d.taskStatuses   || ['Not Started','In Progress','Pending QC','Revision','Done'];
-  const taskStatusCounts = d.taskStatusCounts || {};
+  const taskStatuses      = d.taskStatuses      || ['Not Started','In Progress','Pending QC','Revision','Done'];
+  const taskStatusCounts  = d.taskStatusCounts  || {};
+  const contentStatuses   = d.contentStatuses   || ['Pre-Production','In Production','Final QC Review','Revision Needed','Ready for Posting'];
+  const contentStatusCounts = d.contentStatusCounts || {};
   const totalTasks     = d.tasksTotal || 0;
 
   // ── Stat cards ──
@@ -172,6 +177,26 @@ function render(d){
   for(const label of taskStatuses){
     const count = taskStatusCounts[label] || 0;
     const col   = statusColor(label);
+    const active = count > 0;
+    html += `<div class="ts-row">
+      <div class="ts-dot" style="background:${col};${!active?'opacity:.35;':''}"></div>
+      <span class="ts-label">${esc(label)}</span>
+      <div class="ts-dash" style="background:${active?col:'rgba(255,255,255,.1)'};"></div>
+      <span class="ts-count" style="color:${active?'#fff':'rgba(255,255,255,.25)'};">${count}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // ── Content Production Status ──
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Content Status</span>
+      <span class="panel-badge">${d.contentInMotion || 0} active</span>
+    </div>
+    <div class="task-status-list">`;
+  for(const label of contentStatuses){
+    const count  = contentStatusCounts[label] || 0;
+    const col    = statusColor(label);
     const active = count > 0;
     html += `<div class="ts-row">
       <div class="ts-dot" style="background:${col};${!active?'opacity:.35;':''}"></div>

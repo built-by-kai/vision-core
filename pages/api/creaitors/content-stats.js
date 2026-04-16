@@ -68,11 +68,12 @@ export default async function handler(req, res) {
     // ── Content stats ──────────────────────────────────────────
     const ACTIVE_STATUSES = ['Pre-Production', 'In Production', 'Revision Needed', 'Final QC Review', 'Scripting', 'Recording', 'Editing'];
 
-    let contentInMotion   = 0;
-    let contentRevision   = 0;
-    let contentQC         = 0;
-    let contentOverdue    = 0;
-    let contentDueThisWeek= 0;
+    let contentInMotion    = 0;
+    let contentRevision    = 0;
+    let contentQC          = 0;
+    let contentOverdue     = 0;
+    let contentDueThisWeek = 0;
+    const contentStatusCounts = {};
 
     for (const page of contentPages) {
       const p      = page.properties;
@@ -82,6 +83,8 @@ export default async function handler(req, res) {
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
       if (status === 'Revision Needed')     contentRevision++;
       if (status === 'Final QC Review')     contentQC++;
+
+      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
 
       const deadline = getDate(p['Content Due']) || getDate(p['Publish Due']);
       if (deadline) {
@@ -93,13 +96,14 @@ export default async function handler(req, res) {
     // ── Task stats ─────────────────────────────────────────────
     const TASK_ACTIVE = ['Not started', 'Waiting', 'Ready to Work', 'Pending QC Review', 'Review Needed', 'In Progress'];
 
-    let tasksTotal     = 0;
-    let tasksWaiting   = 0;
-    let tasksInProgress= 0;
-    let tasksQC        = 0;
-    let tasksRevision  = 0;
+    let tasksTotal       = 0;
+    let tasksWaiting     = 0;
+    let tasksInProgress  = 0;
+    let tasksQC          = 0;
+    let tasksRevision    = 0;
     let tasksDueThisWeek = 0;
-    let tasksOverdue   = 0;
+    let tasksOverdue     = 0;
+    const taskStatusCounts = {};
 
     for (const page of taskPages) {
       const p      = page.properties;
@@ -111,6 +115,8 @@ export default async function handler(req, res) {
       if (contentRel.length === 0) continue;
 
       tasksTotal++;
+      taskStatusCounts[status] = (taskStatusCounts[status] || 0) + 1;
+
       if (status === 'Waiting')              tasksWaiting++;
       if (status === 'Ready to Work' || status === 'In progress' || status === 'Not started') tasksInProgress++;
       if (status === 'Pending QC Review')    tasksQC++;
@@ -122,6 +128,10 @@ export default async function handler(req, res) {
         else if (dueDate <= in7Days) tasksDueThisWeek++;
       }
     }
+
+    // Ordered status lists for display
+    const CONTENT_STATUS_ORDER = ['Pre-Production', 'In Production', 'Final QC Review', 'Revision Needed', 'Ready for Posting'];
+    const TASK_STATUS_ORDER    = ['Not started', 'Waiting', 'Ready to Work', 'In progress', 'Pending QC Review', 'Review Needed', 'Ready for Posting'];
 
     return res.status(200).json({
       // Card 1: Content in Motion
@@ -143,6 +153,12 @@ export default async function handler(req, res) {
         revision: contentRevision + tasksRevision,
         qc: contentQC + tasksQC,
       },
+
+      // Status breakdowns for display panels
+      contentStatusCounts,
+      contentStatuses: CONTENT_STATUS_ORDER,
+      taskStatusCounts,
+      taskStatuses: TASK_STATUS_ORDER,
     });
 
   } catch (err) {

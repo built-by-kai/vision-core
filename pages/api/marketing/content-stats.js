@@ -94,11 +94,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // Resolve assignee names from either a People field or a Relation-to-Employee field
+    // Resolve assignee names from People, Relation, or Rollup-of-relations field
     const getAssignees = prop => {
       if (!prop) return [];
       if (prop.type === 'people')   return (prop.people   || []).map(u => u.name).filter(Boolean);
       if (prop.type === 'relation') return (prop.relation || []).map(r => employeeMap[r.id]).filter(Boolean);
+      if (prop.type === 'rollup' && prop.rollup?.type === 'array') {
+        const ids = [];
+        for (const item of prop.rollup.array || []) {
+          if (item.type === 'relation') for (const r of item.relation || []) ids.push(r.id);
+        }
+        return [...new Set(ids)].map(id => employeeMap[id]).filter(Boolean);
+      }
       return [];
     };
 
@@ -122,6 +129,7 @@ export default async function handler(req, res) {
     let contentOverdue           = 0;
     let contentDueThisWeek       = 0;
     const assigneeCounts         = {};
+    const contentStatusCounts    = {};
 
     for (const page of contentPages) {
       const p      = page.properties;
@@ -131,6 +139,8 @@ export default async function handler(req, res) {
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
       if (status === L.contentRevision)     contentRevision++;
       if (status === L.contentQC)           contentQC++;
+
+      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
 
       // Check if linked to a campaign
       const campaignRel = p[F.CAMPAIGN]?.relation || [];
@@ -215,6 +225,10 @@ export default async function handler(req, res) {
       taskStatuses,
       taskStatusCounts,
       taskDoneStatus: L.taskDone,
+
+      // Content status breakdown
+      contentStatuses,
+      contentStatusCounts,
 
       // Card 3: Due This Week
       dueThisWeek: contentDueThisWeek + tasksDueThisWeek,
