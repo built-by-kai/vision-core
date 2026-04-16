@@ -96,6 +96,8 @@ export default async function handler(req, res) {
     const convTotal = thisMonthConverted + thisMonthLost
     const convRate  = convTotal > 0 ? Math.round((thisMonthConverted / convTotal) * 100) : null
 
+    const totalLostLeads = stages[lostLabel] || 0
+
     res.status(200).json({
       stages,
       stageOrder:   ALL_STAGES,
@@ -109,10 +111,11 @@ export default async function handler(req, res) {
       thisMonthLost,
       winRate:             convRate,
       thisMonthWon:        thisMonthConverted,
+      totalLostLeads,
+      lostLabel,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
-      _debug: { stageField, LEADS_DB, leadsCount: leads.length, fieldMap: client?.field_map },
     })
   } catch (err) {
     console.error("pipeline:", err)

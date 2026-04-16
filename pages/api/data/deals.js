@@ -35,6 +35,8 @@ export default async function handler(req, res) {
     ])
 
     // ── Deals stage breakdown — dynamic via client.labels ─────────────────
+    const DEFAULT_LOST_LABEL  = "Lost"
+
     const DEFAULT_ALL_STAGES = [
       "Incoming","Discovery Done","Awaiting Deposit","Building","Balance Due","Delivered","Lost",
     ]
@@ -48,6 +50,7 @@ export default async function handler(req, res) {
     const WON_STAGES       = client.labels?.dealWonStages       || DEFAULT_WON
     const wonLabel         = client.labels?.dealWonLabel        || DEFAULT_WON_LABEL
     const deliveredLabel   = client.labels?.dealDeliveredLabel  || DEFAULT_DEL_LABEL
+    const lostLabel        = client.labels?.dealLostLabel       || DEFAULT_LOST_LABEL
 
     const stages = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
 
@@ -127,6 +130,8 @@ export default async function handler(req, res) {
       wonThisMonth,
       deliveredThisMonth,
       // ── Stat card helpers ──
+      totalLostDeals: stages[lostLabel] || 0,
+      lostLabel,
       activeDealsCount,
       deliveryStage,
       deliveryCount: deliveryStage ? (stages[deliveryStage] || 0) : 0,
