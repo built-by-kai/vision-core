@@ -237,7 +237,7 @@ function render(d){
 async function loadData(){
   document.getElementById('rb').textContent = '↻ Refreshing…';
   try{
-    const r = await fetch('/api/marketing/content-stats?token='+_tok);
+    const r = await fetch('/api/creaitors/content-stats?token='+_tok);
     if(!r.ok) throw new Error('content-stats ' + r.status);
     render(await r.json());
   } catch(e){
