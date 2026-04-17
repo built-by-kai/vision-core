@@ -47,12 +47,11 @@ body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
 .proj-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:2px;padding-bottom:8px;flex:1;min-height:0;}
-.proj-card{padding:18px 20px;position:relative;}
-.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;border-radius:14px 14px 0 0;}
+.proj-card{padding:18px 20px;position:relative;overflow:hidden;}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;}
 .proj-card:hover::before{opacity:1;}
-.proj-card.st-active::before{background:linear-gradient(90deg,var(--g),transparent);}
+.proj-card.st-active::before,.proj-card.st-awaiting::before{background:linear-gradient(90deg,var(--g),transparent);}
 .proj-card.st-review::before{background:linear-gradient(90deg,var(--amber),transparent);}
-.proj-card.st-awaiting::before{background:linear-gradient(90deg,var(--blue),transparent);}
 .proj-card.st-hold::before{background:linear-gradient(90deg,rgba(255,255,255,.2),transparent);}
 
 /* Top row: pill + name + client/pkg + progress */
@@ -61,7 +60,7 @@ body.light .s-sub{color:rgba(0,0,0,.28);}
 .pc-pill{font-size:10px;font-weight:700;padding:4px 11px;border-radius:999px;letter-spacing:.04em;flex-shrink:0;white-space:nowrap;}
 .pill-active{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 .pill-review{background:var(--amberm);color:var(--amber);border:1px solid var(--amberb);}
-.pill-awaiting{background:var(--bluem);color:var(--blue);border:1px solid var(--blueb);}
+.pill-awaiting{background:var(--gm);color:var(--g);border:1px solid var(--gb);opacity:.6;}
 .pill-hold{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);}
 body.light .pill-hold{background:rgba(0,0,0,.04);color:rgba(0,0,0,.35);border-color:rgba(0,0,0,.1);}
 
@@ -99,15 +98,18 @@ body.light .pc-pct.zero{color:rgba(0,0,0,.15);}
 body.light .pc-tasks-lbl{color:rgba(0,0,0,.2);}
 
 /* ── MID: TASK SUMMARY ── */
-.pc-tasks{display:flex;align-items:center;gap:6px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
+.pc-tasks{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
 body.light .pc-tasks{border-color:rgba(0,0,0,.06);}
-.tk-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;letter-spacing:.01em;}
-.tk-chip .tk-n{font-size:13px;font-weight:900;line-height:1;}
-.tk-chip.c-done{background:rgba(170,255,0,.08);color:rgba(170,255,0,.75);border:1px solid rgba(170,255,0,.12);}
-.tk-chip.c-ip{background:rgba(251,191,36,.08);color:rgba(251,191,36,.75);border:1px solid rgba(251,191,36,.12);}
-.tk-chip.c-blocked{background:rgba(255,107,107,.08);color:rgba(255,107,107,.75);border:1px solid rgba(255,107,107,.12);}
-.tk-chip.c-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.07);}
-.tk-chip.c-zero{opacity:.35;}
+.tk{display:flex;align-items:center;gap:5px;}
+.tk-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.tk-d{background:var(--g);}
+.tk-ip{background:var(--amber);}
+.tk-b{background:var(--red);}
+.tk-ns{background:rgba(255,255,255,.15);}body.light .tk-ns{background:rgba(0,0,0,.12);}
+.tk-val{font-size:13px;font-weight:900;color:#fff;letter-spacing:-.3px;}body.light .tk-val{color:#111;}
+.tk-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.3);}body.light .tk-lbl{color:rgba(0,0,0,.3);}
+.tk-zero .tk-val{color:rgba(255,255,255,.2);}body.light .tk-zero .tk-val{color:rgba(0,0,0,.15);}
+.tk-zero .tk-lbl{color:rgba(255,255,255,.15);}
 .tk-total{margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,.18);letter-spacing:.04em;text-transform:uppercase;}
 body.light .tk-total{color:rgba(0,0,0,.2);}
 
@@ -281,8 +283,7 @@ function renderCard(b){
   // Status class for top accent
   const stCls = b.status==='active'?'st-active':b.status==='review'?'st-review':b.status==='awaiting'?'st-awaiting':'st-hold';
 
-  // Task chips — dim zeros but always show all four
-  function chip(n,label,cls){return`<div class="tk-chip ${cls}${!n?' c-zero':''}"><span class="tk-n">${n||0}</span>${label}</div>`;}
+  function tk(n,lbl,dotCls){const z=!n?' tk-zero':'';return`<div class="tk${z}"><div class="tk-dot ${dotCls}"></div><span class="tk-val">${n||0}</span><span class="tk-lbl">${lbl}</span></div>`;}
 
   return`<div class="card proj-card ${stCls}">
     <div class="pc-top">
@@ -301,10 +302,10 @@ function renderCard(b){
       </div>
     </div>
     <div class="pc-tasks">
-      ${chip(ts.done,'Done','c-done')}
-      ${chip(ts.inProgress,'In Progress','c-ip')}
-      ${chip(ts.blocked,'Blocked','c-blocked')}
-      ${chip(ts.notStarted,'Not Started','c-ns')}
+      ${tk(ts.done,'Done','tk-d')}
+      ${tk(ts.inProgress,'In Progress','tk-ip')}
+      ${tk(ts.blocked,'Blocked','tk-b')}
+      ${tk(ts.notStarted,'Not Started','tk-ns')}
       <span class="tk-total">${tasksTotal} total</span>
     </div>
     ${phHTML}
