@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const STEPS = ["contact", "business", "needs", "result"];
 
@@ -46,7 +46,7 @@ export default function Book() {
   const [step, setStep] = useState(0); // 0=contact, 1=business, 2=needs, 3=result
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // { qualified, reason }
-  const calEmbedRef = useRef(null);
+  const [calSrc, setCalSrc] = useState("");
 
   const [form, setForm] = useState({
     // Step 1
@@ -81,26 +81,20 @@ export default function Book() {
     }));
   }, []);
 
-  // Inject Cal.com embed after qualified
+  // Build Cal.com iframe URL after qualified
   useEffect(() => {
     if (result?.qualified) {
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.text = `
-        (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; typeof namespace === "string" ? (cal.ns[namespace] = api) && p(api, ar) : p(cal, ar); return; } p(cal, ar); }; })(window, "https://cal.com/embed.js", "init");
-        Cal("init", { origin: "https://cal.com" });
-        Cal("inline", {
-          elementOrSelector: "#cal-embed",
-          calLink: "opxio/discovery-call",
-          layout: "column_view"
-        });
-        Cal("ui", {
-          styles: { branding: { brandColor: "#AAFF00" } },
-          hideEventTypeDetails: false,
-          layout: "column_view"
-        });
-      `;
-      document.body.appendChild(script);
+      const params = new URLSearchParams({
+        embed: "true",
+        "flag.coep": "false",
+        theme: "dark",
+        layout: "column_view",
+        brandColor: "#AAFF00",
+        name: form.name,
+        email: form.email,
+        notes: form.situation || "",
+      });
+      setCalSrc(`https://cal.com/opxio/discovery-call?${params.toString()}`);
     }
   }, [result]);
 
@@ -461,11 +455,14 @@ export default function Book() {
                 <p style={styles.calSub}>
                   This is a free 30-minute discovery call with Kai.
                 </p>
-                <div
-                  id="cal-embed"
-                  ref={calEmbedRef}
-                  style={styles.calEmbed}
-                />
+                {calSrc && (
+                  <iframe
+                    src={calSrc}
+                    style={styles.calEmbed}
+                    frameBorder="0"
+                    allow="payment"
+                  />
+                )}
               </div>
             )}
 
@@ -804,10 +801,11 @@ const styles = {
     marginTop: -8,
   },
   calEmbed: {
-    minHeight: 600,
     width: "100%",
+    height: 700,
+    border: "none",
     borderRadius: 8,
-    overflow: "hidden",
+    display: "block",
   },
   disqualPage: {
     padding: "0",
