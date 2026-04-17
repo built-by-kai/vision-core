@@ -143,7 +143,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div>
     <p class="eyebrow" id="eyebrow">OPXIO</p>
-    <h1 class="h-title">Executive Overview</h1>
+    <h1 class="h-title" id="dash-title">Executive Overview</h1>
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
@@ -187,6 +187,11 @@ const ROLE_LABELS = {
   sales:     'Sales',
   pm:        'Project Manager',
 };
+const ROLE_TITLES = {
+  executive: 'Executive Overview',
+  sales:     'Sales Overview',
+  pm:        'Project Overview',
+};
 
 // Eyebrow: client name + role label if role is set, else just client name
 (function(){
@@ -195,6 +200,7 @@ const ROLE_LABELS = {
   const roleLabel = ROLE_LABELS[_role] ? ' · ' + ROLE_LABELS[_role].toUpperCase() : '';
   // Default label while client info loads
   el.textContent = _client.toUpperCase() + roleLabel;
+  if(ROLE_TITLES[_role]) document.getElementById('dash-title').textContent = ROLE_TITLES[_role];
   if(!_tok) return;
   fetch('/api/client/info?token=' + _tok)
     .then(r => r.ok ? r.json() : null)
