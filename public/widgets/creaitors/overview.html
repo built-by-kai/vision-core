@@ -142,7 +142,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 
 <div class="header">
   <div>
-    <p class="eyebrow" id="eyebrow">OPXIO</p>
+    <p class="eyebrow" id="eyebrow">CUSTOM OS</p>
     <h1 class="h-title" id="dash-title">Leadership Overview</h1>
   </div>
   <div class="h-right">
@@ -199,12 +199,12 @@ const ROLE_TITLES = {
   if(!el) return;
   const roleLabel = ROLE_LABELS[_role] ? ' · ' + ROLE_LABELS[_role].toUpperCase() : '';
   // Default label while client info loads
-  el.textContent = _client.toUpperCase() + roleLabel;
+  el.textContent = 'CUSTOM OS' + roleLabel;
   if(ROLE_TITLES[_role]) document.getElementById('dash-title').textContent = ROLE_TITLES[_role];
   if(!_tok) return;
   fetch('/api/client/info?token=' + _tok)
     .then(r => r.ok ? r.json() : null)
-    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + roleLabel; })
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · CUSTOM OS' + roleLabel; })
     .catch(() => {});
 })();
 

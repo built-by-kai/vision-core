@@ -80,7 +80,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div style="display:flex;align-items:center;">
     <div>
-      <p class="eyebrow" id="_eyebrow"></p>
+      <p class="eyebrow" id="_eyebrow">CUSTOM OS</p>
       <h1 class="h-title" style="display:inline;">Bottlenecks</h1>
     </div>
     <span class="total-badge none" id="tbadge">—</span>
@@ -263,7 +263,7 @@ setInterval(loadData, 600000);
   if(!tok) return;
   fetch('/api/client/info?token=' + tok)
     .then(r => r.ok ? r.json() : null)
-    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase(); })
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · CUSTOM OS'; })
     .catch(() => {});
 })();
 </script>
