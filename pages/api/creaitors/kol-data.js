@@ -7,7 +7,7 @@ import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supaba
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET')
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
 
   const token = req.query.token || req.headers['x-widget-token']
   if (!token) return res.status(401).json({ error: 'Missing token' })

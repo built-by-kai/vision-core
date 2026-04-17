@@ -7,7 +7,7 @@ import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supaba
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
   // Token auth: resolves per-client Notion key from Supabase (no env var per client)
   const token = req.query.token || req.headers['x-widget-token']
@@ -62,7 +62,10 @@ export default async function handler(req, res) {
           }
         ]
       }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
-      queryAll(TASKS_DB).catch(() => []),
+      queryAll(TASKS_DB, {
+        property: 'Task Status',
+        status: { does_not_equal: 'Done' },
+      }).catch(() => []),
     ]);
 
     // ── Content stats ──────────────────────────────────────────

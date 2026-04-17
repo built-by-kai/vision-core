@@ -8,7 +8,7 @@ import { getClientByToken, getNotionToken, resolveDB } from "../../../lib/supaba
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
   // Token auth: resolves per-client Notion key from Supabase (no env var per client)
   const token = req.query.token || req.headers['x-widget-token']
@@ -82,7 +82,10 @@ export default async function handler(req, res) {
       return 0;
     };
 
-    const campaigns = await queryAll(CAMPAIGNS_DB);
+    const campaigns = await queryAll(CAMPAIGNS_DB, {
+      property: 'Campaign Status',
+      status: { equals: 'Active' },
+    });
 
     let activeCampaigns = 0;
     let totalDeliverables = 0;
@@ -103,12 +106,10 @@ export default async function handler(req, res) {
 
     for (const page of campaigns) {
       const props = page.properties;
-      const status = getStatus(props['Campaign Status']);
       const type   = getSelect(props['Campaign Type']);
       const name   = getTitle(props['Campaign Name']);
 
-      if (status !== 'Active') continue;
-
+      // All returned pages are Active (filtered at Notion level)
       activeCampaigns++;
       if (type) typeCounts[type] = (typeCounts[type] || 0) + 1;
 
