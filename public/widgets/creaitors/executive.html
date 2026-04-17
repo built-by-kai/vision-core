@@ -338,9 +338,9 @@ function renderContent(d){
       <div class="s-sub">${d.contentBreakdown?.revision||0} revision · ${d.contentBreakdown?.qc||0} QC</div>
     </div>
     <div class="card stat">
-      <div class="s-dot" style="background:var(--amber);"></div>
+      <div class="s-dot" style="background:var(--g);"></div>
       <span class="s-lbl">Active Tasks</span>
-      <div class="s-val amber">${d.tasksTotal ?? '—'}</div>
+      <div class="s-val">${d.tasksTotal ?? '—'}</div>
       <div class="s-sub">${d.dueBreakdown?.tasks||0} due this week</div>
     </div>
     <div class="card stat">
@@ -350,9 +350,9 @@ function renderContent(d){
       <div class="s-sub">${d.dueBreakdown?.content||0} content · ${d.dueBreakdown?.tasks||0} tasks</div>
     </div>
     <div class="card stat">
-      <div class="s-dot" style="background:${attn > 0 ? 'var(--red)' : 'var(--g)'};"></div>
+      <div class="s-dot" style="background:${attn > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
       <span class="s-lbl">Needs Attention</span>
-      <div class="s-val ${attn > 0 ? 'red' : ''}">${attn}</div>
+      <div class="s-val ${attn > 0 ? 'orange' : ''}">${attn}</div>
       <div class="s-sub">${attn > 0 ? [
         ab.overdue  > 0 ? ab.overdue+' overdue'   : '',
         ab.revision > 0 ? ab.revision+' revision'  : '',
