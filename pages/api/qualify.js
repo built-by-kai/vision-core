@@ -79,7 +79,26 @@ async function createCompany(form) {
   if (form.industry) props.Industry       = { select: { name: form.industry } };
   if (form.teamSize) props["Team Size"]   = { select: { name: form.teamSize } };
   if (form.country)  props.Country        = { select: { name: form.country } };
-  props["Created On"] = { date: { start: new Date().toISOString().split("T")[0] } };
+
+  // Created On — full ISO timestamp
+  props["Created On"] = { date: { start: new Date().toISOString() } };
+
+  // Billing Currency — default from country
+  const COUNTRY_CURRENCY = {
+    "Malaysia":   "MYR",
+    "Singapore":  "SGD",
+    "Indonesia":  "IDR",
+    "Philippines":"PHP",
+    "Thailand":   "THB",
+    "Vietnam":    "VND",
+    "Bangladesh": "BDT",
+    "India":      "INR",
+    "UK":         "GBP",
+    "Australia":  "AUD",
+    "USA":        "USD",
+  };
+  const currency = COUNTRY_CURRENCY[form.country];
+  if (currency) props["Billing Currency"] = { select: { name: currency } };
   const data = await notionFetch("/pages", "POST", {
     parent: { database_id: COMPANIES_DB },
     properties: props,
