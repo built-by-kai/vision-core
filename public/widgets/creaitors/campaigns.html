@@ -173,7 +173,7 @@ function render(camp){
       const dateStr = start && end ? `${start} – ${end}` : start || end || '';
       const remC = (c.planned || 0) - (c.done || 0);
       // Build per-type breakdown string e.g. "7 Videos · 3 Posters"
-      const TYPE_LABELS = {videos:'Videos', posters:'Posters', live:'Live', kol:'KOL'};
+      const TYPE_LABELS = {videos:'Videos', posters:'Posters', live:'Live Sessions', kol:'KOL Posts'};
       const cb2 = c.contentBreakdown || {};
       const typeParts = Object.entries(TYPE_LABELS)
         .filter(([k]) => (cb2[k]?.planned || 0) > 0)
