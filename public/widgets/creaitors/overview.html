@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Opxio — Executive Overview</title>
+<title>Opxio — Overview</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <style>
@@ -143,7 +143,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 <div class="header">
   <div>
     <p class="eyebrow" id="eyebrow">OPXIO</p>
-    <h1 class="h-title" id="dash-title">Executive Overview</h1>
+    <h1 class="h-title" id="dash-title">Leadership Overview</h1>
   </div>
   <div class="h-right">
     <span class="ts" id="ts"></span>
@@ -178,17 +178,17 @@ const _role   = (new URLSearchParams(location.search).get('role') || '').toLower
 
 // Role presets — bypass saved config when ?role= is set
 const ROLE_PRESETS = {
-  executive: ['crm', 'crm-log', 'campaign', 'content'],
+  leadership: ['crm', 'crm-log', 'campaign', 'content'],
   pm:        ['campaign', 'content'],
   hom:       ['kol', 'campaign', 'content'],
 };
 const ROLE_LABELS = {
-  executive: 'Executive',
+  leadership: 'Leadership',
   pm:        'Project Manager',
   hom:       'Head of Marketing',
 };
 const ROLE_TITLES = {
-  executive: 'Executive Overview',
+  leadership: 'Leadership Overview',
   pm:        'Project Overview',
   hom:       'Marketing Overview',
 };
@@ -739,7 +739,7 @@ async function saveConfig(){
   }
 
   try{
-    const r = await fetch('/api/executive/config?token='+_tok, {
+    const r = await fetch('/api/creaitors/config?token='+_tok, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sections }),
@@ -777,7 +777,7 @@ async function load(){
     } else {
       // No role: fetch config from API (falls back to default on error)
       try{
-        const cr = await fetch('/api/executive/config?token='+_tok);
+        const cr = await fetch('/api/creaitors/config?token='+_tok);
         if(cr.ok){
           const cj = await cr.json();
           if(Array.isArray(cj.sections) && cj.sections.length) _sections = cj.sections;

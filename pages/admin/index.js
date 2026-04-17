@@ -36,14 +36,14 @@ const WIDGETS = [
 ]
 
 const AGENCY_WIDGETS = [
-  { url: "/creaitors/marketing/enhanced-dashboard?role=executive", label: "Executive Overview",  dbs: ["LEADS","DEALS","CONTENT_DB","CAMPAIGNS_DB"], tier: "base" },
-  { url: "/creaitors/marketing/enhanced-dashboard?role=pm",        label: "PM Overview",         dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
-  { url: "/creaitors/marketing/enhanced-dashboard?role=hom",       label: "Head of Marketing",   dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
-  { url: "/creaitors/marketing/campaigns",                label: "Campaigns",           dbs: ["CAMPAIGNS_DB"],                             tier: "base" },
-  { url: "/creaitors/marketing/content-production",       label: "Content Production",  dbs: ["CONTENT_DB","TASKS_DB"],                    tier: "base" },
-  { url: "/creaitors/marketing/staff-breakdown",          label: "Staff Breakdown",     dbs: ["EMPLOYEE_DB","TASKS_DB"],                   tier: "base" },
-  { url: "/creaitors/operations/bottlenecks",             label: "Bottlenecks",         dbs: ["CONTENT_DB","TASKS_DB"],                    tier: "base" },
-  { url: "/creaitors/revenue/crm",                        label: "CRM + Win/Loss",      dbs: ["LEADS","DEALS"],                            tier: "base" },
+  { url: "/creaitors/overview?role=leadership", label: "Leadership Overview",  dbs: ["LEADS","DEALS","CONTENT_DB","CAMPAIGNS_DB"], tier: "base" },
+  { url: "/creaitors/overview?role=pm",         label: "PM Overview",          dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                 tier: "base" },
+  { url: "/creaitors/overview?role=hom",        label: "Head of Marketing",    dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                 tier: "base" },
+  { url: "/creaitors/campaigns",                label: "Campaigns",            dbs: ["CAMPAIGNS_DB"],                              tier: "base" },
+  { url: "/creaitors/content",                  label: "Content Production",   dbs: ["CONTENT_DB","TASKS_DB"],                     tier: "base" },
+  { url: "/creaitors/staff",                    label: "Staff Breakdown",      dbs: ["EMPLOYEE_DB","TASKS_DB"],                    tier: "base" },
+  { url: "/creaitors/bottlenecks",              label: "Bottlenecks",          dbs: ["CONTENT_DB","TASKS_DB"],                     tier: "base" },
+  { url: "/creaitors/crm",                      label: "CRM + Win/Loss",       dbs: ["LEADS","DEALS"],                             tier: "base" },
 ]
 
 const OS_OPTIONS = [
