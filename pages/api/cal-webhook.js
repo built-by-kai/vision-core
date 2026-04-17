@@ -41,6 +41,16 @@ async function notion(path, method = "GET", body = null) {
   return res.json();
 }
 
+// Safely append an ID to a relation without wiping existing entries
+async function appendRelation(pageId, property, newId) {
+  const page = await notion("/pages/" + pageId);
+  const existing = (page.properties?.[property]?.relation || []).map((r) => ({ id: r.id }));
+  if (existing.some((r) => r.id === newId)) return;
+  await notion("/pages/" + pageId, "PATCH", {
+    properties: { [property]: { relation: [...existing, { id: newId }] } },
+  });
+}
+
 // ─── Finders ────────────────────────────────────────────────────────────────
 
 async function findPersonByEmail(email) {
@@ -126,6 +136,11 @@ async function handleBookingCreated(payload) {
     };
     await notion("/pages/" + leadId, "PATCH", { properties: leadUpdate });
   }
+
+  // 4. Stitch reverse relations so Notion shows them without manual sync
+  if (meetingId && leadId)    await appendRelation(leadId, "Meetings", meetingId);
+  if (meetingId && companyId) await appendRelation(companyId, "Meetings", meetingId);
+  if (meetingId && personId)  await appendRelation(personId, "Meetings", meetingId);
 
   return { ok: true, meetingId, leadId };
 }

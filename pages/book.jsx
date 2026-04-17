@@ -43,17 +43,17 @@ const SOURCES = [
 ];
 
 const COUNTRY_CODES = [
-  { code: "+60", flag: "🇲🇾", name: "MY" },
-  { code: "+65", flag: "🇸🇬", name: "SG" },
-  { code: "+62", flag: "🇮🇩", name: "ID" },
-  { code: "+63", flag: "🇵🇭", name: "PH" },
-  { code: "+66", flag: "🇹🇭", name: "TH" },
-  { code: "+84", flag: "🇻🇳", name: "VN" },
-  { code: "+880", flag: "🇧🇩", name: "BD" },
-  { code: "+91", flag: "🇮🇳", name: "IN" },
-  { code: "+44", flag: "🇬🇧", name: "GB" },
-  { code: "+61", flag: "🇦🇺", name: "AU" },
-  { code: "+1",  flag: "🇺🇸", name: "US" },
+  { code: "+60",  flag: "🇲🇾", name: "MY", country: "Malaysia",     lang: "Bahasa Malaysia",  tz: "MYT — UTC+8"   },
+  { code: "+65",  flag: "🇸🇬", name: "SG", country: "Singapore",    lang: "English",           tz: "SGT — UTC+8"   },
+  { code: "+62",  flag: "🇮🇩", name: "ID", country: "Indonesia",    lang: "Bahasa Indonesia",  tz: "WIB — UTC+7"   },
+  { code: "+63",  flag: "🇵🇭", name: "PH", country: "Philippines",  lang: "Filipino",          tz: "PHT — UTC+8"   },
+  { code: "+66",  flag: "🇹🇭", name: "TH", country: "Thailand",     lang: "Thai",              tz: "ICT — UTC+7"   },
+  { code: "+84",  flag: "🇻🇳", name: "VN", country: "Vietnam",      lang: "Vietnamese",        tz: "ICT — UTC+7"   },
+  { code: "+880", flag: "🇧🇩", name: "BD", country: "Bangladesh",   lang: "Bengali",           tz: "BST — UTC+6"   },
+  { code: "+91",  flag: "🇮🇳", name: "IN", country: "India",        lang: "English",           tz: "IST — UTC+5:30"},
+  { code: "+44",  flag: "🇬🇧", name: "GB", country: "UK",           lang: "English",           tz: "GMT — UTC+0"   },
+  { code: "+61",  flag: "🇦🇺", name: "AU", country: "Australia",    lang: "English",           tz: "AEST — UTC+10" },
+  { code: "+1",   flag: "🇺🇸", name: "US", country: "USA",          lang: "English",           tz: "EST — UTC-5"   },
 ];
 
 export default function Book() {
@@ -83,16 +83,24 @@ export default function Book() {
     utmSource: "",
     utmMedium: "",
     utmCampaign: "",
+    // Auto-detected
+    timezone: "",
+    language: "",
+    country: "",
   });
 
-  // Capture UTM params on load
+  // Capture UTM params + browser timezone/language on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const tz   = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const lang = navigator.language || "";
     setForm((f) => ({
       ...f,
-      utmSource: params.get("utm_source") || "",
-      utmMedium: params.get("utm_medium") || "",
+      utmSource:   params.get("utm_source")   || "",
+      utmMedium:   params.get("utm_medium")   || "",
       utmCampaign: params.get("utm_campaign") || "",
+      timezone: tz,
+      language: lang,
     }));
   }, []);
 
@@ -134,10 +142,17 @@ export default function Book() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      const selected = COUNTRY_CODES.find((c) => c.code === countryCode);
       const res = await fetch("/api/qualify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, phone: countryCode + " " + form.phone }),
+        body: JSON.stringify({
+          ...form,
+          phone:    countryCode + " " + form.phone,
+          country:  selected?.country || "",
+          language: form.language || selected?.lang || "",
+          timezone: form.timezone || selected?.tz  || "",
+        }),
       });
       const data = await res.json();
       setResult(data);

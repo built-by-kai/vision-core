@@ -49,12 +49,19 @@ async function notionFetch(path, method = "GET", body = null) {
   return res.json();
 }
 
+// Safely append an ID to a relation without wiping existing entries
+async function appendRelation(pageId, property, newId) {
+  const page = await notionFetch("/pages/" + pageId);
+  const existing = (page.properties?.[property]?.relation || []).map((r) => ({ id: r.id }));
+  if (existing.some((r) => r.id === newId)) return; // already linked
+  await notionFetch("/pages/" + pageId, "PATCH", {
+    properties: { [property]: { relation: [...existing, { id: newId }] } },
+  });
+}
+
 async function findCompany(name) {
   const data = await notionFetch("/databases/" + COMPANIES_DB + "/query", "POST", {
-    filter: {
-      property: "Company",
-      title: { equals: name },
-    },
+    filter: { property: "Company", title: { equals: name } },
     page_size: 1,
   });
   return data.results?.[0]?.id || null;
@@ -65,8 +72,9 @@ async function createCompany(form) {
     Company: { title: [{ text: { content: form.company } }] },
     Status:  { select: { name: "Prospect" } },
   };
-  if (form.industry)  props.Industry  = { select: { name: form.industry } };
-  if (form.teamSize)  props["Team Size"] = { select: { name: form.teamSize } };
+  if (form.industry) props.Industry     = { select: { name: form.industry } };
+  if (form.teamSize) props["Team Size"] = { select: { name: form.teamSize } };
+  if (form.country)  props.Country      = { select: { name: form.country } };
   const data = await notionFetch("/pages", "POST", {
     parent: { database_id: COMPANIES_DB },
     properties: props,
@@ -76,10 +84,7 @@ async function createCompany(form) {
 
 async function findPerson(email) {
   const data = await notionFetch("/databases/" + PEOPLE_DB + "/query", "POST", {
-    filter: {
-      property: "Email",
-      email: { equals: email },
-    },
+    filter: { property: "Email", email: { equals: email } },
     page_size: 1,
   });
   return data.results?.[0]?.id || null;
@@ -87,17 +92,16 @@ async function findPerson(email) {
 
 async function createPerson(form, companyId) {
   const props = {
-    Name: { title: [{ text: { content: form.name } }] },
-    Email: { email: form.email },
-    Phone: { phone_number: form.phone },
+    Name:   { title: [{ text: { content: form.name } }] },
+    Email:  { email: form.email },
+    Phone:  { phone_number: form.phone },
     Status: { select: { name: "Prospect" } },
   };
-  if (companyId) {
-    props.Company = { relation: [{ id: companyId }] };
-  }
-  if (form.role) {
-    props.Role = { select: { name: form.role } };
-  }
+  if (companyId)      props.Company    = { relation: [{ id: companyId }] };
+  if (form.role)      props.Role       = { select: { name: form.role } };
+  if (form.country)   props.Country    = { select: { name: form.country } };
+  if (form.language)  props.Language   = { select: { name: form.language } };
+  if (form.timezone)  props["Time Zone"] = { select: { name: form.timezone } };
   const data = await notionFetch("/pages", "POST", {
     parent: { database_id: PEOPLE_DB },
     properties: props,
@@ -185,7 +189,12 @@ export default async function handler(req, res) {
     if (!personId) personId = await createPerson(form, companyId);
 
     // 4. Create Lead
-    await createLead(form, companyId, personId, qualResult.qualified);
+    const leadId = await createLead(form, companyId, personId, qualResult.qualified);
+
+    // 5. Stitch relations both ways (so Notion shows them without two-way sync)
+    if (leadId && companyId) await appendRelation(companyId, "Leads", leadId);
+    if (leadId && personId)  await appendRelation(personId, "Linked Lead", leadId);
+    if (personId && companyId) await appendRelation(companyId, "People", personId);
 
     // 5. Return result
     return res.status(200).json({
