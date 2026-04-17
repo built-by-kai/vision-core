@@ -133,12 +133,8 @@ async function createLead(form, companyId, personId, qualified) {
     props.Source = { multi_select: [{ name: "Ads" }] };
   }
 
-  // Number
-  if (form.teamSize) {
-    const sizeMap = { "1–4": 4, "5–10": 10, "11–20": 20, "21–50": 50, "50+": 50 };
-    const num = sizeMap[form.teamSize];
-    if (num) props["Team Size"] = { number: num };
-  }
+  // Team Size (select)
+  if (form.teamSize) props["Team Size"] = { select: { name: form.teamSize } };
 
   // Text fields
   if (form.situation) props.Situation = { rich_text: [{ text: { content: form.situation } }] };
