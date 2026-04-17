@@ -91,7 +91,7 @@ export default function Book() {
         Cal("init", { origin: "https://cal.com" });
         Cal("inline", {
           elementOrSelector: "#cal-embed",
-          calLink: "kai-opxio/discovery-call",
+          calLink: "opxio/discovery-call",
           layout: "month_view"
         });
         Cal("ui", {
