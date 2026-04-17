@@ -130,7 +130,7 @@ export default async function handler(req, res) {
       // Completed
       const videosDone  = getRollupNumber(props['Videos Completed']);
       const postersDone = getRollupNumber(props['Posters Completed']);
-      const liveDone    = getRollupNumber(props['Livestreams Completed']);
+      const liveDone    = getRollupNumber(props['Live Sessions Completed']);
       const kolDone     = getRollupNumber(props['KOL Postings Completed']);
       const done        = videosDone + postersDone + liveDone + kolDone;
 
