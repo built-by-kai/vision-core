@@ -234,7 +234,11 @@ export default function Book() {
         )}
 
         {/* Form Card */}
-        <div style={{ ...styles.cardWrap, ...(step === 3 ? styles.cardWrapResult : {}) }}>
+        <div style={{
+          ...styles.cardWrap,
+          ...(step === 3 ? styles.cardWrapResult : {}),
+          ...(step === 3 && result?.qualified ? styles.cardWrapQualified : {}),
+        }}>
           <div style={{ ...styles.card, ...(step === 3 ? styles.cardResult : {}) }}>
             {/* STEP 1: Contact */}
             {step === 0 && (
@@ -642,6 +646,11 @@ const styles = {
     width: "100%",
     maxWidth: 480,
   },
+  cardWrapQualified: {
+    maxWidth: 760,
+    alignItems: "flex-start",
+    paddingTop: "48px",
+  },
   card: {
     background: "#111",
     border: "1px solid #1e1e1e",
@@ -795,7 +804,8 @@ const styles = {
     marginTop: -8,
   },
   calEmbed: {
-    minHeight: 500,
+    minHeight: 700,
+    width: "100%",
     borderRadius: 8,
     overflow: "hidden",
   },
