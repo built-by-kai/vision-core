@@ -42,11 +42,26 @@ const SOURCES = [
   "Other",
 ];
 
+const COUNTRY_CODES = [
+  { code: "+60", flag: "🇲🇾", name: "MY" },
+  { code: "+65", flag: "🇸🇬", name: "SG" },
+  { code: "+62", flag: "🇮🇩", name: "ID" },
+  { code: "+63", flag: "🇵🇭", name: "PH" },
+  { code: "+66", flag: "🇹🇭", name: "TH" },
+  { code: "+84", flag: "🇻🇳", name: "VN" },
+  { code: "+880", flag: "🇧🇩", name: "BD" },
+  { code: "+91", flag: "🇮🇳", name: "IN" },
+  { code: "+44", flag: "🇬🇧", name: "GB" },
+  { code: "+61", flag: "🇦🇺", name: "AU" },
+  { code: "+1",  flag: "🇺🇸", name: "US" },
+];
+
 export default function Book() {
   const [step, setStep] = useState(0); // 0=contact, 1=business, 2=needs, 3=result
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // { qualified, reason }
   const [calSrc, setCalSrc] = useState("");
+  const [countryCode, setCountryCode] = useState("+60");
 
   const [form, setForm] = useState({
     // Step 1
@@ -122,7 +137,7 @@ export default function Book() {
       const res = await fetch("/api/qualify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: countryCode + " " + form.phone }),
       });
       const data = await res.json();
       setResult(data);
@@ -264,14 +279,32 @@ export default function Book() {
                     onChange={(v) => set("email", v)}
                     placeholder="you@company.com"
                   />
-                  <Field
-                    label="Phone / WhatsApp"
-                    required
-                    type="tel"
-                    value={form.phone}
-                    onChange={(v) => set("phone", v)}
-                    placeholder="+60 12-345 6789"
-                  />
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>
+                      Phone / WhatsApp <span style={styles.required}>*</span>
+                    </label>
+                    <div style={styles.phoneRow}>
+                      <select
+                        style={styles.phoneCode}
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.flag} {c.code}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        style={{ ...styles.input, flex: 1 }}
+                        value={form.phone}
+                        onChange={(e) => set("phone", e.target.value)}
+                        placeholder="11-5408 3044"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -707,6 +740,25 @@ const styles = {
       "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")",
     backgroundRepeat: "no-repeat",
     backgroundPosition: "right 14px center",
+  },
+  phoneRow: {
+    display: "flex",
+    gap: 8,
+  },
+  phoneCode: {
+    width: 110,
+    flexShrink: 0,
+    background: "#0a0a0a",
+    border: "1px solid #2a2a2a",
+    borderRadius: 8,
+    padding: "12px 10px",
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Satoshi, sans-serif",
+    outline: "none",
+    cursor: "pointer",
+    appearance: "none",
+    textAlign: "center",
   },
   textarea: {
     width: "100%",

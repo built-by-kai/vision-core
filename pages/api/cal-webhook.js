@@ -99,13 +99,12 @@ async function handleBookingCreated(payload) {
 
   // 2. Create Meeting
   const meetingProps = {
-    "Meeting Title": { title: [{ text: { content: `Discovery Call — ${name}` } }] },
-    "Type":          { select: { name: "Discovery" } },
-    "Status":        { select: { name: "Scheduled" } },
-    "date:Date:start":        startTime,
-    "date:Date:is_datetime":  1,
-    "Booking UID":   { rich_text: [{ text: { content: uid } }] },
-    "Duration (min)":{ number: duration },
+    "Meeting Title":  { title: [{ text: { content: `Discovery Call — ${name}` } }] },
+    "Type":           { select: { name: "Discovery" } },
+    "Status":         { select: { name: "Scheduled" } },
+    "Date":           { date: { start: startTime } },
+    "Booking UID":    { rich_text: [{ text: { content: uid } }] },
+    "Duration (min)": { number: duration },
   };
 
   if (meetUrl) meetingProps["Meeting URL"] = { url: meetUrl };
@@ -122,9 +121,8 @@ async function handleBookingCreated(payload) {
   // 3. Update Lead
   if (leadId) {
     const leadUpdate = {
-      "Stage": { status: { name: "Discovery Booked" } },
-      "date:Discovery Call:start":       startTime,
-      "date:Discovery Call:is_datetime": 1,
+      "Stage":          { status: { name: "Discovery Booked" } },
+      "Discovery Call": { date: { start: startTime } },
     };
     if (meetingId) {
       leadUpdate["Meetings"] = { relation: [{ id: meetingId }] };
@@ -168,20 +166,14 @@ async function handleBookingRescheduled(payload) {
 
   // Update meeting date
   await notion("/pages/" + meeting.id, "PATCH", {
-    properties: {
-      "date:Date:start":       newStart,
-      "date:Date:is_datetime": 1,
-    },
+    properties: { "Date": { date: { start: newStart } } },
   });
 
   // Update lead discovery call date
   const leadId = meeting.properties?.Lead?.relation?.[0]?.id;
   if (leadId) {
     await notion("/pages/" + leadId, "PATCH", {
-      properties: {
-        "date:Discovery Call:start":       newStart,
-        "date:Discovery Call:is_datetime": 1,
-      },
+      properties: { "Discovery Call": { date: { start: newStart } } },
     });
   }
 
