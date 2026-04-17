@@ -235,7 +235,7 @@ export default function Book() {
 
         {/* Form Card */}
         <div style={{ ...styles.cardWrap, ...(step === 3 ? styles.cardWrapResult : {}) }}>
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...(step === 3 ? styles.cardResult : {}) }}>
             {/* STEP 1: Contact */}
             {step === 0 && (
               <div style={styles.formSection}>
@@ -449,7 +449,7 @@ export default function Book() {
 
             {/* STEP 4: Result */}
             {step === 3 && result?.qualified && (
-              <div style={styles.formSection}>
+              <div style={styles.qualifiedPage}>
                 <div style={styles.qualifiedBadge}>✓ You&apos;re a great fit</div>
                 <h2 style={styles.sectionTitle}>
                   Pick a time that works for you.
@@ -548,6 +548,7 @@ function SelectField({ label, required, value, onChange, options, wide }) {
 const styles = {
   page: {
     minHeight: "100vh",
+    height: "100%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -555,6 +556,7 @@ const styles = {
   },
   pageResult: {
     justifyContent: "flex-start",
+    minHeight: "100vh",
   },
   header: {
     width: "100%",
@@ -625,9 +627,20 @@ const styles = {
     padding: "0 24px 80px",
   },
   cardWrapResult: {
-    maxWidth: 560,
-    margin: "0 auto",
-    padding: "40px 24px 80px",
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    maxWidth: "none",
+    padding: "40px 24px 40px",
+  },
+  cardResult: {
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    width: "100%",
+    maxWidth: 480,
   },
   card: {
     background: "#111",
@@ -760,6 +773,10 @@ const styles = {
     transition: "border-color 0.15s, color 0.15s",
     flexShrink: 0,
   },
+  qualifiedPage: {
+    padding: "0",
+    width: "100%",
+  },
   qualifiedBadge: {
     display: "inline-block",
     background: "#AAFF0018",
@@ -783,7 +800,7 @@ const styles = {
     overflow: "hidden",
   },
   disqualPage: {
-    padding: "56px 40px 56px",
+    padding: "0",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
