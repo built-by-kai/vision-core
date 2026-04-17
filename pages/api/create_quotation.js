@@ -148,7 +148,7 @@ async function fetchProductInfo(slug) {
 async function extractLeadInfo(props) {
   const companyIds = (props.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
   let   picIds     = []
-  for (const field of ["PIC Name", "PIC", "Contact", "Person in Charge"]) {
+  for (const field of ["Primary Contact", "PIC Name", "PIC", "Contact", "Person in Charge"]) {
     picIds = (props[field]?.relation || []).map(r => r.id.replace(/-/g, ""))
     if (picIds.length) break
   }
@@ -261,7 +261,7 @@ async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, lead
     "Status":        { select: { name: "Draft" } },
     ...(quoteType   ? { "Quote Type":   { select: { name: quoteType } } } : {}),
     ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-    ...(picIds?.length    ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
+    ...(picIds?.length    ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
   }
 
   // Patch all core props + Deal Source in parallel — fast and no blocking waits

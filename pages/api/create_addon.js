@@ -25,7 +25,7 @@ async function fetchProject(projectId) {
   const companyIds = (props.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
 
   let leadIds = []
-  for (const field of ["Deal Source", "Lead", "PIC", "Deals"]) {
+  for (const field of ["Deal Source", "Lead", "Deals"]) {
     const rels = props[field]?.relation || []
     if (rels.length) {
       leadIds = rels.map(r => r.id.replace(/-/g, ""))

@@ -15,7 +15,7 @@ async function getPicPhone(companyId, token) {
     const rels = cp.properties.People?.relation || cp.properties.Clients?.relation || []
     for (const rel of rels) {
       const pp = await getPage(rel.id.replace(/-/g, ""), token)
-      if (pp.properties["Current PIC?"]?.checkbox) {
+      if (pp.properties["Primary Contact"]?.checkbox) {
         for (const [, prop] of Object.entries(pp.properties)) {
           if (prop.type === "phone_number" && prop.phone_number) return prop.phone_number
         }
@@ -157,7 +157,7 @@ async function run(payload) {
         const lp = sourcePage.properties
         const leadName      = plain(lp["Lead Name"]?.title || []) || "New Deal"
         const compIds       = (lp.Company?.relation       || []).map(r => r.id.replace(/-/g, ""))
-        const picIds        = (lp["PIC Name"]?.relation   || []).map(r => r.id.replace(/-/g, ""))
+        const picIds        = (lp["Primary Contact"]?.relation || lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
         const osInterest    = lp["OS Interest"]?.select?.name || ""
         const addons        = (lp["Add-ons"]?.multi_select || []).map(a => ({ name: a.name }))
         const situation     = plain(lp.Situation?.rich_text || [])
@@ -219,7 +219,7 @@ async function run(payload) {
               "Client Type": { select: { name: "New Client" } },
               "Lead Source": { relation: [{ id: leadId }] },
               ...(compIds.length       ? { "Company":       { relation: [{ id: compIds[0] }] } } : {}),
-              ...(picIds.length        ? { "PIC Name":      { relation: [{ id: picIds[0]  }] } } : {}),
+              ...(picIds.length        ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
               ...(osInterest           ? { "Package Type":  { select:   { name: osInterest } } } : {}),
               ...(addons.length        ? { "Add-ons":       { multi_select: addons } } : {}),
               ...(quotationAmount      ? { "Deal Value":    { number: quotationAmount } } : {}),

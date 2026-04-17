@@ -72,9 +72,10 @@ async function createCompany(form) {
     Company: { title: [{ text: { content: form.company } }] },
     Status:  { select: { name: "Prospect" } },
   };
-  if (form.industry) props.Industry     = { select: { name: form.industry } };
-  if (form.teamSize) props["Team Size"] = { select: { name: form.teamSize } };
-  if (form.country)  props.Country      = { select: { name: form.country } };
+  if (form.industry) props.Industry       = { select: { name: form.industry } };
+  if (form.teamSize) props["Team Size"]   = { select: { name: form.teamSize } };
+  if (form.country)  props.Country        = { select: { name: form.country } };
+  props["Created On"] = { date: { start: new Date().toISOString().split("T")[0] } };
   const data = await notionFetch("/pages", "POST", {
     parent: { database_id: COMPANIES_DB },
     properties: props,
@@ -120,7 +121,7 @@ async function createLead(form, companyId, personId, qualified) {
 
   // Relations
   if (companyId) props.Company = { relation: [{ id: companyId }] };
-  if (personId) props["PIC Name"] = { relation: [{ id: personId }] };
+  if (personId) props["Primary Contact"] = { relation: [{ id: personId }] };
 
   // Select fields
   if (form.industry) props.Industry = { select: { name: form.industry } };

@@ -36,7 +36,7 @@ async function run(payload) {
 
   // Lead — try multiple field names
   let leadId = null
-  for (const field of ["Deals", "Deal Source", "PIC", "Lead"]) {
+  for (const field of ["Deals", "Deal Source", "Lead"]) {
     leadId = props[field]?.relation?.[0]?.id?.replace(/-/g, "") || null
     if (leadId) break
   }

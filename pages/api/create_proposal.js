@@ -287,7 +287,7 @@ async function handleConvertToDeal(leadId, res) {
   const lp    = lead.properties
 
   const companyIds    = (lp.Company?.relation    || []).map(r => r.id.replace(/-/g, ""))
-  const picIds        = (lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+  const picIds        = (lp["Primary Contact"]?.relation || lp["PIC Name"]?.relation || []).map(r => r.id.replace(/-/g, ""))
   const osInterest    = lp["OS Interest"]?.select?.name || ""
   const addons        = (lp["Add-ons"]?.multi_select || []).map(a => a.name)
   const sourcedFrom   = (lp.Source?.multi_select || []).map(s => ({ name: s.name }))
@@ -335,7 +335,7 @@ async function handleConvertToDeal(leadId, res) {
     "Lead Source": { relation: [{ id: leadId }] },
     ...(leadName          ? { "Lead Name":    { title: [{ text: { content: leadName } }] } } : {}),
     ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
-    ...(picIds.length     ? { "PIC Name":     { relation: [{ id: picIds[0]     }] } } : {}),
+    ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0]   }] } } : {}),
     ...(osInterest        ? { "Package Type": { select: { name: osInterest } } } : {}),
     ...(addons.length     ? { "Add-ons":      { multi_select: addons.map(n => ({ name: n })) } } : {}),
     ...(sourcedFrom.length? { "Source":       { multi_select: sourcedFrom } } : {}),
@@ -386,7 +386,7 @@ export default async function handler(req, res) {
     const companyIds = (leadProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
 
     let picIds = []
-    for (const f of ["PIC Name", "PIC", "Contact", "Person in Charge"]) {
+    for (const f of ["Primary Contact", "PIC Name", "PIC", "Contact", "Person in Charge"]) {
       picIds = (leadProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
       if (picIds.length) break
     }
@@ -444,7 +444,7 @@ export default async function handler(req, res) {
           "Payment Terms": { select: { name: "50% Deposit" } },
           ...(osName ? { "OS Type": { select: { name: osName } } } : {}),
           ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-          ...(picIds.length ? { "PIC": { relation: [{ id: picIds[0] }] } } : {}),
+          ...(picIds.length ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
         }
       }, process.env.NOTION_API_KEY)
       propId = newProp.id.replace(/-/g, "")
@@ -461,7 +461,7 @@ export default async function handler(req, res) {
       ...(osName               ? { "OS Type":    { select: { name: osName } } } : {}),
       ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
       ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-      ...(picIds.length     ? { "PIC":     { relation: [{ id: picIds[0] }] } } : {}),
+      ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
       // Copy Situation from Lead so it pre-fills the proposal — editable in Notion before generating
       ...((() => {
         const sit = plain(leadProps.Situation?.rich_text || [])

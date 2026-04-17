@@ -66,7 +66,7 @@ async function findLeadByPersonId(personId) {
   const data = await notion("/databases/" + LEADS_DB + "/query", "POST", {
     filter: {
       and: [
-        { property: "PIC Name", relation: { contains: personId } },
+        { property: "Primary Contact", relation: { contains: personId } },
         { property: "Stage",    status:   { equals: "Incoming" } },
       ],
     },

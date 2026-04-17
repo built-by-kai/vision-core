@@ -188,7 +188,7 @@ async function run(payload) {
   //   "Lead Source"  → Leads DB   (set by create_quotation.js when source is a Lead)
   //   "Deal Source"  → Deals DB   (set after Lead → Deal conversion)
   let companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
-  const picId     = props.PIC?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const picId     = props["Primary Contact"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   const leadId    = props["Lead Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   const dealId    = props["Deal Source"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   // sourceId: the Lead or Deal to advance stage on
@@ -220,7 +220,7 @@ async function run(payload) {
     ...(deposit50  ? { "Deposit (50%)": { number: deposit50 } } : {}),
     ...(isDeposit  ? { "Deposit Due":   { date: { start: dueDate } } } : {}),
     ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
-    ...(picId     ? { "PIC":     { relation: [{ id: picId }] } } : {}),
+    ...(picId     ? { "Primary Contact": { relation: [{ id: picId }] } } : {}),
     // Invoice.Deal Source → Deals DB only (not Leads). Only write if we have a Deal.
     ...(dealId    ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
   }

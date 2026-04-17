@@ -328,7 +328,7 @@ export default async function handler(req, res) {
     const companyIds = (pp.Company?.relation        || []).map(r => r.id.replace(/-/g, ""))
     const dealIds    = (pp["Deal Source"]?.relation  || []).map(r => r.id.replace(/-/g, ""))
     const leadIds    = (pp["Lead Source"]?.relation  || []).map(r => r.id.replace(/-/g, ""))
-    const picIds     = (pp.PIC?.relation             || []).map(r => r.id.replace(/-/g, ""))
+    const picIds     = (pp["Primary Contact"]?.relation || pp.PIC?.relation || []).map(r => r.id.replace(/-/g, ""))
 
     console.log("[convert_proposal] proposal:", proposalId, "| osType:", osTypeRaw, "| quoteType:", quoteType)
 
@@ -379,7 +379,7 @@ export default async function handler(req, res) {
       ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
       ...(dealIds.length    ? { "Deal Source":  { relation: [{ id: dealIds[0] }] } } : {}),
       ...(leadIds.length    ? { "Lead Source":  { relation: [{ id: leadIds[0] }] } } : {}),
-      ...(picIds.length     ? { "PIC":          { relation: [{ id: picIds[0] }] } } : {}),
+      ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
     }, process.env.NOTION_API_KEY)
     console.log("[convert_proposal] quotation props patched")
 

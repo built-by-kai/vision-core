@@ -46,7 +46,7 @@ async function buildWaUrl(pageId, token) {
   }
 
   let picName = "", picPhone = ""
-  const picProp = props.PIC || {}
+  const picProp = props["Primary Contact"] || props.PIC || {}
   if (picProp.type === "relation") {
     for (const rel of (picProp.relation || []).slice(0, 1)) {
       try {
