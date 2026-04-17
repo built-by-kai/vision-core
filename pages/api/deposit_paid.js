@@ -51,7 +51,7 @@ async function triggerSetupProject(projectId) {
   try {
     const apiUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : "https://dashboard.opxio.io"
+      : "https://widgets.opxio.io"
     const r = await fetch(`${apiUrl}/api/setup_project`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -284,7 +284,7 @@ async function run(payload) {
   //   package= — OS package e.g. "Business OS", "Revenue OS" (controls which OS steps appear)
   //   addons=  — comma-separated add-on names (controls Add-ons step content)
   //   deal=    — Notion Deal page ID (linked on form submission)
-  const baseUrl = "https://dashboard.opxio.io"
+  const baseUrl = "https://widgets.opxio.io"
   const onboardingParams = new URLSearchParams()
   if (companyName)       onboardingParams.set("client",  companyName)
   if (formPackage)       onboardingParams.set("package", formPackage)

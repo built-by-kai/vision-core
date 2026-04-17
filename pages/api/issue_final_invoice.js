@@ -12,7 +12,7 @@
 import { getPage, patchPage, createPage, plain, DB, createLedgerEntry } from "../../lib/notion"
 
 
-const API_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://dashboard.opxio.io"
+const API_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://widgets.opxio.io"
 
 async function run(payload) {
   const rawId = payload.page_id

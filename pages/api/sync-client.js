@@ -4,7 +4,7 @@
 //
 // Notion button config:
 //   Action: "Send data to URL"
-//   URL:    https://dashboard.opxio.io/api/sync-client?secret=opxio-sync-2026
+//   URL:    https://widgets.opxio.io/api/sync-client?secret=opxio-sync-2026
 //   Method: POST  (Notion auto-sends { "data": { "id": "{{page_id}}" } })
 
 import { createClient } from "@supabase/supabase-js"

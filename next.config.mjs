@@ -6,13 +6,13 @@ const nextConfig = {
     return [
       {
         source: '/onboarding',
-        has: [{ type: 'host', value: 'dashboard.opxio.io' }],
+        has: [{ type: 'host', value: 'widgets.opxio.io' }],
         destination: 'https://opxio.io/onboarding',
         permanent: false,
       },
       {
         source: '/onboarding/:path*',
-        has: [{ type: 'host', value: 'dashboard.opxio.io' }],
+        has: [{ type: 'host', value: 'widgets.opxio.io' }],
         destination: 'https://opxio.io/onboarding',
         permanent: false,
       },

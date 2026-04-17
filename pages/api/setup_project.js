@@ -457,7 +457,7 @@ async function setup(payload) {
   ])
 
   // ── Add progress widget embed to the project page ──────────────────────────
-  const widgetUrl = `https://dashboard.opxio.io/operations/progress?project=${projectId}`
+  const widgetUrl = `https://widgets.opxio.io/operations/progress?project=${projectId}`
   try {
     await fetch(`https://api.notion.com/v1/blocks/${projectId}/children`, {
       method: "PATCH",
