@@ -178,7 +178,7 @@ const _role   = (new URLSearchParams(location.search).get('role') || '').toLower
 
 // Role presets — bypass saved config when ?role= is set
 const ROLE_PRESETS = {
-  executive: ['campaign', 'content', 'crm', 'crm-log'],
+  executive: ['crm', 'crm-log', 'campaign', 'content'],
   sales:     ['crm', 'crm-log'],
   pm:        ['campaign', 'content'],
 };
@@ -691,7 +691,15 @@ async function load(){
       { id: 'content',  label: 'Content',   secs: ['content']  },
       { id: 'revenue',  label: 'Revenue',   secs: ['crm', 'crm-log'] },
     ];
-    const tabs = TAB_DEFS.filter(t => t.secs.some(s => sectionHTML[s]));
+    // Build tabs in section order (so preset order is respected)
+    const _seenTabs = new Set();
+    const tabs = [];
+    for(const sec of _sections){
+      const def = TAB_DEFS.find(t => t.secs.includes(sec));
+      if(def && !_seenTabs.has(def.id) && def.secs.some(s => sectionHTML[s])){
+        _seenTabs.add(def.id); tabs.push(def);
+      }
+    }
 
     let html = '';
     if(tabs.length > 1){
