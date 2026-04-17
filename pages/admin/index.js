@@ -15,7 +15,7 @@ const OS_TO_DB_GROUPS = {
   operations:   ["Operations OS"],
   business:     ["Revenue OS", "Operations OS"],
   marketing:    ["Marketing OS"],
-  agency:       ["Marketing OS"],
+  custom:       ["Revenue OS", "Operations OS", "Marketing OS"], // show all — custom clients have flexible setups
   team:         ["Operations OS"],
   retention:    ["Revenue OS", "Operations OS"],
   intelligence: ["Revenue OS"],
@@ -51,7 +51,7 @@ const OS_OPTIONS = [
   { value: "operations",   label: "Operations OS",   color: "#60a5fa" },
   { value: "business",     label: "Business OS",     color: "#a78bfa" },
   { value: "marketing",    label: "Marketing OS",    color: "#f472b6" },
-  { value: "agency",       label: "Agency OS",       color: "#60a5fa" },
+  { value: "custom",        label: "Custom",          color: "#e879f9" },
   { value: "team",         label: "Team OS",         color: "#fbbf24" },
   { value: "retention",    label: "Retention OS",    color: "#a16207" },
   { value: "intelligence", label: "Intelligence OS", color: "#f87171" },
@@ -338,7 +338,9 @@ export default function AdminPage() {
     return `${BASE_URL}${w.url}${sep}token=${token}`
   }
 
-  const isAgency = form.os_type?.includes("agency")
+  // Show Creaitors widget section if any assigned widgets use /creaitors/ routing
+  // Intentionally not tied to OS type — custom clients can have any routing
+  const isAgency = (form.custom_widgets || []).some(u => u.startsWith("/creaitors/")) || form.os_type?.includes("agency")
   const enabledCount = (form.custom_widgets || []).length
 
   // ── Login ──────────────────────────────────────────────────────────────────
