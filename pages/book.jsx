@@ -188,6 +188,10 @@ export default function Book() {
           background: #333;
           border-radius: 3px;
         }
+        .btn-back:hover {
+          border-color: #AAFF00 !important;
+          color: #AAFF00 !important;
+        }
       `}</style>
 
       <div style={styles.page}>
@@ -347,8 +351,8 @@ export default function Book() {
                 />
 
                 <div style={styles.btnRow}>
-                  <button style={styles.btnBack} onClick={prevStep}>
-                    ← Back
+                  <button className="btn-back" style={styles.btnBack} onClick={prevStep}>
+                    ←
                   </button>
                   <button
                     style={{
@@ -431,8 +435,8 @@ export default function Book() {
                 />
 
                 <div style={styles.btnRow}>
-                  <button style={styles.btnBack} onClick={prevStep}>
-                    ← Back
+                  <button className="btn-back" style={styles.btnBack} onClick={prevStep}>
+                    ←
                   </button>
                   <button
                     style={{
@@ -721,7 +725,7 @@ const styles = {
     background: "#AAFF00",
     color: "#000",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 14,
     padding: "14px 24px",
     fontSize: 15,
     fontWeight: 700,
@@ -738,14 +742,20 @@ const styles = {
   },
   btnBack: {
     flex: "0 0 auto",
+    width: 48,
+    height: 48,
+    marginTop: 8,
     background: "transparent",
     color: "#555",
     border: "1px solid #2a2a2a",
-    borderRadius: 8,
-    padding: "14px 20px",
-    fontSize: 15,
-    fontFamily: "Satoshi, sans-serif",
+    borderRadius: 14,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 18,
     cursor: "pointer",
+    transition: "border-color 0.15s, color 0.15s",
+    flexShrink: 0,
   },
   qualifiedBadge: {
     display: "inline-block",
