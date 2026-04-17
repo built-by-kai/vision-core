@@ -3,9 +3,12 @@ import Head from "next/head"
 
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "opxio-admin-2026"
 
+const BASE_URL = "https://widgets.opxio.io"
+
 const DB_GROUPS = {
   "Revenue OS":    ["LEADS","DEALS","QUOTATIONS","PROPOSALS","INVOICE","FINANCE"],
   "Operations OS": ["PROJECTS","PHASES","TASKS","MEETINGS","RETAINERS","SOPS"],
+  "Marketing OS":  ["CONTENT_DB","TASKS_DB","EMPLOYEE_DB","CAMPAIGNS_DB","KOL_DIRECTORY","INFLUENCER_CAMPAIGN","LIVE_SESSIONS","CLIENT_PAYMENTS"],
 }
 
 const WIDGETS = [
@@ -19,6 +22,18 @@ const WIDGETS = [
   { url: "/revenue/schedule",    label: "Schedule",         dbs: ["MEETINGS"],                   os: "revenue",    tier: "addon" },
   { url: "/revenue/finance",     label: "Finance Snapshot", dbs: ["FINANCE"],                    os: "revenue",    tier: "addon" },
   { url: "/operations/projects", label: "Projects",         dbs: ["PROJECTS","PHASES"],          os: "operations", tier: "base" },
+]
+
+// Agency/Creaitors-specific widgets (served via /creaitors/[os]/[widget] routing)
+const AGENCY_WIDGETS = [
+  { url: "/creaitors/marketing/executive?role=executive", label: "Executive Overview",   dbs: ["LEADS","DEALS","CONTENT_DB","CAMPAIGNS_DB"], tier: "base"  },
+  { url: "/creaitors/marketing/executive?role=pm",        label: "PM Overview",          dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                 tier: "base"  },
+  { url: "/creaitors/marketing/executive?role=hom",       label: "Head of Marketing",    dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                 tier: "base"  },
+  { url: "/creaitors/marketing/campaigns",                label: "Campaigns",            dbs: ["CAMPAIGNS_DB"],                              tier: "base"  },
+  { url: "/creaitors/marketing/content-production",       label: "Content Production",   dbs: ["CONTENT_DB","TASKS_DB"],                     tier: "base"  },
+  { url: "/creaitors/marketing/staff-breakdown",          label: "Staff Breakdown",      dbs: ["EMPLOYEE_DB","TASKS_DB"],                    tier: "base"  },
+  { url: "/creaitors/operations/bottlenecks",             label: "Bottlenecks",          dbs: ["CONTENT_DB","TASKS_DB"],                     tier: "base"  },
+  { url: "/creaitors/revenue/crm",                        label: "CRM + Win/Loss",       dbs: ["LEADS","DEALS"],                             tier: "base"  },
 ]
 
 const OS_OPTIONS = [
@@ -317,7 +332,7 @@ export default function AdminPage() {
             {WIDGETS.map(w => {
               const enabled = (urlClient.custom_widgets || []).includes(w.url)
               const missing = w.dbs.filter(db => !urlClient.databases?.[db])
-              const url = `https://dashboard.opxio.io${w.url}?token=${urlClient.access_token}`
+              const url = `${BASE_URL}${w.url}?token=${urlClient.access_token}`
               return (
                 <div key={w.url} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border2}`, opacity: enabled ? 1 : .35 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -335,6 +350,34 @@ export default function AdminPage() {
                 </div>
               )
             })}
+
+            {/* Agency Widgets section — only for agency clients */}
+            {(urlClient.os_type || []).includes("agency") && (
+              <>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "rgba(170,255,0,.55)", marginTop: 24, marginBottom: 12 }}>Agency Widgets</div>
+                {AGENCY_WIDGETS.map(w => {
+                  const enabled = (urlClient.custom_widgets || []).includes(w.url)
+                  const missing = w.dbs.filter(db => !urlClient.databases?.[db])
+                  const url = `${BASE_URL}${w.url}${w.url.includes("?") ? "&" : "?"}token=${urlClient.access_token}`
+                  return (
+                    <div key={w.url} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border2}`, opacity: enabled ? 1 : .35 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{w.label}</span>
+                          {enabled
+                            ? <span style={{ fontSize: 9, fontWeight: 700, background: C.limeDim, color: C.lime, border: `1px solid ${C.limeBorder}`, padding: "2px 7px", borderRadius: 4 }}>ENABLED</span>
+                            : <span style={{ fontSize: 9, fontWeight: 700, background: C.redDim, color: C.red, border: `1px solid ${C.redBorder}`, padding: "2px 7px", borderRadius: 4 }}>DISABLED</span>}
+                          <span style={{ fontSize: 9, fontWeight: 700, background: C.limeDim, color: C.lime, padding: "2px 7px", borderRadius: 4 }}>AGENCY</span>
+                          {missing.length > 0 && enabled && <span style={{ fontSize: 9, color: C.red }}>Missing: {missing.join(", ")}</span>}
+                        </div>
+                        <div style={{ fontFamily: "monospace", fontSize: 11, color: enabled ? C.lime : C.textDim, wordBreak: "break-all" }}>{url}</div>
+                      </div>
+                      <button onClick={() => copy(url)} style={{ background: C.limeDim, color: C.lime, border: `1px solid ${C.limeBorder}`, borderRadius: 6, fontSize: 10, fontWeight: 700, padding: "5px 12px", cursor: "pointer", marginLeft: 16, flexShrink: 0, whiteSpace: "nowrap" }}>Copy</button>
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -585,7 +628,7 @@ export default function AdminPage() {
                     <div>
                       <SectionHead>Widget Access</SectionHead>
                       <div style={{ fontSize: 11, color: C.textDim, marginBottom: 16 }}>Toggle which widgets this client has access to. Red "missing DBs" means the required database IDs aren't filled in under Notion & DBs.</div>
-                      <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+                      <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden", marginBottom: form.os_type.includes("agency") ? 24 : 0 }}>
                         {WIDGETS.map((w, i) => {
                           const enabled = form.custom_widgets.includes(w.url)
                           const missing = w.dbs.filter(db => !form.databases?.[db])
@@ -609,6 +652,37 @@ export default function AdminPage() {
                           )
                         })}
                       </div>
+
+                      {/* Agency Widgets — shown when os_type includes "agency" */}
+                      {form.os_type.includes("agency") && (
+                        <>
+                          <SectionHead>Agency Widgets</SectionHead>
+                          <div style={{ fontSize: 11, color: C.textDim, marginBottom: 16 }}>Served via <span style={{ fontFamily: "monospace" }}>/creaitors/[os]/[widget]</span> routing. Toggle active widgets for this agency client.</div>
+                          <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+                            {AGENCY_WIDGETS.map((w, i) => {
+                              const enabled = form.custom_widgets.includes(w.url)
+                              const missing = w.dbs.filter(db => !form.databases?.[db])
+                              return (
+                                <div key={w.url} onClick={() => toggleW(w.url)}
+                                  style={{ display: "flex", alignItems: "center", padding: "13px 16px", borderBottom: i < AGENCY_WIDGETS.length - 1 ? `1px solid ${C.border2}` : "none", cursor: "pointer", background: enabled ? "rgba(170,255,0,.03)" : "transparent" }}>
+                                  <div style={{ width: 34, height: 20, borderRadius: 99, background: enabled ? C.lime : "rgba(255,255,255,.1)", position: "relative", flexShrink: 0, transition: "background .2s" }}>
+                                    <div style={{ position: "absolute", top: 4, left: enabled ? 16 : 4, width: 12, height: 12, borderRadius: "50%", background: enabled ? "#111" : "rgba(255,255,255,.4)", transition: "left .2s" }} />
+                                  </div>
+                                  <div style={{ marginLeft: 14, flex: 1 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: enabled ? C.text : C.textMid }}>{w.label}</span>
+                                      <span style={{ fontSize: 9, fontWeight: 700, background: C.limeDim, color: C.lime, padding: "2px 6px", borderRadius: 4 }}>AGENCY</span>
+                                      {missing.length > 0 && enabled && <span style={{ fontSize: 10, color: C.red, fontWeight: 600 }}>⚠ missing: {missing.join(", ")}</span>}
+                                    </div>
+                                    <div style={{ fontSize: 10, color: C.textDim, fontFamily: "monospace" }}>{w.url}</div>
+                                  </div>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: enabled ? C.lime : C.textDim, marginLeft: 12 }}>{enabled ? "On" : "Off"}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -642,7 +716,7 @@ export default function AdminPage() {
                           <div style={{ fontSize: 11, color: C.textDim, marginBottom: 12 }}>Quick reference for building embed URLs for this client.</div>
                           <div style={{ background: C.surface, borderRadius: 9, padding: "12px 14px", border: `1px solid ${C.border}` }}>
                             <div style={{ fontFamily: "monospace", fontSize: 11, color: C.textMid, wordBreak: "break-all" }}>
-                              https://dashboard.opxio.io<span style={{ color: C.lime }}>/[widget-path]</span>?token=<span style={{ color: C.lime }}>{form.access_token?.slice(0, 12)}…</span>
+                              {BASE_URL}<span style={{ color: C.lime }}>/[widget-path]</span>?token=<span style={{ color: C.lime }}>{form.access_token?.slice(0, 12)}…</span>
                             </div>
                           </div>
                           <button onClick={() => setUrlModal(selected)} style={{ marginTop: 12, background: C.limeDim, color: C.lime, border: `1px solid ${C.limeBorder}`, fontSize: 12, fontWeight: 700, padding: "8px 18px", borderRadius: 8, cursor: "pointer" }}>
