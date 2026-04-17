@@ -47,7 +47,7 @@ body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
 .proj-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:2px;padding-bottom:8px;flex:1;min-height:0;}
-.proj-card{padding:18px 20px;position:relative;overflow:hidden;}
+.proj-card{padding:18px 20px;position:relative;overflow:hidden;flex-shrink:0;}
 .proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;}
 .proj-card:hover::before{opacity:1;}
 .proj-card.st-active::before,.proj-card.st-awaiting::before{background:linear-gradient(90deg,var(--g),transparent);}
