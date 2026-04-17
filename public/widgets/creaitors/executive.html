@@ -179,18 +179,18 @@ const _role   = (new URLSearchParams(location.search).get('role') || '').toLower
 // Role presets — bypass saved config when ?role= is set
 const ROLE_PRESETS = {
   executive: ['crm', 'crm-log', 'campaign', 'content'],
-  sales:     ['crm', 'crm-log'],
   pm:        ['campaign', 'content'],
+  hom:       ['kol', 'campaign', 'content'],
 };
 const ROLE_LABELS = {
   executive: 'Executive',
-  sales:     'Sales',
   pm:        'Project Manager',
+  hom:       'Head of Marketing',
 };
 const ROLE_TITLES = {
   executive: 'Executive Overview',
-  sales:     'Sales Overview',
   pm:        'Project Overview',
+  hom:       'Marketing Overview',
 };
 
 // Eyebrow: client name + role label if role is set, else just client name
@@ -212,6 +212,7 @@ const ROLE_TITLES = {
 const SECTIONS_CATALOG = [
   { id: 'campaign', label: 'Campaign Stats',     desc: 'Active campaigns, completion rate, deliverable progress', os: 'Marketing OS' },
   { id: 'content',  label: 'Content Production', desc: 'Content in motion, status breakdown, due this week',      os: 'Marketing OS' },
+  { id: 'kol',      label: 'KOL Status',         desc: 'KOL post progress, per-campaign KOL breakdown',           os: 'Marketing OS' },
   { id: 'crm',      label: 'Revenue Pipeline',   desc: 'Lead & deal funnels, potential value, conv. rate',        os: 'Revenue OS'   },
   { id: 'crm-log',  label: 'Win / Loss Log',      desc: 'Won deals, lost leads/deals, win rate, top reason',      os: 'Revenue OS'   },
 ];
@@ -321,6 +322,79 @@ function renderCampaign(d){
   } else {
     h += `<div class="empty">No active campaigns</div>`;
   }
+  return h + `</div>`;
+}
+
+// ── SECTION: KOL STATUS ──────────────────────────────────────────────────────
+function renderKOL(d){
+  const cb  = d.contentBreakdown || {};
+  const kol = cb.kol || { planned: 0, completed: 0 };
+  const rem = (kol.planned || 0) - (kol.completed || 0);
+  const pct = kol.planned > 0 ? Math.round((kol.completed / kol.planned) * 100) : 0;
+  const kolCamps = (d.campaignDetails || []).filter(c => (c.contentBreakdown?.kol?.planned || 0) > 0);
+
+  let h = `<div class="sec-lbl">KOL</div>
+  <div class="g4">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">KOL Posts Planned</span>
+      <div class="s-val">${kol.planned || '—'}</div>
+      <div class="s-sub">Across ${d.activeCampaigns||0} active campaigns</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Posted</span>
+      <div class="s-val">${kol.completed || 0}</div>
+      <div class="s-sub">of ${kol.planned||0} total KOL posts</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Completion</span>
+      <div class="s-val">${pct}%</div>
+      <div class="s-sub">KOL posting rate</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${rem > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Remaining</span>
+      <div class="s-val ${rem > 0 ? 'orange' : ''}">${rem}</div>
+      <div class="s-sub">${rem > 0 ? 'Posts still pending' : 'All posted'}</div>
+    </div>
+  </div>
+  <div class="full-row card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">KOL Progress by Campaign</span>
+      <span class="panel-badge">${kolCamps.length} campaign${kolCamps.length!==1?'s':''}</span>
+    </div>`;
+
+  if(kolCamps.length){
+    h += `<div class="camp-scroll">`;
+    for(const c of kolCamps){
+      const k   = c.contentBreakdown?.kol || { planned:0, completed:0 };
+      const cp  = k.planned > 0 ? Math.round((k.completed/k.planned)*100) : 0;
+      const col = pctColor(cp);
+      const kr  = k.planned - k.completed;
+      h += `<div class="camp-item">
+        <div class="camp-info">
+          <div class="camp-name">${esc(c.name)}</div>
+          <div class="camp-delivs">
+            <span style="color:rgba(255,255,255,.55);font-weight:700;">${k.planned} KOL Posts</span>
+            &nbsp;·&nbsp;${kr > 0
+              ? `<span style="color:var(--orange);">${kr} remaining</span>`
+              : `<span style="color:var(--g);">All posted</span>`}
+          </div>
+        </div>
+        ${c.type ? `<span class="camp-type">${esc(c.type)}</span>` : ''}
+        <div class="camp-bar-wrap">
+          <div class="camp-track"><div class="camp-fill" style="width:${Math.max(cp>0?4:0,cp)}%;background:${col};"></div></div>
+        </div>
+        <span class="camp-pct" style="color:${col};">${cp}%</span>
+      </div>`;
+    }
+    h += `</div>`;
+  } else {
+    h += `<div class="empty">No KOL posts in active campaigns</div>`;
+  }
+
   return h + `</div>`;
 }
 
@@ -658,7 +732,7 @@ async function load(){
     }
 
     // Step 2: fetch data for active sections (parallel, deduplicated)
-    const needCampaign = _sections.includes('campaign');
+    const needCampaign = _sections.includes('campaign') || _sections.includes('kol');
     const needContent  = _sections.includes('content');
     const needRevenue  = _sections.includes('crm') || _sections.includes('crm-log');
 
@@ -680,6 +754,7 @@ async function load(){
     const sectionHTML = {};
     for(const sec of _sections){
       if(sec === 'campaign' && data.campaign)           sectionHTML.campaign  = renderCampaign(data.campaign);
+      if(sec === 'kol'      && data.campaign)           sectionHTML.kol       = renderKOL(data.campaign);
       if(sec === 'content'  && data.content)            sectionHTML.content   = renderContent(data.content);
       if(sec === 'crm'      && data.pipe && data.deals) sectionHTML.crm       = renderCRM(data.pipe, data.deals);
       if(sec === 'crm-log'  && data.pipe && data.deals) sectionHTML['crm-log']= renderCRMLog(data.pipe, data.deals);
@@ -687,9 +762,10 @@ async function load(){
 
     // Build tab groups (crm + crm-log collapse into one Revenue tab)
     const TAB_DEFS = [
-      { id: 'campaign', label: 'Campaigns', secs: ['campaign'] },
-      { id: 'content',  label: 'Content',   secs: ['content']  },
-      { id: 'revenue',  label: 'Revenue',   secs: ['crm', 'crm-log'] },
+      { id: 'kol',      label: 'KOL',       secs: ['kol']             },
+      { id: 'campaign', label: 'Campaigns', secs: ['campaign']        },
+      { id: 'content',  label: 'Content',   secs: ['content']         },
+      { id: 'revenue',  label: 'Revenue',   secs: ['crm', 'crm-log']  },
     ];
     // Build tabs in section order (so preset order is respected)
     const _seenTabs = new Set();
