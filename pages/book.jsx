@@ -83,29 +83,23 @@ export default function Book() {
 
   // Inject Cal.com embed after qualified
   useEffect(() => {
-    if (result?.qualified && calEmbedRef.current) {
+    if (result?.qualified) {
       const script = document.createElement("script");
-      script.src = "https://cal.com/embed.js";
-      script.async = true;
-      script.onload = () => {
-        if (window.Cal) {
-          window.Cal("init", { origin: "https://cal.com" });
-          window.Cal("inline", {
-            elementOrSelector: "#cal-embed",
-            calLink: "kai-opxio/discovery-call",
-            config: {
-              name: form.name,
-              email: form.email,
-              notes: form.situation,
-              guests: [],
-            },
-          });
-          window.Cal("ui", {
-            styles: { branding: { brandColor: "#AAFF00" } },
-            hideEventTypeDetails: false,
-          });
-        }
-      };
+      script.type = "text/javascript";
+      script.text = `
+        (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; typeof namespace === "string" ? (cal.ns[namespace] = api) && p(api, ar) : p(cal, ar); return; } p(cal, ar); }; })(window, "https://cal.com/embed.js", "init");
+        Cal("init", { origin: "https://cal.com" });
+        Cal("inline", {
+          elementOrSelector: "#cal-embed",
+          calLink: "kai-opxio/discovery-call",
+          layout: "month_view"
+        });
+        Cal("ui", {
+          styles: { branding: { brandColor: "#AAFF00" } },
+          hideEventTypeDetails: false,
+          layout: "month_view"
+        });
+      `;
       document.body.appendChild(script);
     }
   }, [result]);
@@ -194,7 +188,7 @@ export default function Book() {
         }
       `}</style>
 
-      <div style={styles.page}>
+      <div style={{ ...styles.page, ...(step === 3 ? styles.pageResult : {}) }}>
         {/* Header */}
         <header style={styles.header}>
           <div style={styles.logo}>
@@ -240,7 +234,7 @@ export default function Book() {
         )}
 
         {/* Form Card */}
-        <div style={styles.cardWrap}>
+        <div style={{ ...styles.cardWrap, ...(step === 3 ? styles.cardWrapResult : {}) }}>
           <div style={styles.card}>
             {/* STEP 1: Contact */}
             {step === 0 && (
@@ -473,9 +467,6 @@ export default function Book() {
 
             {step === 3 && result && !result.qualified && (
               <div style={styles.disqualPage}>
-                <div style={styles.disqualIconWrap}>
-                  <span style={styles.disqualIcon}>✕</span>
-                </div>
                 <div style={styles.disqualBadge}>Not quite a fit — yet.</div>
                 <h2 style={styles.disqualTitle}>
                   We&apos;re not the right<br />match right now.
@@ -562,6 +553,9 @@ const styles = {
     alignItems: "center",
     background: "#0a0a0a",
   },
+  pageResult: {
+    justifyContent: "flex-start",
+  },
   header: {
     width: "100%",
     padding: "24px 32px",
@@ -629,6 +623,11 @@ const styles = {
     width: "100%",
     maxWidth: 680,
     padding: "0 24px 80px",
+  },
+  cardWrapResult: {
+    maxWidth: 560,
+    margin: "0 auto",
+    padding: "40px 24px 80px",
   },
   card: {
     background: "#111",
@@ -784,27 +783,11 @@ const styles = {
     overflow: "hidden",
   },
   disqualPage: {
-    padding: "64px 40px 56px",
+    padding: "56px 40px 56px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     textAlign: "center",
-  },
-  disqualIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: "50%",
-    background: "#ff444414",
-    border: "1px solid #ff444430",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  disqualIcon: {
-    color: "#ff6666",
-    fontSize: 20,
-    fontWeight: 700,
   },
   disqualBadge: {
     display: "inline-block",
