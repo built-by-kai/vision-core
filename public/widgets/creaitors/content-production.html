@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Opxio — Content Production</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;background:#191919;color:#fff;overflow-y:auto;overflow-x:hidden;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--red:#FF6B35;--redm:rgba(255,107,53,.12);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
+
+.card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(170,255,0,.1);}
+.btn{background:#252525;border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--gb);color:var(--g);}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.h-right{display:flex;align-items:center;gap:6px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
+.h-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.ts{font-size:10px;font-weight:500;color:rgba(255,255,255,.18);}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.22);margin:16px 0 8px;}
+
+/* Stat cards */
+.g4{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:820px){.g4{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:560px){.g4{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:16px 18px;position:relative;overflow:hidden;}
+.s-dot{position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;opacity:.6;}
+.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:10px;display:block;}
+.s-val{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
+.s-val.red{color:var(--red);}
+.s-val.amber{color:var(--amber);}
+.s-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:6px;}
+.s-sub.g{color:var(--g);}
+
+/* Bot row */
+.bot-row{display:grid;grid-template-columns:300px 1fr 1fr;gap:10px;margin-top:10px;}
+@media(max-width:900px){.bot-row{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.bot-row{grid-template-columns:1fr;}}
+
+/* Panel */
+.panel{padding:20px 22px;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);}
+.panel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+
+/* Task status list */
+.task-big{font-size:44px;font-weight:900;letter-spacing:-2.5px;line-height:1;color:var(--g);}
+.task-big-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#fff;margin-top:5px;margin-bottom:16px;}
+.task-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.task-mini{background:#252525;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:11px 12px;text-align:center;}
+.task-mini-val{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.task-mini-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.35);margin-top:5px;}
+.task-status-list{display:flex;flex-direction:column;gap:10px;}
+.ts-row{display:flex;align-items:center;gap:9px;}
+.ts-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ts-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);flex:1;}
+.ts-dash{width:42px;height:3px;border-radius:2px;flex-shrink:0;}
+.ts-count{font-size:14px;font-weight:900;letter-spacing:-.5px;min-width:22px;text-align:right;flex-shrink:0;}
+
+/* Content Status — campaigns-style progress rows */
+.prog-row{margin-bottom:14px;}
+.prog-row:last-child{margin-bottom:0;}
+.prog-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.prog-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);}
+.prog-count{font-size:11px;font-weight:800;color:#fff;}
+.prog-track{background:rgba(255,255,255,.05);border-radius:999px;height:8px;overflow:hidden;}
+.prog-fill{height:8px;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.prog-sub{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.22);margin-top:4px;}
+.prog-sub.done{color:var(--g);}
+.prog-sub.flag{color:var(--red);}
+
+/* Content by assignee bars */
+.assign-list{display:flex;flex-direction:column;gap:11px;}
+.assign-row{display:flex;align-items:center;gap:10px;}
+.assign-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);width:72px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.assign-track{flex:1;height:6px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
+.assign-fill{height:6px;border-radius:999px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
+.assign-count{font-size:13px;font-weight:900;color:#fff;min-width:20px;text-align:right;flex-shrink:0;letter-spacing:-.4px;}
+
+/* Loading / empty */
+.loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+.empty{padding:20px 0;text-align:center;font-size:12px;color:rgba(255,255,255,.2);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <p class="eyebrow" id="_eyebrow" data-os="Custom OS">CUSTOM OS</p>
+    <h1 class="h-title">Content Production</h1>
+  </div>
+  <div class="h-right">
+    <span class="ts" id="ts"></span>
+    <button class="btn" id="rb" onclick="loadData()">↻ Refresh</button>
+  </div>
+</div>
+
+<div id="dash">
+  <div class="loading"><div class="spinner"></div><div class="loading-text">Loading</div></div>
+</div>
+
+<script>
+const _tok = new URLSearchParams(location.search).get('token') || '';
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Semantic color by status label keyword
+function statusColor(label){
+  const l = (label||'').toLowerCase();
+  if(l.includes('done') || l.includes('published'))                          return 'var(--g)';
+  if(l.includes('ready for posting') || l.includes('ready to work'))         return '#FB923C';
+  if(l.includes('revision') || l.includes('review needed'))                  return 'var(--red)';
+  if(l.includes('pending qc') || l.includes('qc review') || l.includes('final qc')) return 'var(--amber)';
+  if(l.includes('qc') || l.includes('pending'))                              return 'var(--amber)';
+  if(l.includes('progress') || l.includes('production') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
+  if(l.includes('not started') || l.includes('waiting') || l.includes('pre-production')) return 'rgba(255,255,255,.35)';
+  return 'rgba(255,255,255,.35)';
+}
+
+function render(d){
+  const ab             = d.attentionBreakdown || {};
+  const overdue        = ab.overdue || 0;
+  const dueWeek        = d.dueThisWeek || 0;
+  const dueToday       = d.dueToday || 0;
+  const linked         = d.contentLinkedToCampaign || 0;
+  const assignees      = d.byAssignee || [];
+  const assigneeMax    = Math.max(...assignees.map(a => a.count), 1);
+  const assigneeTotal  = assignees.reduce((s, a) => s + a.count, 0);
+  const taskStatuses      = d.taskStatuses      || ['Not Started','In Progress','Pending QC','Revision','Done'];
+  const taskStatusCounts  = d.taskStatusCounts  || {};
+  const contentStatuses   = d.contentStatuses   || ['Pre-Production','In Production','Final QC Review','Revision Needed','Ready for Posting'];
+  const contentStatusCounts = d.contentStatusCounts || {};
+  const totalTasks     = d.tasksTotal || 0;
+
+  const qcCount = (d.tasksBreakdown || {}).qc || 0;
+
+  // ── Stat cards ──
+  let html = `<div class="g4">
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Content in Motion</span>
+      <div class="s-val">${d.contentInMotion ?? '—'}</div>
+      <div class="s-sub ${linked > 0 ? 'g' : ''}">${linked > 0 ? linked + ' linked to campaigns' : 'No campaign link'}</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--g);"></div>
+      <span class="s-lbl">Active Tasks</span>
+      <div class="s-val">${totalTasks}</div>
+      <div class="s-sub">${dueToday > 0 ? dueToday + ' due today' : 'None due today'}</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${dueWeek > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Due This Week</span>
+      <div class="s-val" style="${dueWeek > 0 ? 'color:var(--orange);' : ''}">${dueWeek}</div>
+      <div class="s-sub">Content &amp; tasks combined</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${qcCount > 0 ? 'var(--amber)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Pending QC</span>
+      <div class="s-val ${qcCount > 0 ? 'amber' : ''}">${qcCount}</div>
+      <div class="s-sub">Tasks awaiting QC review</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${overdue > 0 ? 'var(--red)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Overdue</span>
+      <div class="s-val ${overdue > 0 ? 'red' : ''}">${overdue}</div>
+      <div class="s-sub">Past deadline, not done</div>
+    </div>
+  </div>`;
+
+  html += `<div class="sec-lbl">Tasks &amp; Team</div>`;
+  html += `<div class="bot-row">`;
+
+  // ── Task status card ──
+  html += `<div class="card panel">
+    <div class="task-big">${totalTasks}</div>
+    <div class="task-big-lbl">Active Tasks</div>
+    <div class="task-mini-row">
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:var(--g);">${dueWeek}</div>
+        <div class="task-mini-lbl">Due This Week</div>
+      </div>
+      <div class="task-mini">
+        <div class="task-mini-val" style="color:${overdue > 0 ? 'var(--red)' : 'rgba(255,255,255,.3)'};">${overdue}</div>
+        <div class="task-mini-lbl">Overdue</div>
+      </div>
+    </div>
+    <div class="task-status-list">`;
+
+  for(const label of taskStatuses){
+    const count = taskStatusCounts[label] || 0;
+    const col   = statusColor(label);
+    const active = count > 0;
+    html += `<div class="ts-row">
+      <div class="ts-dot" style="background:${col};${!active?'opacity:.35;':''}"></div>
+      <span class="ts-label">${esc(label)}</span>
+      <div class="ts-dash" style="background:${active?col:'rgba(255,255,255,.1)'};"></div>
+      <span class="ts-count" style="color:${active?'#fff':'rgba(255,255,255,.25)'};">${count}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // ── Content Production Status ──
+  const csMax = Math.max(...contentStatuses.map(l => contentStatusCounts[l] || 0), 1);
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Content Status</span>
+      <span class="panel-badge">${d.contentInMotion || 0} active</span>
+    </div>`;
+  for(const label of contentStatuses){
+    const count = contentStatusCounts[label] || 0;
+    const col   = statusColor(label);
+    const pct   = Math.round((count / csMax) * 100);
+    const isDone   = label.toLowerCase().includes('done') || label.toLowerCase().includes('ready for posting');
+    const isFlag   = label.toLowerCase().includes('revision') || label.toLowerCase().includes('review needed');
+    const subClass = count > 0 ? (isDone ? 'done' : isFlag ? 'flag' : '') : '';
+    const subText  = count === 0 ? 'None' : isDone ? `${count} ready` : isFlag ? `${count} need attention` : `${count} pieces`;
+    html += `<div class="prog-row">
+      <div class="prog-header">
+        <span class="prog-label">${esc(label)}</span>
+        <span class="prog-count" style="color:${count>0?col:'rgba(255,255,255,.25)'};">${count}</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" style="width:${count > 0 ? Math.max(pct, 4) : 0}%;background:${col};opacity:${count>0?'.8':'.3'};"></div>
+      </div>
+      <div class="prog-sub ${subClass}">${subText}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // ── Content by Assignee ──
+  html += `<div class="card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Content Task by Assignee</span>
+      <span class="panel-badge">${assigneeTotal} active</span>
+    </div>`;
+
+  if(assignees.length > 0){
+    html += `<div class="assign-list">`;
+    for(const a of assignees){
+      const w = Math.round((a.count / assigneeMax) * 100);
+      html += `<div class="assign-row">
+        <span class="assign-name" title="${esc(a.name)}">${esc(a.name)}</span>
+        <div class="assign-track"><div class="assign-fill" style="width:${Math.max(w, a.count > 0 ? 6 : 0)}%;"></div></div>
+        <span class="assign-count">${a.count}</span>
+      </div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="empty">No active content</div>`;
+  }
+  html += `</div>`;
+
+  html += `</div>`; // bot-row
+
+  document.getElementById('dash').innerHTML = html;
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadData(){
+  document.getElementById('rb').textContent = '↻ Refreshing…';
+  try{
+    const r = await fetch('/api/marketing/content-stats?token='+_tok);
+    if(!r.ok) throw new Error('content-stats ' + r.status);
+    render(await r.json());
+  } catch(e){
+    document.getElementById('dash').innerHTML = `
+      <div class="loading">
+        <div style="font-size:12px;color:#FF6B6B;font-weight:700;">Failed to load</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;">${esc(e.message)}</div>
+      </div>`;
+  } finally {
+    document.getElementById('rb').textContent = '↻ Refresh';
+  }
+}
+
+loadData();
+setInterval(loadData, 600000);
+</script>
+
+<div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
+<script>
+(function(){
+  const el = document.getElementById('_eyebrow');
+  if(!el) return;
+  el.textContent = el.dataset.os.toUpperCase(); // default until API responds
+  const tok = new URLSearchParams(location.search).get('token');
+  if(!tok) return;
+  fetch('/api/client/info?token=' + tok)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · ' + el.dataset.os.toUpperCase(); })
+    .catch(() => {});
+})();
+</script>
+</body>
+</html>

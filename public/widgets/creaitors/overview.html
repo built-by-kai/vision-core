@@ -77,7 +77,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .f-row:last-child{margin-bottom:0;}
 .f-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.4);width:90px;flex-shrink:0;line-height:1.25;}
 .f-bg{flex:1;height:24px;border-radius:6px;background:rgba(255,255,255,.04);overflow:hidden;}
-.f-fill{height:100%;border-radius:6px;background:rgba(170,255,0,.4);}
+.f-fill{height:100%;border-radius:6px;background:var(--g);}
 .f-fill.lost{background:rgba(251,146,60,.4);}
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.5);width:22px;text-align:right;flex-shrink:0;}
 
@@ -238,7 +238,7 @@ function csColor(l){
   if(lc.includes('ready for posting') || lc.includes('ready to work'))             return 'var(--orange)';
   if(lc.includes('pending qc') || lc.includes('qc review') || lc.includes('final qc')) return 'var(--amber)';
   if(lc.includes('revision'))                                                        return 'var(--red)';
-  return 'rgba(170,255,0,.5)';
+  return 'var(--g)';
 }
 function tsColor(l){
   const lc = (l||'').toLowerCase();
@@ -246,7 +246,7 @@ function tsColor(l){
   if(lc.includes('pending qc')) return 'var(--amber)';
   if(lc.includes('review'))     return 'var(--red)';
   if(lc.includes('ready'))      return 'var(--orange)';
-  return 'rgba(170,255,0,.5)';
+  return 'var(--g)';
 }
 
 // ── SECTION: CAMPAIGN ────────────────────────────────────────────────────────
