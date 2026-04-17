@@ -223,9 +223,26 @@ async function handleBookingCreated(payload) {
   // Get company from lead if available
   const companyId = lead?.properties?.Company?.relation?.[0]?.id || null;
 
+  // Fetch company name for meeting title — format: "Meeting Type — Company"
+  let companyName = "";
+  if (companyId) {
+    try {
+      const cp = await notion("/pages/" + companyId.replace(/-/g, ""));
+      for (const v of Object.values(cp.properties || {})) {
+        if (v.type === "title") {
+          companyName = (v.title || []).map(t => t.plain_text || "").join("");
+          break;
+        }
+      }
+    } catch {}
+  }
+  const meetingTitle = companyName
+    ? `Discovery Call — ${companyName}`
+    : `Discovery Call — ${name}`;   // fallback to attendee name if no company yet
+
   // 2. Create Meeting
   const meetingProps = {
-    "Meeting Title":  { title: [{ text: { content: `Discovery Call — ${name}` } }] },
+    "Meeting Title":  { title: [{ text: { content: meetingTitle } }] },
     "Type":           { select: { name: "Discovery" } },
     "Status":         { select: { name: "Scheduled" } },
     "Date":           { date: { start: startTime } },

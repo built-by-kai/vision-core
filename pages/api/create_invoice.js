@@ -284,8 +284,8 @@ async function run(payload) {
       } catch {}
     }
     const projectName = companyName
-      ? `${companyName} — ${resolvedPackage || quoteType}`
-      : resolvedPackage || quoteType
+      ? `${companyName} — ${resolvedPackage || quoteType} Build`
+      : `${resolvedPackage || quoteType} Build`
 
     const projProps = {
       "Project Name": { title: [{ text: { content: projectName } }] },
