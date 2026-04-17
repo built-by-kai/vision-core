@@ -61,12 +61,15 @@ async function findCompany(name) {
 }
 
 async function createCompany(form) {
+  const props = {
+    Company: { title: [{ text: { content: form.company } }] },
+    Status:  { select: { name: "Prospect" } },
+  };
+  if (form.industry)  props.Industry  = { select: { name: form.industry } };
+  if (form.teamSize)  props["Team Size"] = { select: { name: form.teamSize } };
   const data = await notionFetch("/pages", "POST", {
     parent: { database_id: COMPANIES_DB },
-    properties: {
-      Company: { title: [{ text: { content: form.company } }] },
-      Status: { select: { name: "Prospect" } },
-    },
+    properties: props,
   });
   return data.id || null;
 }
