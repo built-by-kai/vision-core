@@ -115,7 +115,8 @@ function statusColor(label){
   if(l.includes('pending qc') || l.includes('qc review') || l.includes('final qc')) return 'var(--amber)';
   if(l.includes('qc') || l.includes('pending'))                              return 'var(--amber)';
   if(l.includes('progress') || l.includes('production') || l.includes('scripting') || l.includes('editing') || l.includes('recording')) return '#60A5FA';
-  if(l.includes('not started') || l.includes('waiting') || l.includes('pre-production')) return 'rgba(255,255,255,.35)';
+  if(l.includes('waiting'))                                                   return 'rgba(255,255,255,.45)';
+  if(l.includes('not started') || l.includes('pre-production'))              return 'rgba(255,255,255,.25)';
   return 'rgba(255,255,255,.35)';
 }
 
@@ -125,7 +126,7 @@ function render(d){
   const dueWeek        = d.dueThisWeek || 0;
   const dueToday       = d.dueToday || 0;
   const linked         = d.contentLinkedToCampaign || 0;
-  const taskStatuses      = d.taskStatuses      || ['Not Started','In Progress','Pending QC','Revision','Done'];
+  const taskStatuses      = (d.taskStatuses && d.taskStatuses.length > 0) ? d.taskStatuses : ['Waiting','Ready to Work','In progress','Pending QC Review','Review Needed','Ready for Posting'];
   const taskStatusCounts  = d.taskStatusCounts  || {};
   const contentStatuses   = d.contentStatuses   || ['Pre-Production','In Production','Final QC Review','Revision Needed','Ready for Posting'];
   const contentStatusCounts = d.contentStatusCounts || {};
