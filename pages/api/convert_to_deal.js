@@ -91,19 +91,18 @@ async function run(payload) {
     "Origin Lead": { relation: [{ id: leadId }] },
   }
 
-  if (companyRel)    dealProps["Company"]              = { relation: [{ id: companyRel }] }
-  if (contactRel)    dealProps["Primary Contact"]      = { relation: [{ id: contactRel }] }
-  if (osInterest)    dealProps["Packages"]             = { multi_select: [{ name: osInterest }] }
-  if (source)        dealProps["Source"]               = { select: { name: source } }
-  if (situation)     dealProps["Situation"]            = { rich_text: [{ text: { content: situation } }] }
-  if (discoveryCall) dealProps["Discovery Call"]       = { date: { start: discoveryCall } }
-  if (country)       dealProps["Country"]              = { select: { name: country } }
-  if (potentialVal)  dealProps["Deal Value (MYR)"]     = { number: potentialVal }
-  if (notes)         dealProps["Notes"]                = { rich_text: [{ text: { content: notes } }] }
-  if (teamSize)      dealProps["Team Size"]            = { select: { name: teamSize } }
-  if (industry)      dealProps["Industry"]             = { select: { name: industry } }
-  if (budgetRange)   dealProps["Budget Range"]         = { select: { name: budgetRange } }
-  if (monthlyRev)    dealProps["Monthly Revenue Range"] = { select: { name: monthlyRev } }
+  // ── Only set properties that exist in the Deals DB ───────────────────────
+  if (companyRel)    dealProps["Company"]          = { relation: [{ id: companyRel }] }
+  if (contactRel)    dealProps["Primary Contact"]  = { relation: [{ id: contactRel }] }
+  if (osInterest)    dealProps["Packages"]         = { multi_select: [{ name: osInterest }] }
+  if (situation)     dealProps["Situation"]        = { rich_text: [{ text: { content: situation } }] }
+  if (discoveryCall) dealProps["Discovery Call"]   = { date: { start: discoveryCall } }
+  if (country)       dealProps["Country"]          = { select: { name: country } }
+  if (potentialVal)  dealProps["Deal Value (MYR)"] = { number: potentialVal }
+  if (notes)         dealProps["Notes"]            = { rich_text: [{ text: { content: notes } }] }
+  // Source: skipped — Lead uses raw channel values (Instagram, LinkedIn etc.)
+  // while Deals uses intent-based categories. Map manually in Notion after creation.
+  // Team Size, Industry, Budget Range, Monthly Revenue — not in Deals DB schema.
 
   const dealPage = await createPage({
     parent:     { database_id: DB.DEALS },
