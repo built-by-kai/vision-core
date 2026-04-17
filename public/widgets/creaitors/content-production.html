@@ -39,9 +39,9 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .s-sub.g{color:var(--g);}
 
 /* Bot row */
-.bot-row{display:grid;grid-template-columns:300px 1fr 1fr;gap:10px;margin-top:10px;}
-@media(max-width:900px){.bot-row{grid-template-columns:1fr 1fr;}}
-@media(max-width:560px){.bot-row{grid-template-columns:1fr;}}
+.bot-row{display:grid;grid-template-columns:300px 1fr;gap:10px;margin-top:10px;}
+@media(max-width:700px){.bot-row{grid-template-columns:1fr;}}
+
 
 /* Panel */
 .panel{padding:20px 22px;}
@@ -75,13 +75,6 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .prog-sub.done{color:var(--g);}
 .prog-sub.flag{color:var(--red);}
 
-/* Content by assignee bars */
-.assign-list{display:flex;flex-direction:column;gap:11px;}
-.assign-row{display:flex;align-items:center;gap:10px;}
-.assign-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);width:72px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.assign-track{flex:1;height:6px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;}
-.assign-fill{height:6px;border-radius:999px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
-.assign-count{font-size:13px;font-weight:900;color:#fff;min-width:20px;text-align:right;flex-shrink:0;letter-spacing:-.4px;}
 
 /* Loading / empty */
 .loading{display:flex;align-items:center;justify-content:center;min-height:120px;flex-direction:column;gap:10px;}
@@ -132,9 +125,6 @@ function render(d){
   const dueWeek        = d.dueThisWeek || 0;
   const dueToday       = d.dueToday || 0;
   const linked         = d.contentLinkedToCampaign || 0;
-  const assignees      = d.byAssignee || [];
-  const assigneeMax    = Math.max(...assignees.map(a => a.count), 1);
-  const assigneeTotal  = assignees.reduce((s, a) => s + a.count, 0);
   const taskStatuses      = d.taskStatuses      || ['Not Started','In Progress','Pending QC','Revision','Done'];
   const taskStatusCounts  = d.taskStatusCounts  || {};
   const contentStatuses   = d.contentStatuses   || ['Pre-Production','In Production','Final QC Review','Revision Needed','Ready for Posting'];
@@ -234,29 +224,6 @@ function render(d){
       </div>
       <div class="prog-sub ${subClass}">${subText}</div>
     </div>`;
-  }
-  html += `</div>`;
-
-  // ── Content by Assignee ──
-  html += `<div class="card panel">
-    <div class="panel-hdr">
-      <span class="panel-title">Content Task by Assignee</span>
-      <span class="panel-badge">${assigneeTotal} active</span>
-    </div>`;
-
-  if(assignees.length > 0){
-    html += `<div class="assign-list">`;
-    for(const a of assignees){
-      const w = Math.round((a.count / assigneeMax) * 100);
-      html += `<div class="assign-row">
-        <span class="assign-name" title="${esc(a.name)}">${esc(a.name)}</span>
-        <div class="assign-track"><div class="assign-fill" style="width:${Math.max(w, a.count > 0 ? 6 : 0)}%;"></div></div>
-        <span class="assign-count">${a.count}</span>
-      </div>`;
-    }
-    html += `</div>`;
-  } else {
-    html += `<div class="empty">No active content</div>`;
   }
   html += `</div>`;
 

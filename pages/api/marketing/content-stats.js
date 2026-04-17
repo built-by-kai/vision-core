@@ -17,8 +17,6 @@ export default async function handler(req, res) {
   const NOTION_KEY = getNotionToken(client)
   const CONTENT_DB   = resolveDB(client, 'CONTENT_DB',   '3188b289e31a80e39bbbf1c01ffdd56b')
   const TASKS_DB     = resolveDB(client, 'TASKS_DB',     '3348b289e31a80dc89e1eb7ba5b49b1a')
-  // Accept either key name; EMPLOYEES_DB takes priority over legacy EMPLOYEE_DB
-  const EMPLOYEES_DB = resolveDB(client, 'EMPLOYEES_DB', null) || resolveDB(client, 'EMPLOYEE_DB', null)
 
   // ── Field name mapping (per-client overrides via Supabase field_map) ──────
   const F = {
@@ -83,24 +81,6 @@ export default async function handler(req, res) {
     const getStatus = p => p?.type === 'status' ? p.status?.name : null;
     const getDate   = p => p?.type === 'date'   ? p.date?.start : null;
 
-    // employeeMap built lazily after task pages are fetched (see below)
-    let employeeMap = {}; // { notionPageId → displayName }
-
-    // Resolve assignee names from People, Relation, or Rollup-of-relations field
-    const getAssignees = prop => {
-      if (!prop) return [];
-      if (prop.type === 'people')   return (prop.people   || []).map(u => u.name).filter(Boolean);
-      if (prop.type === 'relation') return (prop.relation || []).map(r => employeeMap[r.id]).filter(Boolean);
-      if (prop.type === 'rollup' && prop.rollup?.type === 'array') {
-        const ids = [];
-        for (const item of prop.rollup.array || []) {
-          if (item.type === 'relation') for (const r of item.relation || []) ids.push(r.id);
-        }
-        return [...new Set(ids)].map(id => employeeMap[id]).filter(Boolean);
-      }
-      return [];
-    };
-
     const now       = new Date();
     const todayStr  = now.toISOString().slice(0, 10);
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
@@ -114,42 +94,6 @@ export default async function handler(req, res) {
       }).catch(() => []),
     ]);
 
-    // ── Build employee map: collect unique relation IDs from Tasks "Assigned To",
-    //    then fetch each page individually. This works even when the Employees DB
-    //    itself is not shared with the integration (individual page access is separate).
-    {
-      const assignedField = 'Assigned To'; // Creaitors Tasks DB field name
-      const seenIds = new Set();
-      for (const page of taskPages) {
-        const prop = page.properties[assignedField] || page.properties[F.CONTENT_ASSIGNED];
-        if (prop?.type === 'relation') {
-          for (const r of prop.relation || []) seenIds.add(r.id);
-        }
-        if (prop?.type === 'people') {
-          for (const u of prop.people || []) {
-            if (u.id && u.name) employeeMap[u.id] = u.name;
-          }
-        }
-      }
-      // Fetch any relation IDs we don't already have names for
-      const idsToFetch = [...seenIds].filter(id => !employeeMap[id]);
-      if (idsToFetch.length > 0) {
-        const fetched = await Promise.all(
-          idsToFetch.map(id =>
-            fetch(`https://api.notion.com/v1/pages/${id}`, { headers })
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null)
-          )
-        );
-        for (const ep of fetched) {
-          if (!ep || !ep.id) continue;
-          const titleProp = Object.values(ep.properties || {}).find(v => v.type === 'title');
-          const name = titleProp ? (titleProp.title || []).map(t => t.plain_text).join('') : '';
-          if (name) employeeMap[ep.id] = name;
-        }
-      }
-    }
-
     // ── Content stats ──────────────────────────────────────────
     let contentInMotion          = 0;
     let contentLinkedToCampaign  = 0;
@@ -157,7 +101,6 @@ export default async function handler(req, res) {
     let contentQC                = 0;
     let contentOverdue           = 0;
     let contentDueThisWeek       = 0;
-    const assigneeCounts         = {};
     const contentStatusCounts    = {};
 
     for (const page of contentPages) {
@@ -178,12 +121,6 @@ export default async function handler(req, res) {
       // Check if linked to a campaign
       const campaignRel = p[F.CAMPAIGN]?.relation || [];
       if (campaignRel.length > 0) contentLinkedToCampaign++;
-
-      // Count active content per assignee
-      const people = getAssignees(p[F.CONTENT_ASSIGNED]);
-      for (const name of people) {
-        assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
-      }
 
       const deadline = getDate(p[F.CONTENT_DUE]) || getDate(p[F.PUBLISH_DUE]);
       if (deadline) {
@@ -229,14 +166,6 @@ export default async function handler(req, res) {
       if (status === L.taskQC)                                                                        tasksQC++;
       if (status === L.taskRevision)                                                                  tasksRevision++;
 
-      // Count active tasks per assignee (from Tasks DB "Assigned To" relation/people)
-      if (status !== L.taskDone) {
-        const taskPeople = getAssignees(p['Assigned To'] || p[F.CONTENT_ASSIGNED]);
-        for (const name of taskPeople) {
-          assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
-        }
-      }
-
       const dueDate = getDate(p[F.TASK_DUE]);
       if (dueDate) {
         if (dueDate < todayStr)        tasksOverdue++;
@@ -245,18 +174,11 @@ export default async function handler(req, res) {
       }
     }
 
-    // Sort assignees by count desc, cap at 8
-    const byAssignee = Object.entries(assigneeCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-
     return res.status(200).json({
       // Card 1: Content in Motion
       contentInMotion,
       contentLinkedToCampaign,
       contentBreakdown: { revision: contentRevision, qc: contentQC },
-      byAssignee,
 
       // Card 2: Active Tasks
       tasksTotal,

@@ -126,7 +126,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .sect-info{flex:1;min-width:0;}
 .sect-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);}
 .sect-desc{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px;}
-.sect-os{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:4px;background:rgba(170,255,0,.08);color:rgba(170,255,0,.6);border:1px solid rgba(170,255,0,.12);flex-shrink:0;}
+.sect-os{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:4px;background:rgba(170,255,0,.08);color:var(--g);border:1px solid rgba(170,255,0,.12);flex-shrink:0;}
 .drawer-actions{display:flex;gap:8px;}
 .btn-save{flex:1;background:var(--g);border:none;color:#000;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:900;padding:12px;border-radius:10px;cursor:pointer;transition:opacity .2s;letter-spacing:-.2px;}
 .btn-save:hover{opacity:.88;}
@@ -510,7 +510,7 @@ function renderContent(d){
       const cnt = cCounts[s]||0, pct = Math.round((cnt/csMax)*100), col = csColor(s);
       h += `<div class="cs-row">
         <span class="cs-lbl">${esc(s)}</span>
-        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
+        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:1;"></div></div>
         <span class="cs-count" style="color:${col};">${cnt}</span>
       </div>`;
     }
@@ -526,7 +526,7 @@ function renderContent(d){
       const cnt = tCounts[s]||0, pct = Math.round((cnt/tsMax)*100), col = tsColor(s);
       h += `<div class="cs-row">
         <span class="cs-lbl">${esc(s)}</span>
-        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:.85;"></div></div>
+        <div class="cs-track"><div class="cs-fill" style="width:${pct}%;background:${col};opacity:1;"></div></div>
         <span class="cs-count" style="color:${col};">${cnt}</span>
       </div>`;
     }
