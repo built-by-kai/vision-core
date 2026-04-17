@@ -209,11 +209,16 @@ export default async function handler(req, res) {
     // ── COMPLETE TASK ─────────────────────────────────────────────────────────
     if (action === 'complete') {
       const isPostingTask = /posting/i.test(taskName);
-      if (isPostingTask) {
-        const postingLink = props['Posting Link']?.url || null;
-        if (!postingLink?.trim()) {
-          return actionError(taskPageId, `Cannot complete "${taskName}" — make sure the Posting Link has been filled before marking as done.`);
-        }
+
+      // Non-posting tasks must go through QC — block direct completion
+      if (!isPostingTask) {
+        return actionError(taskPageId, `"${taskName}" cannot be completed directly. All tasks must go through QC review first — use Submit for QC.`);
+      }
+
+      // Posting task: require posting link before completing
+      const postingLink = props['Posting Link']?.url || null;
+      if (!postingLink?.trim()) {
+        return actionError(taskPageId, `Cannot complete "${taskName}" — make sure the Posting Link has been filled before marking as done.`);
       }
 
       const startedOnRaw     = props['Task Started On']?.date?.start || null;
