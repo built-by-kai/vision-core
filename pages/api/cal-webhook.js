@@ -124,9 +124,6 @@ async function handleBookingCreated(payload) {
       "Stage":          { status: { name: "Discovery Booked" } },
       "Discovery Call": { date: { start: startTime } },
     };
-    if (meetingId) {
-      leadUpdate["Meetings"] = { relation: [{ id: meetingId }] };
-    }
     await notion("/pages/" + leadId, "PATCH", { properties: leadUpdate });
   }
 
