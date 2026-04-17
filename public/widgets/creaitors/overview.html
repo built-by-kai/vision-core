@@ -180,7 +180,7 @@ const _role   = (new URLSearchParams(location.search).get('role') || '').toLower
 const ROLE_PRESETS = {
   leadership: ['crm', 'crm-log', 'campaign', 'content'],
   pm:        ['campaign', 'content'],
-  hom:       ['kol', 'campaign', 'content'],
+  hom:       ['campaign', 'content', 'kol'],
 };
 const ROLE_LABELS = {
   leadership: 'Leadership',
@@ -351,7 +351,8 @@ function renderKOL(d){
   };
 
   const fmtNum = n => n == null ? '—' : n >= 1000000 ? (n/1000000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : n;
-  const fmtRM  = n => n ? 'RM ' + n.toLocaleString() : '—';
+  const fmtRM     = n => n ? 'RM ' + n.toLocaleString() : '—';
+  const notionUrl = id => id ? `https://notion.so/${id.replace(/-/g,'')}` : null;
 
   let h = `<div class="sec-lbl">KOL & Talent</div>
 
@@ -395,9 +396,10 @@ function renderKOL(d){
     for(const k of kols.list){
       const sc = KOL_STATUS_COLOR[k.status] || 'rgba(255,255,255,.3)';
       const platStr = (k.platforms || []).join(' · ') || '—';
-      h += `<div class="camp-item">
+      const kUrl = notionUrl(k.id);
+      h += `<${kUrl ? `a href="${kUrl}" target="_blank" rel="noopener"` : 'div'} class="camp-item" style="${kUrl ? 'text-decoration:none;cursor:pointer;' : ''}">
         <div class="camp-info">
-          <div class="camp-name">${esc(k.name)}</div>
+          <div class="camp-name" style="color:rgba(255,255,255,.85);">${esc(k.name)}</div>
           <div class="camp-delivs">
             <span style="color:rgba(255,255,255,.4);">${platStr}</span>
             ${k.followers ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.5);">${fmtNum(k.followers)} followers</span>` : ''}
@@ -406,7 +408,7 @@ function renderKOL(d){
           </div>
         </div>
         <span class="camp-type" style="background:${sc}22;color:${sc};border-color:${sc}44;">${esc(k.status)}</span>
-      </div>`;
+      </${kUrl ? 'a' : 'div'}>`;
     }
     h += `</div>`;
   } else {
@@ -428,9 +430,10 @@ function renderKOL(d){
       const sc  = CAMP_STATUS_COLOR[c.status]    || 'rgba(255,255,255,.3)';
       const pc  = PAY_STATUS_COLOR[c.paymentStatus] || 'rgba(255,255,255,.3)';
       const platStr = (c.platforms || []).join(' · ') || '—';
-      h += `<div class="camp-item">
+      const cUrl = notionUrl(c.id);
+      h += `<${cUrl ? `a href="${cUrl}" target="_blank" rel="noopener"` : 'div'} class="camp-item" style="${cUrl ? 'text-decoration:none;cursor:pointer;' : ''}">
         <div class="camp-info">
-          <div class="camp-name">${esc(c.title)}</div>
+          <div class="camp-name" style="color:rgba(255,255,255,.85);">${esc(c.title)}</div>
           <div class="camp-delivs">
             <span style="color:rgba(255,255,255,.4);">${platStr}</span>
             ${c.fee ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.5);">${fmtRM(c.fee)}</span>` : ''}
@@ -442,7 +445,7 @@ function renderKOL(d){
           <span class="camp-type" style="background:${sc}22;color:${sc};border-color:${sc}44;">${esc(c.status)}</span>
           <span class="camp-type" style="background:${pc}22;color:${pc};border-color:${pc}44;">${esc(c.paymentStatus)}</span>
         </div>
-      </div>`;
+      </${cUrl ? 'a' : 'div'}>`;
     }
     h += `</div>`;
   } else {

@@ -12,15 +12,23 @@ import path from 'path'
 
 export default function WidgetPage() { return null }
 
+// Maps clean short names → actual file names in standard OS folders
+const WIDGET_ALIASES = {
+  'content': 'content-production',
+  'staff':   'staff-breakdown',
+}
+
 export async function getServerSideProps({ params, res }) {
   const { widget } = params
+  const fileWidget = WIDGET_ALIASES[widget] || widget
   const publicDir = path.join(process.cwd(), 'public', 'widgets')
 
   const candidates = [
-    path.join(publicDir, 'creaitors',   `${widget}.html`),
-    path.join(publicDir, 'marketing',   `${widget}.html`),
-    path.join(publicDir, 'operations',  `${widget}.html`),
-    path.join(publicDir, 'revenue',     `${widget}.html`),
+    path.join(publicDir, 'creaitors',   `${widget}.html`),     // exact match override first
+    path.join(publicDir, 'creaitors',   `${fileWidget}.html`), // aliased override
+    path.join(publicDir, 'marketing',   `${fileWidget}.html`),
+    path.join(publicDir, 'operations',  `${fileWidget}.html`),
+    path.join(publicDir, 'revenue',     `${fileWidget}.html`),
   ]
 
   let html = null
