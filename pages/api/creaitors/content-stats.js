@@ -52,16 +52,9 @@ export default async function handler(req, res) {
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
     // Fetch all active content (not Done) and all active tasks (not Done) in parallel
+    // Fetch all content (Done needed for status panel count) + non-Done tasks only
     const [contentPages, taskPages] = await Promise.all([
-      queryAll(CONTENT_DB, {
-        and: [
-          {
-            or: [
-              { property: 'Content Status', status: { does_not_equal: 'Done' } },
-            ]
-          }
-        ]
-      }).catch(() => queryAll(CONTENT_DB)), // fallback: fetch all
+      queryAll(CONTENT_DB),
       queryAll(TASKS_DB, {
         property: 'Task Status',
         status: { does_not_equal: 'Done' },
@@ -81,13 +74,17 @@ export default async function handler(req, res) {
     for (const page of contentPages) {
       const p      = page.properties;
       const status = getStatus(p['Content Status']);
-      if (!status || status === 'Done') continue;
+      if (!status) continue;
+
+      // Always count for status breakdown (including Done)
+      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
+
+      // Active stats exclude Done
+      if (status === 'Done') continue;
 
       if (ACTIVE_STATUSES.includes(status)) contentInMotion++;
       if (status === 'Revision Needed')     contentRevision++;
       if (status === 'Final QC Review')     contentQC++;
-
-      contentStatusCounts[status] = (contentStatusCounts[status] || 0) + 1;
 
       const deadline = getDate(p['Content Due']) || getDate(p['Publish Due']);
       if (deadline) {

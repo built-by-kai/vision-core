@@ -105,12 +105,9 @@ export default async function handler(req, res) {
     const todayStr  = now.toISOString().slice(0, 10);
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
-    // Fetch active content + non-Done tasks in parallel (Notion-side filters)
+    // Fetch all content (Done is needed for status panel count) + non-Done tasks in parallel
     const [contentPages, taskPages] = await Promise.all([
-      queryAll(CONTENT_DB, {
-        property: 'Content Status',
-        status: { does_not_equal: 'Done' },
-      }).catch(() => queryAll(CONTENT_DB)),
+      queryAll(CONTENT_DB),
       queryAll(TASKS_DB, {
         property: 'Task Status',
         status: { does_not_equal: 'Done' },
