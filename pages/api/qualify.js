@@ -46,7 +46,11 @@ async function notionFetch(path, method = "GET", body = null) {
     headers: HEADERS,
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  return res.json();
+  const data = await res.json();
+  if (data.object === "error") {
+    console.error(`[qualify] Notion ${method} ${path} error:`, data.message, body ? JSON.stringify(body).slice(0, 300) : "");
+  }
+  return data;
 }
 
 // Safely append an ID to a relation without wiping existing entries
