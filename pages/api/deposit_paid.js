@@ -51,7 +51,7 @@ async function triggerSetupProject(projectId) {
   try {
     const apiUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : "https://widgets.opxio.io"
+      : "https://api.opxio.io"
     const r = await fetch(`${apiUrl}/api/setup_project`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },

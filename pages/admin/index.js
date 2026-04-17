@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import Head from "next/head"
 
-const BASE_URL = "https://widgets.opxio.io"
+const BASE_URL = "https://api.opxio.io"
 
 const DB_GROUPS = {
   "Revenue OS":    ["LEADS","DEALS","QUOTATIONS","PROPOSALS","INVOICE","FINANCE"],
