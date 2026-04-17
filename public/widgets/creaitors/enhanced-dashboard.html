@@ -327,72 +327,126 @@ function renderCampaign(d){
 
 // ── SECTION: KOL STATUS ──────────────────────────────────────────────────────
 function renderKOL(d){
-  const cb  = d.contentBreakdown || {};
-  const kol = cb.kol || { planned: 0, completed: 0 };
-  const rem = (kol.planned || 0) - (kol.completed || 0);
-  const pct = kol.planned > 0 ? Math.round((kol.completed / kol.planned) * 100) : 0;
-  const kolCamps = (d.campaignDetails || []).filter(c => (c.contentBreakdown?.kol?.planned || 0) > 0);
+  const kols      = d.kols      || { total:0, byStatus:{}, byPlatform:{}, list:[] };
+  const campaigns = d.campaigns || { total:0, byStatus:{}, byPayment:{}, totalFee:0, unpaidFee:0, list:[] };
 
-  let h = `<div class="sec-lbl">KOL</div>
+  // Status colour map for KOLs
+  const KOL_STATUS_COLOR = {
+    'Active':        'var(--g)',
+    'In Discussion': 'var(--orange)',
+    'On Hold':       '#f87171',
+    'Inactive':      'rgba(255,255,255,.25)',
+  };
+  const PAY_STATUS_COLOR = {
+    'Paid':     'var(--g)',
+    'Pending':  'var(--orange)',
+    'Overdue':  '#f87171',
+    'Invoiced': '#60a5fa',
+  };
+  const CAMP_STATUS_COLOR = {
+    'Posted':      'var(--g)',
+    'In Progress': 'var(--orange)',
+    'Listing':     '#60a5fa',
+    'Done':        'var(--g)',
+  };
+
+  const fmtNum = n => n == null ? '—' : n >= 1000000 ? (n/1000000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : n;
+  const fmtRM  = n => n ? 'RM ' + n.toLocaleString() : '—';
+
+  let h = `<div class="sec-lbl">KOL & Talent</div>
+
+  <!-- KOL stat cards -->
   <div class="g4">
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
-      <span class="s-lbl">KOL Posts Planned</span>
-      <div class="s-val">${kol.planned || '—'}</div>
-      <div class="s-sub">Across ${d.activeCampaigns||0} active campaigns</div>
+      <span class="s-lbl">Total KOLs</span>
+      <div class="s-val">${kols.total}</div>
+      <div class="s-sub">In directory</div>
     </div>
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
-      <span class="s-lbl">Posted</span>
-      <div class="s-val">${kol.completed || 0}</div>
-      <div class="s-sub">of ${kol.planned||0} total KOL posts</div>
+      <span class="s-lbl">Active KOLs</span>
+      <div class="s-val">${kols.byStatus['Active'] || 0}</div>
+      <div class="s-sub">${kols.byStatus['In Discussion'] || 0} in discussion</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:${campaigns.unpaidFee > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
+      <span class="s-lbl">Unpaid KOL Fees</span>
+      <div class="s-val ${campaigns.unpaidFee > 0 ? 'orange' : ''}">${fmtRM(campaigns.unpaidFee)}</div>
+      <div class="s-sub">${fmtRM(campaigns.totalFee)} total committed</div>
     </div>
     <div class="card stat">
       <div class="s-dot" style="background:var(--g);"></div>
-      <span class="s-lbl">Completion</span>
-      <div class="s-val">${pct}%</div>
-      <div class="s-sub">KOL posting rate</div>
-    </div>
-    <div class="card stat">
-      <div class="s-dot" style="background:${rem > 0 ? 'var(--orange)' : 'var(--g)'};"></div>
-      <span class="s-lbl">Remaining</span>
-      <div class="s-val ${rem > 0 ? 'orange' : ''}">${rem}</div>
-      <div class="s-sub">${rem > 0 ? 'Posts still pending' : 'All posted'}</div>
+      <span class="s-lbl">Campaigns</span>
+      <div class="s-val">${campaigns.total}</div>
+      <div class="s-sub">${campaigns.byStatus['Posted'] || 0} posted · ${campaigns.byStatus['In Progress'] || 0} active</div>
     </div>
   </div>
+
+  <!-- KOL Directory list -->
   <div class="full-row card panel">
     <div class="panel-hdr">
-      <span class="panel-title">KOL Progress by Campaign</span>
-      <span class="panel-badge">${kolCamps.length} campaign${kolCamps.length!==1?'s':''}</span>
+      <span class="panel-title">KOL Directory</span>
+      <span class="panel-badge">${kols.total} talent${kols.total !== 1 ? 's' : ''}</span>
     </div>`;
 
-  if(kolCamps.length){
+  if(kols.list.length){
     h += `<div class="camp-scroll">`;
-    for(const c of kolCamps){
-      const k   = c.contentBreakdown?.kol || { planned:0, completed:0 };
-      const cp  = k.planned > 0 ? Math.round((k.completed/k.planned)*100) : 0;
-      const col = pctColor(cp);
-      const kr  = k.planned - k.completed;
+    for(const k of kols.list){
+      const sc = KOL_STATUS_COLOR[k.status] || 'rgba(255,255,255,.3)';
+      const platStr = (k.platforms || []).join(' · ') || '—';
       h += `<div class="camp-item">
         <div class="camp-info">
-          <div class="camp-name">${esc(c.name)}</div>
+          <div class="camp-name">${esc(k.name)}</div>
           <div class="camp-delivs">
-            <span style="color:rgba(255,255,255,.55);font-weight:700;">${k.planned} KOL Posts</span>
-            &nbsp;·&nbsp;${kr > 0
-              ? `<span style="color:var(--orange);">${kr} remaining</span>`
-              : `<span style="color:var(--g);">All posted</span>`}
+            <span style="color:rgba(255,255,255,.4);">${platStr}</span>
+            ${k.followers ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.5);">${fmtNum(k.followers)} followers</span>` : ''}
+            ${k.avgViews  ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.5);">${fmtNum(k.avgViews)} avg views</span>`  : ''}
+            ${k.category  ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.35);">${esc(k.category)}</span>` : ''}
           </div>
         </div>
-        ${c.type ? `<span class="camp-type">${esc(c.type)}</span>` : ''}
-        <div class="camp-bar-wrap">
-          <div class="camp-track"><div class="camp-fill" style="width:${Math.max(cp>0?4:0,cp)}%;background:${col};"></div></div>
-        </div>
-        <span class="camp-pct" style="color:${col};">${cp}%</span>
+        <span class="camp-type" style="background:${sc}22;color:${sc};border-color:${sc}44;">${esc(k.status)}</span>
       </div>`;
     }
     h += `</div>`;
   } else {
-    h += `<div class="empty">No KOL posts in active campaigns</div>`;
+    h += `<div class="empty">No KOLs in directory yet</div>`;
+  }
+
+  h += `</div>
+
+  <!-- Influencer Campaigns list -->
+  <div class="full-row card panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Influencer Campaigns</span>
+      <span class="panel-badge">${campaigns.total} campaign${campaigns.total !== 1 ? 's' : ''}</span>
+    </div>`;
+
+  if(campaigns.list.length){
+    h += `<div class="camp-scroll">`;
+    for(const c of campaigns.list){
+      const sc  = CAMP_STATUS_COLOR[c.status]    || 'rgba(255,255,255,.3)';
+      const pc  = PAY_STATUS_COLOR[c.paymentStatus] || 'rgba(255,255,255,.3)';
+      const platStr = (c.platforms || []).join(' · ') || '—';
+      h += `<div class="camp-item">
+        <div class="camp-info">
+          <div class="camp-name">${esc(c.title)}</div>
+          <div class="camp-delivs">
+            <span style="color:rgba(255,255,255,.4);">${platStr}</span>
+            ${c.fee ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.5);">${fmtRM(c.fee)}</span>` : ''}
+            ${c.postingDate ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.35);">${c.postingDate}</span>` : ''}
+            ${c.views ? `&nbsp;·&nbsp;<span style="color:rgba(255,255,255,.4);">${fmtNum(c.views)} views</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <span class="camp-type" style="background:${sc}22;color:${sc};border-color:${sc}44;">${esc(c.status)}</span>
+          <span class="camp-type" style="background:${pc}22;color:${pc};border-color:${pc}44;">${esc(c.paymentStatus)}</span>
+        </div>
+      </div>`;
+    }
+    h += `</div>`;
+  } else {
+    h += `<div class="empty">No influencer campaigns yet</div>`;
   }
 
   return h + `</div>`;
@@ -732,12 +786,14 @@ async function load(){
     }
 
     // Step 2: fetch data for active sections (parallel, deduplicated)
-    const needCampaign = _sections.includes('campaign') || _sections.includes('kol');
+    const needCampaign = _sections.includes('campaign');
+    const needKol      = _sections.includes('kol');
     const needContent  = _sections.includes('content');
     const needRevenue  = _sections.includes('crm') || _sections.includes('crm-log');
 
     const fetchMap = {};
     if(needCampaign) fetchMap.campaign = fetch('/api/creaitors/campaign-stats?token='+_tok).then(r=>r.json());
+    if(needKol)      fetchMap.kol      = fetch('/api/creaitors/kol-data?token='+_tok).then(r=>r.json());
     if(needContent)  fetchMap.content  = fetch('/api/creaitors/content-stats?token='+_tok).then(r=>r.json());
     if(needRevenue){
       fetchMap.pipe  = fetch('/api/data/pipeline?token='+_tok).then(r=>r.json());
@@ -754,7 +810,7 @@ async function load(){
     const sectionHTML = {};
     for(const sec of _sections){
       if(sec === 'campaign' && data.campaign)           sectionHTML.campaign  = renderCampaign(data.campaign);
-      if(sec === 'kol'      && data.campaign)           sectionHTML.kol       = renderKOL(data.campaign);
+      if(sec === 'kol'      && data.kol)                 sectionHTML.kol       = renderKOL(data.kol);
       if(sec === 'content'  && data.content)            sectionHTML.content   = renderContent(data.content);
       if(sec === 'crm'      && data.pipe && data.deals) sectionHTML.crm       = renderCRM(data.pipe, data.deals);
       if(sec === 'crm-log'  && data.pipe && data.deals) sectionHTML['crm-log']= renderCRMLog(data.pipe, data.deals);
