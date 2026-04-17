@@ -80,8 +80,10 @@ async function createCompany(form) {
   if (form.teamSize) props["Team Size"]   = { select: { name: form.teamSize } };
   if (form.country)  props.Country        = { select: { name: form.country } };
 
-  // Created On — full ISO timestamp
-  props["Created On"] = { date: { start: new Date().toISOString() } };
+  // Created On — date + time, no milliseconds or timezone offset
+  const now = new Date();
+  const localDT = now.toISOString().slice(0, 19); // "2026-04-17T15:35:00"
+  props["Created On"] = { date: { start: localDT } };
 
   // Billing Currency — default from country
   const COUNTRY_CURRENCY = {
