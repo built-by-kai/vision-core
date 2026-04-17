@@ -36,9 +36,9 @@ const WIDGETS = [
 ]
 
 const AGENCY_WIDGETS = [
-  { url: "/creaitors/marketing/executive?role=executive", label: "Executive Overview",  dbs: ["LEADS","DEALS","CONTENT_DB","CAMPAIGNS_DB"], tier: "base" },
-  { url: "/creaitors/marketing/executive?role=pm",        label: "PM Overview",         dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
-  { url: "/creaitors/marketing/executive?role=hom",       label: "Head of Marketing",   dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
+  { url: "/creaitors/marketing/enhanced-dashboard?role=executive", label: "Executive Overview",  dbs: ["LEADS","DEALS","CONTENT_DB","CAMPAIGNS_DB"], tier: "base" },
+  { url: "/creaitors/marketing/enhanced-dashboard?role=pm",        label: "PM Overview",         dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
+  { url: "/creaitors/marketing/enhanced-dashboard?role=hom",       label: "Head of Marketing",   dbs: ["CONTENT_DB","CAMPAIGNS_DB"],                tier: "base" },
   { url: "/creaitors/marketing/campaigns",                label: "Campaigns",           dbs: ["CAMPAIGNS_DB"],                             tier: "base" },
   { url: "/creaitors/marketing/content-production",       label: "Content Production",  dbs: ["CONTENT_DB","TASKS_DB"],                    tier: "base" },
   { url: "/creaitors/marketing/staff-breakdown",          label: "Staff Breakdown",     dbs: ["EMPLOYEE_DB","TASKS_DB"],                   tier: "base" },
