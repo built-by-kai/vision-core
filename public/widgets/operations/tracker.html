@@ -3,8 +3,8 @@
 <title>Opxio — Project Tracker</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-x:hidden;overflow-y:hidden;display:flex;flex-direction:column;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
@@ -19,7 +19,10 @@ body.light .card{background:#fff;border-color:rgba(0,0,0,.06);}
 .btn:hover{border-color:var(--gb);color:var(--g);}
 body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
 
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;flex-shrink:0;}
+.g5{flex-shrink:0;}
+.tab-row{flex-shrink:0;}
+.sec-lbl{flex-shrink:0;}
 .h-right{display:flex;align-items:center;gap:6px;}
 .eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
@@ -43,8 +46,8 @@ body.light .s-lbl{color:rgba(0,0,0,.4);}
 body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
-.proj-list{display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto;padding-right:2px;min-height:0;}
-.proj-card{padding:18px 20px;position:relative;overflow:hidden;}
+.proj-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:2px;padding-bottom:8px;flex:1;min-height:0;}
+.proj-card{padding:18px 20px;position:relative;}
 .proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;border-radius:14px 14px 0 0;}
 .proj-card:hover::before{opacity:1;}
 .proj-card.st-active::before{background:linear-gradient(90deg,var(--g),transparent);}
@@ -83,15 +86,15 @@ body.light .tab{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
 body.light .tab:hover{border-color:rgba(0,0,0,.15);color:rgba(0,0,0,.5);}
 body.light .tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
 
-.pc-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;width:160px;}
+.pc-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;width:180px;}
 @media(max-width:600px){.pc-right{width:100%;align-items:stretch;}}
-.pc-pct-big{font-size:28px;font-weight:900;color:var(--g);letter-spacing:-1.5px;line-height:1;}
-.pc-pct-big.zero{color:rgba(255,255,255,.15);}
-body.light .pc-pct-big.zero{color:rgba(0,0,0,.12);}
-.pc-progress{width:100%;}
-.pc-track{width:100%;height:4px;border-radius:999px;background:rgba(255,255,255,.07);}
+.pc-progress{display:flex;align-items:center;gap:8px;width:100%;}
+.pc-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
 body.light .pc-track{background:rgba(0,0,0,.08);}
-.pc-fill{height:4px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pc-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pc-pct{font-size:15px;font-weight:900;color:var(--g);width:40px;text-align:right;flex-shrink:0;letter-spacing:-.5px;}
+.pc-pct.zero{color:rgba(255,255,255,.2);}
+body.light .pc-pct.zero{color:rgba(0,0,0,.15);}
 .pc-tasks-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);text-align:right;text-transform:uppercase;letter-spacing:.07em;}
 body.light .pc-tasks-lbl{color:rgba(0,0,0,.2);}
 
@@ -290,9 +293,11 @@ function renderCard(b){
         ${datesHTML}
       </div>
       <div class="pc-right">
-        <div class="pc-pct-big${barPct===0?' zero':''}">${barPct}%</div>
-        <div class="pc-progress"><div class="pc-track"><div class="pc-fill" style="width:${barPct}%"></div></div></div>
-        <div class="pc-tasks-lbl">${tasksTotal} tasks</div>
+        <div class="pc-progress">
+          <div class="pc-track"><div class="pc-fill" style="width:${barPct}%"></div></div>
+          <span class="pc-pct${barPct===0?' zero':''}">${barPct}%</span>
+        </div>
+        <div class="pc-tasks-lbl">${tasksTotal} task${tasksTotal!==1?'s':''}</div>
       </div>
     </div>
     <div class="pc-tasks">
