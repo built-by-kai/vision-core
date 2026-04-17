@@ -51,13 +51,16 @@ export default async function handler(req, res) {
     const todayStr  = now.toISOString().slice(0, 10);
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
-    // Fetch all active content (not Done) and all active tasks (not Done) in parallel
-    // Fetch all content (Done needed for status panel count) + non-Done tasks only
+    // Fetch all content (Done needed for status panel) + tasks that are:
+    // - not Done, not Not started, AND must have a Content Production relation
     const [contentPages, taskPages] = await Promise.all([
       queryAll(CONTENT_DB),
       queryAll(TASKS_DB, {
-        property: 'Task Status',
-        status: { does_not_equal: 'Done' },
+        and: [
+          { property: 'Task Status', status: { does_not_equal: 'Done' } },
+          { property: 'Task Status', status: { does_not_equal: 'Not started' } },
+          { property: 'Content Production', relation: { is_not_empty: true } },
+        ],
       }).catch(() => []),
     ]);
 
@@ -109,11 +112,7 @@ export default async function handler(req, res) {
     for (const page of taskPages) {
       const p      = page.properties;
       const status = getStatus(p['Task Status']);
-      if (!status || status === 'Done' || status === 'Not started') continue;
-
-      // Skip tasks not linked to any content production
-      const contentRel = p['Content Production']?.relation || [];
-      if (contentRel.length === 0) continue;
+      if (!status) continue;
 
       tasksTotal++;
       taskStatusCounts[status] = (taskStatusCounts[status] || 0) + 1;
@@ -132,7 +131,8 @@ export default async function handler(req, res) {
 
     // Ordered status lists for display
     const CONTENT_STATUS_ORDER = ['Pre-Production', 'In Production', 'Final QC Review', 'Revision Needed', 'Ready for Posting'];
-    const TASK_STATUS_ORDER    = CREAITORS_TASK_STATUSES;
+    // Only include task statuses that actually have tasks — keeps the panel clean
+    const TASK_STATUS_ORDER = CREAITORS_TASK_STATUSES.filter(s => (taskStatusCounts[s] || 0) > 0);
 
     return res.status(200).json({
       // Card 1: Content in Motion
