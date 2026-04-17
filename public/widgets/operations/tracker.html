@@ -4,7 +4,7 @@
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;overflow-x:hidden;}
+body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px;background:#191919;color:#fff;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 body.light{background:#F5F5F5;color:#111;}
 :root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--amber:#FBBF24;--amberm:rgba(251,191,36,.1);--amberb:rgba(251,191,36,.2);--blue:#60A5FA;--bluem:rgba(96,165,250,.1);--blueb:rgba(96,165,250,.18);--red:#FF6B6B;}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
@@ -43,8 +43,14 @@ body.light .s-lbl{color:rgba(0,0,0,.4);}
 body.light .s-sub{color:rgba(0,0,0,.28);}
 
 /* ── PROJECT ROWS ── */
-.proj-list{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 200px);overflow-y:auto;padding-right:2px;}
-.proj-card{padding:20px 22px;}
+.proj-list{display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto;padding-right:2px;min-height:0;}
+.proj-card{padding:18px 20px;position:relative;overflow:hidden;}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;border-radius:14px 14px 0 0;}
+.proj-card:hover::before{opacity:1;}
+.proj-card.st-active::before{background:linear-gradient(90deg,var(--g),transparent);}
+.proj-card.st-review::before{background:linear-gradient(90deg,var(--amber),transparent);}
+.proj-card.st-awaiting::before{background:linear-gradient(90deg,var(--blue),transparent);}
+.proj-card.st-hold::before{background:linear-gradient(90deg,rgba(255,255,255,.2),transparent);}
 
 /* Top row: pill + name + client/pkg + progress */
 .pc-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
@@ -77,32 +83,30 @@ body.light .tab{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.3);}
 body.light .tab:hover{border-color:rgba(0,0,0,.15);color:rgba(0,0,0,.5);}
 body.light .tab.active{background:var(--gm);border-color:var(--gb);color:var(--g);}
 
-.pc-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:220px;}
+.pc-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;width:160px;}
 @media(max-width:600px){.pc-right{width:100%;align-items:stretch;}}
-.pc-progress{display:flex;align-items:center;gap:8px;width:100%;}
-.pc-track{flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.07);}
+.pc-pct-big{font-size:28px;font-weight:900;color:var(--g);letter-spacing:-1.5px;line-height:1;}
+.pc-pct-big.zero{color:rgba(255,255,255,.15);}
+body.light .pc-pct-big.zero{color:rgba(0,0,0,.12);}
+.pc-progress{width:100%;}
+.pc-track{width:100%;height:4px;border-radius:999px;background:rgba(255,255,255,.07);}
 body.light .pc-track{background:rgba(0,0,0,.08);}
-.pc-fill{height:5px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);min-width:0;}
-.pc-pct{font-size:13px;font-weight:900;color:var(--g);width:36px;text-align:right;flex-shrink:0;}
-.pc-pct.zero{color:rgba(255,255,255,.2);}
-body.light .pc-pct.zero{color:rgba(0,0,0,.15);}
-.pc-target{font-size:10px;font-weight:600;color:rgba(255,255,255,.22);text-align:right;}
-body.light .pc-target{color:rgba(0,0,0,.2);}
-.pc-target strong{font-weight:700;color:rgba(255,255,255,.4);}
-body.light .pc-target strong{color:rgba(0,0,0,.35);}
+.pc-fill{height:4px;border-radius:999px;background:var(--g);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pc-tasks-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);text-align:right;text-transform:uppercase;letter-spacing:.07em;}
+body.light .pc-tasks-lbl{color:rgba(0,0,0,.2);}
 
 /* ── MID: TASK SUMMARY ── */
-.pc-tasks{display:flex;gap:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
-body.light .pc-tasks{border-bottom-color:rgba(0,0,0,.06);}
-.tk{display:flex;align-items:center;gap:5px;}
-.tk-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.tk-d{background:var(--g);}
-.tk-ip{background:var(--amber);}
-.tk-b{background:var(--red);}
-.tk-ns{background:rgba(255,255,255,.12);}body.light .tk-ns{background:rgba(0,0,0,.1);}
-.tk-val{font-size:13px;font-weight:800;color:#fff;}body.light .tk-val{color:#111;}
-.tk-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.3);}body.light .tk-lbl{color:rgba(0,0,0,.3);}
-.tk-total{margin-left:auto;font-size:11px;font-weight:700;color:rgba(255,255,255,.2);}body.light .tk-total{color:rgba(0,0,0,.2);}
+.pc-tasks{display:flex;align-items:center;gap:6px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;flex-wrap:wrap;}
+body.light .pc-tasks{border-color:rgba(0,0,0,.06);}
+.tk-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;letter-spacing:.01em;}
+.tk-chip .tk-n{font-size:13px;font-weight:900;line-height:1;}
+.tk-chip.c-done{background:rgba(170,255,0,.08);color:rgba(170,255,0,.75);border:1px solid rgba(170,255,0,.12);}
+.tk-chip.c-ip{background:rgba(251,191,36,.08);color:rgba(251,191,36,.75);border:1px solid rgba(251,191,36,.12);}
+.tk-chip.c-blocked{background:rgba(255,107,107,.08);color:rgba(255,107,107,.75);border:1px solid rgba(255,107,107,.12);}
+.tk-chip.c-ns{background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.07);}
+.tk-chip.c-zero{opacity:.35;}
+.tk-total{margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,.18);letter-spacing:.04em;text-transform:uppercase;}
+body.light .tk-total{color:rgba(0,0,0,.2);}
 
 /* ── PHASE TIMELINE ── */
 .ph-timeline{display:flex;align-items:stretch;gap:0;position:relative;}
@@ -171,7 +175,7 @@ body.light .empty{color:rgba(0,0,0,.18);}
   <button class="tab active" onclick="switchTab('active')" id="tab-active">Active</button>
   <button class="tab" onclick="switchTab('completed')" id="tab-completed">Completed</button>
 </div>
-<div class="proj-list" id="proj-list"><div class="card empty">Loading…</div></div>
+<div class="proj-list" id="proj-list" style="padding-bottom:8px;"><div class="card empty">Loading…</div></div>
 
 <script>
 const _tok=new URLSearchParams(location.search).get('token')||'';
@@ -271,10 +275,13 @@ function renderCard(b){
   const tasksTotal=ts.total||0;
   const barPct=tasksTotal>0?Math.round((tasksDone/tasksTotal)*100):0;
 
-  // Task count label below progress
-  let targetHTML=`<div class="pc-target">${tasksTotal} tasks</div>`;
+  // Status class for top accent
+  const stCls = b.status==='active'?'st-active':b.status==='review'?'st-review':b.status==='awaiting'?'st-awaiting':'st-hold';
 
-  return`<div class="card proj-card">
+  // Task chips — dim zeros but always show all four
+  function chip(n,label,cls){return`<div class="tk-chip ${cls}${!n?' c-zero':''}"><span class="tk-n">${n||0}</span>${label}</div>`;}
+
+  return`<div class="card proj-card ${stCls}">
     <div class="pc-top">
       <span class="pc-pill ${sp.cls}">${sp.label}</span>
       <div class="pc-info">
@@ -283,19 +290,17 @@ function renderCard(b){
         ${datesHTML}
       </div>
       <div class="pc-right">
-        <div class="pc-progress">
-          <div class="pc-track"><div class="pc-fill" style="width:${barPct}%"></div></div>
-          <span class="pc-pct${barPct===0?' zero':''}">${barPct}%</span>
-        </div>
-        ${targetHTML}
+        <div class="pc-pct-big${barPct===0?' zero':''}">${barPct}%</div>
+        <div class="pc-progress"><div class="pc-track"><div class="pc-fill" style="width:${barPct}%"></div></div></div>
+        <div class="pc-tasks-lbl">${tasksTotal} tasks</div>
       </div>
     </div>
     <div class="pc-tasks">
-      <div class="tk"><div class="tk-dot tk-d"></div><span class="tk-val">${ts.done||0}</span><span class="tk-lbl">Done</span></div>
-      <div class="tk"><div class="tk-dot tk-ip"></div><span class="tk-val">${ts.inProgress||0}</span><span class="tk-lbl">In Progress</span></div>
-      <div class="tk"><div class="tk-dot tk-b"></div><span class="tk-val">${ts.blocked||0}</span><span class="tk-lbl">Blocked</span></div>
-      <div class="tk"><div class="tk-dot tk-ns"></div><span class="tk-val">${ts.notStarted||0}</span><span class="tk-lbl">Not Started</span></div>
-      <span class="tk-total">${ts.total||0} tasks</span>
+      ${chip(ts.done,'Done','c-done')}
+      ${chip(ts.inProgress,'In Progress','c-ip')}
+      ${chip(ts.blocked,'Blocked','c-blocked')}
+      ${chip(ts.notStarted,'Not Started','c-ns')}
+      <span class="tk-total">${tasksTotal} total</span>
     </div>
     ${phHTML}
   </div>`;
