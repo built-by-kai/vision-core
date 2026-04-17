@@ -92,12 +92,12 @@ export default function Book() {
         Cal("inline", {
           elementOrSelector: "#cal-embed",
           calLink: "opxio/discovery-call",
-          layout: "month_view"
+          layout: "column_view"
         });
         Cal("ui", {
           styles: { branding: { brandColor: "#AAFF00" } },
           hideEventTypeDetails: false,
-          layout: "month_view"
+          layout: "column_view"
         });
       `;
       document.body.appendChild(script);
@@ -647,7 +647,7 @@ const styles = {
     maxWidth: 480,
   },
   cardWrapQualified: {
-    maxWidth: 760,
+    maxWidth: 1000,
     alignItems: "flex-start",
     paddingTop: "48px",
   },
@@ -804,7 +804,7 @@ const styles = {
     marginTop: -8,
   },
   calEmbed: {
-    minHeight: 700,
+    minHeight: 600,
     width: "100%",
     borderRadius: 8,
     overflow: "hidden",
