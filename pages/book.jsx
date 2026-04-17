@@ -290,7 +290,7 @@ export default function Book() {
                   }}
                   onClick={step1Valid ? nextStep : undefined}
                 >
-                  Continue →
+                  Continue
                 </button>
               </div>
             )}
@@ -362,7 +362,7 @@ export default function Book() {
                     }}
                     onClick={step2Valid ? nextStep : undefined}
                   >
-                    Continue →
+                    Continue
                   </button>
                 </div>
               </div>
@@ -447,7 +447,7 @@ export default function Book() {
                     }}
                     onClick={step3Valid && !loading ? handleSubmit : undefined}
                   >
-                    {loading ? "Checking…" : "Submit →"}
+                    {loading ? "Checking…" : "Submit"}
                   </button>
                 </div>
               </div>
@@ -472,10 +472,13 @@ export default function Book() {
             )}
 
             {step === 3 && result && !result.qualified && (
-              <div style={styles.formSection}>
+              <div style={styles.disqualPage}>
+                <div style={styles.disqualIconWrap}>
+                  <span style={styles.disqualIcon}>✕</span>
+                </div>
                 <div style={styles.disqualBadge}>Not quite a fit — yet.</div>
-                <h2 style={styles.sectionTitle}>
-                  We&apos;re not the right match right now.
+                <h2 style={styles.disqualTitle}>
+                  We&apos;re not the right<br />match right now.
                 </h2>
                 <p style={styles.disqualText}>
                   {result.reason === "budget_too_low"
@@ -484,6 +487,7 @@ export default function Book() {
                     ? "We work best with businesses generating at least RM 15K/month. Once your revenue grows, Opxio will be here."
                     : "Based on your answers, we're not the right fit at this stage. This doesn't mean never — just not right now."}
                 </p>
+                <div style={styles.disqualDivider} />
                 <p style={styles.disqualTextSmall}>
                   We&apos;ll keep your details on file. If things change,{" "}
                   <a href="mailto:kai@opxio.io" style={styles.link}>
@@ -779,22 +783,61 @@ const styles = {
     borderRadius: 8,
     overflow: "hidden",
   },
+  disqualPage: {
+    padding: "64px 40px 56px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+  },
+  disqualIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: "50%",
+    background: "#ff444414",
+    border: "1px solid #ff444430",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  disqualIcon: {
+    color: "#ff6666",
+    fontSize: 20,
+    fontWeight: 700,
+  },
   disqualBadge: {
     display: "inline-block",
-    background: "#ff444418",
+    background: "#ff444414",
     color: "#ff6666",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
     padding: "6px 14px",
     borderRadius: 100,
-    marginBottom: 16,
-    border: "1px solid #ff444433",
+    marginBottom: 20,
+    border: "1px solid #ff444430",
+  },
+  disqualTitle: {
+    fontSize: "clamp(24px, 4vw, 32px)",
+    fontWeight: 700,
+    letterSpacing: "-0.8px",
+    lineHeight: 1.2,
+    marginBottom: 20,
   },
   disqualText: {
-    color: "#aaa",
+    color: "#888",
     fontSize: 15,
-    lineHeight: 1.7,
-    marginBottom: 16,
+    lineHeight: 1.75,
+    marginBottom: 0,
+    maxWidth: 420,
+  },
+  disqualDivider: {
+    width: 40,
+    height: 1,
+    background: "#222",
+    margin: "28px auto",
   },
   disqualTextSmall: {
     color: "#555",
