@@ -178,8 +178,8 @@ const _role   = (new URLSearchParams(location.search).get('role') || '').toLower
 
 // Role presets — bypass saved config when ?role= is set
 const ROLE_PRESETS = {
-  leadership: ['crm', 'crm-log', 'campaign', 'content'],
-  pm:        ['campaign', 'content'],
+  leadership: ['crm', 'crm-log', 'campaign', 'content', 'kol'],
+  pm:        ['campaign', 'content', 'kol'],
   hom:       ['campaign', 'content', 'kol'],
 };
 const ROLE_LABELS = {
