@@ -204,7 +204,11 @@ async function handleBookingCreated(payload) {
   const name      = attendee?.name || "Unknown";
   const startTime = payload.startTime; // ISO string
   const uid       = payload.uid;
-  const meetUrl   = payload.videoCallData?.url || payload.location || "";
+  // Cal.com puts the video link in videoCallData.url; location is a raw string like
+  // "integrations:daily" or "Google Meet" — only use it if it looks like a URL
+  const rawLocation = payload.location || "";
+  const meetUrl = payload.videoCallData?.url
+    || (rawLocation.startsWith("http") ? rawLocation : "");
   const duration  = payload.eventDuration || 30;
 
   if (!email) return { ok: false, reason: "no attendee email" };
