@@ -94,7 +94,8 @@ export default async function handler(req, res) {
     }
 
     // ── Task stats ─────────────────────────────────────────────
-    const TASK_ACTIVE = ['Not started', 'Waiting', 'Ready to Work', 'Pending QC Review', 'Review Needed', 'In Progress'];
+    // Creaitors task statuses (tasks are created via automation as Ready to Work or Waiting — Not started is never used)
+    const CREAITORS_TASK_STATUSES = ['Waiting', 'Ready to Work', 'In progress', 'Pending QC Review', 'Review Needed', 'Ready for Posting'];
 
     let tasksTotal       = 0;
     let tasksWaiting     = 0;
@@ -108,7 +109,7 @@ export default async function handler(req, res) {
     for (const page of taskPages) {
       const p      = page.properties;
       const status = getStatus(p['Task Status']);
-      if (!status || status === 'Done') continue;
+      if (!status || status === 'Done' || status === 'Not started') continue;
 
       // Skip tasks not linked to any content production
       const contentRel = p['Content Production']?.relation || [];
@@ -118,7 +119,7 @@ export default async function handler(req, res) {
       taskStatusCounts[status] = (taskStatusCounts[status] || 0) + 1;
 
       if (status === 'Waiting')              tasksWaiting++;
-      if (status === 'Ready to Work' || status === 'In progress' || status === 'Not started') tasksInProgress++;
+      if (status === 'Ready to Work' || status === 'In progress') tasksInProgress++;
       if (status === 'Pending QC Review')    tasksQC++;
       if (status === 'Review Needed')        tasksRevision++;
 
@@ -131,7 +132,7 @@ export default async function handler(req, res) {
 
     // Ordered status lists for display
     const CONTENT_STATUS_ORDER = ['Pre-Production', 'In Production', 'Final QC Review', 'Revision Needed', 'Ready for Posting'];
-    const TASK_STATUS_ORDER    = ['Not started', 'Waiting', 'Ready to Work', 'In progress', 'Pending QC Review', 'Review Needed', 'Ready for Posting'];
+    const TASK_STATUS_ORDER    = CREAITORS_TASK_STATUSES;
 
     return res.status(200).json({
       // Card 1: Content in Motion
