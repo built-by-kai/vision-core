@@ -94,6 +94,14 @@ body{font-family:'Satoshi',-apple-system,sans-serif;padding:14px 14px 24px;backg
 .wl-badge-lost{background:rgba(251,146,60,.1);color:#FB923C;border:1px solid rgba(251,146,60,.2);}
 .wl-val{font-size:12px;font-weight:700;color:rgba(255,255,255,.35);flex-shrink:0;}
 
+/* Section tabs */
+.tab-bar{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:10px;padding:4px;margin-bottom:16px;width:fit-content;}
+.tab-btn{background:transparent;border:1px solid transparent;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:6px 16px;border-radius:7px;cursor:pointer;transition:all .18s;letter-spacing:.02em;}
+.tab-btn.active{background:#252525;color:#fff;border-color:rgba(255,255,255,.09);}
+.tab-btn:hover:not(.active){color:rgba(255,255,255,.65);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
 /* Misc */
 .empty{padding:24px;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
 .loading{display:flex;align-items:center;justify-content:center;min-height:160px;flex-direction:column;gap:10px;}
@@ -616,6 +624,14 @@ async function saveConfig(){
   }
 }
 
+// ── TAB SWITCHING ────────────────────────────────────────────────────────────
+window.switchTab = function(id){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.dataset.tab === id));
+  // Ensure win/loss list renders when revenue tab is first opened
+  if(id === 'revenue' && _sections.includes('crm-log')) renderWLList();
+};
+
 // ── LOAD ─────────────────────────────────────────────────────────────────────
 async function load(){
   document.getElementById('rb').textContent = '↻ Refreshing…';
@@ -653,13 +669,37 @@ async function load(){
     const data    = {};
     keys.forEach((k,i) => data[k] = results[i]);
 
-    // Step 3: render sections in saved order
-    let html = '';
+    // Step 3: render sections into tab groups
+    // crm + crm-log share one "Revenue" tab; campaign and content each get their own
+    const sectionHTML = {};
     for(const sec of _sections){
-      if(sec === 'campaign' && data.campaign)           html += renderCampaign(data.campaign);
-      if(sec === 'content'  && data.content)            html += renderContent(data.content);
-      if(sec === 'crm'      && data.pipe && data.deals) html += renderCRM(data.pipe, data.deals);
-      if(sec === 'crm-log'  && data.pipe && data.deals) html += renderCRMLog(data.pipe, data.deals);
+      if(sec === 'campaign' && data.campaign)           sectionHTML.campaign  = renderCampaign(data.campaign);
+      if(sec === 'content'  && data.content)            sectionHTML.content   = renderContent(data.content);
+      if(sec === 'crm'      && data.pipe && data.deals) sectionHTML.crm       = renderCRM(data.pipe, data.deals);
+      if(sec === 'crm-log'  && data.pipe && data.deals) sectionHTML['crm-log']= renderCRMLog(data.pipe, data.deals);
+    }
+
+    // Build tab groups (crm + crm-log collapse into one Revenue tab)
+    const TAB_DEFS = [
+      { id: 'campaign', label: 'Campaigns', secs: ['campaign'] },
+      { id: 'content',  label: 'Content',   secs: ['content']  },
+      { id: 'revenue',  label: 'Revenue',   secs: ['crm', 'crm-log'] },
+    ];
+    const tabs = TAB_DEFS.filter(t => t.secs.some(s => sectionHTML[s]));
+
+    let html = '';
+    if(tabs.length > 1){
+      html += `<div class="tab-bar">` +
+        tabs.map((t,i) => `<button class="tab-btn${i===0?' active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('') +
+        `</div>`;
+      for(const [i,t] of tabs.entries()){
+        html += `<div class="tab-pane${i===0?' active':''}" data-tab="${t.id}">`;
+        for(const sec of t.secs){ if(sectionHTML[sec]) html += sectionHTML[sec]; }
+        html += `</div>`;
+      }
+    } else {
+      // Single section — no tabs needed, render flat
+      for(const sec of _sections){ if(sectionHTML[sec]) html += sectionHTML[sec]; }
     }
 
     document.getElementById('dash').innerHTML = html || `<div class="empty" style="margin-top:20px;">No sections configured.<br><br>Open <strong>?edit=1</strong> to configure.</div>`;
