@@ -7,7 +7,7 @@ import { getClientByToken, getNotionToken, resolveDB, resolveField, resolveLabel
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
   // Token auth: resolves per-client Notion key from Supabase (no env var per client)
   const token = req.query.token || req.headers['x-widget-token']
@@ -105,10 +105,16 @@ export default async function handler(req, res) {
     const todayStr  = now.toISOString().slice(0, 10);
     const in7Days   = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
-    // Fetch ALL content (including Done so the status breakdown is complete) + all tasks in parallel
+    // Fetch active content + non-Done tasks in parallel (Notion-side filters)
     const [contentPages, taskPages] = await Promise.all([
-      queryAll(CONTENT_DB).catch(() => []),
-      queryAll(TASKS_DB).catch(() => []),
+      queryAll(CONTENT_DB, {
+        property: 'Content Status',
+        status: { does_not_equal: 'Done' },
+      }).catch(() => queryAll(CONTENT_DB)),
+      queryAll(TASKS_DB, {
+        property: 'Task Status',
+        status: { does_not_equal: 'Done' },
+      }).catch(() => []),
     ]);
 
     // ── Build employee map: collect unique relation IDs from Tasks "Assigned To",
