@@ -3,14 +3,39 @@
 // Triggered by Notion button "Convert to Deal" on a Lead page.
 //
 // 1. Reads Lead: Company, Primary Contact, OS Interest, Source, Situation,
-//    Discovery Call, Potential Value, Team Size, Industry, Budget Range,
-//    Monthly Revenue Range, Country, Notes
+//    Discovery Call, Potential Value, Country, Notes
 // 2. Fetches Company name for Deal title
 // 3. Creates Deal in Deals DB  ── Deal Name: "Company Name — Product"
 // 4. Stitches: Deal["Origin Lead"] → Lead, Lead["Deal"] → Deal
 // 5. Updates Lead Stage → "Discovery Done"
 
 import { getPage, patchPage, createPage, plain, DB } from "../../lib/notion"
+
+// ─── Catalogue page IDs for each OS (OS Type relation in Deals) ────────────
+const CATALOGUE_OS_IDS = {
+  "Revenue OS":             "e28fe60097f682bf8ec381fd1a4b6950",
+  "Operations OS":          "448fe60097f6837a9f86014edd5503c2",
+  "Finance OS":             "345fe60097f681bfa6bcd1e10295b691",
+  "Marketing OS":           "56cfe60097f683d5ac4181d560bb6a0d",
+  "Team OS":                "33ffe60097f681e4a675d960f861230e",
+  "Retention OS":           "33ffe60097f681a68d47d7a508f86e26",
+  "Micro Install":          "340fe60097f681b2a577f05541116703", // defaults to 1 Module
+  "Micro Install — 1 Module": "340fe60097f681b2a577f05541116703",
+  "Micro Install — 2 Modules": "340fe60097f68112a63ac60a7599d0c0",
+  "Micro Install — 3 Modules": "340fe60097f68112b5e2e49bd87cfb35",
+}
+
+// ─── Map Lead Source (multi_select channels) → Deal Source (select intent) ─
+// Lead:  Referral, Cold Outreach, Ads, LinkedIn, Instagram, TikTok, etc.
+// Deal:  New Client — Referral | New Client — Outbound | New Client — Inbound
+//        (Existing Client options are set manually — can't infer from Lead)
+function mapLeadSourceToDeal(leadSources) {
+  if (!leadSources || leadSources.length === 0) return null
+  const names = leadSources.map(s => s.name)
+  if (names.includes("Referral"))      return "New Client — Referral"
+  if (names.includes("Cold Outreach")) return "New Client — Outbound"
+  return "New Client — Inbound"
+}
 
 // ─── Safe relation append ──────────────────────────────────────────────────
 async function appendRelation(pageId, property, newId, token) {
@@ -53,16 +78,17 @@ async function run(payload) {
   const potentialVal  = lp["Potential Value (MYR)"]?.number
                      ?? lp["Potential Value"]?.number
                      ?? null
-  const teamSize      = lp["Team Size"]?.select?.name || null
-  const industry      = lp.Industry?.select?.name || null
-  const budgetRange   = lp["Budget Range"]?.select?.name || null
-  const monthlyRev    = lp["Monthly Revenue Range"]?.select?.name || null
   const country       = lp.Country?.select?.name || null
   const notes         = plain(lp.Notes?.rich_text || [])
 
-  // Source: Lead uses multi_select → Deal uses select (take first)
-  const sourceArr = lp.Source?.multi_select || []
-  const source    = sourceArr[0]?.name || null
+  // Source: Lead = multi_select (channels) → map to Deal = select (intent category)
+  const leadSourceArr  = lp.Source?.multi_select || []
+  const dealSourceName = mapLeadSourceToDeal(leadSourceArr)
+
+  // OS Type: Lead OS Interest → Catalogue relation ID
+  const catalogueOsId = osInterest && osInterest !== "Not Sure Yet"
+    ? CATALOGUE_OS_IDS[osInterest] || null
+    : null
 
   // ── 2. Fetch Company name ─────────────────────────────────────────────────
   let companyName = ""
@@ -78,8 +104,7 @@ async function run(payload) {
   }
 
   // ── 3. Build Deal Name: "Company Name — Product" ──────────────────────────
-  // Format: Company Name — OS Interest  (e.g. "Kreativ Studio — Business OS")
-  const product  = osInterest || "System OS"
+  const product  = osInterest && osInterest !== "Not Sure Yet" ? osInterest : "System OS"
   const dealName = companyName
     ? `${companyName} — ${product}`
     : `New Deal — ${product}`
@@ -92,24 +117,25 @@ async function run(payload) {
   }
 
   // ── Only set properties that exist in the Deals DB ───────────────────────
-  if (companyRel)    dealProps["Company"]          = { relation: [{ id: companyRel }] }
-  if (contactRel)    dealProps["Primary Contact"]  = { relation: [{ id: contactRel }] }
-  if (osInterest)    dealProps["Packages"]         = { multi_select: [{ name: osInterest }] }
-  if (situation)     dealProps["Situation"]        = { rich_text: [{ text: { content: situation } }] }
-  if (discoveryCall) dealProps["Discovery Call"]   = { date: { start: discoveryCall } }
-  if (country)       dealProps["Country"]          = { select: { name: country } }
-  if (potentialVal)  dealProps["Deal Value (MYR)"] = { number: potentialVal }
-  if (notes)         dealProps["Notes"]            = { rich_text: [{ text: { content: notes } }] }
-  // Source: skipped — Lead uses raw channel values (Instagram, LinkedIn etc.)
-  // while Deals uses intent-based categories. Map manually in Notion after creation.
-  // Team Size, Industry, Budget Range, Monthly Revenue — not in Deals DB schema.
+  if (companyRel)     dealProps["Company"]          = { relation: [{ id: companyRel }] }
+  if (contactRel)     dealProps["Primary Contact"]  = { relation: [{ id: contactRel }] }
+  if (osInterest && osInterest !== "Not Sure Yet")
+                      dealProps["Packages"]         = { multi_select: [{ name: osInterest }] }
+  if (situation)      dealProps["Situation"]        = { rich_text: [{ text: { content: situation } }] }
+  if (discoveryCall)  dealProps["Discovery Call"]   = { date: { start: discoveryCall } }
+  if (country)        dealProps["Country"]          = { select: { name: country } }
+  if (potentialVal)   dealProps["Deal Value (MYR)"] = { number: potentialVal }
+  if (notes)          dealProps["Notes"]            = { rich_text: [{ text: { content: notes } }] }
+  if (dealSourceName) dealProps["Source"]           = { select: { name: dealSourceName } }
+  if (catalogueOsId)  dealProps["OS Type"]          = { relation: [{ id: catalogueOsId }] }
 
   const dealPage = await createPage({
     parent:     { database_id: DB.DEALS },
     properties: dealProps,
   }, token)
   const dealId = dealPage.id.replace(/-/g, "")
-  console.log("[convert_to_deal] Deal created:", dealId, dealName)
+  console.log("[convert_to_deal] Deal created:", dealId, dealName,
+    "| source:", dealSourceName, "| os_type:", catalogueOsId)
 
   // ── 5. Stitch: Lead["Deal"] → Deal ────────────────────────────────────────
   try {
@@ -126,11 +152,13 @@ async function run(payload) {
   }
 
   return {
-    status:     "success",
-    lead_id:    leadId,
-    deal_id:    dealId,
-    deal_name:  dealName,
-    deal_url:   dealPage.url || `https://notion.so/${dealId}`,
+    status:      "success",
+    lead_id:     leadId,
+    deal_id:     dealId,
+    deal_name:   dealName,
+    deal_source: dealSourceName,
+    deal_os:     catalogueOsId,
+    deal_url:    dealPage.url || `https://notion.so/${dealId}`,
   }
 }
 
