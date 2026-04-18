@@ -64,46 +64,36 @@ async function findLineItemsDB(pageId, token) {
 }
 
 // ── Create inline Products & Services DB on a page (if it doesn't exist) ──
+// Uses POST /v1/databases with is_inline:true — the only supported way to
+// programmatically create an inline database on a Notion page.
 async function ensureLineItemsDB(pageId, token) {
   // Check if it already exists
   let dbId = await findLineItemsDB(pageId, token)
   if (dbId) return dbId
 
-  // Create child_database block directly on the page
-  const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children`, {
-    method:  "PATCH",
+  // Create inline database with the correct schema in one call
+  const r = await fetch("https://api.notion.com/v1/databases", {
+    method:  "POST",
     headers: hdrs(token),
     body:    JSON.stringify({
-      children: [{
-        type:           "child_database",
-        child_database: { title: "Products & Services" },
-      }]
-    }),
-  })
-  if (!r.ok) {
-    console.warn("[create_invoice] ensureLineItemsDB create block:", await r.text())
-    return null
-  }
-  const blocks = (await r.json()).results || []
-  const dbBlock = blocks.find(b => b.type === "child_database")
-  if (!dbBlock) { console.warn("[create_invoice] child_database block missing from response"); return null }
-  dbId = dbBlock.id.replace(/-/g, "")
-
-  // Set schema: rename "Name" → "Notes", add Qty, Unit Price, Product relation
-  const sp = await fetch(`https://api.notion.com/v1/databases/${dbId}`, {
-    method:  "PATCH",
-    headers: hdrs(token),
-    body:    JSON.stringify({
+      parent:    { type: "page_id", page_id: pageId },
+      is_inline: true,
+      title: [{ type: "text", text: { content: "Products & Services" } }],
       properties: {
-        "Name":       { name: "Notes" },
+        "Notes":      { title: {} },
         "Qty":        { number: { format: "number" } },
         "Unit Price": { number: { format: "number" } },
         "Product":    { relation: { database_id: DB.CATALOGUE, single_property: {} } },
       },
     }),
   })
-  if (!sp.ok) console.warn("[create_invoice] ensureLineItemsDB schema:", await sp.text())
-
+  if (!r.ok) {
+    console.warn("[create_invoice] ensureLineItemsDB:", await r.text())
+    return null
+  }
+  const db = await r.json()
+  dbId = db.id.replace(/-/g, "")
+  console.log("[create_invoice] created inline Products & Services DB:", dbId)
   return dbId
 }
 
