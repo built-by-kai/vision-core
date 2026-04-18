@@ -162,6 +162,8 @@ body.light .empty{color:rgba(0,0,0,.25);}
 
 <script>
 let allItems = [], activeOS = 'All', activeTier = 'All', isLight = false
+const _tok = new URLSearchParams(location.search).get('token') || ''
+function apiUrl(path){ return _tok ? path + '?token=' + encodeURIComponent(_tok) : path }
 
 const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Business OS','Team OS','Retention OS','Finance OS','Agentic OS']
 
@@ -353,7 +355,7 @@ function toggleMode() {
 async function load() {
   document.getElementById('rb').textContent = '↻ Loading…'
   try {
-    const r = await fetch('/api/data/catalogue')
+    const r = await fetch(apiUrl('/api/data/catalogue'))
     if (!r.ok) throw new Error('HTTP ' + r.status)
     const data = await r.json()
     allItems = data.items || []
