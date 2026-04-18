@@ -116,11 +116,17 @@ async function copyLineItems(quotId, invId, token) {
     // Write each row to the target DB
     let written = 0
     for (const row of srcRows) {
-      const rp         = row.properties
+      const rp          = row.properties
       const productRels = rp.Product?.relation || []
       const qty         = rp.Qty?.number || 1
       const unitPrice   = rp["Unit Price"]?.number ?? 0
-      const notesArr    = rp.Notes?.title || []
+      // Notes title may be blank — fall back to Product Description rollup
+      const notesText = (rp.Notes?.title || []).map(t => t.plain_text || "").join("").trim()
+        || (rp["Product Description"]?.rollup?.array || [])
+            .flatMap(r => [...(r.title || []), ...(r.rich_text || [])])
+            .map(t => t.plain_text || "").join("").trim()
+        || ""
+      const notesArr = notesText ? [{ type: "text", text: { content: notesText } }] : []
 
       try {
         await createPage({
@@ -137,7 +143,7 @@ async function copyLineItems(quotId, invId, token) {
         console.warn("[create_invoice] line item write failed:", e.message)
       }
     }
-    console.log(`[create_invoice] copied ${written} line items from quotation to invoice`)
+    console.log(`[create_invoice] copied ${written}/${srcRows.length} line items to invoice`)
   } catch (e) {
     console.warn("[create_invoice] copyLineItems:", e.message)
   }
@@ -295,11 +301,8 @@ async function run(payload) {
     .catch(e => console.warn("[create_invoice] link invoice→quotation:", e.message))
 
   // ── 1b. Copy line items from Quotation → Invoice inline table ────────────
-  // If automation created the page from template, the inline DB already exists.
-  // copyLineItems will find it; ensureLineItemsDB creates one if missing (fallback).
-  copyLineItems(quotId, invId, token).catch(e =>
-    console.warn("[create_invoice] copyLineItems non-fatal:", e.message)
-  )
+  // Must be awaited — if fire-and-forget, Vercel cuts it off when run() returns.
+  await copyLineItems(quotId, invId, token)
 
   // ── 2. Create or Link Project ──────────────────────────────────────────────
   let projectId = existingProjectId
