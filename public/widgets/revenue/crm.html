@@ -113,14 +113,24 @@ body.light .seg-bar-fill{background:repeating-linear-gradient(90deg,#5C9900 0,#5
 .seg-count{font-size:13px;font-weight:900;color:#fff;width:28px;text-align:right;flex-shrink:0;}
 body.light .seg-count{color:#111;}
 .seg-pct{font-size:10px;font-weight:700;color:var(--g);opacity:.85;width:36px;text-align:right;flex-shrink:0;}
-/* Country map card */
+/* Country map card — Aceternity style */
 .map-card{overflow:hidden;margin-bottom:10px;}
 .map-card-body{display:flex;min-height:240px;}
-.map-canvas-side{flex:1;position:relative;overflow:hidden;background:#161616;min-height:220px;}
-body.light .map-canvas-side{background:#E8E8E8;}
+.map-canvas-side{flex:1;position:relative;overflow:hidden;background:#0D0D0D;min-height:220px;}
+body.light .map-canvas-side{background:#F0F0F0;}
 .map-canvas-label{position:absolute;top:14px;left:16px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);z-index:2;}
 body.light .map-canvas-label{color:rgba(0,0,0,.3);}
-#country-map{position:absolute;top:0;left:0;width:100%;height:100%;}
+/* SVG map wrap */
+.map-svg-wrap{position:absolute;top:0;left:0;width:100%;height:100%;}
+.map-bg-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:.45;pointer-events:none;}
+body.light .map-bg-img{filter:invert(1);opacity:.25;}
+.map-svg-ol{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;}
+/* Arc path draw animation */
+@keyframes arc-draw{from{stroke-dashoffset:var(--plen)}to{stroke-dashoffset:0}}
+/* Dot pulse ring */
+@keyframes dot-pulse{0%{r:2.5;opacity:.8}100%{r:7;opacity:0}}
+/* Dot glow breathe */
+@keyframes dot-glow{0%,100%{opacity:.6}50%{opacity:1}}
 .map-info-side{width:200px;border-left:1px solid rgba(255,255,255,.05);padding:22px 18px;display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
 body.light .map-info-side{border-left-color:rgba(0,0,0,.06);}
 .map-total-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-bottom:6px;}
@@ -436,7 +446,10 @@ body.light .log-val{color:rgba(0,0,0,.4);}
     <div class="map-card-body">
       <div class="map-canvas-side">
         <div class="map-canvas-label">Audience Location</div>
-        <canvas id="country-map"></canvas>
+        <div class="map-svg-wrap" id="map-svg-wrap">
+          <img class="map-bg-img" src="/widgets/revenue/world-dots.svg" alt="">
+          <svg class="map-svg-ol" id="map-svg-ol" viewBox="0 0 119 60" preserveAspectRatio="xMidYMid slice"></svg>
+        </div>
       </div>
       <div class="map-info-side">
         <div>
@@ -705,77 +718,142 @@ function renderLog(){
 // ── Sources tab ───────────────────────────────────────────────────────────────
 const FLAGS={'Malaysia':'🇲🇾','Singapore':'🇸🇬','Indonesia':'🇮🇩','Philippines':'🇵🇭','Thailand':'🇹🇭','Vietnam':'🇻🇳','Bangladesh':'🇧🇩','India':'🇮🇳','UK':'🇬🇧','United Kingdom':'🇬🇧','Australia':'🇦🇺','USA':'🇺🇸','United States':'🇺🇸','Japan':'🇯🇵','China':'🇨🇳','South Korea':'🇰🇷','UAE':'🇦🇪','Saudi Arabia':'🇸🇦'};
 
-// Country lat/lon → map canvas % [x,y] (empirically tuned for Mercator-ish projection)
-const COUNTRY_COORDS={
-  'Malaysia':[0.726,0.578],'Singapore':[0.728,0.588],'Indonesia':[0.748,0.618],
-  'Philippines':[0.772,0.555],'Thailand':[0.718,0.546],'Vietnam':[0.733,0.527],
-  'Bangladesh':[0.685,0.510],'India':[0.672,0.522],'UK':[0.469,0.340],
-  'United Kingdom':[0.469,0.340],'Australia':[0.800,0.730],'USA':[0.174,0.422],
-  'United States':[0.174,0.422],'Japan':[0.804,0.430],'China':[0.748,0.428],
-  'South Korea':[0.790,0.415],'UAE':[0.617,0.510],'Saudi Arabia':[0.598,0.495],
+// Country lat/lng → SVG viewBox "0 0 119 60" (equirectangular)
+// x = (lng + 180) * (119/360)   y = (90 - lat) * (60/180)
+const COUNTRY_LL={
+  'Malaysia':[4.2,109.5],'Singapore':[1.3,103.8],'Indonesia':[-0.8,113.9],
+  'Philippines':[12.9,121.8],'Thailand':[15.9,100.9],'Vietnam':[14.1,108.2],
+  'Bangladesh':[23.7,90.4],'India':[20.6,78.9],'UK':[51.5,-0.1],
+  'United Kingdom':[51.5,-0.1],'Australia':[-25.3,133.8],'USA':[37.1,-95.7],
+  'United States':[37.1,-95.7],'Japan':[36.2,138.3],'China':[35.9,104.2],
+  'South Korea':[35.9,127.8],'UAE':[23.4,53.8],'Saudi Arabia':[23.9,45.1],
+  'Germany':[51.2,10.4],'France':[46.2,2.2],'Netherlands':[52.1,5.3],
+  'Canada':[56.1,-106.3],'Brazil':[-14.2,-51.9],'South Africa':[-30.6,22.9],
 };
+function ll2xy(lat,lng){
+  return{x:(lng+180)*(119/360), y:(90-lat)*(60/180)};
+}
 
-// Continent regions as [cx,cy,rx,ry] — used to draw background dot grid
-const CONTINENTS=[
-  [0.175,0.370,0.115,0.195],[0.224,0.670,0.075,0.162], // N+S America
-  [0.478,0.342,0.063,0.095],[0.496,0.598,0.082,0.162], // Europe+Africa
-  [0.635,0.310,0.135,0.120],[0.722,0.548,0.090,0.098], // Asia main+SE Asia
-  [0.798,0.728,0.072,0.068],                            // Australia
-];
+// Approximate path length for a quadratic bezier (3-point sampling)
+function approxPathLen(x1,y1,cpx,cpy,x2,y2){
+  let len=0,px=x1,py=y1;
+  for(let t=0.1;t<=1.0;t+=0.1){
+    const u=1-t;
+    const nx=u*u*x1+2*u*t*cpx+t*t*x2;
+    const ny=u*u*y1+2*u*t*cpy+t*t*y2;
+    len+=Math.hypot(nx-px,ny-py);
+    px=nx;py=ny;
+  }
+  return len;
+}
 
-function drawCountryMap(){
-  const wrap=document.getElementById('map-canvas-wrap')||document.querySelector('.map-canvas-side');
-  const canvas=document.getElementById('country-map');
-  if(!wrap||!canvas) return;
-  const W=wrap.offsetWidth||600, H=wrap.offsetHeight||240;
-  canvas.width=W; canvas.height=H;
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
+function drawSvgMap(){
+  const svg=document.getElementById('map-svg-ol');
+  if(!svg) return;
+  // Clear previous dynamic elements
+  svg.querySelectorAll('.dyn').forEach(el=>el.remove());
+
   const isDark=!document.body.classList.contains('light');
-
-  // Background dot grid — continents
-  const SP=0.023;
-  CONTINENTS.forEach(([cx,cy,rx,ry])=>{
-    for(let nx=cx-rx;nx<=cx+rx+0.001;nx+=SP){
-      for(let ny=cy-ry;ny<=cy+ry+0.001;ny+=SP){
-        const dx=(nx-cx)/rx,dy=(ny-cy)/ry;
-        if(dx*dx+dy*dy<=1){
-          ctx.fillStyle=isDark?'rgba(255,255,255,0.09)':'rgba(0,0,0,0.1)';
-          ctx.beginPath();ctx.arc(nx*W,ny*H,1.8,0,Math.PI*2);ctx.fill();
-        }
-      }
-    }
-  });
+  const ACCENT=isDark?'#AAFF00':'#5C9900';
+  const CENTER_CLR=isDark?'#fff':'#fff';
 
   const countries=pipeData?.countries||[];
   if(!countries.length) return;
   const total=countries.reduce((s,c)=>s+c.count,0);
-  const homeCoords=COUNTRY_COORDS[countries[0]?.label];
 
-  // Draw arc connections from top country to others
-  if(homeCoords){
-    countries.slice(1,6).forEach(c=>{
-      const coords=COUNTRY_COORDS[c.label]; if(!coords) return;
-      const x1=homeCoords[0]*W,y1=homeCoords[1]*H;
-      const x2=coords[0]*W,y2=coords[1]*H;
-      const mx=(x1+x2)/2,my=Math.min(y1,y2)-Math.abs(x2-x1)*0.28;
-      ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(mx,my,x2,y2);
-      ctx.strokeStyle='rgba(170,255,0,0.18)';ctx.lineWidth=1;
-      ctx.setLineDash([3,6]);ctx.stroke();ctx.setLineDash([]);
+  // ── Defs: gradient for arc glow ──
+  let defs=svg.querySelector('defs');
+  if(!defs){defs=document.createElementNS('http://www.w3.org/2000/svg','defs');svg.appendChild(defs);}
+
+  // ── Arc group (drawn below dots) ──
+  const arcG=document.createElementNS('http://www.w3.org/2000/svg','g');
+  arcG.setAttribute('class','dyn');
+  svg.appendChild(arcG);
+
+  // ── Dot group (drawn above arcs) ──
+  const dotG=document.createElementNS('http://www.w3.org/2000/svg','g');
+  dotG.setAttribute('class','dyn');
+  svg.appendChild(dotG);
+
+  const home=countries[0];
+  const homeLL=COUNTRY_LL[home?.label];
+  const homeXY=homeLL?ll2xy(homeLL[0],homeLL[1]):null;
+
+  // Draw arcs from home → others
+  if(homeXY){
+    countries.slice(1,7).forEach((c,i)=>{
+      const ll=COUNTRY_LL[c.label];if(!ll)return;
+      const {x:x2,y:y2}=ll2xy(ll[0],ll[1]);
+      const x1=homeXY.x,y1=homeXY.y;
+      // Control point: midpoint, lifted above
+      const mx=(x1+x2)/2;
+      const my=(y1+y2)/2-Math.abs(x2-x1)*0.35-3;
+      const plen=approxPathLen(x1,y1,mx,my,x2,y2).toFixed(1);
+      const delay=(i*0.18).toFixed(2);
+
+      // Gradient id per arc
+      const gId=`ag${i}`;
+      const grad=document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+      grad.setAttribute('id',gId);
+      grad.setAttribute('gradientUnits','userSpaceOnUse');
+      grad.setAttribute('x1',x1);grad.setAttribute('y1',y1);
+      grad.setAttribute('x2',x2);grad.setAttribute('y2',y2);
+      const s0=document.createElementNS('http://www.w3.org/2000/svg','stop');
+      s0.setAttribute('offset','0%');s0.setAttribute('stop-color',ACCENT);s0.setAttribute('stop-opacity','0');
+      const s1=document.createElementNS('http://www.w3.org/2000/svg','stop');
+      s1.setAttribute('offset','50%');s1.setAttribute('stop-color',ACCENT);s1.setAttribute('stop-opacity','0.7');
+      const s2=document.createElementNS('http://www.w3.org/2000/svg','stop');
+      s2.setAttribute('offset','100%');s2.setAttribute('stop-color',ACCENT);s2.setAttribute('stop-opacity','0');
+      grad.appendChild(s0);grad.appendChild(s1);grad.appendChild(s2);
+      defs.appendChild(grad);
+
+      // Arc path
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',`M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke',`url(#${gId})`);
+      path.setAttribute('stroke-width','0.5');
+      path.style.setProperty('--plen',plen);
+      path.style.strokeDasharray=plen;
+      path.style.strokeDashoffset=plen;
+      path.style.animation=`arc-draw 1.4s cubic-bezier(.4,0,.2,1) ${delay}s forwards`;
+      arcG.appendChild(path);
     });
   }
 
-  // Draw country dots with glow
+  // Draw dots for all countries that have data
   countries.slice(0,8).forEach((c,i)=>{
-    const coords=COUNTRY_COORDS[c.label]; if(!coords) return;
-    const cx=coords[0]*W,cy=coords[1]*H;
-    const pct=c.count/total, r=5+pct*14;
-    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,r*2.8);
-    grad.addColorStop(0,'rgba(170,255,0,0.55)');
-    grad.addColorStop(1,'rgba(170,255,0,0)');
-    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,r*2.8,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#AAFF00';ctx.beginPath();ctx.arc(cx,cy,i===0?5:4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,1.8,0,Math.PI*2);ctx.fill();
+    const ll=COUNTRY_LL[c.label];if(!ll)return;
+    const {x,y}=ll2xy(ll[0],ll[1]);
+    const isHome=(i===0);
+    const delay=(i*0.12).toFixed(2);
+
+    // Glow circle behind
+    const glow=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    glow.setAttribute('cx',x);glow.setAttribute('cy',y);glow.setAttribute('r','4');
+    glow.setAttribute('fill',ACCENT);glow.setAttribute('fill-opacity','0.12');
+    dotG.appendChild(glow);
+
+    // Pulse ring (animated outward)
+    const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r','2.5');
+    ring.setAttribute('fill','none');ring.setAttribute('stroke',ACCENT);ring.setAttribute('stroke-width','0.4');
+    ring.style.transformOrigin=`${x}px ${y}px`;
+    ring.style.animation=`dot-pulse 2s ease-out ${delay}s infinite`;
+    dotG.appendChild(ring);
+
+    // Core dot
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('r',isHome?'1.8':'1.4');
+    dot.setAttribute('fill',ACCENT);
+    dot.style.animation=`dot-glow 2s ease-in-out ${delay}s infinite`;
+    dotG.appendChild(dot);
+
+    // White center
+    const center=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    center.setAttribute('cx',x);center.setAttribute('cy',y);center.setAttribute('r','0.65');
+    center.setAttribute('fill',CENTER_CLR);
+    dotG.appendChild(center);
   });
 }
 
@@ -872,7 +950,7 @@ function renderSources(){
   renderUtmCol('utm-sources-list',utm.sources,'UTM Source');
 
   // Draw map after DOM settles
-  setTimeout(drawCountryMap,50);
+  setTimeout(drawSvgMap,50);
 }
 
 // ── Data load ─────────────────────────────────────────────────────────────────
@@ -975,8 +1053,8 @@ function drawChart(){
   wrap.onmouseleave=hide;
   function hide(){tip.style.display='none';hL.style.opacity='0';}
 }
-window.addEventListener('load',()=>setTimeout(()=>{drawChart();if(currentView==='sources')drawCountryMap();},80));
-window.addEventListener('resize',()=>{drawChart();if(currentView==='sources')drawCountryMap();});
+window.addEventListener('load',()=>setTimeout(()=>{drawChart();if(currentView==='sources')drawSvgMap();},80));
+window.addEventListener('resize',()=>{drawChart();if(currentView==='sources')drawSvgMap();});
 </script>
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 <script>
