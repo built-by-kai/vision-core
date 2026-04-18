@@ -1,87 +1,71 @@
 // ─── create_addon.js ───────────────────────────────────────────────────────
-// POST /api/create_addon   { "page_id": "<project_page_id>" }
-// Triggered by Notion button "Create Add-on Quotation" on a Project page.
+// POST /api/create_addon   { "page_id": "<client_account_page_id>" }
+// Triggered by Notion button "Create Add-on Quotation" on a Client Account page.
 //
-// 1. Fetches Project → Company, Deal, original Quotation, Client Account
+// 1. Fetches Client Account → Company, Linked Deal, Project Tracker, Install Name
 // 2. Creates a Draft Quotation (Full Upfront, Quote Type = Add-on)
-// 3. Creates an Add-on record in Add-ons DB linked to the Quotation
-// 4. Appends blank Products & Services DB to quotation page
+// 3. Creates an Add-on record in Add-ons DB linked to Client Account + Quotation
+// 4. Appends blank Products & Services inline DB to the quotation page
 // 5. Returns quotation URL
 
 import { getPage, createPage, plain, DB, hdrs } from "../../lib/notion"
 
-async function fetchProject(projectId, token) {
-  const page  = await getPage(projectId, token)
+async function fetchClientAccount(caId, token) {
+  const page  = await getPage(caId, token)
   const props = page.properties
 
-  const companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const installName     = plain(props["Install Name"]?.title || []) || "Client"
+  const companyId       = props.Company?.relation?.[0]?.id?.replace(/-/g, "")       || null
+  const dealId          = props["Linked Deal"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const projectId       = props["Project Tracker"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const picId           = props["Primary Contact"]?.relation?.[0]?.id?.replace(/-/g, "") || null
 
-  // Get Deal from Project
-  let dealId = null
-  for (const field of ["Deals", "Deal Source", "Lead"]) {
-    const rels = props[field]?.relation || []
-    if (rels.length) { dealId = rels[0].id.replace(/-/g, ""); break }
-  }
-
-  // Get Client Account (dual-property synced)
-  const clientAccountId = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
-
-  const originalQuotationId = props.Quotation?.relation?.[0]?.id?.replace(/-/g, "") || null
-  const projName = plain(props["Project Name"]?.title || [])
-
-  return { companyId, dealId, clientAccountId, originalQuotationId, projectName: projName }
+  return { installName, companyId, dealId, projectId, picId }
 }
 
-async function createAddonQuotation(projectId, projData, token) {
+async function createAddonQuotation(caId, caData, token) {
   const today = new Date().toISOString().split("T")[0]
-  const { companyId, dealId } = projData
+  const { companyId, dealId, projectId } = caData
 
-  const baseProps = {
+  const props = {
     "Quotation No.": { title: [{ text: { content: "" } }] },
     "Status":        { select: { name: "Draft" } },
     "Issue Date":    { date: { start: today } },
     "Payment Terms": { select: { name: "Full Upfront" } },
     "Quote Type":    { select: { name: "Add-on" } },
     "Package Type":  { rich_text: [{ text: { content: "Add-on" } }] },
-    // Link back to the project so create_invoice won't create a duplicate project
-    "Project":       { relation: [{ id: projectId }] },
-    ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
-    ...(dealId    ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
+    ...(companyId ? { "Company":     { relation: [{ id: companyId }] } } : {}),
+    ...(dealId    ? { "Deal Source": { relation: [{ id: dealId    }] } } : {}),
+    // Link back to the project so create_invoice won't spin up a duplicate project
+    ...(projectId ? { "Project":     { relation: [{ id: projectId }] } } : {}),
   }
 
   const r = await fetch("https://api.notion.com/v1/pages", {
     method:  "POST",
     headers: hdrs(token),
-    body:    JSON.stringify({ parent: { database_id: DB.QUOTATIONS }, properties: baseProps }),
+    body:    JSON.stringify({ parent: { database_id: DB.QUOTATIONS }, properties: props }),
   })
   if (!r.ok) {
     const txt = await r.text()
     throw new Error(`Create quotation failed ${r.status}: ${txt.slice(0, 200)}`)
   }
   const page = await r.json()
-  const id   = page.id.replace(/-/g, "")
-  return { id, url: page.url || `https://notion.so/${id}` }
+  return { id: page.id.replace(/-/g, ""), url: page.url || `https://notion.so/${page.id.replace(/-/g, "")}` }
 }
 
-// ── Create an entry in the Add-ons tracker DB ───────────────────────────────
-// This is the source-of-truth record for what the client purchased.
-// The Quotation / Invoice flow is the billing side; this is the operational side.
-async function createAddonRecord({ projectId, quotationId, companyId, dealId, clientAccountId, projName, token }) {
+// ── Create an Add-on tracker record ─────────────────────────────────────────
+async function createAddonRecord({ caId, quotationId, companyId, dealId, installName, token }) {
   try {
-    const today = new Date().toISOString().split("T")[0]
-    const addonName = projName ? `Add-on — ${projName}` : "Add-on"
-
     const props = {
-      "Add-on Name":    { title: [{ text: { content: addonName } }] },
-      "Status":         { select: { name: "Pending" } },
-      "Requested When": { select: { name: "Post-Install" } },
-      ...(companyId       ? { "Company":              { relation: [{ id: companyId       }] } } : {}),
-      ...(quotationId     ? { "Quotation":             { relation: [{ id: quotationId     }] } } : {}),
-      ...(dealId          ? { "Linked Deal":           { relation: [{ id: dealId          }] } } : {}),
-      ...(clientAccountId ? { "Linked Client Account": { relation: [{ id: clientAccountId }] } } : {}),
+      "Add-on Name":          { title: [{ text: { content: `Add-on — ${installName}` } }] },
+      "Status":               { select: { name: "Pending" } },
+      "Requested When":       { select: { name: "Post-Install" } },
+      ...(companyId   ? { "Company":              { relation: [{ id: companyId   }] } } : {}),
+      ...(quotationId ? { "Quotation":             { relation: [{ id: quotationId }] } } : {}),
+      ...(dealId      ? { "Linked Deal":           { relation: [{ id: dealId      }] } } : {}),
+      ...(caId        ? { "Linked Client Account": { relation: [{ id: caId        }] } } : {}),
     }
-
-    const page = await createPage({ parent: { database_id: DB.ADD_ONS }, properties: props }, token)
+    const page    = await createPage({ parent: { database_id: DB.ADD_ONS }, properties: props }, token)
     const addonId = page.id.replace(/-/g, "")
     console.log("[create_addon] Add-on record created:", addonId)
     return addonId
@@ -92,7 +76,6 @@ async function createAddonRecord({ projectId, quotationId, companyId, dealId, cl
 }
 
 async function createLineItemsDB(pageId, token) {
-  // Inline Products & Services DB for the quotation
   const r = await fetch("https://api.notion.com/v1/databases", {
     method:  "POST",
     headers: hdrs(token),
@@ -101,20 +84,19 @@ async function createLineItemsDB(pageId, token) {
       is_inline: true,
       title: [{ type: "text", text: { content: "Products & Services" } }],
       properties: {
-        "Notes":       { title: {} },
-        "Product":     { relation: { database_id: DB.CATALOGUE, single_property: {} } },
-        "Unit Price":  { number: { format: "number" } },
-        "Qty":         { number: { format: "number" } },
+        "Notes":      { title: {} },
+        "Product":    { relation: { database_id: DB.CATALOGUE, single_property: {} } },
+        "Unit Price": { number: { format: "number" } },
+        "Qty":        { number: { format: "number" } },
       },
     }),
   })
-  if (r.ok) {
-    const db = await r.json()
-    return db.id.replace(/-/g, "")
+  if (!r.ok) {
+    console.warn("[create_addon] line items DB:", (await r.text()).slice(0, 200))
+    return null
   }
-  const txt = await r.text()
-  console.warn(`[create_addon] DB create ${r.status}: ${txt.slice(0, 200)}`)
-  return null
+  const db = await r.json()
+  return db.id.replace(/-/g, "")
 }
 
 export default async function handler(req, res) {
@@ -130,38 +112,35 @@ export default async function handler(req, res) {
     const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
     if (!rawId) return res.status(400).json({ error: "Missing page_id" })
 
-    const projectId = rawId.replace(/-/g, "")
-    const projData  = await fetchProject(projectId, token)
+    const caId   = rawId.replace(/-/g, "")
+    const caData = await fetchClientAccount(caId, token)
 
     // 1. Create the Add-on Quotation
-    const { id: quotId, url: quotUrl } = await createAddonQuotation(projectId, projData, token)
+    const { id: quotId, url: quotUrl } = await createAddonQuotation(caId, caData, token)
 
-    // 2. Create Add-on tracker record and link it to the quotation
+    // 2. Create Add-on tracker record linked to Client Account + Quotation
     const addonId = await createAddonRecord({
-      projectId,
-      quotationId:     quotId,
-      companyId:       projData.companyId,
-      dealId:          projData.dealId,
-      clientAccountId: projData.clientAccountId,
-      projName:        projData.projectName,
+      caId,
+      quotationId: quotId,
+      companyId:   caData.companyId,
+      dealId:      caData.dealId,
+      installName: caData.installName,
       token,
     })
 
     // 3. Append blank Products & Services inline DB to the quotation page
-    try {
-      await createLineItemsDB(quotId, token)
-    } catch (e) {
+    try { await createLineItemsDB(quotId, token) } catch (e) {
       console.warn("[create_addon] line items DB:", e.message)
     }
 
     return res.json({
-      status:         "success",
-      project_id:     projectId,
-      project_name:   projData.projectName,
-      quotation_id:   quotId,
-      quotation_url:  quotUrl,
+      status:          "success",
+      client_account:  caId,
+      install_name:    caData.installName,
+      quotation_id:    quotId,
+      quotation_url:   quotUrl,
       addon_record_id: addonId,
-      note:           "Fill in add-on line items in the quotation, then set Status → Approved to generate invoice",
+      note:            "Fill in line items, then set Status → Approved to generate invoice",
     })
   } catch (e) {
     console.error("[create_addon]", e)
