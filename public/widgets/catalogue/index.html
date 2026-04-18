@@ -13,6 +13,33 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
 
+/* ── Edit mode ── */
+.btn-edit{background:rgba(170,255,0,.08);border:1px solid rgba(170,255,0,.2);color:rgba(170,255,0,.7);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-edit:hover,.btn-edit.active{background:rgba(170,255,0,.15);border-color:var(--g);color:var(--g);}
+.btn-edit.active{box-shadow:0 0 0 2px rgba(170,255,0,.15);}
+.edit-banner{display:none;align-items:center;gap:8px;background:rgba(170,255,0,.06);border:1px solid rgba(170,255,0,.15);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:11px;font-weight:600;color:rgba(170,255,0,.6);}
+.edit-banner.show{display:flex;}
+.edit-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Edit form in drawer */
+.d-edit-section{margin-top:20px;padding-top:20px;border-top:1px solid rgba(170,255,0,.1);}
+.d-edit-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(170,255,0,.4);margin-bottom:12px;}
+.d-edit-grid{display:flex;flex-direction:column;gap:10px;}
+.d-edit-row{display:flex;flex-direction:column;gap:4px;}
+.d-edit-field-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.05em;}
+.d-edit-input{background:#1A1A1A;border:1px solid rgba(255,255,255,.1);color:#fff;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:500;padding:8px 11px;border-radius:8px;outline:none;width:100%;transition:border-color .2s;}
+.d-edit-input:focus{border-color:rgba(170,255,0,.4);}
+.d-edit-input.short{width:140px;}
+.d-edit-textarea{background:#1A1A1A;border:1px solid rgba(255,255,255,.1);color:#fff;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:500;padding:8px 11px;border-radius:8px;outline:none;width:100%;resize:vertical;min-height:80px;line-height:1.5;transition:border-color .2s;}
+.d-edit-textarea:focus{border-color:rgba(170,255,0,.4);}
+.d-edit-row-inline{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+.d-edit-save{background:var(--g);border:none;color:#000;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:900;padding:9px 20px;border-radius:8px;cursor:pointer;transition:opacity .2s;margin-top:4px;}
+.d-edit-save:hover{opacity:.85;}
+.d-edit-save:disabled{opacity:.4;cursor:not-allowed;}
+.d-edit-status{font-size:11px;font-weight:600;color:rgba(170,255,0,.6);margin-top:6px;min-height:16px;}
+.d-edit-status.err{color:rgba(255,100,100,.7);}
+
 /* ── Top bar ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
 .brand{display:flex;align-items:center;gap:10px;}
@@ -211,8 +238,14 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
   </div>
   <div class="topbar-actions">
     <span class="ts" id="ts"></span>
-    <button class="btn" onclick="doRefresh()">↻ Refresh</button>
+    <button class="btn" id="refresh-btn" onclick="doRefresh()">↻ Refresh</button>
+    <button class="btn-edit" id="edit-toggle-btn" onclick="toggleEditMode()" style="display:none">✎ Edit Mode</button>
   </div>
+</div>
+
+<div class="edit-banner" id="edit-banner">
+  <span class="edit-dot"></span>
+  Edit mode on — click any card to edit it
 </div>
 
 <div class="search-row">
@@ -240,9 +273,20 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 </div>
 
 <script>
-let allItems = [], activeOS = 'All'
+let allItems = [], activeOS = 'All', editMode = false
 const _tok = new URLSearchParams(location.search).get('token') || ''
+const OPXIO_TOKEN = '04524d18e8ef8f862b64d497e4c6cc52a7991d96029c71546939b5e3ec428edf'
+const isOpxio = _tok === OPXIO_TOKEN
 function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p }
+
+function toggleEditMode(){
+  editMode = !editMode
+  const btn = document.getElementById('edit-toggle-btn')
+  const banner = document.getElementById('edit-banner')
+  btn.textContent = editMode ? '✎ Exit Edit' : '✎ Edit Mode'
+  btn.classList.toggle('active', editMode)
+  banner.classList.toggle('show', editMode)
+}
 
 const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS']
 
@@ -776,6 +820,85 @@ function openDrawer(idx){
     body += `</div></div>`
   }
 
+  // ── Edit form (Opxio only, edit mode active) ─────────────────────────────
+  if (isOpxio && editMode){
+    const TIER_OPTIONS = ['OS Package','Core Module','Expansion Module','Automation','Dashboard & Widget','Integration','AI Agent','Maintenance Retainer']
+    const OS_OPTIONS   = ['Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS','Intelligence OS','Any OS']
+    const MODEL_OPTIONS= ['One-Time','Setup + Subscription','Subscription','Complimentary']
+
+    const availChecks = OS_OPTIONS.map(os =>
+      `<label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" data-avail="${os}" ${item.avail.includes(os)?'checked':''} style="accent-color:var(--g);cursor:pointer;">
+        ${os}
+      </label>`
+    ).join('')
+
+    const tierOpts = TIER_OPTIONS.map(t =>
+      `<option value="${t}" ${item.tier===t?'selected':''}>${t}</option>`
+    ).join('')
+    const modelOpts = MODEL_OPTIONS.map(m =>
+      `<option value="${m}" ${(item.model||'One-Time')===m?'selected':''}>${m}</option>`
+    ).join('')
+
+    body += `
+    <div class="d-edit-section">
+      <div class="d-edit-label">✎ Edit — syncs to Notion on save</div>
+      <div class="d-edit-grid">
+
+        <div class="d-edit-row">
+          <span class="d-edit-field-label">Product Name</span>
+          <input class="d-edit-input" id="ef-name" value="${item.name.replace(/"/g,'&quot;')}" placeholder="Product name"/>
+        </div>
+
+        <div class="d-edit-row">
+          <span class="d-edit-field-label">Description</span>
+          <textarea class="d-edit-textarea" id="ef-desc">${item.desc||''}</textarea>
+        </div>
+
+        <div class="d-edit-row-inline">
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Price (MYR)</span>
+            <input class="d-edit-input short" id="ef-price" type="number" value="${item.price??''}" placeholder="e.g. 3250"/>
+          </div>
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Price Max</span>
+            <input class="d-edit-input short" id="ef-pricemax" type="number" value="${item.priceMax??''}" placeholder="optional"/>
+          </div>
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Monthly (MYR)</span>
+            <input class="d-edit-input short" id="ef-monthly" type="number" value="${item.monthly??''}" placeholder="optional"/>
+          </div>
+        </div>
+
+        <div class="d-edit-row-inline">
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Tier</span>
+            <select class="d-edit-input short" id="ef-tier" style="cursor:pointer">${tierOpts}</select>
+          </div>
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Pricing Model</span>
+            <select class="d-edit-input short" id="ef-model" style="cursor:pointer">${modelOpts}</select>
+          </div>
+          <div class="d-edit-row">
+            <span class="d-edit-field-label">Order</span>
+            <input class="d-edit-input short" id="ef-order" type="number" value="${item.order??''}" placeholder="sort order"/>
+          </div>
+        </div>
+
+        <div class="d-edit-row">
+          <span class="d-edit-field-label">Available To</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">${availChecks}</div>
+        </div>
+
+        <div>
+          <button class="d-edit-save" id="ef-save-btn" onclick="saveEdit('${item.id}')">Save to Notion</button>
+          <div class="d-edit-status" id="ef-status"></div>
+        </div>
+
+      </div>
+    </div>`
+  }
+
   document.getElementById('d-body').innerHTML = body
   document.getElementById('overlay').classList.add('open')
   document.getElementById('drawer').classList.add('open')
@@ -1044,7 +1167,7 @@ function render(){
 }
 
 async function load(){
-  document.querySelector('.btn').textContent = '↻ Loading…'
+  document.getElementById('refresh-btn').textContent = '↻ Loading…'
   try {
     const r = await fetch(apiUrl('/api/data/catalogue'))
     if (!r.ok) throw new Error('HTTP ' + r.status)
@@ -1052,14 +1175,59 @@ async function load(){
     allItems = data.items || []
     const d = new Date(data.ts)
     document.getElementById('ts').textContent = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+    // Show edit button only for Opxio internal token
+    if (isOpxio) document.getElementById('edit-toggle-btn').style.display = 'inline-flex'
     render()
   } catch(e){
     document.getElementById('catalogue').innerHTML = `<div class="empty">Failed to load — ${e.message}</div>`
   }
-  document.querySelector('.btn').textContent = '↻ Refresh'
+  document.getElementById('refresh-btn').textContent = '↻ Refresh'
 }
 
 function doRefresh(){ load() }
+
+async function saveEdit(pageId){
+  const btn    = document.getElementById('ef-save-btn')
+  const status = document.getElementById('ef-status')
+  btn.disabled = true
+  btn.textContent = 'Saving…'
+  status.textContent = ''
+  status.className = 'd-edit-status'
+
+  const availChecked = [...document.querySelectorAll('[data-avail]:checked')].map(el => el.dataset.avail)
+
+  const fields = {
+    name:     document.getElementById('ef-name')?.value?.trim() || undefined,
+    desc:     document.getElementById('ef-desc')?.value?.trim() ?? undefined,
+    price:    document.getElementById('ef-price')?.value !== '' ? Number(document.getElementById('ef-price').value) : null,
+    priceMax: document.getElementById('ef-pricemax')?.value !== '' ? Number(document.getElementById('ef-pricemax').value) : null,
+    monthly:  document.getElementById('ef-monthly')?.value !== '' ? Number(document.getElementById('ef-monthly').value) : null,
+    tier:     document.getElementById('ef-tier')?.value || undefined,
+    model:    document.getElementById('ef-model')?.value || undefined,
+    order:    document.getElementById('ef-order')?.value !== '' ? Number(document.getElementById('ef-order').value) : undefined,
+    avail:    availChecked,
+  }
+
+  try {
+    const r = await fetch('/api/data/catalogue-update?token=' + encodeURIComponent(_tok), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageId, fields }),
+    })
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Save failed')
+    status.textContent = '✓ Saved to Notion'
+    status.className = 'd-edit-status'
+    // Refresh data in background
+    setTimeout(() => load(), 800)
+  } catch(e) {
+    status.textContent = '✗ ' + e.message
+    status.className = 'd-edit-status err'
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Save to Notion'
+  }
+}
 load()
 </script>
 </body></html>
