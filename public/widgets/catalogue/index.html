@@ -89,6 +89,12 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .os-hero-model{font-size:10px;font-weight:600;color:rgba(255,255,255,.2);text-align:right;}
 .os-hero-reqpill{background:rgba(255,154,60,.08);border:1px solid rgba(255,154,60,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;color:rgba(255,154,60,.7);margin-top:6px;}
 
+/* ── Two-column OS + Entry Point row ── */
+.two-col-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;align-items:start;}
+@media(max-width:640px){.two-col-row{grid-template-columns:1fr;}}
+.two-col-section{min-width:0;}
+.two-col-row .two-col-section + .two-col-section{border-left:1px solid rgba(255,255,255,.05);padding-left:20px;}
+
 /* ── Section header ── */
 .section{margin-bottom:28px;}
 .section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -292,6 +298,7 @@ const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS',
 
 const TIERS = [
   { key: 'OS Package',         color: '#AAFF00', label: 'OS Packages' },
+  { key: 'Entry Point',        color: '#94A3B8', label: 'Entry Point' },
   { key: 'Core Module',        color: '#60A5FA', label: 'Core Modules' },
   { key: 'Expansion Module',   color: '#A78BFA', label: 'Expansion Modules' },
   { key: 'Automation',         color: '#FFD60A', label: 'Automations' },
@@ -770,7 +777,7 @@ function openDrawer(idx){
 
   // For OS Packages: show full module list
   const mods = OS_MODULES[item.name]
-  if (item.tier === 'OS Package' && mods){
+  if ((item.tier === 'OS Package' || item.tier === 'Entry Point') && mods){
     body += `<div class="d-section"><div class="d-label">Included Modules (${mods.length})</div>`
     body += `<div class="d-modules">`
     mods.forEach((m,i) => {
@@ -927,6 +934,7 @@ function filterItems(){
   return allItems.filter(item => {
     const osMatch = activeOS === 'All'
       || item.tier === 'OS Package'
+      || item.tier === 'Entry Point'
       || item.avail.includes(activeOS)
     const searchMatch = !q
       || item.name.toLowerCase().includes(q)
@@ -955,7 +963,7 @@ function priceHTML(item){
 }
 
 function cardBodyHTML(item){
-  if (item.tier === 'OS Package'){
+  if (item.tier === 'OS Package' || item.tier === 'Entry Point'){
     const mods = OS_MODULES[item.name]
     if (mods){
       return `<div class="card-module-list">${
@@ -990,7 +998,7 @@ function cardHTML(item, idx){
   return `<div class="card" onclick="openDrawer(${idx})" style="--card-color:${c}">
     <style>.card[style*="${c.replace('#','')}"]::before{background:linear-gradient(90deg,${c},transparent);}</style>
     <div class="card-top">
-      <div class="${item.tier === 'OS Package' ? 'card-name-os' : 'card-name'}">${item.name}</div>
+      <div class="${(item.tier === 'OS Package' || item.tier === 'Entry Point') ? 'card-name-os' : 'card-name'}">${item.name}</div>
       <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
     </div>
     ${priceHTML(item)}
@@ -1087,11 +1095,40 @@ function render(){
       let group = filtered.filter(x => x.tier === tier.key)
       // OS Packages section: exclude Additional OS layers
       if (tier.key === 'OS Package') group = group.filter(x => !ADDON_OS_NAMES.includes(x.name))
-      if (group.length) html += sectionHTML(tier.label, tier.color, group)
 
-      // Additional OS Layers right after OS Packages
       if (tier.key === 'OS Package'){
+        // ── OS Packages + Entry Point side by side ───────────────────────────
+        const entryItems = filtered.filter(x => x.tier === 'Entry Point')
         const addonOSCards = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
+
+        const osPkgCol = group.length ? `
+          <div class="two-col-section">
+            <div class="section-hdr">
+              <div class="section-bar" style="background:#AAFF00"></div>
+              <span class="section-title">OS Packages</span>
+              <span class="section-count">${group.length} items</span>
+              <div class="section-line"></div>
+            </div>
+            <div class="cards">${group.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+          </div>` : ''
+
+        const entryCol = entryItems.length ? `
+          <div class="two-col-section">
+            <div class="section-hdr">
+              <div class="section-bar" style="background:#94A3B8"></div>
+              <span class="section-title">Entry Point</span>
+              <span class="section-count">${entryItems.length} items</span>
+              <span class="section-note">Upgrade credit applies</span>
+              <div class="section-line"></div>
+            </div>
+            <div class="cards">${entryItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+          </div>` : ''
+
+        if (osPkgCol || entryCol){
+          html += `<div class="two-col-row">${osPkgCol}${entryCol}</div>`
+        }
+
+        // Additional OS Layers below
         if (addonOSCards.length){
           html += `<div class="section">
             <div class="section-hdr">
@@ -1104,6 +1141,9 @@ function render(){
             <div class="cards">${addonOSCards.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
           </div>`
         }
+      } else if (tier.key !== 'Entry Point') {
+        // Entry Point already handled above — skip it in the main loop
+        if (group.length) html += sectionHTML(tier.label, tier.color, group)
       }
     }
   } else {
