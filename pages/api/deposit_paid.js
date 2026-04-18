@@ -94,7 +94,7 @@ async function run(payload) {
 
   const companyId   = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
   let   quotationId = props.Quotation?.relation?.[0]?.id?.replace(/-/g, "") || null
-  const implIdRaw   = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const implIdRaw   = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   // Invoice.Deal Source → Deals DB only (not Leads). Start null; set after conversion.
   let   leadId      = null  // will be resolved via Quotation.Lead Source or other fallbacks
 
@@ -129,7 +129,7 @@ async function run(payload) {
   }
 
   // ── Fetch Quotation amount (for Deal Value) ──────────────────────────────
-  let quotationAmount = props["Total Amount"]?.number || 0  // from Invoice
+  let quotationAmount = props["Amount (MYR)"]?.number || props["Total Amount"]?.number || 0  // from Invoice
   if (!quotationAmount && quotationId) {
     try {
       const qp = await getPage(quotationId, token)
@@ -307,7 +307,7 @@ async function run(payload) {
   }
 
   // ── Project setup (heavy — may take multiple seconds) ─────────────────────
-  let projectId = props.Implementation?.relation?.[0]?.id?.replace(/-/g, "") || null
+  let projectId = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   let phasesCount = 0, tasksCount = 0
 
   if (!projectId && quotationId) {
@@ -327,7 +327,7 @@ async function run(payload) {
       ...(dealId && dealId !== leadId ? { "Deals": { relation: [{ id: dealId }] } } : {}),
     }, token)
     try {
-      await patchPage(pageId, { "Implementation": { relation: [{ id: projectId }] } }, token)
+      await patchPage(pageId, { "Client Account": { relation: [{ id: projectId }] } }, token)
     } catch {}
     ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
   }

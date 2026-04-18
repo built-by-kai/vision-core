@@ -211,27 +211,28 @@ async function run(payload) {
 
   // ── 1. Create Invoice ─────────────────────────────────────────────────────
   const invProps = {
-    "Invoice No.":   { title: [{ text: { content: "" } }] },
-    "Invoice Type":  { select: { name: invType } },
-    "Status":        { select: { name: "Deposit Pending" } },
-    "Issue Date":    { date: { start: today } },
-    "Total Amount":  { number: amount },
-    "Payment Terms": { select: { name: paymentTerms } },
-    "Quotation":     { relation: [{ id: quotId }] },
+    "Invoice No.":    { title: [{ text: { content: "" } }] },
+    "Invoice Type":   { select: { name: invType } },
+    "Status":         { select: { name: "Deposit Pending" } },
+    "Issue Date":     { date: { start: today } },
+    "Amount (MYR)":   { number: amount },
+    "Payment Terms":  { select: { name: paymentTerms } },
+    "Quotation":      { relation: [{ id: quotId }] },
     ...(deposit50  ? { "Deposit (50%)": { number: deposit50 } } : {}),
     ...(isDeposit  ? { "Deposit Due":   { date: { start: dueDate } } } : {}),
-    ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
+    ...(companyId ? { "Company":         { relation: [{ id: companyId }] } } : {}),
     ...(picId     ? { "Primary Contact": { relation: [{ id: picId }] } } : {}),
     // Invoice.Deal Source → Deals DB only (not Leads). Only write if we have a Deal.
-    ...(dealId    ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
+    ...(dealId    ? { "Deal Source":     { relation: [{ id: dealId }] } } : {}),
   }
 
   const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, token)
   const invId   = invPage.id.replace(/-/g, "")
   console.log("[create_invoice] Invoice created:", invId)
 
-  // Link Invoice ↔ Quotation
-  await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, token).catch(() => {})
+  // Link Invoice ↔ Quotation (back-link on Quotation's "Invoice" relation)
+  await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, token)
+    .catch(e => console.warn("[create_invoice] link invoice→quotation:", e.message))
 
   // ── 1b. Copy line items from Quotation → Invoice inline table ────────────
   // Invoice template has an inline Products & Services DB — populate it so the
@@ -304,8 +305,8 @@ async function run(payload) {
 
     // Back-link Project on Invoice and Quotation
     await Promise.allSettled([
-      patchPage(invId,  { "Implementation": { relation: [{ id: projectId }] } }, token),
-      patchPage(quotId, { "Project":         { relation: [{ id: projectId }] } }, token),
+      patchPage(invId,  { "Client Account": { relation: [{ id: projectId }] } }, token),
+      patchPage(quotId, { "Project":        { relation: [{ id: projectId }] } }, token),
     ])
 
     // ── 2b. Create default Phases for the new project ──────────────────────
