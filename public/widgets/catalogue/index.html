@@ -846,9 +846,9 @@ function bundleOptionsHTML(){
 
   return `<div class="bundles-section">
     <div class="section-hdr">
-      <div class="section-bar" style="background:var(--g)"></div>
-      <span class="section-title">Bundle Options</span>
-      <span class="section-note">All combinations using Core OS only · no dependency conflicts</span>
+      <div class="section-bar" style="background:rgba(255,255,255,.12)"></div>
+      <span class="section-title" style="color:rgba(255,255,255,.3)">When you're ready to scale up</span>
+      <span class="section-note">Every ringgit paid here credited toward your chosen bundle</span>
       <div class="section-line"></div>
     </div>
     <div class="bopt-table">${rows}</div>
@@ -1227,8 +1227,8 @@ function render(){
   }
 
   if (activeOS === 'Entry Point'){
-    html += bundleOptionsHTML()
     html += sectionHTML('Entry Point', '#94A3B8', filtered, 'Upgrade credit applies · amount paid credited toward full OS')
+    html += bundleOptionsHTML()
     el.innerHTML = html
     return
   }
