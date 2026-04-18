@@ -791,28 +791,12 @@ async function drawSvgMap(){
   catch(e){ console.warn('[map] topo load failed',e); return; }
   console.log('[map] topology loaded, drawing paths');
 
-  // Adaptive projection — fit to actual points (HQ + all lead countries)
-  const knownCountryPts=countries.slice(0,8)
-    .filter(c=>COUNTRY_LL[c.label])
-    .map(c=>({type:'Feature',geometry:{type:'Point',coordinates:[COUNTRY_LL[c.label][1],COUNTRY_LL[c.label][0]]}}));
-
-  const projection=d3.geoNaturalEarth1();
-
-  if(knownCountryPts.length>=1){
-    const pointFeats=[
-      {type:'Feature',geometry:{type:'Point',coordinates:[HQ_LNG,HQ_LAT]}},
-      ...knownCountryPts
-    ];
-    const pointFC={type:'FeatureCollection',features:pointFeats};
-    projection.fitExtent([[50,40],[W-50,H-30]],pointFC);
-    // Clamp: don't zoom too far in (nearby) or out (single point)
-    const s=projection.scale();
-    const safeS=isFinite(s)&&s>0 ? Math.min(Math.max(s,W/7),W/2.8) : W/6.5;
-    projection.scale(safeS);
-  } else {
-    // No known country coords — default Asia-centred world view
-    projection.scale(W/6.5).translate([W/2,H/1.9]);
-  }
+  // Fixed world-view projection — always shows the full globe cleanly.
+  // fitExtent was causing off-screen rendering when scale and translate
+  // fell out of sync after clamping. Fixed scale fills the canvas width.
+  const projection=d3.geoNaturalEarth1()
+    .scale(W/6.3)
+    .translate([W/2, H/1.95]);
   const path=d3.geoPath(projection);
 
   // Country shapes
