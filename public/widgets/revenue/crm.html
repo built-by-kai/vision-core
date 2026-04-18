@@ -117,6 +117,46 @@ body.light .sm-bar-track{background:rgba(0,0,0,.08);}
 .sm-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
 .sm-empty{padding:28px 18px;font-size:11px;color:rgba(255,255,255,.2);font-weight:600;}
 body.light .sm-empty{color:rgba(0,0,0,.25);}
+/* Source analytics */
+.src-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.src-row:last-child{margin-bottom:0;}
+.src-lbl{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.55);width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .src-lbl{color:rgba(0,0,0,.5);}
+.src-bar-track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
+body.light .src-bar-track{background:rgba(0,0,0,.07);}
+.src-bar-fill{height:100%;border-radius:99px;background:var(--g);opacity:.8;transition:width .55s cubic-bezier(.4,0,.2,1);}
+.src-count{font-size:13px;font-weight:900;color:#fff;width:28px;text-align:right;flex-shrink:0;}
+body.light .src-count{color:#111;}
+.src-pct{font-size:10px;font-weight:700;color:var(--g);opacity:.85;width:34px;text-align:right;flex-shrink:0;}
+/* Country list */
+.country-row{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+.country-row:last-child{margin-bottom:0;}
+.country-flag{font-size:16px;flex-shrink:0;line-height:1;}
+.country-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);flex-shrink:0;width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .country-name{color:rgba(0,0,0,.5);}
+.country-bar-track{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
+body.light .country-bar-track{background:rgba(0,0,0,.07);}
+.country-bar-fill{height:100%;border-radius:99px;background:rgba(170,255,0,.55);transition:width .55s cubic-bezier(.4,0,.2,1);}
+/* UTM section */
+.utm-grid{display:grid;grid-template-columns:repeat(3,1fr);}
+@media(max-width:700px){.utm-grid{grid-template-columns:1fr;}}
+.utm-col{padding:18px 20px;border-right:1px solid rgba(255,255,255,.04);}
+.utm-col:last-child{border-right:none;}
+body.light .utm-col{border-right-color:rgba(0,0,0,.06);}
+.utm-col-title{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:14px;}
+body.light .utm-col-title{color:rgba(0,0,0,.3);}
+.utm-item{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.utm-item:last-child{margin-bottom:0;}
+.utm-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.6);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .utm-name{color:rgba(0,0,0,.5);}
+.utm-bar-track{width:52px;height:5px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;flex-shrink:0;}
+body.light .utm-bar-track{background:rgba(0,0,0,.07);}
+.utm-bar-fill{height:100%;border-radius:99px;background:rgba(170,255,0,.55);}
+.utm-n{font-size:12px;font-weight:900;color:#fff;width:22px;text-align:right;flex-shrink:0;}
+body.light .utm-n{color:#111;}
+.utm-empty{padding:18px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.18);font-weight:600;line-height:1.6;}
+body.light .utm-empty{color:rgba(0,0,0,.2);}
+.utm-setup-pill{display:inline-block;margin-top:7px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:5px;background:rgba(170,255,0,.07);color:var(--g);border:1px solid rgba(170,255,0,.15);}
 /* Win/Loss log */
 .log-panel{padding:20px 22px;}
 .wl-tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;width:fit-content;margin-bottom:18px;}
@@ -173,6 +213,7 @@ body.light .log-val{color:rgba(0,0,0,.4);}
   <button class="view-btn active" onclick="switchView('pipeline')">Pipeline</button>
   <button class="view-btn" onclick="switchView('deals')">Deals</button>
   <button class="view-btn" onclick="switchView('wl')">Win / Loss</button>
+  <button class="view-btn" onclick="switchView('sources')">Sources</button>
 </div>
 
 <!-- ══ PIPELINE TAB ══════════════════════════════════════════════════════════ -->
@@ -284,15 +325,6 @@ body.light .log-val{color:rgba(0,0,0,.4);}
     </div>
   </div>
 
-  <div class="card" id="deals-value-panel" style="margin-bottom:10px;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;">
-      <span class="chart-title">Pipeline by Stage</span>
-      <span class="chart-badge" id="dvbadge">—</span>
-    </div>
-    <div style="height:1px;background:rgba(255,255,255,.05);margin:0;"></div>
-    <div class="stage-metrics" id="stage-metrics-row"></div>
-  </div>
-
   <div class="grid-2">
     <div class="card panel">
       <div class="panel-title">
@@ -352,6 +384,71 @@ body.light .log-val{color:rgba(0,0,0,.4);}
 
 </div>
 
+<!-- ══ SOURCES TAB ════════════════════════════════════════════════════════════ -->
+<div class="view-pane" id="pane-sources">
+
+  <div class="stat-row stat-row-4">
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Total Leads</span>
+      <div class="s-val" id="src-total">—</div>
+      <div class="s-sub">All tracked entries</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Active Sources</span>
+      <div class="s-val" id="src-src-count">—</div>
+      <div class="s-sub">Unique channels tracked</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Top Source</span>
+      <div class="s-val" id="src-top" style="font-size:16px;letter-spacing:-.3px;line-height:1.1;margin-top:4px;">—</div>
+      <div class="s-sub" id="src-top-sub">Most leads</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Top Country</span>
+      <div class="s-val" id="src-country" style="font-size:16px;letter-spacing:-.3px;line-height:1.1;margin-top:4px;">—</div>
+      <div class="s-sub" id="src-country-sub">Most leads</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:10px;">
+    <div class="card panel">
+      <div class="panel-title">Lead Sources</div>
+      <div id="src-bars"></div>
+    </div>
+    <div class="card panel">
+      <div class="panel-title">By Country</div>
+      <div id="src-countries"></div>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 14px;">
+      <span class="chart-title">UTM Breakdown</span>
+      <span class="chart-badge" id="utm-badge" style="display:none;">Tracking</span>
+    </div>
+    <div style="height:1px;background:rgba(255,255,255,.04);"></div>
+    <div class="utm-grid">
+      <div class="utm-col">
+        <div class="utm-col-title">Campaign</div>
+        <div id="utm-campaigns"></div>
+      </div>
+      <div class="utm-col">
+        <div class="utm-col-title">Medium</div>
+        <div id="utm-mediums"></div>
+      </div>
+      <div class="utm-col">
+        <div class="utm-col-title">UTM Source</div>
+        <div id="utm-sources-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
 
@@ -406,10 +503,11 @@ function switchView(v){
   document.querySelectorAll('.view-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('pane-'+v).classList.add('active');
-  const labels={pipeline:'Pipeline',deals:'Deals',wl:'Win / Loss'};
+  const labels={pipeline:'Pipeline',deals:'Deals',wl:'Win / Loss',sources:'Sources'};
   document.querySelectorAll('.view-btn').forEach(b=>{if(b.textContent===labels[v])b.classList.add('active');});
   if(v==='wl') renderWL();
   if(v==='deals') renderDeals();
+  if(v==='sources') renderSources();
   setTimeout(drawChart,50);
 }
 
@@ -497,9 +595,6 @@ function renderDeals(){
   document.getElementById('dd-lost').textContent=lostCount||0;
   showSub('dd-lost-val',lostVal,fmtRM);
 
-  // Deals by stage value panel
-  renderDealsValue();
-
   // Deals funnel (uses dm color, no lead-specific lostLabels)
   const dLostLabel=dealsData.lostLabel||'Lost';
   renderFunnelInto('deals-funnel','dfb',ds,dealsData.stageOrder,[dLostLabel],'deals',sv);
@@ -508,29 +603,6 @@ function renderDeals(){
   renderPropStats();
 }
 
-function renderDealsValue(){
-  const panel=document.getElementById('deals-value-panel');
-  const el=document.getElementById('stage-metrics-row');
-  if(!dealsData||!dealsData.stageValues||!dealsData.stageOrder){panel.style.display='none';return;}
-  const {stageValues:sv,stages,stageOrder,lostLabel}=dealsData;
-  const lost=lostLabel||'Lost';
-  // Show ALL stages (including zero-count) except the lost stage, to give full pipeline view
-  const rows=stageOrder.filter(s=>s!==lost).map(s=>({stage:s,count:stages[s]||0,value:sv[s]||0}));
-  if(!rows.length){panel.style.display='none';return;}
-  panel.style.display='';
-  const totalVal=rows.reduce((s,r)=>s+r.value,0);
-  const maxVal=Math.max(...rows.map(r=>r.value),1);
-  document.getElementById('dvbadge').textContent=fmtRM(totalVal)||'—';
-  el.innerHTML=rows.map(r=>{
-    const pct=r.value>0?Math.max(Math.round((r.value/maxVal)*100),4):0;
-    return `<div class="sm-card">
-      <div class="sm-lbl">${esc(r.stage)}</div>
-      <div class="sm-count">${r.count||0}</div>
-      <div class="sm-val">${r.value>0?fmtRM(r.value):''}</div>
-      <div class="sm-bar-track"><div class="sm-bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('');
-}
 
 function renderPropStats(){
   const el=document.getElementById('prop-stats');
@@ -599,6 +671,85 @@ function renderLog(){
   }
 }
 
+// ── Sources tab ───────────────────────────────────────────────────────────────
+const FLAGS={'Malaysia':'🇲🇾','Singapore':'🇸🇬','Indonesia':'🇮🇩','Philippines':'🇵🇭','Thailand':'🇹🇭','Vietnam':'🇻🇳','Bangladesh':'🇧🇩','India':'🇮🇳','UK':'🇬🇧','United Kingdom':'🇬🇧','Australia':'🇦🇺','USA':'🇺🇸','United States':'🇺🇸'};
+
+function renderSrcBars(elId, items, total){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!items||!items.length){el.innerHTML='<div class="empty">No source data</div>';return;}
+  const max=Math.max(...items.map(s=>s.count),1);
+  el.innerHTML=items.map(s=>{
+    const pct=total>0?Math.round((s.count/total)*100):0;
+    const barPct=Math.max(Math.round((s.count/max)*100),s.count>0?4:0);
+    return `<div class="src-row">
+      <span class="src-lbl" title="${esc(s.label)}">${esc(s.label)}</span>
+      <div class="src-bar-track"><div class="src-bar-fill" style="width:${barPct}%"></div></div>
+      <span class="src-count">${s.count}</span>
+      <span class="src-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCountries(elId, countries){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!countries||!countries.length){el.innerHTML='<div class="empty">No country data yet<br/><span style="font-size:10px;opacity:.6;">Set a Country field in your Leads DB</span></div>';return;}
+  const max=Math.max(...countries.map(c=>c.count),1);
+  el.innerHTML=countries.map(c=>{
+    const flag=FLAGS[c.label]||'🌐';
+    const barPct=Math.max(Math.round((c.count/max)*100),4);
+    return `<div class="country-row">
+      <span class="country-flag">${flag}</span>
+      <span class="country-name" title="${esc(c.label)}">${esc(c.label)}</span>
+      <div class="country-bar-track"><div class="country-bar-fill" style="width:${barPct}%"></div></div>
+      <span class="src-count">${c.count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderUtmCol(elId, items, fieldName){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!items||!items.length){
+    el.innerHTML=`<div class="utm-empty">No data yet<br/><span class="utm-setup-pill">Add "${fieldName}" field to Leads DB</span></div>`;
+    return;
+  }
+  const max=Math.max(...items.map(i=>i.count),1);
+  el.innerHTML=items.map(i=>{
+    const barPct=Math.max(Math.round((i.count/max)*100),4);
+    return `<div class="utm-item">
+      <span class="utm-name" title="${esc(i.label)}">${esc(i.label)}</span>
+      <div class="utm-bar-track"><div class="utm-bar-fill" style="width:${barPct}%"></div></div>
+      <span class="utm-n">${i.count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSources(){
+  if(!pipeData) return;
+  const sources=pipeData.sources||[], countries=pipeData.countries||[], utm=pipeData.utm||{sources:[],mediums:[],campaigns:[]};
+  const total=sources.reduce((s,x)=>s+x.count,0);
+  const activeSrcs=sources.filter(s=>s.label!=='Other').length;
+  document.getElementById('src-total').textContent=total||'—';
+  document.getElementById('src-src-count').textContent=activeSrcs||'—';
+
+  const top=sources[0];
+  document.getElementById('src-top').textContent=top?.label||'—';
+  document.getElementById('src-top-sub').textContent=top?top.count+' leads':'No data yet';
+
+  const topC=countries[0];
+  document.getElementById('src-country').textContent=topC?(FLAGS[topC.label]||'')+' '+topC.label:'—';
+  document.getElementById('src-country-sub').textContent=topC?topC.count+' leads':'No country data';
+
+  renderSrcBars('src-bars', sources, total);
+  renderCountries('src-countries', countries);
+
+  const hasUtm=utm.campaigns.length||utm.mediums.length||utm.sources.length;
+  const badge=document.getElementById('utm-badge');
+  badge.style.display=hasUtm?'':'none';
+  renderUtmCol('utm-campaigns', utm.campaigns, 'UTM Campaign');
+  renderUtmCol('utm-mediums',   utm.mediums,   'UTM Medium');
+  renderUtmCol('utm-sources-list', utm.sources,'UTM Source');
+}
+
 // ── Data load ─────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
@@ -644,6 +795,7 @@ async function loadData(){
 
     if(currentView==='deals') renderDeals();
     if(currentView==='wl') renderWL();
+    if(currentView==='sources') renderSources();
 
     chartData=jp.monthly||[];
     document.getElementById('cbadge').textContent=chartData.reduce((s,d)=>s+d.v,0)+' total this year';

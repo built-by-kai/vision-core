@@ -55,6 +55,10 @@ export default async function handler(req, res) {
     let followUpsDueToday      = 0
     let followUpsOverdue       = 0
     const sourceCounts     = {}
+    const countryCounts    = {}
+    const utmSources       = {}
+    const utmMediums       = {}
+    const utmCampaigns     = {}
     const lostLeads        = []
 
     // Determine "converted" and "lost" labels — explicit from labels, or regex fallback
@@ -103,7 +107,7 @@ export default async function handler(req, res) {
       const mDate = new Date(year, month - 5, 1)
       if (created >= mDate && mKey in monthly) monthly[mKey]++
 
-      // Sources — also scoped to selected month when filtered
+      // Sources, country, UTM — scoped to selected month when filtered
       if (inScope) {
         const srcs = p.Source?.multi_select || (p.Source?.select ? [p.Source.select] : [])
         if (srcs.length) {
@@ -111,6 +115,18 @@ export default async function handler(req, res) {
         } else {
           sourceCounts["Other"] = (sourceCounts["Other"] || 0) + 1
         }
+
+        // Country
+        const country = p["Country"]?.select?.name || p["Country"]?.multi_select?.[0]?.name || null
+        if (country) countryCounts[country] = (countryCounts[country] || 0) + 1
+
+        // UTM parameters (graceful — fields may not exist yet)
+        const utmSrc = p["UTM Source"]?.select?.name   || p["UTM Source"]?.rich_text?.[0]?.plain_text   || null
+        const utmMed = p["UTM Medium"]?.select?.name   || p["UTM Medium"]?.rich_text?.[0]?.plain_text   || null
+        const utmCmp = p["UTM Campaign"]?.select?.name || p["UTM Campaign"]?.rich_text?.[0]?.plain_text || null
+        if (utmSrc) utmSources[utmSrc]   = (utmSources[utmSrc]   || 0) + 1
+        if (utmMed) utmMediums[utmMed]   = (utmMediums[utmMed]   || 0) + 1
+        if (utmCmp) utmCampaigns[utmCmp] = (utmCampaigns[utmCmp] || 0) + 1
       }
     }
 
@@ -160,6 +176,14 @@ export default async function handler(req, res) {
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
+      countries: Object.entries(countryCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => ({ label, count })),
+      utm: {
+        sources:   Object.entries(utmSources).sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count})),
+        mediums:   Object.entries(utmMediums).sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count})),
+        campaigns: Object.entries(utmCampaigns).sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count})),
+      },
     })
   } catch (err) {
     console.error("pipeline:", err)
