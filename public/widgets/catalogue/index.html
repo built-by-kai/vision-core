@@ -963,9 +963,9 @@ function filterItems(){
   const q = document.getElementById('search').value.trim().toLowerCase()
   return allItems.filter(item => {
     const osMatch = activeOS === 'All'
-      || item.tier === 'OS Package'
-      || item.tier === 'Entry Point'
-      || item.avail.includes(activeOS)
+      ? true
+      : item.tier === 'OS Package'
+        || (item.tier !== 'Entry Point' && item.avail.includes(activeOS))
     const searchMatch = !q
       || item.name.toLowerCase().includes(q)
       || item.desc.toLowerCase().includes(q)
@@ -1212,8 +1212,8 @@ function render(){
       }
     }
 
-    // Retention OS expansion card shown on Revenue OS tab only
-    if (activeOS === 'Revenue OS'){
+    // Retention OS expansion — shown on Revenue OS and Marketing OS tabs
+    if (activeOS === 'Revenue OS' || activeOS === 'Marketing OS'){
       const retOS = ADDON_OS.find(x => x.name === 'Retention OS')
       if (retOS) html += retentionExpansionHTML(retOS)
     }
