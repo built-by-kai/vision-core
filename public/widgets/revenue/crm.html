@@ -125,12 +125,6 @@ body.light .map-canvas-label{color:rgba(0,0,0,.3);}
 .map-bg-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:.45;pointer-events:none;}
 body.light .map-bg-img{filter:invert(1);opacity:.25;}
 .map-svg-ol{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;}
-/* Arc path draw animation */
-@keyframes arc-draw{from{stroke-dashoffset:var(--plen)}to{stroke-dashoffset:0}}
-/* Dot pulse ring */
-@keyframes dot-pulse{0%{r:2.5;opacity:.8}100%{r:7;opacity:0}}
-/* Dot glow breathe */
-@keyframes dot-glow{0%,100%{opacity:.6}50%{opacity:1}}
 .map-info-side{width:200px;border-left:1px solid rgba(255,255,255,.05);padding:22px 18px;display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
 body.light .map-info-side{border-left-color:rgba(0,0,0,.06);}
 .map-total-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-bottom:6px;}
@@ -734,126 +728,65 @@ function ll2xy(lat,lng){
   return{x:(lng+180)*(119/360), y:(90-lat)*(60/180)};
 }
 
-// Approximate path length for a quadratic bezier (3-point sampling)
-function approxPathLen(x1,y1,cpx,cpy,x2,y2){
-  let len=0,px=x1,py=y1;
-  for(let t=0.1;t<=1.0;t+=0.1){
-    const u=1-t;
-    const nx=u*u*x1+2*u*t*cpx+t*t*x2;
-    const ny=u*u*y1+2*u*t*cpy+t*t*y2;
-    len+=Math.hypot(nx-px,ny-py);
-    px=nx;py=ny;
-  }
-  return len;
-}
 
 function drawSvgMap(){
   const svg=document.getElementById('map-svg-ol');
   if(!svg) return;
-  // Clear previous dynamic elements
   svg.querySelectorAll('.dyn').forEach(el=>el.remove());
 
-  const isDark=!document.body.classList.contains('light');
-  const ACCENT=isDark?'#AAFF00':'#5C9900';
-  const CENTER_CLR=isDark?'#fff':'#fff';
+  const ACCENT='#AAFF00';
 
   const countries=pipeData?.countries||[];
   if(!countries.length) return;
-  const total=countries.reduce((s,c)=>s+c.count,0);
 
-  // ── Defs: gradient for arc glow ──
-  let defs=svg.querySelector('defs');
-  if(!defs){defs=document.createElementNS('http://www.w3.org/2000/svg','defs');svg.appendChild(defs);}
-
-  // ── Arc group (drawn below dots) ──
+  // Arc group below dots
   const arcG=document.createElementNS('http://www.w3.org/2000/svg','g');
   arcG.setAttribute('class','dyn');
   svg.appendChild(arcG);
 
-  // ── Dot group (drawn above arcs) ──
+  // Dot group above arcs
   const dotG=document.createElementNS('http://www.w3.org/2000/svg','g');
   dotG.setAttribute('class','dyn');
   svg.appendChild(dotG);
 
-  const home=countries[0];
-  const homeLL=COUNTRY_LL[home?.label];
+  const homeLL=COUNTRY_LL[countries[0]?.label];
   const homeXY=homeLL?ll2xy(homeLL[0],homeLL[1]):null;
 
-  // Draw arcs from home → others
+  // Thin curved arcs from home → others
   if(homeXY){
-    countries.slice(1,7).forEach((c,i)=>{
+    countries.slice(1,7).forEach(c=>{
       const ll=COUNTRY_LL[c.label];if(!ll)return;
       const {x:x2,y:y2}=ll2xy(ll[0],ll[1]);
       const x1=homeXY.x,y1=homeXY.y;
-      // Control point: midpoint, lifted above
       const mx=(x1+x2)/2;
-      const my=(y1+y2)/2-Math.abs(x2-x1)*0.35-3;
-      const plen=approxPathLen(x1,y1,mx,my,x2,y2).toFixed(1);
-      const delay=(i*0.18).toFixed(2);
-
-      // Gradient id per arc
-      const gId=`ag${i}`;
-      const grad=document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
-      grad.setAttribute('id',gId);
-      grad.setAttribute('gradientUnits','userSpaceOnUse');
-      grad.setAttribute('x1',x1);grad.setAttribute('y1',y1);
-      grad.setAttribute('x2',x2);grad.setAttribute('y2',y2);
-      const s0=document.createElementNS('http://www.w3.org/2000/svg','stop');
-      s0.setAttribute('offset','0%');s0.setAttribute('stop-color',ACCENT);s0.setAttribute('stop-opacity','0');
-      const s1=document.createElementNS('http://www.w3.org/2000/svg','stop');
-      s1.setAttribute('offset','50%');s1.setAttribute('stop-color',ACCENT);s1.setAttribute('stop-opacity','0.7');
-      const s2=document.createElementNS('http://www.w3.org/2000/svg','stop');
-      s2.setAttribute('offset','100%');s2.setAttribute('stop-color',ACCENT);s2.setAttribute('stop-opacity','0');
-      grad.appendChild(s0);grad.appendChild(s1);grad.appendChild(s2);
-      defs.appendChild(grad);
-
-      // Arc path
+      const my=Math.min(y1,y2)-Math.abs(x2-x1)*0.25-2;
       const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-      path.setAttribute('d',`M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`);
+      path.setAttribute('d',`M${x1.toFixed(2)} ${y1.toFixed(2)} Q${mx.toFixed(2)} ${my.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}`);
       path.setAttribute('fill','none');
-      path.setAttribute('stroke',`url(#${gId})`);
-      path.setAttribute('stroke-width','0.5');
-      path.style.setProperty('--plen',plen);
-      path.style.strokeDasharray=plen;
-      path.style.strokeDashoffset=plen;
-      path.style.animation=`arc-draw 1.4s cubic-bezier(.4,0,.2,1) ${delay}s forwards`;
+      path.setAttribute('stroke',ACCENT);
+      path.setAttribute('stroke-width','0.35');
+      path.setAttribute('stroke-opacity','0.5');
       arcG.appendChild(path);
     });
   }
 
-  // Draw dots for all countries that have data
+  // Small clean dots
   countries.slice(0,8).forEach((c,i)=>{
     const ll=COUNTRY_LL[c.label];if(!ll)return;
     const {x,y}=ll2xy(ll[0],ll[1]);
     const isHome=(i===0);
-    const delay=(i*0.12).toFixed(2);
 
-    // Glow circle behind
-    const glow=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    glow.setAttribute('cx',x);glow.setAttribute('cy',y);glow.setAttribute('r','4');
-    glow.setAttribute('fill',ACCENT);glow.setAttribute('fill-opacity','0.12');
-    dotG.appendChild(glow);
-
-    // Pulse ring (animated outward)
+    // Outer ring
     const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r','2.5');
-    ring.setAttribute('fill','none');ring.setAttribute('stroke',ACCENT);ring.setAttribute('stroke-width','0.4');
-    ring.style.transformOrigin=`${x}px ${y}px`;
-    ring.style.animation=`dot-pulse 2s ease-out ${delay}s infinite`;
+    ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r',isHome?'2':'1.6');
+    ring.setAttribute('fill','none');ring.setAttribute('stroke',ACCENT);ring.setAttribute('stroke-width','0.4');ring.setAttribute('stroke-opacity','0.7');
     dotG.appendChild(ring);
 
-    // Core dot
+    // Filled core
     const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('r',isHome?'1.8':'1.4');
+    dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('r',isHome?'1':'0.8');
     dot.setAttribute('fill',ACCENT);
-    dot.style.animation=`dot-glow 2s ease-in-out ${delay}s infinite`;
     dotG.appendChild(dot);
-
-    // White center
-    const center=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    center.setAttribute('cx',x);center.setAttribute('cy',y);center.setAttribute('r','0.65');
-    center.setAttribute('fill',CENTER_CLR);
-    dotG.appendChild(center);
   });
 }
 
