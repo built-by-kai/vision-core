@@ -89,16 +89,8 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .os-hero-model{font-size:10px;font-weight:600;color:rgba(255,255,255,.2);text-align:right;}
 .os-hero-reqpill{background:rgba(255,154,60,.08);border:1px solid rgba(255,154,60,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;color:rgba(255,154,60,.7);margin-top:6px;}
 
-/* ── Two-column OS Packages + Additional OS Layers row ── */
-.two-col-row{display:grid;grid-template-columns:1fr 280px;gap:0;margin-bottom:28px;align-items:start;}
-@media(max-width:700px){.two-col-row{grid-template-columns:1fr;gap:24px;}}
-.two-col-section{min-width:0;}
-.two-col-section:first-child{padding-right:28px;border-right:1px solid rgba(255,255,255,.05);}
-.two-col-section:last-child{padding-left:28px;}
-/* OS Packages column: max 3 per row so cards wrap nicely */
-.two-col-section:first-child .cards{grid-template-columns:repeat(3,1fr) !important;}
-/* Additional OS Layers column: single card per row */
-.two-col-section:last-child .cards{grid-template-columns:1fr !important;}
+/* Additional OS Layers: 2-column compact grid */
+.addon-os-layers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;max-width:600px;}
 
 /* ── Section header ── */
 .section{margin-bottom:28px;}
@@ -1124,13 +1116,13 @@ function render(){
   if (activeOS === 'All'){
     html += bundleSectionHTML()
 
-    // ── OS Packages + Additional OS Layers (2-column) ─────────────────────────
+    // ── OS Packages ───────────────────────────────────────────────────────────
     const osPkgItems   = filtered.filter(x => x.tier === 'OS Package' && !ADDON_OS_NAMES.includes(x.name))
     const addonOSItems = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
     const entryItems   = filtered.filter(x => x.tier === 'Entry Point')
 
-    const osPkgCol = osPkgItems.length ? `
-      <div class="two-col-section">
+    if (osPkgItems.length){
+      html += `<div class="section">
         <div class="section-hdr">
           <div class="section-bar" style="background:#AAFF00"></div>
           <span class="section-title">OS Packages</span>
@@ -1138,23 +1130,24 @@ function render(){
           <div class="section-line"></div>
         </div>
         <div class="cards">${osPkgItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-      </div>` : ''
+      </div>`
+    }
 
-    const addonCol = addonOSItems.length ? `
-      <div class="two-col-section">
+    // ── Additional OS Layers ──────────────────────────────────────────────────
+    if (addonOSItems.length){
+      html += `<div class="section">
         <div class="section-hdr">
           <div class="section-bar" style="background:var(--g)"></div>
           <span class="section-title">Additional OS Layers</span>
           <span class="section-count">${addonOSItems.length} items</span>
-          <span class="section-note">Any time</span>
+          <span class="section-note">Add to any install at any time</span>
           <div class="section-line"></div>
         </div>
-        <div class="cards">${addonOSItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-      </div>` : ''
+        <div class="addon-os-layers-grid">${addonOSItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+      </div>`
+    }
 
-    if (osPkgCol || addonCol) html += `<div class="two-col-row">${osPkgCol}${addonCol}</div>`
-
-    // ── Entry Point — own full-width row ──────────────────────────────────────
+    // ── Entry Point ───────────────────────────────────────────────────────────
     if (entryItems.length){
       html += sectionHTML('Entry Point', '#94A3B8', entryItems, 'Upgrade credit applies')
     }
