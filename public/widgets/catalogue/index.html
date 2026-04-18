@@ -95,7 +95,9 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .two-col-section{min-width:0;}
 .two-col-section:first-child{padding-right:28px;border-right:1px solid rgba(255,255,255,.05);}
 .two-col-section:last-child{padding-left:28px;}
-/* Additional OS Layers column: single card per row, no tier dot */
+/* OS Packages column: max 3 per row so cards wrap nicely */
+.two-col-section:first-child .cards{grid-template-columns:repeat(3,1fr) !important;}
+/* Additional OS Layers column: single card per row */
 .two-col-section:last-child .cards{grid-template-columns:1fr !important;}
 
 /* ── Section header ── */
