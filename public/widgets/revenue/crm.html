@@ -120,7 +120,7 @@ body.light .seg-count{color:#111;}
 /* flex row: map fills left, stats panel right */
 .map-card-body{display:flex;height:260px;}
 /* Left: map area — flex column so child fills it */
-.map-canvas-side{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#222222;}
+.map-canvas-side{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#191919;}
 body.light .map-canvas-side{background:#ececec;}
 .map-canvas-label{position:absolute;top:12px;left:14px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.22);z-index:2;pointer-events:none;}
 body.light .map-canvas-label{color:rgba(0,0,0,.28);}
@@ -766,9 +766,9 @@ async function drawSvgMap(){
   wrap.innerHTML='';
 
   const isDark=!document.body.classList.contains('light');
-  const FILL   = isDark?'#2a2a2a':'#ddd';
-  const STROKE = isDark?'#333333':'#c4c4c4';
-  const BG     = isDark?'#222222':'#ececec';
+  const FILL   = isDark?'#2e2e2e':'#d8d8d8';
+  const STROKE = isDark?'#424242':'#bbb';
+  const BG     = isDark?'#191919':'#ececec';  // darker than card so land lifts above ocean
   const ACCENT = isDark?'#AAFF00':'#5C9900';
 
   // offsetWidth/Height works even when the element is about to paint
@@ -784,10 +784,12 @@ async function drawSvgMap(){
     .style('width','100%').style('height','100%')
     .style('background',BG);
 
+  console.log('[map] rendering W='+W+' H='+H+' countries='+countries.length);
   // Load world topology
   let world;
   try{ world=await loadTopo(); }
   catch(e){ console.warn('[map] topo load failed',e); return; }
+  console.log('[map] topology loaded, drawing paths');
 
   // Adaptive projection — fit to actual points (HQ + all lead countries)
   const knownCountryPts=countries.slice(0,8)
