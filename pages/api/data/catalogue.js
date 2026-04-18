@@ -10,7 +10,7 @@ const CATALOGUE_DB = "0acfe60097f682568935013f42a876f9"
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end()
   res.setHeader("Access-Control-Allow-Origin", "*")
-  res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600")
+  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120")
 
   try {
     // ── Auth ──────────────────────────────────────────────────────────────────
