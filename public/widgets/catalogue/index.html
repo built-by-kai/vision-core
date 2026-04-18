@@ -323,7 +323,9 @@ const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS',
 const VIRTUAL_TABS = ['Additional Layers','Entry Point']
 
 const TIERS = [
+  { key: 'Foundation',         color: '#AAFF00', label: 'Foundation' },
   { key: 'OS Package',         color: '#AAFF00', label: 'OS Packages' },
+  { key: 'Additional OS Layer',color: '#AAFF00', label: 'Additional OS Layers' },
   { key: 'Entry Point',        color: '#94A3B8', label: 'Entry Point' },
   { key: 'Core Module',        color: '#60A5FA', label: 'Core Modules' },
   { key: 'Expansion Module',   color: '#A78BFA', label: 'Expansion Modules' },
@@ -615,10 +617,9 @@ const MODULE_DBS = {
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
 // ─── Add-on OS layers section ─────────────────────────────────────────────────
-const ADDON_OS_NAMES = ['Team OS','Retention OS','Sales OS']
-// Live price lookup from Notion data
-function livePrice(name){ const it=allItems.find(x=>x.name===name&&x.tier==='OS Package'); return it?.price??null }
-function liveVisibility(name){ const it=allItems.find(x=>x.name===name&&x.tier==='OS Package'); return it?.visibility??'Public' }
+// Live price lookup from Notion data (works for OS Package + Additional OS Layer + Foundation)
+function livePrice(name){ const it=allItems.find(x=>x.name===name); return it?.price??null }
+function liveVisibility(name){ const it=allItems.find(x=>x.name===name); return it?.visibility??'Public' }
 const ADDON_OS = [
   {
     name: 'Team OS',
@@ -807,7 +808,7 @@ function openDrawer(idx){
   const c = tierColor(item.tier)
 
   // Header
-  const eyebrowLabel = ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : (item.tier || '')
+  const eyebrowLabel = item.tier || ''
   document.getElementById('d-eyebrow').textContent = eyebrowLabel
   document.getElementById('d-eyebrow').style.color = c
   document.getElementById('d-name').textContent = item.name
@@ -836,7 +837,7 @@ function openDrawer(idx){
 
   // Category + Pricing Model — right after pricing
   body += `<div class="d-section"><div class="d-label">Category</div>`
-  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : item.tier}</div></div></div>`
+  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${item.tier}</div></div></div>`
   if (item.model){
     body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
     body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
@@ -855,9 +856,9 @@ function openDrawer(idx){
     body += `<div class="d-divider"></div>`
   }
 
-  // For OS Packages: show full module list
+  // For OS Packages + Additional OS Layers: show full module list
   const mods = OS_MODULES[item.name]
-  if ((item.tier === 'OS Package' || item.tier === 'Entry Point') && mods){
+  if ((item.tier === 'OS Package' || item.tier === 'Additional OS Layer' || item.tier === 'Entry Point') && mods){
     body += `<div class="d-section"><div class="d-label">Included Modules (${mods.length})</div>`
     body += `<div class="d-modules">`
     mods.forEach((m,i) => {
@@ -1003,13 +1004,15 @@ function setOS(os){ activeOS=os; render() }
 function filterItems(){
   const q = document.getElementById('search').value.trim().toLowerCase()
   return allItems.filter(item => {
+    // Never show Foundation tier as catalogue cards (Base OS is always complimentary — shown inline)
+    if (item.tier === 'Foundation') return false
     const osMatch = activeOS === 'All'
       ? true
       : activeOS === 'Additional Layers'
-        ? (item.tier === 'OS Package' && ADDON_OS_NAMES.includes(item.name))
+        ? (item.tier === 'Additional OS Layer' && item.name !== 'Base OS')
         : activeOS === 'Entry Point'
           ? item.tier === 'Entry Point'
-          : item.tier === 'OS Package'
+          : (item.tier === 'OS Package' || item.tier === 'Additional OS Layer')
             || (item.tier !== 'Entry Point' && item.avail.includes(activeOS))
     const searchMatch = !q
       || item.name.toLowerCase().includes(q)
@@ -1038,7 +1041,7 @@ function priceHTML(item){
 }
 
 function cardBodyHTML(item){
-  if (item.tier === 'OS Package' || item.tier === 'Entry Point'){
+  if (item.tier === 'OS Package' || item.tier === 'Additional OS Layer' || item.tier === 'Entry Point'){
     const mods = OS_MODULES[item.name]
     if (mods){
       return `<div class="card-module-list">${
@@ -1061,7 +1064,7 @@ function footerHTML(item){
   if (item.model === 'Setup + Subscription') pills.push(`<span class="pill pill-sub">Subscription</span>`)
   if (item.requiresNames && item.requiresNames.length)
     item.requiresNames.forEach(r => pills.push(`<span class="pill pill-req">Req: ${r}</span>`))
-  else if (item.avail && item.avail.length && item.tier !== 'OS Package')
+  else if (item.avail && item.avail.length && item.tier !== 'OS Package' && item.tier !== 'Additional OS Layer')
     item.avail.slice(0,2).forEach(a => pills.push(`<span class="pill pill-os">${a}</span>`))
   return pills.join('')
 }
@@ -1072,7 +1075,7 @@ function cardHTML(item, idx){
   const body = cardBodyHTML(item)
   return `<div class="card" onclick="openDrawer(${idx})" style="--card-color:${c}">
     <div class="card-top">
-      <div class="${(item.tier === 'OS Package' || item.tier === 'Entry Point') ? 'card-name-os' : 'card-name'}">${item.name}</div>
+      <div class="${(item.tier === 'OS Package' || item.tier === 'Additional OS Layer' || item.tier === 'Entry Point') ? 'card-name-os' : 'card-name'}">${item.name}</div>
       <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
     </div>
     ${priceHTML(item)}
@@ -1083,7 +1086,7 @@ function cardHTML(item, idx){
 }
 
 function osHeroHTML(os){
-  const osCard = allItems.find(x => x.name === os && x.tier === 'OS Package')
+  const osCard = allItems.find(x => x.name === os && (x.tier === 'OS Package' || x.tier === 'Additional OS Layer'))
   const modules = OS_MODULES[os] || []
   const meta = OS_META[os] || {}
 
@@ -1110,7 +1113,7 @@ function osHeroHTML(os){
     ? `<div class="os-hero-reqpill">Requires: ${meta.req}</div>`
     : ''
 
-  const isAddonOS = ADDON_OS_NAMES.includes(os)
+  const isAddonOS = osCard?.tier === 'Additional OS Layer'
 
   return `<div class="os-hero">
     <div class="os-hero-inner">
@@ -1180,8 +1183,8 @@ function render(){
     html += bundleSectionHTML()
 
     // ── OS Packages ───────────────────────────────────────────────────────────
-    const osPkgItems   = filtered.filter(x => x.tier === 'OS Package' && !ADDON_OS_NAMES.includes(x.name))
-    const addonOSItems = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
+    const osPkgItems   = filtered.filter(x => x.tier === 'OS Package')
+    const addonOSItems = filtered.filter(x => x.tier === 'Additional OS Layer' && x.name !== 'Base OS')
     const entryItems   = filtered.filter(x => x.tier === 'Entry Point')
 
     if (osPkgItems.length){
@@ -1215,16 +1218,16 @@ function render(){
       html += sectionHTML('Entry Point', '#94A3B8', entryItems, 'Upgrade credit applies')
     }
 
-    // ── All other tiers ───────────────────────────────────────────────────────
+    // ── All other tiers (skip layout tiers handled above) ─────────────────────
     for (const tier of TIERS){
-      if (['OS Package','Entry Point'].includes(tier.key)) continue
+      if (['Foundation','OS Package','Additional OS Layer','Entry Point'].includes(tier.key)) continue
       const group = filtered.filter(x => x.tier === tier.key)
       if (group.length) html += sectionHTML(tier.label, tier.color, group)
     }
   } else {
     html += osHeroHTML(activeOS)
     const included = filtered.filter(x => x.tier === 'Core Module')
-    const addons   = filtered.filter(x => !['OS Package','Core Module'].includes(x.tier))
+    const addons   = filtered.filter(x => !['OS Package','Additional OS Layer','Foundation','Core Module'].includes(x.tier))
 
     // Base OS section — always shown on OS tabs
     const baseModules = OS_MODULES['Base OS'] || []
@@ -1272,9 +1275,18 @@ function render(){
     }
 
     // Additional OS Layers — compact side-by-side cards at bottom of Revenue OS tab
-    if (activeOS === 'Revenue OS'){
-      const expansions = ADDON_OS.filter(x => x.req === 'Revenue OS')
-      if (expansions.length) html += additionalOSExpansionSectionHTML(expansions)
+    // Driven by live Notion data: Additional OS Layer items that require this OS
+    const liveExpansions = allItems.filter(x =>
+      x.tier === 'Additional OS Layer' && x.name !== 'Base OS' &&
+      x.requiresNames && x.requiresNames.includes(activeOS)
+    )
+    if (liveExpansions.length){
+      // Merge live Notion data with ADDON_OS metadata for tagline + when text
+      const expansions = liveExpansions.map(live => {
+        const meta = ADDON_OS.find(a => a.name === live.name) || {}
+        return { ...meta, name: live.name }
+      })
+      html += additionalOSExpansionSectionHTML(expansions)
     }
   }
 
