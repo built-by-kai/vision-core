@@ -127,32 +127,35 @@ body.light .map-canvas-label{color:rgba(0,0,0,.3);}
 .map-d3-wrap svg{display:block;}
 .map-info-side{width:200px;border-left:1px solid rgba(255,255,255,.05);padding:22px 18px;display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
 body.light .map-info-side{border-left-color:rgba(0,0,0,.06);}
-.map-total-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-bottom:6px;}
-body.light .map-total-lbl{color:rgba(0,0,0,.3);}
-.map-total-num{font-size:32px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1;}
-body.light .map-total-num{color:#111;}
-.map-clist-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.map-clist-row:last-child{margin-bottom:0;}
-.map-clist-flag{font-size:14px;flex-shrink:0;line-height:1;}
-.map-clist-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.45);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .map-clist-name{color:rgba(0,0,0,.45);}
-.map-clist-pct{font-size:12px;font-weight:900;color:var(--g);flex-shrink:0;}
-/* Country % card strip */
-.ccard-strip{display:flex;border-top:1px solid rgba(255,255,255,.04);overflow:hidden;}
-body.light .ccard-strip{border-top-color:rgba(0,0,0,.06);}
-.ccard{flex:1;min-width:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.04);}
-.ccard:last-child{border-right:none;}
-body.light .ccard{border-right-color:rgba(0,0,0,.05);}
-.ccard-flag{font-size:18px;margin-bottom:5px;line-height:1;}
-.ccard-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .ccard-name{color:rgba(0,0,0,.35);}
-.ccard-pct{font-size:20px;font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:2px;}
-body.light .ccard-pct{color:#111;}
-.ccard-count{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);margin-bottom:8px;}
-body.light .ccard-count{color:rgba(0,0,0,.3);}
-.ccard-bar{height:3px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:4px;}
-body.light .ccard-bar{background:rgba(0,0,0,.07);}
-.ccard-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
+/* Right stats panel */
+.map-stats-side{width:210px;display:flex;flex-direction:column;gap:7px;padding:14px 14px 14px 0;flex-shrink:0;}
+/* Total leads card */
+.ms-total{background:#111;border:0.5px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+body.light .ms-total{background:#f7f7f7;border-color:rgba(0,0,0,.07);}
+.ms-total-left{flex:1;min-width:0;}
+.ms-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:6px;}
+body.light .ms-lbl{color:rgba(0,0,0,.35);}
+.ms-num{font-size:30px;font-weight:500;letter-spacing:-1.5px;color:#fff;line-height:1;}
+body.light .ms-num{color:#111;}
+.ms-delta{font-size:11px;font-weight:700;margin-top:5px;color:var(--g);}
+.ms-delta.down{color:#666;}
+/* Circular ring */
+.ms-ring-svg{width:46px;height:46px;flex-shrink:0;transform:rotate(-90deg);}
+.ms-ring-track{fill:none;stroke:#222;stroke-width:4;}
+body.light .ms-ring-track{stroke:#e0e0e0;}
+.ms-ring-fill{fill:none;stroke:#AAFF00;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
+body.light .ms-ring-fill{stroke:#5C9900;}
+/* 2×2 country grid */
+.ms-countries{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;}
+.ms-cc{background:#111;border:0.5px solid rgba(255,255,255,.07);border-radius:8px;padding:11px 11px 9px;display:flex;flex-direction:column;}
+body.light .ms-cc{background:#f7f7f7;border-color:rgba(0,0,0,.07);}
+.ms-cc-name{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+body.light .ms-cc-name{color:rgba(0,0,0,.38);}
+.ms-cc-pct{font-size:19px;font-weight:500;letter-spacing:-.5px;color:#fff;line-height:1.1;}
+body.light .ms-cc-pct{color:#111;}
+.ms-cc-bar{height:2px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:8px;}
+body.light .ms-cc-bar{background:rgba(0,0,0,.08);}
+.ms-cc-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
 /* UTM section */
 .utm-grid{display:grid;grid-template-columns:repeat(3,1fr);}
 @media(max-width:700px){.utm-grid{grid-template-columns:1fr;}}
@@ -442,15 +445,23 @@ body.light .log-val{color:rgba(0,0,0,.4);}
         <div class="map-canvas-label">Audience Location</div>
         <div class="map-d3-wrap" id="map-d3-wrap"></div>
       </div>
-      <div class="map-info-side">
-        <div>
-          <div class="map-total-lbl">Total Leads</div>
-          <div class="map-total-num" id="map-total">—</div>
+      <div class="map-stats-side">
+        <!-- Total Leads -->
+        <div class="ms-total">
+          <div class="ms-total-left">
+            <div class="ms-lbl">Total Leads</div>
+            <div class="ms-num" id="ms-total-num">—</div>
+            <div class="ms-delta" id="ms-total-delta"></div>
+          </div>
+          <svg class="ms-ring-svg" id="ms-ring-svg" viewBox="0 0 46 46">
+            <circle class="ms-ring-track" cx="23" cy="23" r="18"/>
+            <circle class="ms-ring-fill" id="ms-ring-fill" cx="23" cy="23" r="18" stroke-dasharray="113" stroke-dashoffset="113"/>
+          </svg>
         </div>
-        <div id="map-clist"></div>
+        <!-- 2×2 country grid -->
+        <div class="ms-countries" id="ms-countries"></div>
       </div>
     </div>
-    <div class="ccard-strip" id="ccard-strip"></div>
   </div>
 
   <!-- Sources + UTM -->
@@ -766,9 +777,19 @@ async function drawSvgMap(){
   try{ world=await loadTopo(); }
   catch(e){ console.warn('[map] topo load failed',e); return; }
 
-  const projection=d3.geoNaturalEarth1()
-    .scale(W/6.5)
-    .translate([W/2, H/1.9]);
+  // Adaptive projection — fit to actual points (HQ + all lead countries)
+  const pointFeats=[
+    {type:'Feature',geometry:{type:'Point',coordinates:[HQ_LNG,HQ_LAT]}},
+    ...countries.slice(0,8)
+      .filter(c=>COUNTRY_LL[c.label])
+      .map(c=>({type:'Feature',geometry:{type:'Point',coordinates:[COUNTRY_LL[c.label][1],COUNTRY_LL[c.label][0]]}}))
+  ];
+  const pointFC={type:'FeatureCollection',features:pointFeats};
+  const projection=d3.geoNaturalEarth1();
+  projection.fitExtent([[50,40],[W-50,H-30]],pointFC);
+  // Clamp: don't zoom too far in (nearby countries) or out (single point)
+  const s=projection.scale();
+  projection.scale(Math.min(Math.max(s,W/7),W/2.8));
   const path=d3.geoPath(projection);
 
   // Country shapes
@@ -870,36 +891,43 @@ function renderSources(){
   document.getElementById('src-country').textContent=topC?((FLAGS[topC.label]||'')+' '+topC.label):'—';
   document.getElementById('src-country-sub').textContent=topC?(topC.count+' leads'):'No country data';
 
-  // Map total
-  document.getElementById('map-total').textContent=total||'—';
+  // ── Right stats panel ────────────────────────────────────────────────────
+  // Total leads number
+  document.getElementById('ms-total-num').textContent=total||'—';
 
-  // Country right-panel list (top 5, compact)
-  const clistEl=document.getElementById('map-clist');
-  if(clistEl){
-    clistEl.innerHTML=countries.slice(0,5).map(c=>{
-      const pct=total>0?Math.round((c.count/total)*100):0;
-      return `<div class="map-clist-row">
-        <span class="map-clist-flag">${FLAGS[c.label]||'🌐'}</span>
-        <span class="map-clist-name">${esc(c.label)}</span>
-        <span class="map-clist-pct">${pct}%</span>
-      </div>`;
-    }).join('')||'<div class="empty" style="padding:8px 0;">No country data yet</div>';
+  // Delta: compare this month vs prev month from monthly array
+  const monthly=pipeData.monthly||[];
+  if(monthly.length>=2){
+    const cur=monthly[monthly.length-1].v;
+    const prev=monthly[monthly.length-2].v;
+    if(prev>0){
+      const pct=Math.round(((cur-prev)/prev)*100);
+      const el=document.getElementById('ms-total-delta');
+      el.textContent=(pct>=0?'↑':'↓')+Math.abs(pct)+'% vs last month';
+      el.className='ms-delta'+(pct<0?' down':'');
+    }
   }
 
-  // Country % cards strip (top 4)
-  const strip=document.getElementById('ccard-strip');
-  if(strip){
-    strip.innerHTML=countries.slice(0,4).map(c=>{
+  // Ring — show top-country share as a "concentration" indicator
+  // circumference = 2π×18 ≈ 113.1
+  const CIRC=113.1;
+  const ringFill=document.getElementById('ms-ring-fill');
+  if(ringFill&&countries.length&&total>0){
+    const topShare=countries[0].count/total; // 0–1
+    ringFill.setAttribute('stroke-dashoffset',(CIRC*(1-topShare)).toFixed(1));
+  }
+
+  // 2×2 country grid (top 4)
+  const ccEl=document.getElementById('ms-countries');
+  if(ccEl){
+    ccEl.innerHTML=countries.slice(0,4).map(c=>{
       const pct=total>0?Math.round((c.count/total)*100):0;
-      return `<div class="ccard">
-        <div class="ccard-flag">${FLAGS[c.label]||'🌐'}</div>
-        <div class="ccard-name">${esc(c.label)}</div>
-        <div class="ccard-pct">${pct}%</div>
-        <div class="ccard-count">${c.count} lead${c.count!==1?'s':''}</div>
-        <div class="ccard-bar"><div class="ccard-bar-fill" style="width:${pct}%"></div></div>
+      return `<div class="ms-cc">
+        <div class="ms-cc-name">${esc(c.label)}</div>
+        <div class="ms-cc-pct">${pct}%</div>
+        <div class="ms-cc-bar"><div class="ms-cc-bar-fill" style="width:${pct}%"></div></div>
       </div>`;
-    }).join('')||'';
-    strip.style.display=countries.length?'flex':'none';
+    }).join('')||'<div class="empty" style="grid-column:1/-1;padding:12px 0;">No country data yet</div>';
   }
 
   // Source bars
