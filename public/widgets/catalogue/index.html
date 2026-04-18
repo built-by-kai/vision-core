@@ -603,19 +603,36 @@ const ADDON_OS = [
   },
 ]
 
-function retentionExpansionHTML(os){
-  const mods = os.modules.map((m,i) =>
-    `<div class="addon-os-module-row">
+// Modules available without Revenue OS (no Retainer Management dependency)
+const RETENTION_NO_REV_OS = ['Client Health Tracker','Client Communication Log','Upsell Opportunity Tracker']
+const RETENTION_NEEDS_REV_OS = ['Renewal Pipeline','Retainer Health Tracker']
+
+function retentionExpansionHTML(os, context){
+  // context = 'revenue' | 'marketing'
+  const isMarketing = context === 'marketing'
+
+  const mods = os.modules.map((m,i) => {
+    const needsRev = RETENTION_NEEDS_REV_OS.includes(m)
+    const dimmed = isMarketing && needsRev
+    return `<div class="addon-os-module-row" style="${dimmed ? 'opacity:.4' : ''}">
       <span class="addon-os-module-num">${i+1}</span>
-      <span class="addon-os-module-name">${m}</span>
+      <span class="addon-os-module-name">${m}${dimmed ? `<span style="font-size:9px;font-weight:700;color:rgba(255,154,60,.6);margin-left:6px;">Req: Revenue OS</span>` : ''}</span>
     </div>`
-  ).join('')
+  }).join('')
+
+  const note = isMarketing
+    ? `<div class="addon-os-when" style="margin-top:0"><strong>Without Revenue OS:</strong> 3 of 5 modules are available — Client Health Tracker, Client Communication Log, and Upsell Opportunity Tracker. Renewal Pipeline and Retainer Health Tracker activate if Revenue OS is added later.</div>`
+    : `<div class="addon-os-when"><strong>When to add:</strong> ${os.when}</div>`
+
+  const sectionNote = isMarketing
+    ? 'Available — 3 of 5 modules without Revenue OS'
+    : 'Can be purchased together with Revenue OS from day one'
 
   return `<div class="bundles-section">
     <div class="section-hdr">
       <div class="section-bar" style="background:var(--g)"></div>
       <span class="section-title">Expand with Retention OS</span>
-      <span class="section-note">Can be purchased together with Revenue OS from day one</span>
+      <span class="section-note">${sectionNote}</span>
       <div class="section-line"></div>
     </div>
     <div class="addon-os-grid" style="grid-template-columns:minmax(0,600px)">
@@ -635,11 +652,11 @@ function retentionExpansionHTML(os){
         <div class="addon-os-req">⚠ Requires: ${os.req}</div>
         <div class="addon-os-divider"></div>
         <div class="addon-os-modules">
-          <div class="addon-os-modules-label">5 Core Modules Included</div>
+          <div class="addon-os-modules-label">${isMarketing ? '3 of 5 modules available · 2 require Revenue OS' : '5 Core Modules Included'}</div>
           ${mods}
         </div>
         <div class="addon-os-divider"></div>
-        <div class="addon-os-when"><strong>When to add:</strong> ${os.when}</div>
+        ${note}
       </div>
     </div>
   </div>`
@@ -1215,7 +1232,7 @@ function render(){
     // Retention OS expansion — shown on Revenue OS and Marketing OS tabs
     if (activeOS === 'Revenue OS' || activeOS === 'Marketing OS'){
       const retOS = ADDON_OS.find(x => x.name === 'Retention OS')
-      if (retOS) html += retentionExpansionHTML(retOS)
+      if (retOS) html += retentionExpansionHTML(retOS, activeOS === 'Marketing OS' ? 'marketing' : 'revenue')
     }
   }
 
