@@ -50,19 +50,20 @@ function buildWaUrl(phone, companyName, formUrl) {
 // ── Create a Client Account record in the Client Accounts DB ─────────────
 // Called when a deposit is marked as received. Creates the post-install client record
 // and links it back to the Invoice's "Client Account" relation field.
-async function createClientAccount({ invoiceId, companyId, companyName, dealId, leadId, picId, projectId, packages, today, token }) {
+async function createClientAccount({ invoiceId, companyId, companyName, dealId, leadId, picId, projectId, packages, formUrl, today, token }) {
   try {
     const osInstalled = (packages || []).map(n => ({ name: n }))
 
     const caProps = {
-      "Install Name": { title: [{ text: { content: companyName || "New Client" } }] },
-      "Status":       { select: { name: "Active" } },
-      "Install Date": { date: { start: today } },
-      ...(companyId  ? { "Company":        { relation: [{ id: companyId  }] } } : {}),
-      ...(dealId     ? { "Linked Deal":    { relation: [{ id: dealId     }] } } : {}),
-      ...(leadId     ? { "Linked Lead":    { relation: [{ id: leadId     }] } } : {}),
-      ...(picId      ? { "PIC":            { relation: [{ id: picId      }] } } : {}),
-      ...(projectId  ? { "Project Tracker":{ relation: [{ id: projectId  }] } } : {}),
+      "Install Name":    { title: [{ text: { content: companyName || "New Client" } }] },
+      "Status":          { select: { name: "Active" } },
+      "Install Date":    { date: { start: today } },
+      ...(formUrl    ? { "Onboarding Form": { url: formUrl } } : {}),
+      ...(companyId  ? { "Company":         { relation: [{ id: companyId  }] } } : {}),
+      ...(dealId     ? { "Linked Deal":     { relation: [{ id: dealId     }] } } : {}),
+      ...(leadId     ? { "Linked Lead":     { relation: [{ id: leadId     }] } } : {}),
+      ...(picId      ? { "PIC":             { relation: [{ id: picId      }] } } : {}),
+      ...(projectId  ? { "Project Tracker": { relation: [{ id: projectId  }] } } : {}),
       ...(osInstalled.length ? { "OS Installed": { multi_select: osInstalled } } : {}),
     }
 
@@ -325,26 +326,21 @@ async function run(payload) {
   //   package= — OS package e.g. "Business OS", "Revenue OS" (controls which OS steps appear)
   //   addons=  — comma-separated add-on names (controls Add-ons step content)
   //   deal=    — Notion Deal page ID (linked on form submission)
-  const baseUrl = "https://widgets.opxio.io"
   const onboardingParams = new URLSearchParams()
   if (companyName)       onboardingParams.set("client",  companyName)
   if (formPackage)       onboardingParams.set("package", formPackage)
   if (formAddons.length) onboardingParams.set("addons",  formAddons.join(","))
   if (dealId)            onboardingParams.set("deal",    dealId)
-  const formUrl  = `${baseUrl}/onboarding?${onboardingParams.toString()}`
+  const formUrl  = `https://opxio.io/onboarding?${onboardingParams.toString()}`
   const picPhone = companyId ? await getPicPhone(companyId, token) : ""
   const waUrl    = buildWaUrl(picPhone, companyName || "there", formUrl)
 
-  // Save form link + WA message to the Deal page (Onboarding Form & WA Link fields)
-  // These fields live on the Deal, not the Invoice — that's where the team manages the client
+  // Save form URL + WA link to Deal page
   if (dealId) {
-    const dealPatches = {
+    await patchPage(dealId, {
       "Onboarding Form": { url: formUrl },
       ...(waUrl ? { "WA Link": { url: waUrl } } : {}),
-    }
-    await patchPage(dealId, dealPatches, token).catch(e =>
-      console.warn("[deposit_paid] deal form link patch:", e.message)
-    )
+    }, token).catch(e => console.warn("[deposit_paid] deal form link:", e.message))
   }
 
   // ── Project setup (heavy — may take multiple seconds) ─────────────────────
@@ -362,9 +358,9 @@ async function run(payload) {
 
   if (projectId) {
     await patchPage(projectId, {
-      "Status":     { select: { name: "Build Started" } },
-      "Start Date": { date: { start: today } },
-      // If we created a new Deal (from Lead conversion), link it to the Project
+      "Status":          { select: { name: "Build Started" } },
+      "Start Date":      { date: { start: today } },
+      "Onboarding Form": { url: formUrl },
       ...(dealId && dealId !== leadId ? { "Deals": { relation: [{ id: dealId }] } } : {}),
     }, token)
     ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
@@ -385,6 +381,7 @@ async function run(payload) {
     picId,
     projectId,
     packages,
+    formUrl,
     today,
     token,
   })
