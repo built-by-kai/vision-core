@@ -157,8 +157,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 
 /* ── Bundle Tiers section ── */
 .bundles-section{margin-bottom:32px;}
-.bundles-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
-.bundle-card{flex:1;min-width:180px;max-width:260px;}
+.bundles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
 .bundle-card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;}
 .bundle-name{font-size:20px;font-weight:900;letter-spacing:-.02em;}
 .bundle-os-blocks{display:flex;gap:5px;align-items:center;justify-content:center;}
@@ -419,13 +418,13 @@ const BUNDLES = [
 function bundleSectionHTML(){
   const cards = BUNDLES.map(b => {
     const blocks = Array.from({length:4},(_,i) =>
-      `<div class="bundle-block${i < b.layers ? ' filled' : ' empty-block'}" style="${i < b.layers ? `background:${b.color}` : 'background:#fff'}"></div>`
+      `<div class="bundle-block${i < b.layers ? ' filled' : ' empty-block'}" style="${i < b.layers ? 'background:var(--g)' : 'background:#fff'}"></div>`
     ).join('')
     return `<div class="bundle-card ${b.cls}">
       <div>
         <div class="bundle-tag">Bundle · ${b.layers} Core OS</div>
       </div>
-      <div class="bundle-name" style="color:${b.color}">${b.name}</div>
+      <div class="bundle-name" style="color:var(--g)">${b.name}</div>
       <div class="bundle-os-blocks">
         ${blocks}
         <span class="bundle-count">${b.layers} of 4 OS</span>
