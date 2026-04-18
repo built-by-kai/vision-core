@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.12);--amber:#FBBF24;--amberm:rgba(251,191,36,.12);}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.12);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
 .card:hover{border-color:rgba(170,255,0,.1);}
@@ -22,7 +22,7 @@ body.light .btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0
 body.light .mn-btn{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
 body.light .mn-lbl{background:#EFEFEF;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.5);}
 /* Top bar */
-.top-bar{display:flex;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
+.top-bar{display:flex;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
 .top-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
 .eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
 body.light .eyebrow{color:rgba(0,0,0,.28);}
@@ -30,27 +30,35 @@ body.light .eyebrow{color:rgba(0,0,0,.28);}
 body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
+/* View tabs */
+.view-bar{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:10px;padding:4px;width:fit-content;margin-bottom:14px;}
+body.light .view-bar{background:rgba(0,0,0,.06);}
+.view-btn{background:transparent;border:1px solid transparent;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:6px 18px;border-radius:7px;cursor:pointer;transition:all .18s;}
+body.light .view-btn{color:rgba(0,0,0,.35);}
+.view-btn.active{background:#252525;color:#fff;border-color:rgba(255,255,255,.09);}
+body.light .view-btn.active{background:#E5E5E5;color:#111;border-color:rgba(0,0,0,.08);}
+.view-btn:hover:not(.active){color:rgba(255,255,255,.65);}
+body.light .view-btn:hover:not(.active){color:rgba(0,0,0,.65);}
+.view-pane{display:none;}
+.view-pane.active{display:block;}
 /* Stat row */
-.stat-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:12px;}
-.stat-row.has-delivery{grid-template-columns:repeat(8,1fr);}
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat-row.has-delivery{grid-template-columns:repeat(6,1fr);}
 .stat{padding:18px 18px 16px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;}
 .stat:hover::before{opacity:1;}
-.stat.stat-amber::before{background:linear-gradient(90deg,var(--amber),transparent);}
 .s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
-.s-dot.amber{background:var(--amber);}
-.s-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.85);margin-bottom:10px;line-height:1.4;}
+.s-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.85);margin-bottom:10px;line-height:1.4;display:block;}
 body.light .s-lbl{color:rgba(0,0,0,.8);}
 .s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
-.s-val.green{color:#34D399!important;}
-.s-val.amber{color:#FBBF24!important;}
-body.light .s-val.green{color:#10A060!important;}
-body.light .s-val.amber{color:#D97706!important;}
+.s-val.orange{color:var(--lost)!important;}
+body.light .s-val.orange{color:#D94020!important;}
 .s-sub{font-size:10px;font-weight:500;color:rgba(255,255,255,.22);margin-top:7px;}
 body.light .s-sub{color:rgba(0,0,0,.3);}
-/* 2-col */
+/* 2-col grid */
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-/* Panel: flex-col so donut section can center vertically */
+@media(max-width:600px){.grid-2{grid-template-columns:1fr;}}
+/* Panel */
 .panel{padding:22px 24px;display:flex;flex-direction:column;}
 .panel-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.85);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;}
 body.light .panel-title{color:rgba(0,0,0,.7);}
@@ -72,18 +80,16 @@ body.light .f-lbl{color:rgba(0,0,0,.4);}
 .f-bg{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,.04);overflow:hidden;}
 body.light .f-bg{background:rgba(0,0,0,.05);}
 .f-fill{height:100%;border-radius:7px;transition:width .55s cubic-bezier(.4,0,.2,1);}
-/* Funnel bar colors */
-.lm     {background:rgba(170,255,0,.45);}
+.lm{background:rgba(170,255,0,.45);}
 .lm-lost{background:rgba(255,107,53,.55);}
-.dm     {background:rgba(170,255,0,.45);}
-body.light .lm     {background:rgba(92,153,0,.35);}
-body.light .dm     {background:rgba(61,122,0,.40);}
+.dm{background:rgba(170,255,0,.45);}
+body.light .lm{background:rgba(92,153,0,.35);}
+body.light .dm{background:rgba(61,122,0,.40);}
 body.light .lm-lost{background:rgba(200,70,20,.45);}
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.6);width:24px;text-align:right;flex-shrink:0;}
 body.light .f-n{color:rgba(0,0,0,.5);}
 .f-val{font-size:10px;font-weight:700;color:var(--g);min-width:68px;text-align:right;flex-shrink:0;opacity:.8;}
-body.light .f-val{color:var(--g);}
-/* Donut — centered in remaining panel space */
+/* Donut */
 .donut-wrap{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 0;}
 .d-val{font-weight:900;fill:#fff;}
 body.light .d-val{fill:#111;}
@@ -106,10 +112,39 @@ body.light .chart-title{color:rgba(0,0,0,.7);}
 #leads-chart{display:block;overflow:visible;}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
 body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
+/* Win/Loss log */
+.log-panel{padding:20px 22px;}
+.wl-tabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px;width:fit-content;margin-bottom:18px;}
+body.light .wl-tabs{background:rgba(0,0,0,.06);}
+.wl-tab{background:transparent;border:none;color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .18s;}
+body.light .wl-tab{color:rgba(0,0,0,.35);}
+.wl-tab.won{background:rgba(170,255,0,.14);color:#AAFF00;}
+body.light .wl-tab.won{background:rgba(92,153,0,.12);color:#4A8000;}
+.wl-tab.lost-active{background:rgba(255,107,53,.14);color:#FF6B35;}
+.log-row{display:flex;align-items:flex-start;gap:12px;padding:11px 6px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s;border-radius:6px;margin:0 -6px;}
+body.light .log-row{border-bottom-color:rgba(0,0,0,.05);}
+.log-row:last-child{border-bottom:none;}
+.log-row:hover{background:rgba(255,255,255,.03);}
+body.light .log-row:hover{background:rgba(0,0,0,.03);}
+.log-info{flex:1;min-width:0;}
+.log-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+body.light .log-name{color:rgba(0,0,0,.8);}
+.log-meta{font-size:11px;font-weight:500;color:rgba(255,255,255,.25);}
+body.light .log-meta{color:rgba(0,0,0,.35);}
+.log-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.badge-won{background:rgba(170,255,0,.1);color:var(--g);border:1px solid rgba(170,255,0,.2);}
+.badge-lost-lead{background:rgba(255,107,53,.1);color:#FF6B35;border:1px solid rgba(255,107,53,.2);}
+.badge-lost-deal{background:rgba(255,107,53,.16);color:#FF6B35;border:1px solid rgba(255,107,53,.25);}
+.reason-pill{font-size:10px;font-weight:700;color:#FF6B35;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.18);border-radius:4px;padding:2px 7px;margin-top:4px;display:inline-block;}
+.log-val{font-size:13px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:-.4px;}
+body.light .log-val{color:rgba(0,0,0,.45);}
+.log-val.won-val{color:var(--g);opacity:.85;}
+.empty{padding:36px 0;text-align:center;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;}
+body.light .empty{color:rgba(0,0,0,.25);}
 /* Responsive */
-@media(max-width:1300px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(4,1fr);}}
-@media(max-width:900px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:600px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:72px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
+@media(max-width:1100px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(2,1fr);}.panel{padding:16px;}.f-lbl{width:72px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
@@ -125,162 +160,225 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   <div class="top-right">
     <span class="ts" id="ts"></span>
     <div class="mn-wrap">
-      <button class="mn-btn" onclick="mnPrev()" title="Previous month">‹</button>
+      <button class="mn-btn" onclick="mnPrev()">‹</button>
       <span class="mn-lbl" id="mn-lbl">This Month</span>
-      <button class="mn-btn" id="mn-next" onclick="mnNext()" title="Next month" disabled>›</button>
+      <button class="mn-btn" id="mn-next" onclick="mnNext()" disabled>›</button>
     </div>
     <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
     <button class="btn" onclick="toggleLight()" id="lb">☀ Light</button>
   </div>
 </div>
 
-<div class="stat-row">
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Active Leads</div>
-    <div class="s-val" id="d-active">—</div>
-    <div class="s-sub">In lead pipeline</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Qualified Leads</div>
-    <div class="s-val" id="d-qualified">—</div>
-    <div class="s-sub">Discovery done</div>
-  </div>
-  <div class="card stat" id="d-followup-card">
-    <div class="s-dot amber" id="d-followup-dot"></div>
-    <div class="s-lbl">Follow Ups Today</div>
-    <div class="s-val" id="d-followups">—</div>
-    <div class="s-sub" id="d-followups-sub">Due today</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Active Deals</div>
-    <div class="s-val" id="d-deals">—</div>
-    <div class="s-sub" id="d-deals-sub">In deal pipeline</div>
-    <div class="s-sub" id="d-deals-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;"></div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot" style="background:var(--lost);"></div>
-    <div class="s-lbl">Lost</div>
-    <div class="s-val" style="color:var(--lost);" id="d-lost">—</div>
-    <div class="s-sub" id="d-lost-sub">Leads + deals combined</div>
-    <div class="s-sub" id="d-lost-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:2px;"></div>
-  </div>
-  <div class="card stat" id="d-delivery-card" style="display:none;">
-    <div class="s-dot"></div>
-    <div class="s-lbl" id="d-delivery-lbl">In Build</div>
-    <div class="s-val" id="d-building">—</div>
-    <div class="s-sub" id="d-delivery-sub">—</div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <div class="s-lbl">Conv. Rate</div>
-    <div class="s-val" id="d-conv">—</div>
-    <div class="s-sub" id="d-conv-sub">This month · leads</div>
-  </div>
+<!-- View tabs -->
+<div class="view-bar">
+  <button class="view-btn active" onclick="switchView('pipeline')">Pipeline</button>
+  <button class="view-btn" onclick="switchView('wl')">Win / Loss</button>
 </div>
 
-<div class="grid-2">
-  <div class="card panel">
-    <div class="panel-title">
-      Pipeline Funnel
-      <div class="mode-wrap">
-        <button class="mbn al" id="mbn-leads" onclick="setMode('leads')">Leads</button>
-        <button class="mbn" id="mbn-deals" onclick="setMode('deals')">Deals</button>
+<!-- ── PIPELINE VIEW ──────────────────────────────────────────────────────────── -->
+<div class="view-pane active" id="pane-pipeline">
+
+  <div class="stat-row">
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Active Leads</span>
+      <div class="s-val" id="d-active">—</div>
+      <div class="s-sub">In lead pipeline</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Qualified Leads</span>
+      <div class="s-val" id="d-qualified">—</div>
+      <div class="s-sub">Discovery done</div>
+      <div class="s-sub" id="d-qualified-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Active Deals</span>
+      <div class="s-val" id="d-deals">—</div>
+      <div class="s-sub" id="d-deals-sub">In deal pipeline</div>
+      <div class="s-sub" id="d-deals-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;"></div>
+    </div>
+    <div class="card stat" id="d-delivery-card" style="display:none;">
+      <div class="s-dot"></div>
+      <span class="s-lbl" id="d-delivery-lbl">Building</span>
+      <div class="s-val" id="d-building">—</div>
+      <div class="s-sub" id="d-delivery-sub">—</div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--lost);opacity:.55;"></div>
+      <span class="s-lbl">Lost</span>
+      <div class="s-val orange" id="d-lost">—</div>
+      <div class="s-sub" id="d-lost-sub">Leads + deals combined</div>
+      <div class="s-sub" id="d-lost-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:2px;"></div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Conv. Rate</span>
+      <div class="s-val" id="d-conv">—</div>
+      <div class="s-sub" id="d-conv-sub">This month · leads</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card panel">
+      <div class="panel-title">
+        Pipeline Funnel
+        <div class="mode-wrap">
+          <button class="mbn al" id="mbn-leads" onclick="setMode('leads')">Leads</button>
+          <button class="mbn" id="mbn-deals" onclick="setMode('deals')">Deals</button>
+        </div>
+        <span class="panel-badge" id="fb">—</span>
       </div>
-      <span class="panel-badge" id="fb">—</span>
+      <div id="funnel"></div>
     </div>
-    <div id="funnel"></div>
-  </div>
-  <div class="card panel">
-    <div class="panel-title">Lead Sources</div>
-    <div class="donut-wrap">
-      <svg width="148" height="148" viewBox="0 0 160 160" id="donut"></svg>
-      <div class="legend" id="legend"></div>
+    <div class="card panel">
+      <div class="panel-title">Lead Sources</div>
+      <div class="donut-wrap">
+        <svg width="148" height="148" viewBox="0 0 160 160" id="donut"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
     </div>
   </div>
+
+  <div class="card chart-card" style="margin-top:10px;" id="deals-value-panel">
+    <div class="chart-hdr">
+      <span class="chart-title">Deals Pipeline by Stage Value</span>
+      <span class="chart-badge" id="dvbadge">—</span>
+    </div>
+    <div id="deals-value-rows"></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="chart-hdr">
+      <span class="chart-title">Leads Incoming by Month</span>
+      <span class="chart-badge" id="cbadge">—</span>
+    </div>
+    <div class="chart-wrap" id="cwrap">
+      <svg id="leads-chart"></svg>
+      <div class="ctip" id="ctip"></div>
+    </div>
+  </div>
+
 </div>
 
-<div class="card chart-card" style="margin-top:10px;" id="deals-value-panel">
-  <div class="chart-hdr">
-    <span class="chart-title">Deals Pipeline by Stage Value</span>
-    <span class="chart-badge" id="dvbadge">—</span>
-  </div>
-  <div id="deals-value-rows"></div>
-</div>
+<!-- ── WIN / LOSS VIEW ───────────────────────────────────────────────────────── -->
+<div class="view-pane" id="pane-wl">
 
-<div class="card chart-card">
-  <div class="chart-hdr">
-    <span class="chart-title">Leads Incoming by Month</span>
-    <span class="chart-badge" id="cbadge">—</span>
+  <div class="stat-row" style="grid-template-columns:repeat(4,1fr);">
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Won Deals</span>
+      <div class="s-val" id="s-won">—</div>
+      <div class="s-sub" id="s-won-sub">—</div>
+      <div class="s-sub" id="s-won-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--lost);opacity:.55;"></div>
+      <span class="s-lbl">Lost Leads</span>
+      <div class="s-val orange" id="s-lost-leads">—</div>
+      <div class="s-sub">Didn't convert</div>
+      <div class="s-sub" id="s-lost-leads-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot" style="background:var(--lost);opacity:.55;"></div>
+      <span class="s-lbl">Lost Deals</span>
+      <div class="s-val orange" id="s-lost-deals">—</div>
+      <div class="s-sub">Fell through</div>
+      <div class="s-sub" id="s-lost-deals-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:2px;display:none;"></div>
+    </div>
+    <div class="card stat">
+      <div class="s-dot"></div>
+      <span class="s-lbl">Win Rate</span>
+      <div class="s-val" id="s-winrate">—</div>
+      <div class="s-sub">Won vs total closed deals</div>
+    </div>
   </div>
-  <div class="chart-wrap" id="cwrap">
-    <svg id="leads-chart"></svg>
-    <div class="ctip" id="ctip"></div>
+
+  <div class="card log-panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div class="wl-tabs" style="margin-bottom:0;">
+        <button class="wl-tab won" id="t-won" onclick="setWlTab('won')">Won</button>
+        <button class="wl-tab" id="t-lost" onclick="setWlTab('lost')">Lost</button>
+      </div>
+    </div>
+    <div id="log-list"></div>
   </div>
+
 </div>
 
 <script>
 const _tok = new URLSearchParams(location.search).get('token') || '';
 
-// ── Month nav state (null = current month live) ──────────────────────────────
-let filterMonth = null; // { year, month 0-indexed } or null for current month
+// ── Month nav ─────────────────────────────────────────────────────────────────
+let filterMonth = null;
 
 function fmtMonthLbl(fm) {
   if (!fm) return 'This Month';
   return new Date(fm.year, fm.month, 1).toLocaleString('default', {month:'short', year:'numeric'});
 }
-
 function updateMonthNav() {
   document.getElementById('mn-lbl').textContent = fmtMonthLbl(filterMonth);
   const now = new Date();
-  const atNow = !filterMonth || (filterMonth.year === now.getFullYear() && filterMonth.month === now.getMonth());
-  const nextBtn = document.getElementById('mn-next');
-  nextBtn.disabled = atNow;
+  const atNow = !filterMonth || (filterMonth.year===now.getFullYear() && filterMonth.month===now.getMonth());
+  document.getElementById('mn-next').disabled = atNow;
 }
-
 function mnPrev() {
   const now = new Date();
   if (!filterMonth) filterMonth = { year: now.getFullYear(), month: now.getMonth() };
-  filterMonth = { ...filterMonth };
+  filterMonth = {...filterMonth};
   filterMonth.month--;
   if (filterMonth.month < 0) { filterMonth.month = 11; filterMonth.year--; }
-  updateMonthNav();
-  doRefresh();
+  updateMonthNav(); doRefresh();
 }
-
 function mnNext() {
   if (!filterMonth) return;
-  filterMonth = { ...filterMonth };
+  filterMonth = {...filterMonth};
   filterMonth.month++;
   if (filterMonth.month > 11) { filterMonth.month = 0; filterMonth.year++; }
   const now = new Date();
-  if (filterMonth.year > now.getFullYear() || (filterMonth.year === now.getFullYear() && filterMonth.month >= now.getMonth())) {
-    filterMonth = null;
-  }
-  updateMonthNav();
-  doRefresh();
+  if (filterMonth.year > now.getFullYear() || (filterMonth.year===now.getFullYear() && filterMonth.month>=now.getMonth())) filterMonth = null;
+  updateMonthNav(); doRefresh();
 }
 
 function apiUrl(p) {
   const params = new URLSearchParams();
   if (_tok) params.set('token', _tok);
-  if (filterMonth) { params.set('month', filterMonth.month + 1); params.set('year', filterMonth.year); }
+  if (filterMonth) { params.set('month', filterMonth.month+1); params.set('year', filterMonth.year); }
   const qs = params.toString();
   return qs ? p + '?' + qs : p;
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtRM(n){
+  if(!n && n!==0) return '—';
+  if(!n) return '—';
+  if(n>=1000000) return 'RM '+(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1000)    return 'RM '+(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return 'RM '+Math.round(n).toLocaleString();
+}
+function showSub(id,val){ const el=document.getElementById(id); if(!el) return; if(val){el.textContent=fmtRM(val);el.style.display='';}else{el.style.display='none';} }
 
-let light = false;
-let funnelMode = 'leads';
-let pipeData = null;
-let dealsData = null;
-let chartData = [];
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentView = 'pipeline';
+let funnelMode  = 'leads';
+let wlTab       = 'won';
+let pipeData    = null;
+let dealsData   = null;
+let chartData   = [];
+let light       = false;
 
-// ── Stage display name mapping ───────────────────────────────────────────────
-const STAGE_DISPLAY = { 'Building': 'In Build' };
-function displayStage(s) { return STAGE_DISPLAY[s] || s; }
+// ── View switch ───────────────────────────────────────────────────────────────
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + v).classList.add('active');
+  document.querySelectorAll('.view-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(v === 'wl' ? 'win' : 'pipeline')) b.classList.add('active');
+  });
+  if (v === 'wl') { renderWL(); setTimeout(drawChart, 50); }
+  else setTimeout(drawChart, 50);
+}
 
 function toggleLight(){
   light = !light;
@@ -288,359 +386,326 @@ function toggleLight(){
   document.getElementById('lb').textContent = light ? '🌙 Dark' : '☀ Light';
   drawChart();
 }
+function setTs(){ document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 
-function setTs(){
-  document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-}
-
-function fmtRM(n){
-  if(!n) return '—';
-  if(n >= 1000000) return 'RM ' + (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-  if(n >= 1000)    return 'RM ' + (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
-  return 'RM ' + Math.round(n).toLocaleString();
-}
-
-// ── Mode toggle ──────────────────────────────────────────────────────────────
+// ── Mode toggle ───────────────────────────────────────────────────────────────
 function setMode(mode) {
   funnelMode = mode;
-  document.getElementById('mbn-leads').className = 'mbn' + (mode === 'leads' ? ' al' : '');
-  document.getElementById('mbn-deals').className = 'mbn' + (mode === 'deals' ? ' ad' : '');
+  document.getElementById('mbn-leads').className = 'mbn' + (mode==='leads' ? ' al' : '');
+  document.getElementById('mbn-deals').className = 'mbn' + (mode==='deals' ? ' ad' : '');
   renderFunnel();
 }
 
+// ── W/L tab ───────────────────────────────────────────────────────────────────
+function setWlTab(t) {
+  wlTab = t;
+  document.getElementById('t-won').className  = 'wl-tab' + (t==='won' ? ' won' : '');
+  document.getElementById('t-lost').className = 'wl-tab' + (t==='lost' ? ' lost-active' : '');
+  renderLog();
+}
+
 // ── Donut ─────────────────────────────────────────────────────────────────────
-const DONUT_COLORS = [
-  '#AAFF00','rgba(170,255,0,.72)','rgba(170,255,0,.48)',
-  'rgba(170,255,0,.30)','rgba(170,255,0,.18)','rgba(170,255,0,.09)',
-];
+const DONUT_COLORS = ['#AAFF00','rgba(170,255,0,.72)','rgba(170,255,0,.48)','rgba(170,255,0,.30)','rgba(170,255,0,.18)','rgba(170,255,0,.09)'];
 function renderDonut(sources) {
-  const src = (sources || []).slice(0, 6);
+  const src = (sources||[]).slice(0,6);
   if (!src.length) {
-    document.getElementById('donut').innerHTML =
-      `<text x="80" y="88" text-anchor="middle" font-size="11" class="d-lbl" font-family="Satoshi,-apple-system,sans-serif">No data</text>`;
-    document.getElementById('legend').innerHTML = '';
-    return;
+    document.getElementById('donut').innerHTML = `<text x="80" y="88" text-anchor="middle" font-size="11" class="d-lbl" font-family="Satoshi,-apple-system,sans-serif">No data</text>`;
+    document.getElementById('legend').innerHTML = ''; return;
   }
-  const colored = src.map((s,i) => ({...s, c: DONUT_COLORS[i] || DONUT_COLORS[DONUT_COLORS.length-1]}));
-  const tot = colored.reduce((s,x) => s+x.count, 0);
+  const colored = src.map((s,i) => ({...s, c: DONUT_COLORS[i]||DONUT_COLORS[DONUT_COLORS.length-1]}));
+  const tot = colored.reduce((s,x)=>s+x.count,0);
   const R=55, SW=18, C=2*Math.PI*R;
-  let off=0, p='';
-  p += `<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${SW}"/>`;
-  colored.forEach(s => {
-    const d=(s.count/tot)*C, g=C-d;
-    p += `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${d.toFixed(2)} ${g.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
-    off += d;
+  let off=0, p=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="${SW}"/>`;
+  colored.forEach(s=>{
+    const d=(s.count/tot)*C,g=C-d;
+    p+=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${d.toFixed(2)} ${g.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
+    off+=d;
   });
-  p += `<text x="80" y="74" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${tot}</text>`;
-  p += `<text x="80" y="94" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
+  p+=`<text x="80" y="74" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="26" class="d-val">${tot}</text>`;
+  p+=`<text x="80" y="94" text-anchor="middle" font-family="Satoshi,-apple-system,sans-serif" font-size="8" class="d-lbl">LEADS</text>`;
   document.getElementById('donut').innerHTML = p;
-  document.getElementById('legend').innerHTML = colored.map(s =>
-    `<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${s.label}</span><span class="l-val">${s.count}</span></div>`
+  document.getElementById('legend').innerHTML = colored.map(s=>
+    `<div class="l-row"><span class="l-dot" style="background:${s.c}"></span><span class="l-name">${esc(s.label)}</span><span class="l-val">${s.count}</span></div>`
   ).join('');
 }
 
-// ── Dynamic funnel — renders whatever stageOrder the API returns ─────────────
+// ── Funnel ────────────────────────────────────────────────────────────────────
 function renderDynamicFunnel(stages, stageOrder, label, lostLabel) {
-  if (!stageOrder || !stageOrder.length) stageOrder = Object.keys(stages);
-  const maxN  = Math.max(...stageOrder.map(k => stages[k] || 0), 1);
-  const total = stageOrder.reduce((s, k) => s + (stages[k] || 0), 0);
-  document.getElementById('fb').textContent = total + ' ' + (label || 'leads');
-  document.getElementById('funnel').innerHTML = stageOrder.map((key) => {
-    const n   = stages[key] || 0;
-    const pct = Math.max(Math.round((n / maxN) * 100), n > 0 ? 6 : 0);
-    const isLost = lostLabel && key === lostLabel;
-    const cls = isLost ? 'lm-lost' : (funnelMode === 'deals' ? 'dm' : 'lm');
-    return `<div class="f-row">
-      <span class="f-lbl">${esc(key)}</span>
-      <div class="f-bg"><div class="f-fill ${cls}" style="width:${pct}%;"></div></div>
-      <span class="f-n">${n || ''}</span>
-    </div>`;
+  if (!stageOrder||!stageOrder.length) stageOrder = Object.keys(stages);
+  const maxN  = Math.max(...stageOrder.map(k=>stages[k]||0), 1);
+  const total = stageOrder.reduce((s,k)=>s+(stages[k]||0), 0);
+  document.getElementById('fb').textContent = total + ' ' + (label||'leads');
+  document.getElementById('funnel').innerHTML = stageOrder.map(key => {
+    const n = stages[key]||0;
+    const pct = Math.max(Math.round((n/maxN)*100), n>0?6:0);
+    const isLost = lostLabel && key===lostLabel;
+    const cls = isLost ? 'lm-lost' : (funnelMode==='deals' ? 'dm' : 'lm');
+    return `<div class="f-row"><span class="f-lbl">${esc(key)}</span><div class="f-bg"><div class="f-fill ${cls}" style="width:${pct}%;"></div></div><span class="f-n">${n||''}</span></div>`;
   }).join('');
 }
-
 function renderFunnel() {
-  if (funnelMode === 'leads') {
-    renderDynamicFunnel(
-      (pipeData && pipeData.stages) || {},
-      (pipeData && pipeData.stageOrder) || null,
-      'leads',
-      pipeData && pipeData.lostLabel
-    );
-  } else {
-    renderDynamicFunnel(
-      (dealsData && dealsData.stages) || {},
-      (dealsData && dealsData.stageOrder) || null,
-      'deals',
-      dealsData && dealsData.lostLabel
-    );
-  }
+  if (funnelMode==='leads') renderDynamicFunnel((pipeData&&pipeData.stages)||{},(pipeData&&pipeData.stageOrder)||null,'leads',pipeData&&pipeData.lostLabel);
+  else renderDynamicFunnel((dealsData&&dealsData.stages)||{},(dealsData&&dealsData.stageOrder)||null,'deals',dealsData&&dealsData.lostLabel);
 }
 
 // ── Deals by Stage Value ──────────────────────────────────────────────────────
 function renderDealsValue() {
   const el = document.getElementById('deals-value-rows');
   const panel = document.getElementById('deals-value-panel');
-  if (!dealsData || !dealsData.stageValues || !dealsData.stageOrder) {
-    panel.style.display = 'none';
-    return;
-  }
-  const { stageValues, stages, stageOrder, lostLabel } = dealsData;
-  const lost = lostLabel || 'Lost';
+  if (!dealsData||!dealsData.stageValues||!dealsData.stageOrder) { panel.style.display='none'; return; }
+  const {stageValues, stages, stageOrder, lostLabel} = dealsData;
+  const lost = lostLabel||'Lost';
   const rows = stageOrder
-    .filter(s => s !== lost && ((stages[s] || 0) > 0 || (stageValues[s] || 0) > 0))
-    .map(s => ({ stage: s, count: stages[s] || 0, value: stageValues[s] || 0 }));
-
-  if (!rows.length) { panel.style.display = 'none'; return; }
-  panel.style.display = '';
-
-  const maxVal = Math.max(...rows.map(r => r.value), 1);
-  const totalVal = rows.reduce((s, r) => s + r.value, 0);
-  document.getElementById('dvbadge').textContent = fmtRM(totalVal) || '—';
-
+    .filter(s => s!==lost && ((stages[s]||0)>0 || (stageValues[s]||0)>0))
+    .map(s => ({stage:s, count:stages[s]||0, value:stageValues[s]||0}));
+  if (!rows.length) { panel.style.display='none'; return; }
+  panel.style.display='';
+  const maxVal = Math.max(...rows.map(r=>r.value),1);
+  const totalVal = rows.reduce((s,r)=>s+r.value,0);
+  document.getElementById('dvbadge').textContent = fmtRM(totalVal)||'—';
   el.innerHTML = rows.map(r => {
-    const pct = r.value > 0 ? Math.max(Math.round((r.value / maxVal) * 100), 4) : 0;
-    const valStr = r.value > 0 ? fmtRM(r.value) : '—';
+    const pct = r.value>0 ? Math.max(Math.round((r.value/maxVal)*100),4) : 0;
     return `<div class="f-row" style="margin-bottom:10px;">
-      <span class="f-lbl" style="width:110px;">${esc(displayStage(r.stage))}</span>
+      <span class="f-lbl" style="width:110px;">${esc(r.stage)}</span>
       <div class="f-bg"><div class="f-fill dm" style="width:${pct}%;"></div></div>
-      <span class="f-n" style="width:20px;font-size:11px;color:rgba(255,255,255,.35);">${r.count}</span>
-      <span class="f-val">${valStr}</span>
+      <span class="f-n" style="width:22px;font-size:11px;color:rgba(255,255,255,.3);">${r.count}</span>
+      <span class="f-val">${r.value>0?fmtRM(r.value):'—'}</span>
     </div>`;
   }).join('');
+}
+
+// ── Win/Loss log ──────────────────────────────────────────────────────────────
+function renderWL() {
+  if (!pipeData||!dealsData) return;
+
+  const wonDeals   = dealsData.wonDeals   || [];
+  const lostDeals  = dealsData.lostDeals  || [];
+  const lostLeads  = pipeData.lostLeads   || [];
+
+  // Stats
+  const wonTotal = wonDeals.reduce((s,d)=>s+(d.value||0),0);
+  const lostLeadsTotal = lostLeads.reduce((s,d)=>s+(d.value||0),0);
+  const lostDealsTotal = lostDeals.reduce((s,d)=>s+(d.value||0),0);
+  const totalClosed = wonDeals.length + lostDeals.length;
+  const winRate = totalClosed>0 ? Math.round((wonDeals.length/totalClosed)*100) : null;
+
+  document.getElementById('s-won').textContent = wonDeals.length;
+  document.getElementById('s-won-sub').textContent = wonDeals.length===1 ? '1 deal' : wonDeals.length+' deals';
+  document.getElementById('s-lost-leads').textContent = lostLeads.length;
+  document.getElementById('s-lost-deals').textContent = lostDeals.length;
+  document.getElementById('s-winrate').textContent = winRate!=null ? winRate+'%' : '—';
+  showSub('s-won-val', wonTotal);
+  showSub('s-lost-leads-val', lostLeadsTotal);
+  showSub('s-lost-deals-val', lostDealsTotal);
+
+  renderLog();
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-MY', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function renderLog() {
+  const el = document.getElementById('log-list');
+  if (!pipeData||!dealsData) { el.innerHTML='<div class="empty">Loading…</div>'; return; }
+
+  if (wlTab==='won') {
+    const rows = (dealsData.wonDeals||[]).slice().sort((a,b)=>(b.value||0)-(a.value||0));
+    if (!rows.length) { el.innerHTML='<div class="empty">No won deals yet</div>'; return; }
+    el.innerHTML = rows.map(d => {
+      const meta = [d.pkg, fmtDate(d.created)].filter(Boolean).join(' · ');
+      const click = d.url ? `onclick="window.open('${d.url}','_blank')"` : '';
+      return `<div class="log-row" ${click}>
+        <div class="log-info">
+          <div class="log-name">${esc(d.name)}</div>
+          ${meta ? `<div class="log-meta">${esc(meta)}</div>` : ''}
+        </div>
+        <div class="log-right">
+          <span class="badge badge-won">${esc(d.stage||'Won')}</span>
+          <span class="log-val won-val">${fmtRM(d.value)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    const lostD = (dealsData.lostDeals||[]).map(d=>({...d,_t:'deal'}));
+    const lostL = (pipeData.lostLeads||[]).map(d=>({...d,_t:'lead'}));
+    const rows  = [...lostD,...lostL].sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
+    if (!rows.length) { el.innerHTML='<div class="empty">No lost leads or deals</div>'; return; }
+    el.innerHTML = rows.map(d => {
+      const meta = [d.pkg, fmtDate(d.created)].filter(Boolean).join(' · ');
+      const click = d.url ? `onclick="window.open('${d.url}','_blank')"` : '';
+      const bCls  = d._t==='lead' ? 'badge-lost-lead' : 'badge-lost-deal';
+      const bTxt  = d._t==='lead' ? 'Lead' : 'Deal';
+      const reason = d.lostReason ? `<div><span class="reason-pill">${esc(d.lostReason)}</span></div>` : '';
+      return `<div class="log-row" ${click}>
+        <div class="log-info">
+          <div class="log-name">${esc(d.name)}</div>
+          ${meta ? `<div class="log-meta">${esc(meta)}</div>` : ''}
+          ${reason}
+        </div>
+        <div class="log-right">
+          <span class="badge ${bCls}">${bTxt}</span>
+          <span class="log-val">${fmtRM(d.value)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ── Data load ─────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [rp, rd] = await Promise.all([
-      fetch(apiUrl('/api/data/pipeline')),
-      fetch(apiUrl('/api/data/deals')),
-    ]);
+    const [rp, rd] = await Promise.all([fetch(apiUrl('/api/data/pipeline')), fetch(apiUrl('/api/data/deals'))]);
     const [jp, jd] = await Promise.all([rp.json(), rd.json()]);
+    pipeData = jp; dealsData = jd;
 
-    pipeData  = jp;
-    dealsData = jd;
-
-    // ── Active Leads ──────────────────────────────────────────────────────────
+    // Active Leads
     document.getElementById('d-active').textContent = jp.totalActive ?? '—';
 
-    // ── Qualified Leads (Discovery Done stage) ────────────────────────────────
-    const qualifiedCount = jp.stages?.['Discovery Done'] || 0;
-    document.getElementById('d-qualified').textContent = qualifiedCount;
+    // Qualified Leads
+    const qualCount = jp.stages?.['Discovery Done'] || 0;
+    const qualValue = jp.stageValues?.['Discovery Done'] || 0;
+    document.getElementById('d-qualified').textContent = qualCount;
+    const qualValEl = document.getElementById('d-qualified-val');
+    if (qualValue) { qualValEl.textContent = fmtRM(qualValue); qualValEl.style.display = ''; }
+    else qualValEl.style.display = 'none';
 
-    // ── Follow Ups Due Today ──────────────────────────────────────────────────
-    const followUps = jp.followUpsDueToday ?? 0;
-    const followUpOverdue = jp.followUpsOverdue ?? 0;
-    const followUpEl = document.getElementById('d-followups');
-    followUpEl.textContent = followUps;
-    followUpEl.className = 's-val' + (followUps > 0 ? ' amber' : '');
-    const followUpCard = document.getElementById('d-followup-card');
-    followUpCard.style.borderColor = followUps > 0 ? 'rgba(251,191,36,.25)' : '';
-    const subParts = [];
-    if (followUps > 0) subParts.push(followUps + ' due today');
-    if (followUpOverdue > 0) subParts.push(followUpOverdue + ' overdue');
-    document.getElementById('d-followups-sub').textContent = subParts.length ? subParts.join(' · ') : 'None due today';
-
-    // ── Potential value ───────────────────────────────────────────────────────
-    // (kept in Active Deals card)
-
-    // ── Conv. Rate — computed from thisMonthLeads as denominator ─────────────
+    // Conv. Rate
     const convLeads = jp.thisMonthLeads || 0;
     const convWon   = jp.thisMonthConverted || 0;
-    const convRate  = convLeads > 0 ? Math.round((convWon / convLeads) * 100) : null;
-    document.getElementById('d-conv').textContent = convRate != null ? convRate + '%' : '—';
+    const convRate  = convLeads>0 ? Math.round((convWon/convLeads)*100) : null;
+    document.getElementById('d-conv').textContent = convRate!=null ? convRate+'%' : '—';
     document.getElementById('d-conv-sub').textContent =
-      convLeads > 0
-        ? `${convWon}/${convLeads} leads · ${fmtMonthLbl(filterMonth)}`
-        : fmtMonthLbl(filterMonth) + ' · no leads yet';
+      convLeads>0 ? `${convWon}/${convLeads} leads · ${fmtMonthLbl(filterMonth)}`
+                  : fmtMonthLbl(filterMonth)+' · no leads yet';
 
-    // ── Active Deals ──────────────────────────────────────────────────────────
+    // Active Deals
     document.getElementById('d-deals').textContent = jd.activeDealsCount ?? '—';
-    document.getElementById('d-deals-sub').textContent =
-      jd.activeWonStages?.length ? jd.activeWonStages.map(displayStage).join(' · ') : 'In deal pipeline';
+    document.getElementById('d-deals-sub').textContent = jd.activeWonStages?.length ? jd.activeWonStages.join(' · ') : 'In deal pipeline';
     const dealsValEl = document.getElementById('d-deals-val');
-    if (jd.wonValue) { dealsValEl.textContent = fmtRM(jd.wonValue); dealsValEl.style.display = ''; }
-    else { dealsValEl.style.display = 'none'; }
+    if (jd.wonValue) { dealsValEl.textContent=fmtRM(jd.wonValue); dealsValEl.style.display=''; }
+    else dealsValEl.style.display='none';
 
-    // ── In Build card — show only when >1 active won stage ───────────────────
+    // Building card
     const delivCard = document.getElementById('d-delivery-card');
-    const statRow   = document.querySelector('.stat-row');
-    if (jd.deliveryStage && (jd.activeWonStages?.length || 0) > 1) {
-      delivCard.style.display = '';
+    const statRow   = document.querySelector('#pane-pipeline .stat-row');
+    if (jd.deliveryStage && (jd.activeWonStages?.length||0)>1) {
+      delivCard.style.display='';
       statRow.classList.add('has-delivery');
-      document.getElementById('d-delivery-lbl').textContent = displayStage(jd.deliveryStage);
-      document.getElementById('d-building').textContent     = jd.deliveryCount ?? '—';
-      document.getElementById('d-delivery-sub').textContent = displayStage(jd.deliveryStage) + ' stage';
+      const dlabel = jd.deliveryStage === 'Building' ? 'In Build' : jd.deliveryStage;
+      document.getElementById('d-delivery-lbl').textContent = dlabel;
+      document.getElementById('d-building').textContent = jd.deliveryCount ?? '—';
+      document.getElementById('d-delivery-sub').textContent = dlabel+' stage';
     } else {
-      delivCard.style.display = 'none';
+      delivCard.style.display='none';
       statRow.classList.remove('has-delivery');
     }
 
-    // ── Lost — combined leads + deals (month-specific) ────────────────────────
-    const lostLeads = jp.thisMonthLost   ?? 0;
-    const lostDeals = jd.lostThisMonth   ?? 0;
-    document.getElementById('d-lost').textContent = lostLeads + lostDeals;
+    // Lost
+    const lostLeadsN = jp.thisMonthLost??0, lostDealsN = jd.lostThisMonth??0;
+    document.getElementById('d-lost').textContent = lostLeadsN+lostDealsN;
     document.getElementById('d-lost-sub').textContent =
-      lostLeads + ' lead' + (lostLeads !== 1 ? 's' : '') +
-      ' · ' + lostDeals + ' deal' + (lostDeals !== 1 ? 's' : '');
-    const lostValue = (jp.lostLeadsValueThisMonth || 0) + (jd.lostValueThisMonth || 0);
+      lostLeadsN+' lead'+(lostLeadsN!==1?'s':'')+' · '+lostDealsN+' deal'+(lostDealsN!==1?'s':'');
+    const lostValue = (jp.lostLeadsValueThisMonth||0)+(jd.lostValueThisMonth||0);
     const lostValEl = document.getElementById('d-lost-val');
-    if (lostValue) { lostValEl.textContent = fmtRM(lostValue); lostValEl.style.display = ''; }
-    else { lostValEl.style.display = 'none'; }
+    if (lostValue) { lostValEl.textContent=fmtRM(lostValue); lostValEl.style.display=''; }
+    else lostValEl.style.display='none';
 
     renderDonut(jp.sources);
     renderFunnel();
     renderDealsValue();
+    if (currentView==='wl') renderWL();
 
-    chartData = jp.monthly || [];
-    document.getElementById('cbadge').textContent = chartData.reduce((s,d)=>s+d.v,0) + ' total this year';
+    chartData = jp.monthly||[];
+    document.getElementById('cbadge').textContent = chartData.reduce((s,d)=>s+d.v,0)+' total this year';
     drawChart();
     setTs();
-  } catch(e) {
-    console.error('CRM widget:', e);
-  }
+  } catch(e) { console.error('CRM widget:', e); }
 }
 
 function doRefresh() {
-  const b = document.getElementById('rb');
-  b.textContent = '↻'; b.style.opacity = '.4';
-  loadData().then(() => { b.textContent = '↻ Refresh'; b.style.opacity = '1'; });
+  const b=document.getElementById('rb');
+  b.textContent='↻'; b.style.opacity='.4';
+  loadData().then(()=>{ b.textContent='↻ Refresh'; b.style.opacity='1'; });
 }
 
 updateMonthNav();
 loadData();
-setInterval(loadData, 5 * 60 * 1000);
+setInterval(loadData, 5*60*1000);
 
-// ── Line chart ─────────────────────────────────────────────────────────────────
+// ── Line chart ────────────────────────────────────────────────────────────────
 function drawChart() {
-  const wrap = document.getElementById('cwrap');
-  const svg  = document.getElementById('leads-chart');
-  const ns   = 'http://www.w3.org/2000/svg';
-  const W    = wrap.offsetWidth || 600;
-  const H    = wrap.offsetHeight || 160;
-  svg.setAttribute('width', W);
-  svg.setAttribute('height', H);
-  svg.innerHTML = '';
+  const wrap=document.getElementById('cwrap');
+  const svg =document.getElementById('leads-chart');
+  const ns  ='http://www.w3.org/2000/svg';
+  const W   =wrap.offsetWidth||600, H=wrap.offsetHeight||160;
+  svg.setAttribute('width',W); svg.setAttribute('height',H); svg.innerHTML='';
   if (!chartData.length) return;
-
-  const PAD  = {t:14, r:20, b:30, l:28};
-  const cW   = W - PAD.l - PAD.r;
-  const cH   = H - PAD.t - PAD.b;
-  const maxV = Math.max(...chartData.map(d => d.v), 1);
-  const isDark  = !document.body.classList.contains('light');
-  const dimCol  = isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.45)';
-  const gridCol = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
-
-  function xP(i){ return PAD.l + (i / (chartData.length - 1 || 1)) * cW; }
-  function yP(v){ return PAD.t + cH - (v / maxV) * cH; }
-
-  for (let i = 0; i <= 4; i++) {
-    const y = PAD.t + (i/4) * cH;
-    const gl = document.createElementNS(ns, 'line');
-    gl.setAttribute('x1', PAD.l); gl.setAttribute('x2', W - PAD.r);
-    gl.setAttribute('y1', y); gl.setAttribute('y2', y);
-    gl.setAttribute('stroke', gridCol); gl.setAttribute('stroke-dasharray', '3,5');
-    svg.appendChild(gl);
-    if (i < 4) {
-      const t = document.createElementNS(ns, 'text');
-      t.setAttribute('x', PAD.l - 5); t.setAttribute('y', y + 4);
-      t.setAttribute('text-anchor', 'end'); t.setAttribute('fill', dimCol);
-      t.setAttribute('font-size', '10'); t.setAttribute('font-weight', '500');
-      t.setAttribute('font-family', 'Satoshi,-apple-system,sans-serif');
-      t.textContent = Math.round(maxV - (i/4) * maxV);
-      svg.appendChild(t);
-    }
+  const PAD={t:14,r:20,b:30,l:28};
+  const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
+  const maxV=Math.max(...chartData.map(d=>d.v),1);
+  const isDark=!document.body.classList.contains('light');
+  const dimCol =isDark?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.45)';
+  const gridCol=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)';
+  function xP(i){ return PAD.l+(i/(chartData.length-1||1))*cW; }
+  function yP(v){ return PAD.t+cH-(v/maxV)*cH; }
+  for (let i=0;i<=4;i++){
+    const y=PAD.t+(i/4)*cH;
+    const gl=document.createElementNS(ns,'line');
+    gl.setAttribute('x1',PAD.l);gl.setAttribute('x2',W-PAD.r);gl.setAttribute('y1',y);gl.setAttribute('y2',y);
+    gl.setAttribute('stroke',gridCol);gl.setAttribute('stroke-dasharray','3,5');svg.appendChild(gl);
+    if(i<4){const t=document.createElementNS(ns,'text');t.setAttribute('x',PAD.l-5);t.setAttribute('y',y+4);t.setAttribute('text-anchor','end');t.setAttribute('fill',dimCol);t.setAttribute('font-size','10');t.setAttribute('font-weight','500');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');t.textContent=Math.round(maxV-(i/4)*maxV);svg.appendChild(t);}
   }
-
-  chartData.forEach((d, i) => {
-    const isCur = i === chartData.length - 1;
-    const t = document.createElementNS(ns, 'text');
-    t.setAttribute('x', xP(i)); t.setAttribute('y', H - PAD.b + 16);
-    t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('fill', isCur ? '#AAFF00' : dimCol);
-    t.setAttribute('font-size', '10'); t.setAttribute('font-weight', isCur ? '700' : '500');
-    t.setAttribute('font-family', 'Satoshi,-apple-system,sans-serif');
-    t.textContent = d.m; svg.appendChild(t);
+  chartData.forEach((d,i)=>{
+    const isCur=i===chartData.length-1;
+    const t=document.createElementNS(ns,'text');t.setAttribute('x',xP(i));t.setAttribute('y',H-PAD.b+16);t.setAttribute('text-anchor','middle');t.setAttribute('fill',isCur?'#AAFF00':dimCol);t.setAttribute('font-size','10');t.setAttribute('font-weight',isCur?'700':'500');t.setAttribute('font-family','Satoshi,-apple-system,sans-serif');t.textContent=d.m;svg.appendChild(t);
   });
-
-  function smooth(pts) {
-    if (pts.length < 2) return `M ${pts[0][0]} ${pts[0][1]}`;
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
-    for (let i = 1; i < pts.length; i++) {
-      const [x1,y1]=pts[i-1],[x2,y2]=pts[i],cx=(x1+x2)/2;
-      d += ` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
-    }
+  function smooth(pts){
+    if(pts.length<2) return `M ${pts[0][0]} ${pts[0][1]}`;
+    let d=`M ${pts[0][0]} ${pts[0][1]}`;
+    for(let i=1;i<pts.length;i++){const[x1,y1]=pts[i-1],[x2,y2]=pts[i],cx=(x1+x2)/2;d+=` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;}
     return d;
   }
-  const pts   = chartData.map((d,i) => [xP(i), yP(d.v)]);
-  const pathD = smooth(pts);
-  const last  = pts[pts.length-1], first = pts[0];
-
-  const defs = document.createElementNS(ns, 'defs');
-  const grad = document.createElementNS(ns, 'linearGradient');
-  grad.setAttribute('id','gF'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0'); grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
-  const s1 = document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#AAFF00'); s1.setAttribute('stop-opacity','0.22');
-  const s2 = document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#AAFF00'); s2.setAttribute('stop-opacity','0.01');
-  grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.insertBefore(defs, svg.firstChild);
-
-  const area = document.createElementNS(ns,'path');
-  area.setAttribute('d', pathD + ` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);
-  area.setAttribute('fill','url(#gF)'); svg.appendChild(area);
-
-  const line = document.createElementNS(ns,'path');
-  line.setAttribute('d', pathD); line.setAttribute('fill','none');
-  line.setAttribute('stroke','#AAFF00'); line.setAttribute('stroke-width','2');
-  line.setAttribute('stroke-linecap','round'); svg.appendChild(line);
-
-  chartData.forEach((d, i) => {
-    const isCur = i === chartData.length - 1;
-    const dot = document.createElementNS(ns,'circle');
-    dot.setAttribute('cx', xP(i)); dot.setAttribute('cy', yP(d.v));
-    dot.setAttribute('r', isCur ? '5' : '3.5');
-    dot.setAttribute('fill', isCur ? '#AAFF00' : '#1E1E1E');
-    dot.setAttribute('stroke','#AAFF00'); dot.setAttribute('stroke-width','2');
-    if (isCur) dot.setAttribute('filter','drop-shadow(0 0 5px rgba(170,255,0,0.8))');
-    svg.appendChild(dot);
+  const pts=chartData.map((d,i)=>[xP(i),yP(d.v)]);
+  const pathD=smooth(pts);
+  const last=pts[pts.length-1],first=pts[0];
+  const defs=document.createElementNS(ns,'defs');
+  const grad=document.createElementNS(ns,'linearGradient');grad.setAttribute('id','gF');grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#AAFF00');s1.setAttribute('stop-opacity','0.22');
+  const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#AAFF00');s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svg.insertBefore(defs,svg.firstChild);
+  const area=document.createElementNS(ns,'path');area.setAttribute('d',pathD+` L ${last[0]} ${H-PAD.b} L ${first[0]} ${H-PAD.b} Z`);area.setAttribute('fill','url(#gF)');svg.appendChild(area);
+  const line=document.createElementNS(ns,'path');line.setAttribute('d',pathD);line.setAttribute('fill','none');line.setAttribute('stroke','#AAFF00');line.setAttribute('stroke-width','2');line.setAttribute('stroke-linecap','round');svg.appendChild(line);
+  chartData.forEach((d,i)=>{
+    const isCur=i===chartData.length-1;
+    const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',xP(i));dot.setAttribute('cy',yP(d.v));dot.setAttribute('r',isCur?'5':'3.5');dot.setAttribute('fill',isCur?'#AAFF00':'#1E1E1E');dot.setAttribute('stroke','#AAFF00');dot.setAttribute('stroke-width','2');
+    if(isCur) dot.setAttribute('filter','drop-shadow(0 0 5px rgba(170,255,0,0.8))');svg.appendChild(dot);
   });
-
-  const hL = document.createElementNS(ns,'line');
-  hL.setAttribute('stroke','rgba(170,255,0,0.1)'); hL.setAttribute('stroke-width','1');
-  hL.setAttribute('y1', PAD.t); hL.setAttribute('y2', H - PAD.b); hL.style.opacity = '0';
-  svg.appendChild(hL);
-
-  const tip = document.getElementById('ctip');
-  wrap.onmousemove = function(e) {
-    const rect = wrap.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    let bi=null, bd=Infinity;
-    chartData.forEach((d,i)=>{ const dist=Math.abs(xP(i)-mx); if(dist<bd){bd=dist;bi=i;} });
-    if (bi===null||bd>50){hide();return;}
-    const d=chartData[bi], px=xP(bi);
-    hL.setAttribute('x1',px); hL.setAttribute('x2',px); hL.style.opacity='1';
-    tip.style.display='block';
-    tip.style.left=Math.min(e.clientX-rect.left+14,rect.width-110)+'px';
-    tip.style.top=(e.clientY-rect.top-46)+'px';
+  const hL=document.createElementNS(ns,'line');hL.setAttribute('stroke','rgba(170,255,0,0.1)');hL.setAttribute('stroke-width','1');hL.setAttribute('y1',PAD.t);hL.setAttribute('y2',H-PAD.b);hL.style.opacity='0';svg.appendChild(hL);
+  const tip=document.getElementById('ctip');
+  wrap.onmousemove=function(e){
+    const rect=wrap.getBoundingClientRect();const mx=e.clientX-rect.left;
+    let bi=null,bd=Infinity;chartData.forEach((d,i)=>{const dist=Math.abs(xP(i)-mx);if(dist<bd){bd=dist;bi=i;}});
+    if(bi===null||bd>50){hide();return;}
+    const d=chartData[bi],px=xP(bi);hL.setAttribute('x1',px);hL.setAttribute('x2',px);hL.style.opacity='1';
+    tip.style.display='block';tip.style.left=Math.min(e.clientX-rect.left+14,rect.width-110)+'px';tip.style.top=(e.clientY-rect.top-46)+'px';
     tip.innerHTML=`<span style="color:rgba(255,255,255,.4);font-size:9px;">${d.m}</span>&nbsp;&nbsp;${d.v} leads`;
   };
   wrap.onmouseleave=hide;
   function hide(){tip.style.display='none';hL.style.opacity='0';}
 }
-
-window.addEventListener('load', () => setTimeout(drawChart, 80));
-window.addEventListener('resize', drawChart);
+window.addEventListener('load',()=>setTimeout(drawChart,80));
+window.addEventListener('resize',drawChart);
 </script>
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 <script>
 (function(){
-  const el = document.getElementById('_eyebrow');
-  if(!el) return;
-  el.textContent = el.dataset.os.toUpperCase(); // default until API responds
-  const tok = new URLSearchParams(location.search).get('token');
-  if(!tok) return;
-  fetch('/api/client/info?token=' + tok)
-    .then(r => r.ok ? r.json() : null)
-    .then(d => { if(d?.client) el.textContent = d.client.toUpperCase() + ' · ' + el.dataset.os.toUpperCase(); })
-    .catch(() => {});
+  const el=document.getElementById('_eyebrow');if(!el)return;
+  el.textContent=el.dataset.os.toUpperCase();
+  const tok=new URLSearchParams(location.search).get('token');if(!tok)return;
+  fetch('/api/client/info?token='+tok).then(r=>r.ok?r.json():null).then(d=>{if(d?.client)el.textContent=d.client.toUpperCase()+' · '+el.dataset.os.toUpperCase();}).catch(()=>{});
 })();
 </script>
 </body></html>

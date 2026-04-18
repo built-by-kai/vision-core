@@ -38,7 +38,8 @@ export default async function handler(req, res) {
 
     const leads = await queryDB(LEADS_DB, null, notionToken)
 
-    const stages = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
+    const stages      = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
+    const stageValues = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
     const boardGroups   = {}
     const monthly       = {}
     for (let i = 5; i >= 0; i--) {
@@ -77,6 +78,7 @@ export default async function handler(req, res) {
       const inScope = monthFiltered ? isThisMonth : true
 
       if (inScope && stage in stages) stages[stage]++
+      if (inScope && stage in stageValues) stageValues[stage] += leadVal
 
       if (inScope && ACTIVE_STAGES.includes(stage)) {
         if (!boardGroups[stage]) boardGroups[stage] = []
@@ -152,6 +154,7 @@ export default async function handler(req, res) {
       lostLeads,
       followUpsDueToday,
       followUpsOverdue,
+      stageValues,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
