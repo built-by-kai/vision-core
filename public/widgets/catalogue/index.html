@@ -155,6 +155,25 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .d-model-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.35);}
 .d-model-chip.highlight{background:rgba(192,132,252,.07);border-color:rgba(192,132,252,.14);color:rgba(192,132,252,.8);}
 
+/* ── Bundle Tiers section ── */
+.bundles-section{margin-bottom:32px;}
+.bundles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.bundle-card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;}
+.bundle-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 14px 14px;}
+.bundle-card.b1::after{background:linear-gradient(90deg,var(--g),transparent);}
+.bundle-card.b2::after{background:linear-gradient(90deg,#60A5FA,transparent);}
+.bundle-card.b3::after{background:linear-gradient(90deg,#A78BFA,transparent);}
+.bundle-card.b4::after{background:linear-gradient(90deg,#FF9A3C,transparent);}
+.bundle-name{font-size:18px;font-weight:900;letter-spacing:-.02em;color:#fff;}
+.bundle-os-blocks{display:flex;gap:4px;align-items:center;}
+.bundle-block{width:20px;height:6px;border-radius:3px;}
+.bundle-block.filled{}
+.bundle-block.empty-block{opacity:.12;}
+.bundle-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);margin-left:4px;}
+.bundle-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.35);line-height:1.55;}
+.bundle-note{font-size:10px;font-weight:600;color:rgba(255,255,255,.18);line-height:1.4;padding-top:4px;border-top:1px solid rgba(255,255,255,.05);}
+.bundle-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:2px 8px;width:fit-content;}
+
 /* ── Empty ── */
 .empty{text-align:center;padding:60px 0;color:rgba(255,255,255,.15);font-size:13px;font-weight:700;}
 </style>
@@ -372,6 +391,65 @@ const MODULE_DBS = {
 }
 
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
+
+// ─── Bundle tiers section ─────────────────────────────────────────────────────
+const BUNDLES = [
+  {
+    cls: 'b1', name: 'Starter', layers: 1, color: '#AAFF00',
+    tagline: 'One operational area fully systemised.',
+    detail: 'Pick any single Core OS — Revenue, Operations, Marketing, or Finance. Best for businesses solving one specific problem first.',
+    example: 'e.g. Revenue OS only',
+  },
+  {
+    cls: 'b2', name: 'Dual', layers: 2, color: '#60A5FA',
+    tagline: 'Two pillars connected into one system.',
+    detail: 'Any two Core OS working together with shared databases. The most popular starting point for growing agencies.',
+    example: 'e.g. Revenue OS + Operations OS',
+  },
+  {
+    cls: 'b3', name: 'Pro', layers: 3, color: '#A78BFA',
+    tagline: 'Serious operational depth across three areas.',
+    detail: 'Three Core OS fully integrated. Business intelligence starts kicking in when you have this much connected data.',
+    example: 'e.g. Revenue + Operations + Finance OS',
+  },
+  {
+    cls: 'b4', name: 'Full Stack', layers: 4, color: '#FF9A3C',
+    tagline: 'All four Core OS running together.',
+    detail: 'The complete infrastructure layer — Revenue, Operations, Marketing, and Finance all connected. Built for agencies ready to run on data.',
+    example: 'All 4 Core OS',
+  },
+]
+
+function bundleSectionHTML(){
+  const cards = BUNDLES.map(b => {
+    const blocks = Array.from({length:4},(_,i) =>
+      `<div class="bundle-block${i < b.layers ? ' filled' : ' empty-block'}" style="${i < b.layers ? `background:${b.color}` : 'background:#fff'}"></div>`
+    ).join('')
+    return `<div class="bundle-card ${b.cls}">
+      <div>
+        <div class="bundle-tag">Bundle · ${b.layers} Core OS</div>
+      </div>
+      <div class="bundle-name" style="color:${b.color}">${b.name}</div>
+      <div class="bundle-os-blocks">
+        ${blocks}
+        <span class="bundle-count">${b.layers} of 4 OS</span>
+      </div>
+      <div class="bundle-desc">${b.tagline}<br><span style="color:rgba(255,255,255,.2);font-size:10.5px">${b.detail}</span></div>
+      <div class="bundle-note">${b.example}</div>
+    </div>`
+  }).join('')
+
+  return `<div class="bundles-section">
+    <div class="section-hdr">
+      <div class="section-bar" style="background:var(--g)"></div>
+      <span class="section-title">Bundle Tiers</span>
+      <span class="section-count">4 bundles</span>
+      <span class="section-note">Named after diagnosis — never pitched before</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="bundles-grid">${cards}</div>
+  </div>`
+}
 
 // ─── Drawer ──────────────────────────────────────────────────────────────────
 function openDrawer(idx){
@@ -645,6 +723,7 @@ function render(){
   let html = ''
 
   if (activeOS === 'All'){
+    html += bundleSectionHTML()
     for (const tier of TIERS){
       const group = filtered.filter(x => x.tier === tier.key)
       html += sectionHTML(tier.label, tier.color, group)
