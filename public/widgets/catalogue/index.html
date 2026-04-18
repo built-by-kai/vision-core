@@ -319,7 +319,7 @@ function toggleEditMode(){
   banner.classList.toggle('show', editMode)
 }
 
-const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS']
+const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS','Sales OS']
 
 const TIERS = [
   { key: 'OS Package',         color: '#AAFF00', label: 'OS Packages' },
@@ -340,6 +340,7 @@ const OS_META = {
   'Finance OS':     { tagline: 'Fixes invisible cash flow, missed payments, and payroll chaos.', req: null },
   'Team OS':        { tagline: 'Full HR infrastructure — from hiring to performance to compensation.', req: null },
   'Retention OS':   { tagline: 'Client retention layer built on top of Revenue OS.', req: 'Revenue OS' },
+  'Sales OS':       { tagline: 'Sales performance infrastructure for teams with dedicated salespeople.', req: 'Revenue OS' },
 }
 
 const OS_MODULES = {
@@ -350,6 +351,7 @@ const OS_MODULES = {
   'Finance OS':     ['Finance Ledger','Cash Flow Tracker','Invoice & Payment Tracker','Payroll & Staff Costs','Profit & Loss Tracker'],
   'Team OS':        ['Hiring Pipeline','Team Onboarding Tracker','Performance & Goals','Leave & Availability','Role & Compensation Log'],
   'Retention OS':   ['Client Health Tracker','Client Communication Log','Renewal Pipeline','Upsell Opportunity Tracker','Retainer Health Tracker'],
+  'Sales OS':       ['Sales Team Performance Tracker','Outreach & Activity Log','Quota & Target Tracker','Win/Loss Analysis','Sales Playbook Library'],
 }
 
 const MODULE_DESC = {
@@ -415,6 +417,14 @@ const MODULE_DESC = {
   <div class="d-about-row"><span class="d-about-row-label">Requires</span>Base OS only — no other OS dependency. Can be added at any time.</div>
 </div>`,
 
+  'Sales OS': `Sales performance infrastructure for teams with dedicated salespeople — built on top of Revenue OS CRM.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Individual rep performance, outreach activity, quota tracking, win/loss analysis, and sales playbooks</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>No visibility over what reps are doing, quota tracking in spreadsheets, no record of why deals are lost</div>
+  <div class="d-about-row"><span class="d-about-row-label">Trigger</span>2+ dedicated salespeople working independently with no shared performance system</div>
+  <div class="d-about-row"><span class="d-about-row-label">Requires</span>Revenue OS — CRM data powers the performance and forecast modules</div>
+</div>`,
+
   'Retention OS': `Client retention layer that protects and grows existing accounts — built on top of Revenue OS.
 <div class="d-about-rows">
   <div class="d-about-row"><span class="d-about-row-label">Covers</span>Client health tracking, communication log, renewal pipeline, upsell opportunity tracker, and retainer health</div>
@@ -470,6 +480,19 @@ const MODULE_DESC = {
   'Renewal Pipeline':               'Retainer renewals tracked and surfaced before they lapse. Requires Retainer Management from Revenue OS.',
   'Upsell Opportunity Tracker':     'Expansion opportunities mapped by existing client — with deal value, stage, and probability tracked per account.',
   'Retainer Health Tracker':        'Delivery status, utilisation rate, and value metrics per active retainer. Requires Retainer Management from Revenue OS.',
+
+  // ── Sales OS Modules ──────────────────────────────────────────────────────
+  'Sales Team Performance Tracker': 'Individual and team sales metrics in one view — calls made, deals opened, conversion rate, and revenue per rep tracked over time.',
+  'Outreach & Activity Log':        'Every call, email, and touchpoint logged per deal and contact. Full activity history so nothing needs to be pieced together from memory.',
+  'Quota & Target Tracker':         'Monthly and quarterly quotas set per rep, tracked against actuals in real time. Required by Commission Calculator and Sales Forecast Tracker.',
+  'Win/Loss Analysis':              'Every closed deal tagged with win/loss reason, competitor involved, and deal stage at loss. Turns pipeline data into rep coaching insights.',
+  'Sales Playbook Library':         'Structured playbooks, call scripts, and objection responses organised by deal stage. Required by Competitor Battle Cards.',
+
+  // ── Sales OS Add-ons ──────────────────────────────────────────────────────
+  'Commission Calculator':          'Calculates commission per rep based on deal value and tier. Linked to quota records and actuals. Requires Quota & Target Tracker.',
+  'Sales Forecast Tracker':         'Pipeline-based revenue forecast per rep and total team, weighted by deal stage probability. Requires Quota & Target Tracker and Revenue OS CRM.',
+  'Competitor Battle Cards':        'Structured competitor intel linked to deal stages — positioning, objections, and differentiators per competitor. Requires Sales Playbook Library.',
+  'Sales Stage Kickoff Automation': 'When a deal moves to a target stage, auto-creates follow-up tasks and notifies the rep. Requires Revenue OS CRM.',
 }
 
 const MODULE_DBS = {
@@ -568,6 +591,16 @@ const MODULE_DBS = {
   'Contract Renewal Tracker':               ['Retainers','Client Accounts'],
   'Renewal Kickoff Automation':             ['Retainers','Tasks'],
   'Client Tier & VIP Tracker':              ['Client Accounts'],
+  // Sales OS
+  'Sales Team Performance Tracker':         ['Deals','Team','Contacts'],
+  'Outreach & Activity Log':                ['Meetings','Contacts','Deals'],
+  'Quota & Target Tracker':                 ['Team','Deals','Finance'],
+  'Win/Loss Analysis':                      ['Deals','Companies'],
+  'Sales Playbook Library':                 ['Team'],
+  'Commission Calculator':                  ['Deals','Team','Finance'],
+  'Sales Forecast Tracker':                 ['Deals','Team','Finance'],
+  'Competitor Battle Cards':                ['Deals','Companies'],
+  'Sales Stage Kickoff Automation':         ['Deals','Tasks','Team'],
   // Cross-OS
   'Enhanced Dashboard':                     ['All databases'],
   'Custom Widget':                          ['Configured per install'],
@@ -581,7 +614,7 @@ const MODULE_DBS = {
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
 // ─── Add-on OS layers section ─────────────────────────────────────────────────
-const ADDON_OS_NAMES = ['Team OS','Retention OS']
+const ADDON_OS_NAMES = ['Team OS','Retention OS','Sales OS']
 const ADDON_OS = [
   {
     name: 'Team OS',
@@ -600,6 +633,15 @@ const ADDON_OS = [
     reqLabel: 'Requires Revenue OS',
     when: 'Revenue OS is a technical dependency — both can be purchased and installed together from day one. Add Retention OS when client health, renewals, and upsell tracking are a priority.',
     modules: ['Client Health Tracker','Client Communication Log','Renewal Pipeline','Upsell Opportunity Tracker','Retainer Health Tracker'],
+  },
+  {
+    name: 'Sales OS',
+    tagline: 'Sales performance infrastructure for teams with dedicated salespeople.',
+    price: 2000,
+    req: 'Revenue OS',
+    reqLabel: 'Requires Revenue OS',
+    when: 'Add when you have 2+ dedicated salespeople and need visibility over individual performance, quota tracking, and sales activity. Trigger: client mentions reps working independently with no shared system.',
+    modules: ['Sales Team Performance Tracker','Outreach & Activity Log','Quota & Target Tracker','Win/Loss Analysis','Sales Playbook Library'],
   },
 ]
 
@@ -1229,10 +1271,17 @@ function render(){
       }
     }
 
-    // Retention OS expansion — shown on Revenue OS and Marketing OS tabs
-    if (activeOS === 'Revenue OS' || activeOS === 'Marketing OS'){
+    // Additional OS expansions at bottom of Revenue OS tab
+    if (activeOS === 'Revenue OS'){
+      const retOS  = ADDON_OS.find(x => x.name === 'Retention OS')
+      const salesOS = ADDON_OS.find(x => x.name === 'Sales OS')
+      if (retOS)   html += retentionExpansionHTML(retOS, 'revenue')
+      if (salesOS) html += retentionExpansionHTML(salesOS, 'revenue')
+    }
+    // Retention OS on Marketing OS tab (partial availability)
+    if (activeOS === 'Marketing OS'){
       const retOS = ADDON_OS.find(x => x.name === 'Retention OS')
-      if (retOS) html += retentionExpansionHTML(retOS, activeOS === 'Marketing OS' ? 'marketing' : 'revenue')
+      if (retOS) html += retentionExpansionHTML(retOS, 'marketing')
     }
   }
 
