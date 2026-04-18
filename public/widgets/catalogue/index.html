@@ -654,13 +654,38 @@ function render(){
     const included = filtered.filter(x => x.tier === 'Core Module')
     const addons   = filtered.filter(x => !['OS Package','Core Module'].includes(x.tier))
 
+    // Base OS section — always shown on OS tabs
+    const baseModules = OS_MODULES['Base OS'] || []
+    html += `<div class="section">
+      <div class="section-hdr">
+        <div class="section-bar" style="background:#AAFF00"></div>
+        <span class="section-title">Base OS</span>
+        <span class="section-count">${baseModules.length} items</span>
+        <span class="section-note">Always included · Complimentary</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="cards">${baseModules.map(m => {
+        const dbs = (MODULE_DBS[m] || []).join(' · ')
+        const desc = MODULE_DESC[m] || ''
+        return `<div class="card" style="opacity:.7" onclick="">
+          <div class="card-top">
+            <div class="card-name">${m}</div>
+            <div class="tier-dot" style="background:#AAFF00;box-shadow:0 0 6px #AAFF0055"></div>
+          </div>
+          <div class="card-price"><div class="price-disc">Complimentary</div></div>
+          ${desc ? `<div class="card-short">${desc}</div>` : ''}
+          ${dbs ? `<div class="card-dbs"><span class="dbs-label">Uses</span><span class="dbs-val">${dbs}</span></div>` : ''}
+        </div>`
+      }).join('')}</div>
+    </div>`
+
     if (included.length){
       html += `<div class="section">
         <div class="section-hdr">
           <div class="section-bar" style="background:#60A5FA"></div>
-          <span class="section-title">Included Modules</span>
+          <span class="section-title">Core Modules</span>
           <span class="section-count">${included.length} item${included.length !== 1 ? 's' : ''}</span>
-          <span class="section-note">Comes with ${activeOS}</span>
+          <span class="section-note">Included with ${activeOS}</span>
           <div class="section-line"></div>
         </div>
         <div class="cards">${included.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
