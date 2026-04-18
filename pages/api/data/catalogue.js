@@ -1,7 +1,9 @@
-// /api/data/catalogue — Opxio internal, no client token needed
+// /api/data/catalogue — token-authenticated
 // Returns all active Catalogue items from the Opxio master Notion workspace
+// Token must resolve to a valid client via Supabase (Opxio internal token works)
 
 import { queryDB, plain } from "../../../lib/notion"
+import { getClientByToken } from "../../../lib/supabase"
 
 const CATALOGUE_DB = "0acfe60097f682568935013f42a876f9"
 
@@ -11,6 +13,13 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600")
 
   try {
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    const accessToken = req.query.token || req.headers["x-widget-token"]
+    if (!accessToken) return res.status(401).json({ error: "Missing token" })
+    const client = await getClientByToken(accessToken)
+    if (!client) return res.status(403).json({ error: "Invalid token" })
+
+    // Catalogue always lives in Opxio's own workspace — use server-side key
     const notionToken = process.env.NOTION_API_KEY
     const rows = await queryDB(CATALOGUE_DB, {
       filter: { property: "Status", select: { equals: "Active" } }
