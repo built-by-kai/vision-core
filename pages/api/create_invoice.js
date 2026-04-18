@@ -113,6 +113,20 @@ async function copyLineItems(quotId, invId, token) {
     const tgtDbId = await ensureLineItemsDB(invId, token)
     if (!tgtDbId) { console.log("[create_invoice] could not create target line items DB on invoice"); return }
 
+    // Always insert Base OS as the first line item (included with every install, price 0)
+    try {
+      await createPage({
+        parent: { database_id: tgtDbId },
+        properties: {
+          "Notes":      { title: [{ type: "text", text: { content: "Base OS" } }] },
+          "Qty":        { number: 1 },
+          "Unit Price": { number: 0 },
+        },
+      }, token)
+    } catch (e) {
+      console.warn("[create_invoice] Base OS row failed:", e.message)
+    }
+
     // Write each row to the target DB
     let written = 0
     for (const row of srcRows) {
