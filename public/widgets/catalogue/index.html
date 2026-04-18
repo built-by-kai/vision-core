@@ -37,18 +37,17 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .os-btn.active{background:#1A1A1A;color:var(--g);border-color:var(--gb);}
 
 /* ── OS Hero Banner ── */
-.os-hero{background:#111;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px 28px;margin-bottom:24px;position:relative;overflow:hidden;}
-.os-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--g),transparent);}
+.os-hero{background:#111;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px 28px;margin-bottom:24px;}
 .os-hero-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;}
 .os-hero-left{flex:1;min-width:260px;}
 .os-hero-eyebrow{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(170,255,0,.5);margin-bottom:6px;}
 .os-hero-name{font-size:26px;font-weight:900;letter-spacing:-.03em;color:#fff;margin-bottom:4px;line-height:1.1;}
 .os-hero-tagline{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);margin-bottom:16px;line-height:1.5;}
-.os-hero-modules-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.modules-badge{background:var(--gm);border:1px solid var(--gb);border-radius:8px;padding:4px 12px;display:flex;align-items:center;gap:6px;}
-.modules-badge-num{font-size:18px;font-weight:900;color:var(--g);line-height:1;}
-.modules-badge-label{font-size:10px;font-weight:700;color:rgba(170,255,0,.6);line-height:1.2;}
-.base-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:4px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,.25);}
+.os-hero-modules-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.modules-badge{background:var(--gm);border:1px solid var(--gb);border-radius:8px;padding:6px 14px;display:flex;align-items:center;gap:8px;}
+.modules-badge-num{font-size:20px;font-weight:900;color:var(--g);line-height:1;}
+.modules-badge-label{font-size:11px;font-weight:700;color:rgba(170,255,0,.7);line-height:1;white-space:nowrap;}
+.base-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:rgba(255,255,255,.3);line-height:1;white-space:nowrap;}
 .os-module-chips{display:flex;flex-wrap:wrap;gap:6px;}
 .os-module-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;font-size:10.5px;font-weight:600;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:5px;}
 .chip-num{font-size:9px;font-weight:900;color:var(--g);opacity:.7;}
@@ -538,7 +537,7 @@ function osHeroHTML(os){
         <div class="os-hero-modules-row">
           <div class="modules-badge">
             <span class="modules-badge-num">${modules.length}</span>
-            <span class="modules-badge-label">Core<br>Modules</span>
+            <span class="modules-badge-label">Core Modules</span>
           </div>
           <div class="base-badge">+ Base OS</div>
         </div>
