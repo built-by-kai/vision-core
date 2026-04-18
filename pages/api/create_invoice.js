@@ -368,23 +368,22 @@ async function run(payload) {
 
     const projProps = {
       "Project Name": { title: [{ text: { content: projectName } }] },
-      "Status":       { select: { name: "Pending Start" } },
+      "Status":       { status: { name: "Pending Start" } },
       "Quotation":    { relation: [{ id: quotId }] },
       "Invoice":      { relation: [{ id: invId }] },
-      ...(resolvedPackage ? { "Package":  { select:   { name: resolvedPackage } } } : {}),
-      ...(companyId       ? { "Company": { relation: [{ id: companyId }] } } : {}),
-      ...(dealId          ? { "Deals":   { relation: [{ id: dealId }] } } : {}),
+      ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
+      ...(dealId    ? { "Deals":   { relation: [{ id: dealId }] } } : {}),
     }
 
     const projPage = await createPage({ parent: { database_id: DB.PROJECTS }, properties: projProps }, token)
     projectId = projPage.id.replace(/-/g, "")
     console.log("[create_invoice] Project created:", projectId)
 
-    // Back-link Project on Invoice and Quotation
-    await Promise.allSettled([
-      patchPage(invId,  { "Client Account": { relation: [{ id: projectId }] } }, token),
-      patchPage(quotId, { "Project":        { relation: [{ id: projectId }] } }, token),
-    ])
+    // Back-link Project on Quotation
+    // Note: Invoice → Client Account is linked later in deposit_paid when the
+    // Client Account record is actually created. Don't link here.
+    await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, token)
+      .catch(e => console.warn("[create_invoice] link project→quotation:", e.message))
 
     // ── 2b. Create default Phases for the new project ──────────────────────
     const phaseList = MICRO_PACKAGES.has(packageName) ? PHASES_MICRO : PHASES_FULL

@@ -406,7 +406,7 @@ async function run(payload) {
 
   if (projectId) {
     await patchPage(projectId, {
-      "Status":          { select: { name: "Build Started" } },
+      "Status":          { status: { name: "Build Started" } },
       "Start Date":      { date: { start: today } },
       "Onboarding Form": { url: formUrl },
       ...(dealId && dealId !== leadId ? { "Deals": { relation: [{ id: dealId }] } } : {}),
