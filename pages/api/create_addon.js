@@ -1,43 +1,68 @@
 // ─── create_addon.js ───────────────────────────────────────────────────────
-// POST /api/create_addon   { "page_id": "<client_account_page_id>" }
-// Triggered by Notion button "New Add-on" on a Client Account page.
+// POST /api/create_addon   { "page_id": "<project_or_client_account_page_id>" }
+// Triggered by Notion button "New Add-on" on either:
+//   • Project page       — mid-build add-ons (most common during active work)
+//   • Client Account page — post-install add-ons
 //
-// Flow:
-//   1. Read Client Account → Company, Linked Deal, Project Tracker, Install Name
-//   2. Create Add-on record in Add-ons DB with all relations pre-filled
-//      (Client Account, Deal, Project, Company)
-//   3. Create a Draft Quotation linked to the Add-on record
-//   4. Append blank Products & Services inline DB to the Quotation page
+// Auto-detects which page type was passed, reads all 4 relations from it,
+// then:
+//   1. Creates Add-on record in Add-ons DB (CA + Deal + Project + Company)
+//   2. Creates linked Draft Quotation
+//   3. Appends blank Products & Services inline DB to the Quotation
 //
 // After this runs:
-//   → Open the Add-on record → pick Catalogue Item → Base Price auto-fills
-//   → Fill line items in the Quotation → Approve → invoice pipeline kicks in
+//   → Open Add-on record → pick Catalogue Item → Base Price auto-fills
+//   → Fill Quotation line items → Approve → invoice pipeline runs
 
 import { getPage, createPage, plain, DB, hdrs } from "../../lib/notion"
 
-async function fetchClientAccount(caId, token) {
-  const page  = await getPage(caId, token)
-  const props = page.properties
+// ── Detect source page and extract all needed relations ───────────────────
+async function resolveSourcePage(pageId, token) {
+  const page   = await getPage(pageId, token)
+  const props  = page.properties
+  const dbId   = (page.parent?.database_id || "").replace(/-/g, "")
 
-  const installName = plain(props["Install Name"]?.title || []) || "Client"
+  const isProject        = dbId === DB.PROJECTS.replace(/-/g, "")
+  const isClientAccount  = dbId === DB.CLIENT_ACCOUNTS.replace(/-/g, "")
+
+  if (!isProject && !isClientAccount) {
+    throw new Error(`Page ${pageId} is not a Project or Client Account page`)
+  }
+
+  if (isProject) {
+    const companyId = props.Company?.relation?.[0]?.id?.replace(/-/g, "")            || null
+    const dealId    = props.Deals?.relation?.[0]?.id?.replace(/-/g, "")              || null
+    const caId      = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+    // Install name: pull from Client Account if linked, else fall back to project name
+    let installName = plain(props["Project Name"]?.title || []).replace(/ Build$/, "").trim()
+    if (caId) {
+      try {
+        const ca = await getPage(caId, token)
+        installName = plain(ca.properties["Install Name"]?.title || []) || installName
+      } catch {}
+    }
+    return { companyId, dealId, projectId: pageId, caId, installName }
+  }
+
+  // isClientAccount
   const companyId   = props.Company?.relation?.[0]?.id?.replace(/-/g, "")            || null
   const dealId      = props["Linked Deal"]?.relation?.[0]?.id?.replace(/-/g, "")     || null
   const projectId   = props["Project Tracker"]?.relation?.[0]?.id?.replace(/-/g, "") || null
-
-  return { installName, companyId, dealId, projectId }
+  const installName = plain(props["Install Name"]?.title || []) || "Client"
+  return { companyId, dealId, projectId, caId: pageId, installName }
 }
 
-// ── 1. Create Add-on record with all relations pre-filled ────────────────────
-async function createAddonRecord({ caId, companyId, dealId, projectId, installName, token }) {
-  const today = new Date().toISOString().split("T")[0]
+// ── 1. Create Add-on record ───────────────────────────────────────────────
+async function createAddonRecord({ caId, companyId, dealId, projectId, installName, sourcePageId, token }) {
+  const requestedWhen = sourcePageId === projectId ? "Mid-Build" : "Post-Handover"
   const props = {
-    "Add-on Name":          { title: [{ text: { content: `Add-on — ${installName}` } }] },
-    "Status":               { select: { name: "Pending" } },
-    "Requested When":       { select: { name: "Post-Install" } },
-    ...(companyId  ? { "Company":              { relation: [{ id: companyId  }] } } : {}),
-    ...(caId       ? { "Linked Client Account":{ relation: [{ id: caId       }] } } : {}),
-    ...(dealId     ? { "Linked Deal":          { relation: [{ id: dealId     }] } } : {}),
-    ...(projectId  ? { "Linked Project":       { relation: [{ id: projectId  }] } } : {}),
+    "Add-on Name":           { title: [{ text: { content: `Add-on — ${installName}` } }] },
+    "Status":                { select: { name: "Pending" } },
+    "Requested When":        { select: { name: requestedWhen } },
+    ...(companyId  ? { "Company":               { relation: [{ id: companyId  }] } } : {}),
+    ...(caId       ? { "Linked Client Account": { relation: [{ id: caId       }] } } : {}),
+    ...(dealId     ? { "Linked Deal":           { relation: [{ id: dealId     }] } } : {}),
+    ...(projectId  ? { "Linked Project":        { relation: [{ id: projectId  }] } } : {}),
   }
   const page    = await createPage({ parent: { database_id: DB.ADD_ONS }, properties: props }, token)
   const addonId = page.id.replace(/-/g, "")
@@ -45,8 +70,8 @@ async function createAddonRecord({ caId, companyId, dealId, projectId, installNa
   return { addonId, addonUrl: page.url }
 }
 
-// ── 2. Create a Draft Quotation pre-linked to the Add-on ────────────────────
-async function createAddonQuotation({ addonId, companyId, dealId, projectId, token }) {
+// ── 2. Create Draft Quotation linked to the Add-on ───────────────────────
+async function createAddonQuotation({ companyId, dealId, projectId, token }) {
   const today = new Date().toISOString().split("T")[0]
   const props = {
     "Quotation No.": { title: [{ text: { content: "" } }] },
@@ -57,7 +82,6 @@ async function createAddonQuotation({ addonId, companyId, dealId, projectId, tok
     "Package Type":  { rich_text: [{ text: { content: "Add-on" } }] },
     ...(companyId ? { "Company":     { relation: [{ id: companyId }] } } : {}),
     ...(dealId    ? { "Deal Source": { relation: [{ id: dealId    }] } } : {}),
-    // Back-link to project so create_invoice doesn't spin up a duplicate project
     ...(projectId ? { "Project":     { relation: [{ id: projectId }] } } : {}),
   }
   const r = await fetch("https://api.notion.com/v1/pages", {
@@ -70,7 +94,7 @@ async function createAddonQuotation({ addonId, companyId, dealId, projectId, tok
   return { quotId: page.id.replace(/-/g, ""), quotUrl: page.url }
 }
 
-// ── 3. Append blank Products & Services inline DB to Quotation page ─────────
+// ── 3. Append Products & Services inline DB to Quotation ─────────────────
 async function createLineItemsDB(pageId, token) {
   const r = await fetch("https://api.notion.com/v1/databases", {
     method:  "POST",
@@ -102,46 +126,37 @@ export default async function handler(req, res) {
     const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
     if (!rawId) return res.status(400).json({ error: "Missing page_id" })
 
-    const caId   = rawId.replace(/-/g, "")
-    const caData = await fetchClientAccount(caId, token)
+    const pageId = rawId.replace(/-/g, "")
 
-    // 1. Create Add-on record (all relations pre-filled)
-    const { addonId, addonUrl } = await createAddonRecord({ caId, ...caData, token })
+    // Auto-detect Project vs Client Account and read all needed relations
+    const { companyId, dealId, projectId, caId, installName } = await resolveSourcePage(pageId, token)
 
-    // 2. Create linked Quotation
-    const { quotId, quotUrl } = await createAddonQuotation({
-      addonId,
-      companyId:  caData.companyId,
-      dealId:     caData.dealId,
-      projectId:  caData.projectId,
-      token,
+    // 1. Create Add-on record
+    const { addonId, addonUrl } = await createAddonRecord({
+      caId, companyId, dealId, projectId, installName, sourcePageId: pageId, token,
     })
 
+    // 2. Create linked Quotation
+    const { quotId, quotUrl } = await createAddonQuotation({ companyId, dealId, projectId, token })
+
     // 3. Link Quotation back to Add-on record
-    try {
-      await fetch(`https://api.notion.com/v1/pages/${addonId}`, {
-        method:  "PATCH",
-        headers: hdrs(token),
-        body:    JSON.stringify({ properties: { "Quotation": { relation: [{ id: quotId }] } } }),
-      })
-    } catch (e) {
-      console.warn("[create_addon] link quotation→addon:", e.message)
-    }
+    await fetch(`https://api.notion.com/v1/pages/${addonId}`, {
+      method:  "PATCH",
+      headers: hdrs(token),
+      body:    JSON.stringify({ properties: { "Quotation": { relation: [{ id: quotId }] } } }),
+    }).catch(e => console.warn("[create_addon] link quotation→addon:", e.message))
 
     // 4. Append Products & Services table to Quotation
-    try { await createLineItemsDB(quotId, token) } catch (e) {
-      console.warn("[create_addon] line items DB:", e.message)
-    }
+    await createLineItemsDB(quotId, token).catch(e => console.warn("[create_addon] line items DB:", e.message))
 
     return res.json({
       status:         "success",
-      client_account: caId,
-      install_name:   caData.installName,
+      source:         projectId === pageId ? "project" : "client_account",
+      install_name:   installName,
       addon_id:       addonId,
       addon_url:      addonUrl,
       quotation_id:   quotId,
       quotation_url:  quotUrl,
-      next_steps:     "Open Add-on record → pick Catalogue Item → Base Price fills. Then fill Quotation line items → Approve when ready to invoice.",
     })
   } catch (e) {
     console.error("[create_addon]", e)
