@@ -3,374 +3,242 @@
 <title>Opxio — Product Catalogue</title>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet"/>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
-body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#0D0D0D;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
-body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.1);--gb:rgba(170,255,0,.2);}
-body.light{--g:#5C9900;--gm:rgba(92,153,0,.08);--gb:rgba(92,153,0,.18);}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#fff;overflow-y:auto;padding:20px 20px 40px;}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.08);--gb:rgba(170,255,0,.2);}
 
-/* Scrollbar */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15);}
-body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
 
-/* Buttons */
-.btn{background:#1E1E1E;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.45);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .2s;}
+/* ── Top bar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--g);}
+.brand-name{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.topbar-actions{display:flex;align-items:center;gap:6px;}
+.btn{background:#1A1A1A;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .2s;}
 .btn:hover{border-color:var(--gb);color:var(--g);}
-body.light .btn{background:#E5E5E5;border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.45);}
+.ts{font-size:10px;color:rgba(255,255,255,.15);}
 
-/* Top bar */
-.topbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.topbar-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
-.eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:2px;}
-body.light .eyebrow{color:rgba(0,0,0,.3);}
-.h-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.03em;}
-body.light .h-title{color:#111;}
-.ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
-body.light .ts{color:rgba(0,0,0,.2);}
+/* ── Search ── */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
+.search-wrap{position:relative;flex:1;}
+.search-input{width:100%;background:#141414;border:1px solid rgba(255,255,255,.07);color:#fff;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:500;padding:10px 14px 10px 38px;border-radius:10px;outline:none;transition:border-color .2s;}
+.search-input:focus{border-color:rgba(170,255,0,.3);}
+.search-input::placeholder{color:rgba(255,255,255,.2);}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.2);font-size:14px;pointer-events:none;line-height:1;}
 
-/* Search */
-.search-wrap{position:relative;margin-bottom:12px;}
-.search-input{width:100%;background:#1A1A1A;border:1px solid rgba(255,255,255,.08);color:#fff;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:500;padding:8px 12px 8px 34px;border-radius:9px;outline:none;transition:border-color .2s;}
-.search-input:focus{border-color:var(--gb);}
-.search-input::placeholder{color:rgba(255,255,255,.22);}
-body.light .search-input{background:#EBEBEB;border-color:rgba(0,0,0,.08);color:#111;}
-body.light .search-input::placeholder{color:rgba(0,0,0,.3);}
-.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.25);font-size:13px;pointer-events:none;}
-body.light .search-icon{color:rgba(0,0,0,.3);}
+/* ── OS Filter tabs ── */
+.os-bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;}
+.os-btn{background:transparent;border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.3);font-family:'Satoshi',sans-serif;font-size:11px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.os-btn:hover:not(.active){color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.12);}
+.os-btn.active{background:#1A1A1A;color:var(--g);border-color:var(--gb);}
 
-/* OS Filter Tabs */
-.tabs-wrap{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;}
-.tab{background:transparent;border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.35);font-family:'Satoshi',sans-serif;font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.tab:hover:not(.active){color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.12);}
-.tab.active{background:#1E1E1E;color:var(--g);border-color:var(--gb);}
-body.light .tab{border-color:rgba(0,0,0,.08);color:rgba(0,0,0,.4);}
-body.light .tab.active{background:#E5E5E5;border-color:var(--gb);}
+/* ── Section header ── */
+.section{margin-bottom:28px;}
+.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.section-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);}
+.section-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);margin-left:auto;}
+.section-line{flex:1;height:1px;background:rgba(255,255,255,.04);}
 
-/* Tier filter pills */
-.tier-bar{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
-.tier-pill{background:transparent;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.3);font-family:'Satoshi',sans-serif;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.tier-pill:hover:not(.active){color:rgba(255,255,255,.55);}
-.tier-pill.active{color:#fff;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.06);}
-body.light .tier-pill{border-color:rgba(0,0,0,.07);color:rgba(0,0,0,.35);}
-body.light .tier-pill.active{color:#111;background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.14);}
+/* ── Card grid ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
 
-/* Count badge */
-.count-badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
+/* ── Card ── */
+.card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .15s;cursor:default;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;opacity:0;transition:opacity .2s;}
+.card:hover{border-color:rgba(255,255,255,.1);transform:translateY(-1px);}
+.card:hover::before{opacity:1;}
 
-/* Group header */
-.group-hdr{display:flex;align-items:center;gap:8px;padding:6px 0 8px;margin-top:4px;}
-.group-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);}
-body.light .group-label{color:rgba(0,0,0,.35);}
-.group-line{flex:1;height:1px;background:rgba(255,255,255,.05);}
-body.light .group-line{background:rgba(0,0,0,.06);}
-.group-count{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);}
-body.light .group-count{color:rgba(0,0,0,.25);}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.card-name{font-size:13px;font-weight:700;color:#fff;line-height:1.3;flex:1;}
+.tier-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
 
-/* Item row */
-.item{border:1px solid rgba(255,255,255,.05);border-radius:10px;margin-bottom:4px;overflow:hidden;transition:border-color .18s;cursor:pointer;}
-.item:hover{border-color:rgba(170,255,0,.12);}
-.item.expanded{border-color:rgba(170,255,0,.18);}
-body.light .item{border-color:rgba(0,0,0,.06);}
-body.light .item:hover{border-color:rgba(92,153,0,.18);}
-body.light .item.expanded{border-color:rgba(92,153,0,.25);}
+.card-price{display:flex;align-items:baseline;gap:4px;}
+.price-val{font-size:22px;font-weight:900;letter-spacing:-.04em;color:var(--g);line-height:1;}
+.price-cur{font-size:11px;font-weight:700;color:rgba(170,255,0,.6);margin-right:1px;}
+.price-disc{font-size:12px;font-weight:700;color:rgba(255,255,255,.25);font-style:italic;}
+.price-range{font-size:11px;font-weight:600;color:rgba(170,255,0,.5);margin-left:2px;}
 
-.item-row{display:grid;grid-template-columns:1fr auto;align-items:start;gap:12px;padding:11px 14px;}
-.item-main{min-width:0;}
-.item-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-body.light .item-name{color:#111;}
-.tier-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em;}
-.item-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.card-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);margin-top:-4px;}
 
-/* Tags */
-.tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;}
-.tag-avail{background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.06);}
-body.light .tag-avail{background:rgba(0,0,0,.05);color:rgba(0,0,0,.45);border-color:rgba(0,0,0,.07);}
-.tag-req{background:rgba(255,154,60,.08);color:rgba(255,154,60,.8);border:1px solid rgba(255,154,60,.15);}
-.tag-disc{background:rgba(170,255,0,.08);color:var(--g);border:1px solid var(--gb);}
-.tag-sub{background:rgba(192,132,252,.08);color:rgba(192,132,252,.9);border:1px solid rgba(192,132,252,.18);}
+.card-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.55;flex:1;}
 
-/* Pricing block */
-.price-block{text-align:right;flex-shrink:0;}
-.price-main{font-size:16px;font-weight:900;color:var(--g);letter-spacing:-.03em;line-height:1;}
-.price-main.disc{font-size:12px;color:rgba(255,255,255,.4);font-weight:700;}
-body.light .price-main.disc{color:rgba(0,0,0,.35);}
-.price-sub{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.3);margin-top:3px;}
-body.light .price-sub{color:rgba(0,0,0,.35);}
-.price-model{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px;display:inline-block;}
-.pm-onetime{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.06);}
-.pm-sub{background:rgba(192,132,252,.08);color:rgba(192,132,252,.8);border:1px solid rgba(192,132,252,.15);}
-body.light .pm-onetime{background:rgba(0,0,0,.04);color:rgba(0,0,0,.4);border-color:rgba(0,0,0,.07);}
+.card-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:auto;}
+.pill{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.pill-os{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.06);}
+.pill-req{background:rgba(255,154,60,.07);color:rgba(255,154,60,.75);border:1px solid rgba(255,154,60,.14);}
+.pill-sub{background:rgba(192,132,252,.07);color:rgba(192,132,252,.8);border:1px solid rgba(192,132,252,.14);}
+.pill-disc{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 
-/* Expand chevron */
-.chevron{font-size:12px;color:rgba(255,255,255,.2);transition:transform .2s;flex-shrink:0;margin-top:2px;}
-.item.expanded .chevron{transform:rotate(180deg);color:var(--g);}
-body.light .chevron{color:rgba(0,0,0,.25);}
-
-/* Expanded content */
-.item-detail{padding:0 14px 13px;border-top:1px solid rgba(255,255,255,.04);display:none;}
-body.light .item-detail{border-top-color:rgba(0,0,0,.05);}
-.item.expanded .item-detail{display:block;}
-.detail-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);line-height:1.6;margin-top:10px;}
-body.light .detail-desc{color:rgba(0,0,0,.5);}
-.detail-row{display:flex;align-items:flex-start;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.detail-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.25);margin-top:3px;white-space:nowrap;}
-body.light .detail-label{color:rgba(0,0,0,.3);}
-
-/* Empty state */
-.empty{text-align:center;padding:40px 0;color:rgba(255,255,255,.2);font-size:13px;font-weight:700;}
-body.light .empty{color:rgba(0,0,0,.25);}
-
-/* Tier colors */
+/* ── Tier config ── */
 :root{
-  --t-os:#AAFF00;
-  --t-core:#4A9EFF;
-  --t-exp:#FF9A3C;
-  --t-auto:#C084FC;
-  --t-dash:#F472B6;
-  --t-int:#2DD4BF;
-  --t-ai:#FF6B6B;
+  --c-os:#AAFF00;
+  --c-core:#4A9EFF;
+  --c-exp:#FF9A3C;
+  --c-auto:#C084FC;
+  --c-dash:#F472B6;
+  --c-int:#2DD4BF;
+  --c-ai:#FF6B6B;
 }
+
+/* ── Empty ── */
+.empty{text-align:center;padding:60px 0;color:rgba(255,255,255,.15);font-size:13px;font-weight:700;}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div>
-    <p class="eyebrow">Opxio</p>
-    <h1 class="h-title">Product Catalogue</h1>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span class="brand-name">Product Catalogue</span>
   </div>
-  <div class="topbar-right">
+  <div class="topbar-actions">
     <span class="ts" id="ts"></span>
-    <span class="count-badge" id="count-badge">—</span>
-    <button class="btn" onclick="doRefresh()" id="rb">↻ Refresh</button>
-    <button class="btn" onclick="toggleMode()" id="mb">☀ Light</button>
+    <button class="btn" onclick="doRefresh()">↻ Refresh</button>
   </div>
 </div>
 
-<div class="search-wrap">
-  <span class="search-icon">⌕</span>
-  <input class="search-input" id="search" type="text" placeholder="Search products…" oninput="render()"/>
+<div class="search-row">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" id="search" type="text" placeholder="Search products, descriptions…" oninput="render()"/>
+  </div>
 </div>
 
-<div class="tabs-wrap" id="os-tabs"></div>
-<div class="tier-bar" id="tier-bar"></div>
-<div id="catalogue-list"></div>
+<div class="os-bar" id="os-bar"></div>
+<div id="catalogue"></div>
 
 <script>
-let allItems = [], activeOS = 'All', activeTier = 'All', isLight = false
+let allItems = [], activeOS = 'All'
 const _tok = new URLSearchParams(location.search).get('token') || ''
-function apiUrl(path){ return _tok ? path + '?token=' + encodeURIComponent(_tok) : path }
+function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p }
 
 const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Business OS','Team OS','Retention OS','Finance OS','Agentic OS']
 
-const TIER_ORDER = ['OS Package','Core Module','Expansion Module','Automation','Dashboard & Widget','Integration','AI Agent']
+const TIERS = [
+  { key: 'OS Package',        color: '#AAFF00', label: 'OS Packages' },
+  { key: 'Core Module',       color: '#4A9EFF', label: 'Core Modules' },
+  { key: 'Expansion Module',  color: '#FF9A3C', label: 'Expansion Modules' },
+  { key: 'Automation',        color: '#C084FC', label: 'Automations' },
+  { key: 'Dashboard & Widget',color: '#F472B6', label: 'Dashboards & Widgets' },
+  { key: 'Integration',       color: '#2DD4BF', label: 'Integrations' },
+  { key: 'AI Agent',          color: '#FF6B6B', label: 'AI Agents' },
+]
 
-const TIER_COLOR = {
-  'OS Package':       '#AAFF00',
-  'Core Module':      '#4A9EFF',
-  'Expansion Module': '#FF9A3C',
-  'Automation':       '#C084FC',
-  'Dashboard & Widget':'#F472B6',
-  'Integration':      '#2DD4BF',
-  'AI Agent':         '#FF6B6B',
-}
+function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
-const TIER_BG = {
-  'OS Package':       'rgba(170,255,0,.1)',
-  'Core Module':      'rgba(74,158,255,.1)',
-  'Expansion Module': 'rgba(255,154,60,.1)',
-  'Automation':       'rgba(192,132,252,.1)',
-  'Dashboard & Widget':'rgba(244,114,182,.1)',
-  'Integration':      'rgba(45,212,191,.1)',
-  'AI Agent':         'rgba(255,107,107,.1)',
-}
-
-function fmtPrice(item) {
-  if (!item.price && item.price !== 0) return null
-  return 'RM ' + item.price.toLocaleString()
-}
-
-function fmtSub(item) {
-  if (item.model !== 'Setup + Subscription') return null
-  const term = item.term ? ` · ${item.term}` : ''
-  return item.monthly ? `RM ${item.monthly}/mo${term}` : null
-}
-
-function buildOSTabs() {
-  const el = document.getElementById('os-tabs')
-  el.innerHTML = OS_LIST.map(os =>
-    `<button class="tab${activeOS===os?' active':''}" onclick="setOS('${os}')">${os}</button>`
+function buildOSBar(){
+  document.getElementById('os-bar').innerHTML = OS_LIST.map(os =>
+    `<button class="os-btn${activeOS===os?' active':''}" onclick="setOS('${os}')">${os}</button>`
   ).join('')
 }
 
-function buildTierBar(items) {
-  const tiers = ['All', ...TIER_ORDER.filter(t => items.some(x => x.tier === t))]
-  const el = document.getElementById('tier-bar')
-  el.innerHTML = tiers.map(t =>
-    `<button class="tier-pill${activeTier===t?' active':''}" onclick="setTier('${t}')">${t}</button>`
-  ).join('')
-}
+function setOS(os){ activeOS=os; render() }
 
-function setOS(os) { activeOS = os; activeTier = 'All'; render() }
-function setTier(t) { activeTier = t; render() }
-
-function filterItems() {
+function filterItems(){
   const q = document.getElementById('search').value.trim().toLowerCase()
   return allItems.filter(item => {
     const osMatch = activeOS === 'All'
       || item.tier === 'OS Package'
       || item.avail.includes(activeOS)
-    const tierMatch = activeTier === 'All' || item.tier === activeTier
     const searchMatch = !q
       || item.name.toLowerCase().includes(q)
       || item.desc.toLowerCase().includes(q)
-      || item.tier.toLowerCase().includes(q)
       || item.avail.some(a => a.toLowerCase().includes(q))
-    return osMatch && tierMatch && searchMatch
+    return osMatch && searchMatch
   })
 }
 
-function badgeHTML(item) {
-  const c = TIER_COLOR[item.tier] || '#fff'
-  const bg = TIER_BG[item.tier] || 'rgba(255,255,255,.07)'
-  return `<span class="tier-badge" style="color:${c};background:${bg};border:1px solid ${c}22">${item.tier}</span>`
+function priceHTML(item){
+  if (item.visibility === 'Discovery Only')
+    return `<div class="price-disc">Discovery Call</div>`
+  if (!item.price && item.price !== 0)
+    return `<div class="price-disc">Custom</div>`
+  const hasRange = item.priceMax && item.priceMax !== item.price
+  return `<div class="card-price">
+    <span class="price-cur">RM</span>
+    <span class="price-val">${item.price.toLocaleString()}</span>
+    ${hasRange ? `<span class="price-range">– ${item.priceMax.toLocaleString()}</span>` : ''}
+  </div>
+  ${item.model === 'Setup + Subscription' && item.monthly
+    ? `<div class="card-sub">+ RM ${item.monthly}/mo · ${item.term||'6 mo fixed'}</div>`
+    : ''}`
 }
 
-function itemHTML(item) {
-  const priceStr = fmtPrice(item)
-  const subStr   = fmtSub(item)
-  const isDisc   = item.visibility === 'Discovery Only'
+function footerHTML(item){
+  const pills = []
+  if (item.visibility === 'Discovery Only') pills.push(`<span class="pill pill-disc">Discovery Only</span>`)
+  if (item.model === 'Setup + Subscription') pills.push(`<span class="pill pill-sub">Subscription</span>`)
+  if (item.requiresNames.length)
+    item.requiresNames.forEach(r => pills.push(`<span class="pill pill-req">Req: ${r}</span>`))
+  else if (item.avail.length && item.tier !== 'OS Package')
+    item.avail.slice(0,3).forEach(a => pills.push(`<span class="pill pill-os">${a}</span>`))
+  return pills.join('')
+}
 
-  const priceBlock = isDisc
-    ? `<div class="price-block"><div class="price-main disc">Discovery Call</div><div class="price-sub">Custom pricing</div></div>`
-    : priceStr
-      ? `<div class="price-block">
-          <div class="price-main">${priceStr}${item.priceMax && item.priceMax !== item.price ? ` – RM ${item.priceMax.toLocaleString()}` : ''}</div>
-          ${subStr ? `<div class="price-sub">+ ${subStr}</div>` : ''}
-          <div><span class="price-model ${item.model==='One-Time'?'pm-onetime':'pm-sub'}">${item.model}</span></div>
-        </div>`
-      : ''
-
-  const availTags = item.avail.slice(0,4).map(a =>
-    `<span class="tag tag-avail">${a}</span>`
-  ).join('')
-
-  const reqTags = item.requiresNames.length
-    ? item.requiresNames.map(r => `<span class="tag tag-req">Req: ${r}</span>`).join('')
-    : ''
-
-  const discTag = isDisc ? `<span class="tag tag-disc">Discovery Only</span>` : ''
-  const subTag  = item.model === 'Setup + Subscription' ? `<span class="tag tag-sub">Subscription</span>` : ''
-
-  const detailMeta = []
-  if (item.avail.length) detailMeta.push(`
-    <div class="detail-row">
-      <span class="detail-label">Available To</span>
-      ${item.avail.map(a=>`<span class="tag tag-avail">${a}</span>`).join('')}
-    </div>`)
-  if (item.requiresNames.length) detailMeta.push(`
-    <div class="detail-row">
-      <span class="detail-label">Requires</span>
-      ${item.requiresNames.map(r=>`<span class="tag tag-req">${r}</span>`).join('')}
-    </div>`)
-  if (item.buildDays) detailMeta.push(`
-    <div class="detail-row">
-      <span class="detail-label">Build Time</span>
-      <span class="tag tag-avail">${item.buildDays} day${item.buildDays!==1?'s':''}</span>
-    </div>`)
-  if (subStr) detailMeta.push(`
-    <div class="detail-row">
-      <span class="detail-label">Monthly</span>
-      <span class="tag tag-sub">${subStr}</span>
-    </div>`)
-
-  return `<div class="item" id="item-${item.id}" onclick="toggleItem('${item.id}')">
-    <div class="item-row">
-      <div class="item-main">
-        <div class="item-name">${item.name} ${badgeHTML(item)}</div>
-        <div class="item-meta">${availTags}${reqTags}${discTag}${subTag}</div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;flex-shrink:0">
-        ${priceBlock}
-        <span class="chevron">▾</span>
-      </div>
+function cardHTML(item){
+  const c = tierColor(item.tier)
+  const footer = footerHTML(item)
+  return `<div class="card" style="--card-color:${c}">
+    <style>.card[style*="${c}"]::before{background:linear-gradient(90deg,${c},transparent);}</style>
+    <div class="card-top">
+      <div class="card-name">${item.name}</div>
+      <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
     </div>
-    ${item.desc || detailMeta.length ? `
-    <div class="item-detail">
-      ${item.desc ? `<div class="detail-desc">${item.desc}</div>` : ''}
-      ${detailMeta.join('')}
-    </div>` : ''}
+    ${priceHTML(item)}
+    ${item.desc ? `<div class="card-desc">${item.desc.length > 90 ? item.desc.slice(0,90)+'…' : item.desc}</div>` : ''}
+    ${footer ? `<div class="card-footer">${footer}</div>` : ''}
   </div>`
 }
 
-function render() {
-  buildOSTabs()
+function render(){
+  buildOSBar()
   const filtered = filterItems()
-  buildTierBar(filtered)
+  const el = document.getElementById('catalogue')
 
-  document.getElementById('count-badge').textContent = filtered.length + ' items'
-
-  const tiersInView = activeTier === 'All'
-    ? TIER_ORDER.filter(t => filtered.some(x => x.tier === t))
-    : [activeTier]
-
-  const listEl = document.getElementById('catalogue-list')
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="empty">No items match your search</div>'
+  if (!filtered.length){
+    el.innerHTML = '<div class="empty">No products match</div>'
     return
   }
 
   let html = ''
-  for (const tier of tiersInView) {
-    const group = filtered.filter(x => x.tier === tier)
+  for (const tier of TIERS){
+    const group = filtered.filter(x => x.tier === tier.key)
     if (!group.length) continue
-    const c = TIER_COLOR[tier] || '#fff'
-    html += `
-      <div class="group-hdr">
-        <span class="group-dot" style="background:${c}"></span>
-        <span class="group-label">${tier}</span>
-        <span class="group-line"></span>
-        <span class="group-count">${group.length}</span>
-      </div>`
-    group.forEach(item => { html += itemHTML(item) })
+    html += `<div class="section">
+      <div class="section-hdr">
+        <div class="section-bar" style="background:${tier.color}"></div>
+        <span class="section-title">${tier.label}</span>
+        <div class="section-line"></div>
+        <span class="section-count">${group.length}</span>
+      </div>
+      <div class="cards">${group.map(cardHTML).join('')}</div>
+    </div>`
   }
-  listEl.innerHTML = html
+  el.innerHTML = html
 }
 
-function toggleItem(id) {
-  const el = document.getElementById('item-' + id)
-  if (el) el.classList.toggle('expanded')
-}
-
-function toggleMode() {
-  isLight = !isLight
-  document.body.classList.toggle('light', isLight)
-  document.getElementById('mb').textContent = isLight ? '☾ Dark' : '☀ Light'
-}
-
-async function load() {
-  document.getElementById('rb').textContent = '↻ Loading…'
+async function load(){
+  document.querySelector('.btn').textContent = '↻ Loading…'
   try {
     const r = await fetch(apiUrl('/api/data/catalogue'))
     if (!r.ok) throw new Error('HTTP ' + r.status)
     const data = await r.json()
     allItems = data.items || []
     const d = new Date(data.ts)
-    document.getElementById('ts').textContent = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    document.getElementById('ts').textContent = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
     render()
-  } catch(e) {
-    document.getElementById('catalogue-list').innerHTML = `<div class="empty">Failed to load — ${e.message}</div>`
+  } catch(e){
+    document.getElementById('catalogue').innerHTML = `<div class="empty">Failed to load — ${e.message}</div>`
   }
-  document.getElementById('rb').textContent = '↻ Refresh'
+  document.querySelector('.btn').textContent = '↻ Refresh'
 }
 
-function doRefresh() { load() }
-
+function doRefresh(){ load() }
 load()
 </script>
-</body>
-</html>
+</body></html>
