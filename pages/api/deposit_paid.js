@@ -84,7 +84,7 @@ async function createClientAccount({ invoiceId, companyId, companyName, dealId, 
       ...(companyId  ? { "Company":         { relation: [{ id: companyId  }] } } : {}),
       ...(dealId     ? { "Linked Deal":     { relation: [{ id: dealId     }] } } : {}),
       ...(leadId     ? { "Linked Lead":     { relation: [{ id: leadId     }] } } : {}),
-      ...(picId      ? { "PIC":             { relation: [{ id: picId      }] } } : {}),
+      ...(picId      ? { "Primary Contact": { relation: [{ id: picId      }] } } : {}),
       ...(projectId  ? { "Project Tracker": { relation: [{ id: projectId  }] } } : {}),
       ...(osInstalled.length ? { "OS Installed": { multi_select: osInstalled } } : {}),
     }
