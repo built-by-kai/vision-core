@@ -810,7 +810,12 @@ function openDrawer(idx){
     })
     body += `</div></div><div class="d-divider"></div>`
     // Base OS note
-    body += `<div class="d-section"><div class="d-label">Also Includes</div><div class="d-text" style="color:rgba(255,255,255,.3)">Base OS — 5 foundation databases always included complimentary: Companies & People, Client Accounts, Team Members & Staff Directory, Company Profile, Dashboard Hub.</div></div><div class="d-divider"></div>`
+    body += `<div class="d-section"><div class="d-label">Also Includes</div>
+      <div class="d-db-row" style="margin-top:2px">
+        ${['Companies & People','Client Accounts','Team Members & Staff Directory','Company Profile','Dashboard Hub'].map(m=>`<span class="d-db-chip">${m}</span>`).join('')}
+      </div>
+      <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-top:6px;">Base OS — always complimentary</div>
+    </div><div class="d-divider"></div>`
   }
 
   // Databases (Core Modules, Expansions, Automations, Dashboards, Integrations)
