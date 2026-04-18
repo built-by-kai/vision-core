@@ -89,11 +89,14 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .os-hero-model{font-size:10px;font-weight:600;color:rgba(255,255,255,.2);text-align:right;}
 .os-hero-reqpill{background:rgba(255,154,60,.08);border:1px solid rgba(255,154,60,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;color:rgba(255,154,60,.7);margin-top:6px;}
 
-/* ── Two-column OS + Entry Point row ── */
-.two-col-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;align-items:start;}
-@media(max-width:640px){.two-col-row{grid-template-columns:1fr;}}
+/* ── Two-column OS Packages + Additional OS Layers row ── */
+.two-col-row{display:grid;grid-template-columns:1fr 280px;gap:0;margin-bottom:28px;align-items:start;}
+@media(max-width:700px){.two-col-row{grid-template-columns:1fr;gap:24px;}}
 .two-col-section{min-width:0;}
-.two-col-row .two-col-section + .two-col-section{border-left:1px solid rgba(255,255,255,.05);padding-left:20px;}
+.two-col-section:first-child{padding-right:28px;border-right:1px solid rgba(255,255,255,.05);}
+.two-col-section:last-child{padding-left:28px;}
+/* Additional OS Layers column: single card per row, no tier dot */
+.two-col-section:last-child .cards{grid-template-columns:1fr !important;}
 
 /* ── Section header ── */
 .section{margin-bottom:28px;}
@@ -244,6 +247,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
   </div>
   <div class="topbar-actions">
     <span class="ts" id="ts"></span>
+    <button class="btn" id="currency-btn" onclick="toggleCurrency()">$ USD</button>
     <button class="btn" id="refresh-btn" onclick="doRefresh()">↻ Refresh</button>
     <button class="btn-edit" id="edit-toggle-btn" onclick="toggleEditMode()" style="display:none">✎ Edit Mode</button>
   </div>
@@ -279,11 +283,36 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 </div>
 
 <script>
-let allItems = [], activeOS = 'All', editMode = false
+let allItems = [], activeOS = 'All', editMode = false, currency = 'MYR'
 const _tok = new URLSearchParams(location.search).get('token') || ''
 const OPXIO_TOKEN = '04524d18e8ef8f862b64d497e4c6cc52a7991d96029c71546939b5e3ec428edf'
 const isOpxio = _tok === OPXIO_TOKEN
 function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p }
+
+// ── Currency helpers ──────────────────────────────────────────────────────────
+const USD_DIV = 1.3  // market-positioned rate (RM 3,250 ≈ USD 2,500)
+function fmtAmt(myr){
+  if (myr === null || myr === undefined) return null
+  if (currency === 'USD'){
+    const usd = myr / USD_DIV
+    return usd >= 5000 ? Math.round(usd / 100) * 100 : Math.round(usd / 50) * 50
+  }
+  return myr
+}
+function sym(){ return currency === 'USD' ? 'USD' : 'RM' }
+function toggleCurrency(){
+  currency = currency === 'MYR' ? 'USD' : 'MYR'
+  const btn = document.getElementById('currency-btn')
+  btn.textContent = currency === 'USD' ? '$ MYR' : '$ USD'
+  btn.classList.toggle('active', currency === 'USD')
+  // Re-open drawer if open so prices update
+  const drawer = document.getElementById('drawer')
+  if (drawer.classList.contains('open')){
+    const idx = parseInt(drawer.dataset.idx || '-1')
+    if (idx >= 0) openDrawer(idx)
+  }
+  render()
+}
 
 function toggleEditMode(){
   editMode = !editMode
@@ -602,8 +631,8 @@ function retentionExpansionHTML(os){
             <div class="addon-os-tagline">${os.tagline}</div>
           </div>
           <div class="addon-os-price">
-            <span class="addon-os-cur">RM</span>
-            <div class="addon-os-val">${os.price.toLocaleString()}</div>
+            <span class="addon-os-cur">${sym()}</span>
+            <div class="addon-os-val">${fmtAmt(os.price).toLocaleString()}</div>
             <div class="addon-os-model">One-time</div>
           </div>
         </div>
@@ -641,8 +670,8 @@ function addonOSSectionHTML(){
           <div class="addon-os-tagline">${os.tagline}</div>
         </div>
         <div class="addon-os-price">
-          <span class="addon-os-cur">RM</span>
-          <div class="addon-os-val">${os.price.toLocaleString()}</div>
+          <span class="addon-os-cur">${sym()}</span>
+          <div class="addon-os-val">${fmtAmt(os.price).toLocaleString()}</div>
           <div class="addon-os-model">One-time</div>
         </div>
       </div>
@@ -712,8 +741,8 @@ function bundleSectionHTML(){
         <span class="bundle-count">${b.layers} of 4 OS</span>
       </div>
       <div class="bundle-price-row">
-        <span style="font-size:11px;font-weight:700;color:rgba(170,255,0,.5);line-height:1">RM</span>
-        <span style="font-size:26px;font-weight:900;color:var(--g);letter-spacing:-.04em;line-height:1">${b.price.toLocaleString()}</span>
+        <span style="font-size:11px;font-weight:700;color:rgba(170,255,0,.5);line-height:1">${sym()}</span>
+        <span style="font-size:26px;font-weight:900;color:var(--g);letter-spacing:-.04em;line-height:1">${fmtAmt(b.price).toLocaleString()}</span>
         <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.2);align-self:flex-end;padding-bottom:2px">one-time</span>
       </div>
       <div class="bundle-desc">${b.tagline}</div>
@@ -760,11 +789,11 @@ function openDrawer(idx){
   } else {
     const hasRange = item.priceMax && item.priceMax !== item.price
     body += `<div class="d-price-row">
-      <span class="d-cur">RM</span>
-      <span class="d-price">${item.price.toLocaleString()}</span>
-      ${hasRange ? `<span class="d-range">– ${item.priceMax.toLocaleString()}</span>` : ''}
+      <span class="d-cur">${sym()}</span>
+      <span class="d-price">${fmtAmt(item.price).toLocaleString()}</span>
+      ${hasRange ? `<span class="d-range">– ${fmtAmt(item.priceMax).toLocaleString()}</span>` : ''}
     </div>`
-    if (item.model) body += `<div class="d-sub">${item.model}${item.model === 'Setup + Subscription' && item.monthly ? ` · RM ${item.monthly}/mo from Month ${item.term||'6'}` : ''}</div>`
+    if (item.model) body += `<div class="d-sub">${item.model}${item.model === 'Setup + Subscription' && item.monthly ? ` · ${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo from Month ${item.term||'6'}` : ''}</div>`
   }
   body += `</div><div class="d-divider"></div>`
 
@@ -821,7 +850,7 @@ function openDrawer(idx){
     body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
     body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
     if (item.model === 'Setup + Subscription' && item.monthly){
-      body += `<span class="d-model-chip highlight">RM ${item.monthly}/mo</span>`
+      body += `<span class="d-model-chip highlight">${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo</span>`
       if (item.term) body += `<span class="d-model-chip">${item.term}</span>`
     }
     body += `</div></div>`
@@ -908,7 +937,9 @@ function openDrawer(idx){
 
   document.getElementById('d-body').innerHTML = body
   document.getElementById('overlay').classList.add('open')
-  document.getElementById('drawer').classList.add('open')
+  const drawer = document.getElementById('drawer')
+  drawer.classList.add('open')
+  drawer.dataset.idx = idx
   document.body.style.overflow = 'hidden'
 }
 
@@ -953,12 +984,12 @@ function priceHTML(item){
     return `<div class="card-price"><div class="price-disc">Complimentary</div></div>`
   const hasRange = item.priceMax && item.priceMax !== item.price
   return `<div class="card-price">
-    <span class="price-cur">RM</span>
-    <span class="price-val">${item.price.toLocaleString()}</span>
-    ${hasRange ? `<span class="price-range">– ${item.priceMax.toLocaleString()}</span>` : ''}
+    <span class="price-cur">${sym()}</span>
+    <span class="price-val">${fmtAmt(item.price).toLocaleString()}</span>
+    ${hasRange ? `<span class="price-range">– ${fmtAmt(item.priceMax).toLocaleString()}</span>` : ''}
   </div>
   ${item.model === 'Setup + Subscription' && item.monthly
-    ? `<div class="card-sub">+ RM ${item.monthly}/mo</div>`
+    ? `<div class="card-sub">+ ${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo</div>`
     : ''}`
 }
 
@@ -1021,8 +1052,8 @@ function osHeroHTML(os){
       priceEl = `<div class="hero-free">Complimentary</div>`
     } else {
       priceEl = `<div class="os-hero-price">
-        <span class="hero-cur">RM</span>
-        <span class="hero-val">${osCard.price.toLocaleString()}</span>
+        <span class="hero-cur">${sym()}</span>
+        <span class="hero-val">${fmtAmt(osCard.price).toLocaleString()}</span>
       </div>
       <div class="os-hero-model">One-time setup</div>`
     }
@@ -1091,60 +1122,46 @@ function render(){
   if (activeOS === 'All'){
     html += bundleSectionHTML()
 
+    // ── OS Packages + Additional OS Layers (2-column) ─────────────────────────
+    const osPkgItems   = filtered.filter(x => x.tier === 'OS Package' && !ADDON_OS_NAMES.includes(x.name))
+    const addonOSItems = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
+    const entryItems   = filtered.filter(x => x.tier === 'Entry Point')
+
+    const osPkgCol = osPkgItems.length ? `
+      <div class="two-col-section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#AAFF00"></div>
+          <span class="section-title">OS Packages</span>
+          <span class="section-count">${osPkgItems.length} items</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="cards">${osPkgItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+      </div>` : ''
+
+    const addonCol = addonOSItems.length ? `
+      <div class="two-col-section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:var(--g)"></div>
+          <span class="section-title">Additional OS Layers</span>
+          <span class="section-count">${addonOSItems.length} items</span>
+          <span class="section-note">Any time</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="cards">${addonOSItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+      </div>` : ''
+
+    if (osPkgCol || addonCol) html += `<div class="two-col-row">${osPkgCol}${addonCol}</div>`
+
+    // ── Entry Point — own full-width row ──────────────────────────────────────
+    if (entryItems.length){
+      html += sectionHTML('Entry Point', '#94A3B8', entryItems, 'Upgrade credit applies')
+    }
+
+    // ── All other tiers ───────────────────────────────────────────────────────
     for (const tier of TIERS){
-      let group = filtered.filter(x => x.tier === tier.key)
-      // OS Packages section: exclude Additional OS layers
-      if (tier.key === 'OS Package') group = group.filter(x => !ADDON_OS_NAMES.includes(x.name))
-
-      if (tier.key === 'OS Package'){
-        // ── OS Packages + Entry Point side by side ───────────────────────────
-        const entryItems = filtered.filter(x => x.tier === 'Entry Point')
-        const addonOSCards = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
-
-        const osPkgCol = group.length ? `
-          <div class="two-col-section">
-            <div class="section-hdr">
-              <div class="section-bar" style="background:#AAFF00"></div>
-              <span class="section-title">OS Packages</span>
-              <span class="section-count">${group.length} items</span>
-              <div class="section-line"></div>
-            </div>
-            <div class="cards">${group.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-          </div>` : ''
-
-        const entryCol = entryItems.length ? `
-          <div class="two-col-section">
-            <div class="section-hdr">
-              <div class="section-bar" style="background:#94A3B8"></div>
-              <span class="section-title">Entry Point</span>
-              <span class="section-count">${entryItems.length} items</span>
-              <span class="section-note">Upgrade credit applies</span>
-              <div class="section-line"></div>
-            </div>
-            <div class="cards">${entryItems.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-          </div>` : ''
-
-        if (osPkgCol || entryCol){
-          html += `<div class="two-col-row">${osPkgCol}${entryCol}</div>`
-        }
-
-        // Additional OS Layers below
-        if (addonOSCards.length){
-          html += `<div class="section">
-            <div class="section-hdr">
-              <div class="section-bar" style="background:var(--g)"></div>
-              <span class="section-title">Additional OS Layers</span>
-              <span class="section-count">${addonOSCards.length} items</span>
-              <span class="section-note">Expand any install at any time</span>
-              <div class="section-line"></div>
-            </div>
-            <div class="cards">${addonOSCards.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-          </div>`
-        }
-      } else if (tier.key !== 'Entry Point') {
-        // Entry Point already handled above — skip it in the main loop
-        if (group.length) html += sectionHTML(tier.label, tier.color, group)
-      }
+      if (['OS Package','Entry Point'].includes(tier.key)) continue
+      const group = filtered.filter(x => x.tier === tier.key)
+      if (group.length) html += sectionHTML(tier.label, tier.color, group)
     }
   } else {
     html += osHeroHTML(activeOS)
