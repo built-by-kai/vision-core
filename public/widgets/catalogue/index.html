@@ -889,20 +889,6 @@ function openDrawer(idx){
   }
   body += `</div><div class="d-divider"></div>`
 
-  // Category + Pricing Model — right after pricing
-  body += `<div class="d-section"><div class="d-label">Category</div>`
-  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${item.tier}</div></div></div>`
-  if (item.model){
-    body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
-    body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
-    if (item.model === 'Setup + Subscription' && item.monthly){
-      body += `<span class="d-model-chip highlight">${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo</span>`
-      if (item.term) body += `<span class="d-model-chip">${item.term}</span>`
-    }
-    body += `</div></div>`
-  }
-  body += `<div class="d-divider"></div>`
-
   // About
   const desc = MODULE_DESC[item.name] || item.desc
   if (desc){
