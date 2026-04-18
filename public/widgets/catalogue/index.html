@@ -965,21 +965,23 @@ function render(){
       // OS Packages section: exclude Additional OS layers
       if (tier.key === 'OS Package') group = group.filter(x => !ADDON_OS_NAMES.includes(x.name))
       if (group.length) html += sectionHTML(tier.label, tier.color, group)
-    }
 
-    // Additional OS Layers section
-    const addonOSCards = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
-    if (addonOSCards.length){
-      html += `<div class="section">
-        <div class="section-hdr">
-          <div class="section-bar" style="background:var(--g)"></div>
-          <span class="section-title">Additional OS Layers</span>
-          <span class="section-count">${addonOSCards.length} items</span>
-          <span class="section-note">Expand any install at any time</span>
-          <div class="section-line"></div>
-        </div>
-        <div class="cards">${addonOSCards.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-      </div>`
+      // Additional OS Layers right after OS Packages
+      if (tier.key === 'OS Package'){
+        const addonOSCards = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
+        if (addonOSCards.length){
+          html += `<div class="section">
+            <div class="section-hdr">
+              <div class="section-bar" style="background:var(--g)"></div>
+              <span class="section-title">Additional OS Layers</span>
+              <span class="section-count">${addonOSCards.length} items</span>
+              <span class="section-note">Expand any install at any time</span>
+              <div class="section-line"></div>
+            </div>
+            <div class="cards">${addonOSCards.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+          </div>`
+        }
+      }
     }
   } else {
     html += osHeroHTML(activeOS)
