@@ -9,6 +9,7 @@
 // 5. Advances Lead/Deal stage → "Awaiting Deposit"
 // 6. Returns { invoice_id, project_id }
 
+import { waitUntil } from "@vercel/functions"
 import { getPage, patchPage, createPage, queryDB, plain, DB, hdrs } from "../../lib/notion"
 
 // ── Default phases per package tier ─────────────────────────────────────────
@@ -388,7 +389,9 @@ async function run(payload) {
   }
 }
 
-export default async function handler(req, res) {
+export const config = { api: { responseLimit: false } }
+
+export default function handler(req, res) {
   if (req.method === "GET") {
     return res.json({ service: "Opxio — Create Invoice", status: "ready" })
   }
@@ -397,11 +400,13 @@ export default async function handler(req, res) {
   const body = req.body || {}
   console.log("[create_invoice] payload:", JSON.stringify(body).slice(0, 300))
 
-  try {
-    const result = await run(body)
-    return res.json(result)
-  } catch (e) {
-    console.error("[create_invoice]", e.message, e.stack?.slice(0, 300))
-    return res.status(500).json({ error: e.message })
-  }
+  // Respond immediately so Notion automation doesn't time out (10s limit)
+  res.status(200).json({ status: "accepted" })
+
+  // Do all the heavy work in the background via waitUntil
+  waitUntil(
+    run(body).catch(e =>
+      console.error("[create_invoice]", e.message, e.stack?.slice(0, 300))
+    )
+  )
 }
