@@ -101,58 +101,74 @@ body.light .chart-title{color:rgba(0,0,0,.7);}
 .chart-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 .chart-wrap{position:relative;width:100%;height:160px;}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
-/* Stage metrics row */
-.stage-metrics{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;}
-.stage-metrics::-webkit-scrollbar{display:none;}
-.sm-card{flex:1;min-width:110px;padding:16px 18px 14px;border-right:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden;}
-.sm-card:last-child{border-right:none;}
-body.light .sm-card{border-right-color:rgba(0,0,0,.06);}
-.sm-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .sm-lbl{color:rgba(0,0,0,.35);}
-.sm-count{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:#fff;margin-bottom:5px;}
-body.light .sm-count{color:#111;}
-.sm-val{font-size:11px;font-weight:700;color:var(--g);opacity:.85;margin-bottom:12px;min-height:15px;}
-.sm-bar-track{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
-body.light .sm-bar-track{background:rgba(0,0,0,.08);}
-.sm-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
-.sm-empty{padding:28px 18px;font-size:11px;color:rgba(255,255,255,.2);font-weight:600;}
-body.light .sm-empty{color:rgba(0,0,0,.25);}
-/* Source analytics */
-.src-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.src-row:last-child{margin-bottom:0;}
-.src-lbl{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.55);width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .src-lbl{color:rgba(0,0,0,.5);}
-.src-bar-track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
-body.light .src-bar-track{background:rgba(0,0,0,.07);}
-.src-bar-fill{height:100%;border-radius:99px;background:var(--g);opacity:.8;transition:width .55s cubic-bezier(.4,0,.2,1);}
-.src-count{font-size:13px;font-weight:900;color:#fff;width:28px;text-align:right;flex-shrink:0;}
-body.light .src-count{color:#111;}
-.src-pct{font-size:10px;font-weight:700;color:var(--g);opacity:.85;width:34px;text-align:right;flex-shrink:0;}
-/* Country list */
-.country-row{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
-.country-row:last-child{margin-bottom:0;}
-.country-flag{font-size:16px;flex-shrink:0;line-height:1;}
-.country-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);flex-shrink:0;width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body.light .country-name{color:rgba(0,0,0,.5);}
-.country-bar-track{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
-body.light .country-bar-track{background:rgba(0,0,0,.07);}
-.country-bar-fill{height:100%;border-radius:99px;background:rgba(170,255,0,.55);transition:width .55s cubic-bezier(.4,0,.2,1);}
+/* Segmented source bars */
+.seg-row{display:flex;align-items:center;gap:11px;margin-bottom:13px;}
+.seg-row:last-child{margin-bottom:0;}
+.seg-lbl{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);width:96px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .seg-lbl{color:rgba(0,0,0,.45);}
+.seg-bar-track{flex:1;height:11px;border-radius:3px;background:rgba(255,255,255,.04);overflow:hidden;}
+body.light .seg-bar-track{background:rgba(0,0,0,.06);}
+.seg-bar-fill{height:100%;border-radius:3px;background:repeating-linear-gradient(90deg,#AAFF00 0,#AAFF00 4px,rgba(0,0,0,.3) 4px,rgba(0,0,0,.3) 6px);transition:width .6s cubic-bezier(.4,0,.2,1);}
+body.light .seg-bar-fill{background:repeating-linear-gradient(90deg,#5C9900 0,#5C9900 4px,rgba(255,255,255,.4) 4px,rgba(255,255,255,.4) 6px);}
+.seg-count{font-size:13px;font-weight:900;color:#fff;width:28px;text-align:right;flex-shrink:0;}
+body.light .seg-count{color:#111;}
+.seg-pct{font-size:10px;font-weight:700;color:var(--g);opacity:.85;width:36px;text-align:right;flex-shrink:0;}
+/* Country map card */
+.map-card{overflow:hidden;margin-bottom:10px;}
+.map-card-body{display:flex;min-height:240px;}
+.map-canvas-side{flex:1;position:relative;overflow:hidden;background:#161616;min-height:220px;}
+body.light .map-canvas-side{background:#E8E8E8;}
+.map-canvas-label{position:absolute;top:14px;left:16px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);z-index:2;}
+body.light .map-canvas-label{color:rgba(0,0,0,.3);}
+#country-map{position:absolute;top:0;left:0;width:100%;height:100%;}
+.map-info-side{width:200px;border-left:1px solid rgba(255,255,255,.05);padding:22px 18px;display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
+body.light .map-info-side{border-left-color:rgba(0,0,0,.06);}
+.map-total-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-bottom:6px;}
+body.light .map-total-lbl{color:rgba(0,0,0,.3);}
+.map-total-num{font-size:32px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1;}
+body.light .map-total-num{color:#111;}
+.map-clist-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.map-clist-row:last-child{margin-bottom:0;}
+.map-clist-flag{font-size:14px;flex-shrink:0;line-height:1;}
+.map-clist-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.45);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .map-clist-name{color:rgba(0,0,0,.45);}
+.map-clist-pct{font-size:12px;font-weight:900;color:var(--g);flex-shrink:0;}
+/* Country % card strip */
+.ccard-strip{display:flex;border-top:1px solid rgba(255,255,255,.04);overflow:hidden;}
+body.light .ccard-strip{border-top-color:rgba(0,0,0,.06);}
+.ccard{flex:1;min-width:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.04);}
+.ccard:last-child{border-right:none;}
+body.light .ccard{border-right-color:rgba(0,0,0,.05);}
+.ccard-flag{font-size:18px;margin-bottom:5px;line-height:1;}
+.ccard-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.light .ccard-name{color:rgba(0,0,0,.35);}
+.ccard-pct{font-size:20px;font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:2px;}
+body.light .ccard-pct{color:#111;}
+.ccard-count{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.25);margin-bottom:8px;}
+body.light .ccard-count{color:rgba(0,0,0,.3);}
+.ccard-bar{height:3px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:4px;}
+body.light .ccard-bar{background:rgba(0,0,0,.07);}
+.ccard-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
 /* UTM section */
 .utm-grid{display:grid;grid-template-columns:repeat(3,1fr);}
 @media(max-width:700px){.utm-grid{grid-template-columns:1fr;}}
-.utm-col{padding:18px 20px;border-right:1px solid rgba(255,255,255,.04);}
+.utm-col{padding:16px 18px;border-right:1px solid rgba(255,255,255,.04);}
 .utm-col:last-child{border-right:none;}
-body.light .utm-col{border-right-color:rgba(0,0,0,.06);}
-.utm-col-title{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:14px;}
+body.light .utm-col{border-right-color:rgba(0,0,0,.05);}
+.utm-col-title{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:12px;}
 body.light .utm-col-title{color:rgba(0,0,0,.3);}
 .utm-item{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
 .utm-item:last-child{margin-bottom:0;}
 .utm-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.6);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 body.light .utm-name{color:rgba(0,0,0,.5);}
-.utm-bar-track{width:52px;height:5px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;flex-shrink:0;}
-body.light .utm-bar-track{background:rgba(0,0,0,.07);}
-.utm-bar-fill{height:100%;border-radius:99px;background:rgba(170,255,0,.55);}
+.utm-seg-track{width:56px;height:8px;border-radius:2px;background:rgba(255,255,255,.05);overflow:hidden;flex-shrink:0;}
+body.light .utm-seg-track{background:rgba(0,0,0,.06);}
+.utm-seg-fill{height:100%;background:repeating-linear-gradient(90deg,rgba(170,255,0,.7) 0,rgba(170,255,0,.7) 3px,rgba(0,0,0,.35) 3px,rgba(0,0,0,.35) 5px);}
 .utm-n{font-size:12px;font-weight:900;color:#fff;width:22px;text-align:right;flex-shrink:0;}
+body.light .utm-n{color:#111;}
+.utm-empty{padding:16px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.18);font-weight:600;line-height:1.7;}
+body.light .utm-empty{color:rgba(0,0,0,.2);}
+.utm-setup-pill{display:inline-block;margin-top:5px;font-size:9px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:5px;background:rgba(170,255,0,.07);color:var(--g);border:1px solid rgba(170,255,0,.15);}
 body.light .utm-n{color:#111;}
 .utm-empty{padding:18px 0;text-align:center;font-size:11px;color:rgba(255,255,255,.18);font-weight:600;line-height:1.6;}
 body.light .utm-empty{color:rgba(0,0,0,.2);}
@@ -387,6 +403,7 @@ body.light .log-val{color:rgba(0,0,0,.4);}
 <!-- ══ SOURCES TAB ════════════════════════════════════════════════════════════ -->
 <div class="view-pane" id="pane-sources">
 
+  <!-- Stat cards -->
   <div class="stat-row stat-row-4">
     <div class="card stat">
       <div class="s-dot"></div>
@@ -398,51 +415,65 @@ body.light .log-val{color:rgba(0,0,0,.4);}
       <div class="s-dot"></div>
       <span class="s-lbl">Active Sources</span>
       <div class="s-val" id="src-src-count">—</div>
-      <div class="s-sub">Unique channels tracked</div>
+      <div class="s-sub">Unique channels</div>
     </div>
     <div class="card stat">
       <div class="s-dot"></div>
       <span class="s-lbl">Top Source</span>
-      <div class="s-val" id="src-top" style="font-size:16px;letter-spacing:-.3px;line-height:1.1;margin-top:4px;">—</div>
+      <div class="s-val" id="src-top" style="font-size:16px;letter-spacing:-.3px;line-height:1.15;margin-top:6px;">—</div>
       <div class="s-sub" id="src-top-sub">Most leads</div>
     </div>
     <div class="card stat">
       <div class="s-dot"></div>
       <span class="s-lbl">Top Country</span>
-      <div class="s-val" id="src-country" style="font-size:16px;letter-spacing:-.3px;line-height:1.1;margin-top:4px;">—</div>
+      <div class="s-val" id="src-country" style="font-size:16px;letter-spacing:-.3px;line-height:1.15;margin-top:6px;">—</div>
       <div class="s-sub" id="src-country-sub">Most leads</div>
     </div>
   </div>
 
-  <div class="grid-2" style="margin-bottom:10px;">
-    <div class="card panel">
-      <div class="panel-title">Lead Sources</div>
-      <div id="src-bars"></div>
+  <!-- World Map card -->
+  <div class="card map-card">
+    <div class="map-card-body">
+      <div class="map-canvas-side">
+        <div class="map-canvas-label">Audience Location</div>
+        <canvas id="country-map"></canvas>
+      </div>
+      <div class="map-info-side">
+        <div>
+          <div class="map-total-lbl">Total Leads</div>
+          <div class="map-total-num" id="map-total">—</div>
+        </div>
+        <div id="map-clist"></div>
+      </div>
     </div>
-    <div class="card panel">
-      <div class="panel-title">By Country</div>
-      <div id="src-countries"></div>
-    </div>
+    <div class="ccard-strip" id="ccard-strip"></div>
   </div>
 
-  <div class="card" style="overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 14px;">
-      <span class="chart-title">UTM Breakdown</span>
-      <span class="chart-badge" id="utm-badge" style="display:none;">Tracking</span>
+  <!-- Sources + UTM -->
+  <div class="grid-2">
+    <div class="card panel">
+      <div class="panel-title">By Source</div>
+      <div id="src-bars"></div>
     </div>
-    <div style="height:1px;background:rgba(255,255,255,.04);"></div>
-    <div class="utm-grid">
-      <div class="utm-col">
-        <div class="utm-col-title">Campaign</div>
-        <div id="utm-campaigns"></div>
+    <div class="card" style="overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;">
+        <span class="panel-title" style="margin-bottom:0;">UTM Breakdown</span>
+        <span class="chart-badge" id="utm-badge" style="display:none;">Live</span>
       </div>
-      <div class="utm-col">
-        <div class="utm-col-title">Medium</div>
-        <div id="utm-mediums"></div>
-      </div>
-      <div class="utm-col">
-        <div class="utm-col-title">UTM Source</div>
-        <div id="utm-sources-list"></div>
+      <div style="height:1px;background:rgba(255,255,255,.04);"></div>
+      <div class="utm-grid">
+        <div class="utm-col">
+          <div class="utm-col-title">Campaign</div>
+          <div id="utm-campaigns"></div>
+        </div>
+        <div class="utm-col">
+          <div class="utm-col-title">Medium</div>
+          <div id="utm-mediums"></div>
+        </div>
+        <div class="utm-col">
+          <div class="utm-col-title">UTM Source</div>
+          <div id="utm-sources-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -672,44 +703,102 @@ function renderLog(){
 }
 
 // ── Sources tab ───────────────────────────────────────────────────────────────
-const FLAGS={'Malaysia':'🇲🇾','Singapore':'🇸🇬','Indonesia':'🇮🇩','Philippines':'🇵🇭','Thailand':'🇹🇭','Vietnam':'🇻🇳','Bangladesh':'🇧🇩','India':'🇮🇳','UK':'🇬🇧','United Kingdom':'🇬🇧','Australia':'🇦🇺','USA':'🇺🇸','United States':'🇺🇸'};
+const FLAGS={'Malaysia':'🇲🇾','Singapore':'🇸🇬','Indonesia':'🇮🇩','Philippines':'🇵🇭','Thailand':'🇹🇭','Vietnam':'🇻🇳','Bangladesh':'🇧🇩','India':'🇮🇳','UK':'🇬🇧','United Kingdom':'🇬🇧','Australia':'🇦🇺','USA':'🇺🇸','United States':'🇺🇸','Japan':'🇯🇵','China':'🇨🇳','South Korea':'🇰🇷','UAE':'🇦🇪','Saudi Arabia':'🇸🇦'};
 
-function renderSrcBars(elId, items, total){
-  const el=document.getElementById(elId); if(!el) return;
-  if(!items||!items.length){el.innerHTML='<div class="empty">No source data</div>';return;}
+// Country lat/lon → map canvas % [x,y] (empirically tuned for Mercator-ish projection)
+const COUNTRY_COORDS={
+  'Malaysia':[0.726,0.578],'Singapore':[0.728,0.588],'Indonesia':[0.748,0.618],
+  'Philippines':[0.772,0.555],'Thailand':[0.718,0.546],'Vietnam':[0.733,0.527],
+  'Bangladesh':[0.685,0.510],'India':[0.672,0.522],'UK':[0.469,0.340],
+  'United Kingdom':[0.469,0.340],'Australia':[0.800,0.730],'USA':[0.174,0.422],
+  'United States':[0.174,0.422],'Japan':[0.804,0.430],'China':[0.748,0.428],
+  'South Korea':[0.790,0.415],'UAE':[0.617,0.510],'Saudi Arabia':[0.598,0.495],
+};
+
+// Continent regions as [cx,cy,rx,ry] — used to draw background dot grid
+const CONTINENTS=[
+  [0.175,0.370,0.115,0.195],[0.224,0.670,0.075,0.162], // N+S America
+  [0.478,0.342,0.063,0.095],[0.496,0.598,0.082,0.162], // Europe+Africa
+  [0.635,0.310,0.135,0.120],[0.722,0.548,0.090,0.098], // Asia main+SE Asia
+  [0.798,0.728,0.072,0.068],                            // Australia
+];
+
+function drawCountryMap(){
+  const wrap=document.getElementById('map-canvas-wrap')||document.querySelector('.map-canvas-side');
+  const canvas=document.getElementById('country-map');
+  if(!wrap||!canvas) return;
+  const W=wrap.offsetWidth||600, H=wrap.offsetHeight||240;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const isDark=!document.body.classList.contains('light');
+
+  // Background dot grid — continents
+  const SP=0.023;
+  CONTINENTS.forEach(([cx,cy,rx,ry])=>{
+    for(let nx=cx-rx;nx<=cx+rx+0.001;nx+=SP){
+      for(let ny=cy-ry;ny<=cy+ry+0.001;ny+=SP){
+        const dx=(nx-cx)/rx,dy=(ny-cy)/ry;
+        if(dx*dx+dy*dy<=1){
+          ctx.fillStyle=isDark?'rgba(255,255,255,0.09)':'rgba(0,0,0,0.1)';
+          ctx.beginPath();ctx.arc(nx*W,ny*H,1.8,0,Math.PI*2);ctx.fill();
+        }
+      }
+    }
+  });
+
+  const countries=pipeData?.countries||[];
+  if(!countries.length) return;
+  const total=countries.reduce((s,c)=>s+c.count,0);
+  const homeCoords=COUNTRY_COORDS[countries[0]?.label];
+
+  // Draw arc connections from top country to others
+  if(homeCoords){
+    countries.slice(1,6).forEach(c=>{
+      const coords=COUNTRY_COORDS[c.label]; if(!coords) return;
+      const x1=homeCoords[0]*W,y1=homeCoords[1]*H;
+      const x2=coords[0]*W,y2=coords[1]*H;
+      const mx=(x1+x2)/2,my=Math.min(y1,y2)-Math.abs(x2-x1)*0.28;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(mx,my,x2,y2);
+      ctx.strokeStyle='rgba(170,255,0,0.18)';ctx.lineWidth=1;
+      ctx.setLineDash([3,6]);ctx.stroke();ctx.setLineDash([]);
+    });
+  }
+
+  // Draw country dots with glow
+  countries.slice(0,8).forEach((c,i)=>{
+    const coords=COUNTRY_COORDS[c.label]; if(!coords) return;
+    const cx=coords[0]*W,cy=coords[1]*H;
+    const pct=c.count/total, r=5+pct*14;
+    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,r*2.8);
+    grad.addColorStop(0,'rgba(170,255,0,0.55)');
+    grad.addColorStop(1,'rgba(170,255,0,0)');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,r*2.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#AAFF00';ctx.beginPath();ctx.arc(cx,cy,i===0?5:4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,1.8,0,Math.PI*2);ctx.fill();
+  });
+}
+
+function renderSourceBars(elId,items,total){
+  const el=document.getElementById(elId);if(!el)return;
+  if(!items||!items.length){el.innerHTML='<div class="empty">No source data yet</div>';return;}
   const max=Math.max(...items.map(s=>s.count),1);
   el.innerHTML=items.map(s=>{
     const pct=total>0?Math.round((s.count/total)*100):0;
     const barPct=Math.max(Math.round((s.count/max)*100),s.count>0?4:0);
-    return `<div class="src-row">
-      <span class="src-lbl" title="${esc(s.label)}">${esc(s.label)}</span>
-      <div class="src-bar-track"><div class="src-bar-fill" style="width:${barPct}%"></div></div>
-      <span class="src-count">${s.count}</span>
-      <span class="src-pct">${pct}%</span>
+    return `<div class="seg-row">
+      <span class="seg-lbl" title="${esc(s.label)}">${esc(s.label)}</span>
+      <div class="seg-bar-track"><div class="seg-bar-fill" style="width:${barPct}%"></div></div>
+      <span class="seg-count">${s.count}</span>
+      <span class="seg-pct">${pct}%</span>
     </div>`;
   }).join('');
 }
 
-function renderCountries(elId, countries){
-  const el=document.getElementById(elId); if(!el) return;
-  if(!countries||!countries.length){el.innerHTML='<div class="empty">No country data yet<br/><span style="font-size:10px;opacity:.6;">Set a Country field in your Leads DB</span></div>';return;}
-  const max=Math.max(...countries.map(c=>c.count),1);
-  el.innerHTML=countries.map(c=>{
-    const flag=FLAGS[c.label]||'🌐';
-    const barPct=Math.max(Math.round((c.count/max)*100),4);
-    return `<div class="country-row">
-      <span class="country-flag">${flag}</span>
-      <span class="country-name" title="${esc(c.label)}">${esc(c.label)}</span>
-      <div class="country-bar-track"><div class="country-bar-fill" style="width:${barPct}%"></div></div>
-      <span class="src-count">${c.count}</span>
-    </div>`;
-  }).join('');
-}
-
-function renderUtmCol(elId, items, fieldName){
-  const el=document.getElementById(elId); if(!el) return;
+function renderUtmCol(elId,items,fieldName){
+  const el=document.getElementById(elId);if(!el)return;
   if(!items||!items.length){
-    el.innerHTML=`<div class="utm-empty">No data yet<br/><span class="utm-setup-pill">Add "${fieldName}" field to Leads DB</span></div>`;
+    el.innerHTML=`<div class="utm-empty">No data yet<br/><span class="utm-setup-pill">${esc(fieldName)} field</span></div>`;
     return;
   }
   const max=Math.max(...items.map(i=>i.count),1);
@@ -717,7 +806,7 @@ function renderUtmCol(elId, items, fieldName){
     const barPct=Math.max(Math.round((i.count/max)*100),4);
     return `<div class="utm-item">
       <span class="utm-name" title="${esc(i.label)}">${esc(i.label)}</span>
-      <div class="utm-bar-track"><div class="utm-bar-fill" style="width:${barPct}%"></div></div>
+      <div class="utm-seg-track"><div class="utm-seg-fill" style="width:${barPct}%"></div></div>
       <span class="utm-n">${i.count}</span>
     </div>`;
   }).join('');
@@ -725,29 +814,65 @@ function renderUtmCol(elId, items, fieldName){
 
 function renderSources(){
   if(!pipeData) return;
-  const sources=pipeData.sources||[], countries=pipeData.countries||[], utm=pipeData.utm||{sources:[],mediums:[],campaigns:[]};
+  const sources=pipeData.sources||[], countries=pipeData.countries||[];
+  const utm=pipeData.utm||{sources:[],mediums:[],campaigns:[]};
   const total=sources.reduce((s,x)=>s+x.count,0);
   const activeSrcs=sources.filter(s=>s.label!=='Other').length;
+
+  // Stat cards
   document.getElementById('src-total').textContent=total||'—';
   document.getElementById('src-src-count').textContent=activeSrcs||'—';
-
   const top=sources[0];
   document.getElementById('src-top').textContent=top?.label||'—';
-  document.getElementById('src-top-sub').textContent=top?top.count+' leads':'No data yet';
-
+  document.getElementById('src-top-sub').textContent=top?(top.count+' leads'):'No data yet';
   const topC=countries[0];
-  document.getElementById('src-country').textContent=topC?(FLAGS[topC.label]||'')+' '+topC.label:'—';
-  document.getElementById('src-country-sub').textContent=topC?topC.count+' leads':'No country data';
+  document.getElementById('src-country').textContent=topC?((FLAGS[topC.label]||'')+' '+topC.label):'—';
+  document.getElementById('src-country-sub').textContent=topC?(topC.count+' leads'):'No country data';
 
-  renderSrcBars('src-bars', sources, total);
-  renderCountries('src-countries', countries);
+  // Map total
+  document.getElementById('map-total').textContent=total||'—';
 
+  // Country right-panel list (top 5, compact)
+  const clistEl=document.getElementById('map-clist');
+  if(clistEl){
+    clistEl.innerHTML=countries.slice(0,5).map(c=>{
+      const pct=total>0?Math.round((c.count/total)*100):0;
+      return `<div class="map-clist-row">
+        <span class="map-clist-flag">${FLAGS[c.label]||'🌐'}</span>
+        <span class="map-clist-name">${esc(c.label)}</span>
+        <span class="map-clist-pct">${pct}%</span>
+      </div>`;
+    }).join('')||'<div class="empty" style="padding:8px 0;">No country data yet</div>';
+  }
+
+  // Country % cards strip (top 4)
+  const strip=document.getElementById('ccard-strip');
+  if(strip){
+    strip.innerHTML=countries.slice(0,4).map(c=>{
+      const pct=total>0?Math.round((c.count/total)*100):0;
+      return `<div class="ccard">
+        <div class="ccard-flag">${FLAGS[c.label]||'🌐'}</div>
+        <div class="ccard-name">${esc(c.label)}</div>
+        <div class="ccard-pct">${pct}%</div>
+        <div class="ccard-count">${c.count} lead${c.count!==1?'s':''}</div>
+        <div class="ccard-bar"><div class="ccard-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('')||'';
+    strip.style.display=countries.length?'flex':'none';
+  }
+
+  // Source bars
+  renderSourceBars('src-bars',sources,total);
+
+  // UTM
   const hasUtm=utm.campaigns.length||utm.mediums.length||utm.sources.length;
-  const badge=document.getElementById('utm-badge');
-  badge.style.display=hasUtm?'':'none';
-  renderUtmCol('utm-campaigns', utm.campaigns, 'UTM Campaign');
-  renderUtmCol('utm-mediums',   utm.mediums,   'UTM Medium');
-  renderUtmCol('utm-sources-list', utm.sources,'UTM Source');
+  document.getElementById('utm-badge').style.display=hasUtm?'':'none';
+  renderUtmCol('utm-campaigns',utm.campaigns,'UTM Campaign');
+  renderUtmCol('utm-mediums',utm.mediums,'UTM Medium');
+  renderUtmCol('utm-sources-list',utm.sources,'UTM Source');
+
+  // Draw map after DOM settles
+  setTimeout(drawCountryMap,50);
 }
 
 // ── Data load ─────────────────────────────────────────────────────────────────
@@ -850,8 +975,8 @@ function drawChart(){
   wrap.onmouseleave=hide;
   function hide(){tip.style.display='none';hL.style.opacity='0';}
 }
-window.addEventListener('load',()=>setTimeout(drawChart,80));
-window.addEventListener('resize',drawChart);
+window.addEventListener('load',()=>setTimeout(()=>{drawChart();if(currentView==='sources')drawCountryMap();},80));
+window.addEventListener('resize',()=>{drawChart();if(currentView==='sources')drawCountryMap();});
 </script>
 <div style="text-align:center;padding:20px 0 4px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.1);">Widgets by Opxio.io</div>
 <script>
