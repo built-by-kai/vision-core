@@ -61,7 +61,7 @@ async function handleQuotation(pageId) {
     "PDF":        { url: pdfUrl },
     "Status":     { select: { name: "Draft" } },
     "Issue Date": { date: { start: new Date().toISOString().split("T")[0] } },
-    ...(total > 0 ? { "Amount": { number: total } } : {}),
+    ...(total > 0 ? { "Amount (MYR)": { number: total } } : {}),
     ...(data.quotation_no && data.title_prop_name
       ? { [data.title_prop_name]: { title: [{ text: { content: data.quotation_no } }] } }
       : {}),

@@ -333,7 +333,7 @@ async function run(payload) {
   }
 
   // ── Finance Ledger — auto-create Deposit entry ───────────────────────────
-  const depositAmt = props["Deposit (50%)"]?.number || props["Amount"]?.number || 0
+  const depositAmt = props["Deposit (50%)"]?.number || props["Amount (MYR)"]?.number || props["Amount"]?.number || 0
   createLedgerEntry({
     title:     companyName ? `Deposit — ${companyName}` : "Client Deposit",
     amount:    depositAmt,
