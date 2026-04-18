@@ -102,11 +102,13 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .section-line{flex:1;height:1px;background:rgba(255,255,255,.04);margin-left:8px;}
 
 /* ── Card grid ── */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,260px));gap:10px;}
+/* Additional OS Layers: same card width */
+.addon-os-layers-grid{grid-template-columns:repeat(auto-fill,minmax(215px,260px)) !important;max-width:none !important;}
 
 /* ── Card ── */
 .card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .15s,box-shadow .2s;cursor:pointer;position:relative;overflow:hidden;}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;opacity:0;transition:opacity .2s;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;opacity:0;transition:opacity .2s;background:linear-gradient(90deg,var(--card-color,#AAFF00),transparent);}
 .card:hover{border-color:rgba(255,255,255,.12);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
 .card:hover::before{opacity:1;}
 .card-click-hint{position:absolute;bottom:10px;right:12px;font-size:9px;font-weight:700;color:rgba(255,255,255,.1);letter-spacing:.05em;text-transform:uppercase;opacity:0;transition:opacity .2s;}
@@ -1021,7 +1023,6 @@ function cardHTML(item, idx){
   const footer = footerHTML(item)
   const body = cardBodyHTML(item)
   return `<div class="card" onclick="openDrawer(${idx})" style="--card-color:${c}">
-    <style>.card[style*="${c.replace('#','')}"]::before{background:linear-gradient(90deg,${c},transparent);}</style>
     <div class="card-top">
       <div class="${(item.tier === 'OS Package' || item.tier === 'Entry Point') ? 'card-name-os' : 'card-name'}">${item.name}</div>
       <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
