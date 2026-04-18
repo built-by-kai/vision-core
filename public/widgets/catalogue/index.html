@@ -319,7 +319,8 @@ function toggleEditMode(){
   banner.classList.toggle('show', editMode)
 }
 
-const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS','Sales OS']
+const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Additional Layers','Entry Point']
+const VIRTUAL_TABS = ['Additional Layers','Entry Point']
 
 const TIERS = [
   { key: 'OS Package',         color: '#AAFF00', label: 'OS Packages' },
@@ -615,6 +616,9 @@ function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
 // ─── Add-on OS layers section ─────────────────────────────────────────────────
 const ADDON_OS_NAMES = ['Team OS','Retention OS','Sales OS']
+// Live price lookup from Notion data
+function livePrice(name){ const it=allItems.find(x=>x.name===name&&x.tier==='OS Package'); return it?.price??null }
+function liveVisibility(name){ const it=allItems.find(x=>x.name===name&&x.tier==='OS Package'); return it?.visibility??'Public' }
 const ADDON_OS = [
   {
     name: 'Team OS',
@@ -637,7 +641,7 @@ const ADDON_OS = [
   {
     name: 'Sales OS',
     tagline: 'Sales performance infrastructure for teams with dedicated salespeople.',
-    price: 2000,
+    price: 2500,
     req: 'Revenue OS',
     reqLabel: 'Requires Revenue OS',
     when: 'Add when you have 2+ dedicated salespeople and need visibility over individual performance, quota tracking, and sales activity. Trigger: client mentions reps working independently with no shared system.',
@@ -645,62 +649,40 @@ const ADDON_OS = [
   },
 ]
 
-// Modules available without Revenue OS (no Retainer Management dependency)
-const RETENTION_NO_REV_OS = ['Client Health Tracker','Client Communication Log','Upsell Opportunity Tracker']
-const RETENTION_NEEDS_REV_OS = ['Renewal Pipeline','Retainer Health Tracker']
+// Compact expansion card — used for Revenue OS tab "Also expand with" section
+function expansionCardHTML(os){
+  const price = livePrice(os.name) ?? os.price
+  const vis   = liveVisibility(os.name)
+  const priceEl = vis === 'Discovery Only'
+    ? `<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.3)">Discovery Call</div>`
+    : `<div style="display:flex;align-items:baseline;gap:3px">
+        <span style="font-size:11px;font-weight:700;color:rgba(170,255,0,.5)">${sym()}</span>
+        <span style="font-size:22px;font-weight:900;letter-spacing:-.04em;color:var(--g)">${fmtAmt(price).toLocaleString()}</span>
+        <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.2)">one-time</span>
+      </div>`
+  const reqEl = os.req
+    ? `<div class="addon-os-req" style="font-size:10px;padding:4px 9px">⚠ Requires: ${os.req}</div>`
+    : `<div class="addon-os-req-free" style="font-size:10px;padding:4px 9px">✓ ${os.reqLabel}</div>`
+  return `<div class="card" style="--card-color:#AAFF00;padding:16px;gap:6px">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(170,255,0,.4)">Additional OS Layer</div>
+    <div style="font-size:17px;font-weight:900;letter-spacing:-.02em;color:#fff">${os.name}</div>
+    <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.35);line-height:1.5">${os.tagline}</div>
+    ${priceEl}
+    ${reqEl}
+    <div style="font-size:10px;font-weight:500;color:rgba(255,255,255,.25);line-height:1.55;margin-top:2px">${os.when}</div>
+  </div>`
+}
 
-function retentionExpansionHTML(os, context){
-  // context = 'revenue' | 'marketing'
-  const isMarketing = context === 'marketing'
-
-  const mods = os.modules.map((m,i) => {
-    const needsRev = RETENTION_NEEDS_REV_OS.includes(m)
-    const dimmed = isMarketing && needsRev
-    return `<div class="addon-os-module-row" style="${dimmed ? 'opacity:.4' : ''}">
-      <span class="addon-os-module-num">${i+1}</span>
-      <span class="addon-os-module-name">${m}${dimmed ? `<span style="font-size:9px;font-weight:700;color:rgba(255,154,60,.6);margin-left:6px;">Req: Revenue OS</span>` : ''}</span>
-    </div>`
-  }).join('')
-
-  const note = isMarketing
-    ? `<div class="addon-os-when" style="margin-top:0"><strong>Without Revenue OS:</strong> 3 of 5 modules are available — Client Health Tracker, Client Communication Log, and Upsell Opportunity Tracker. Renewal Pipeline and Retainer Health Tracker activate if Revenue OS is added later.</div>`
-    : `<div class="addon-os-when"><strong>When to add:</strong> ${os.when}</div>`
-
-  const sectionNote = isMarketing
-    ? 'Available — 3 of 5 modules without Revenue OS'
-    : 'Can be purchased together with Revenue OS from day one'
-
+function additionalOSExpansionSectionHTML(osList){
+  if (!osList.length) return ''
   return `<div class="bundles-section">
     <div class="section-hdr">
       <div class="section-bar" style="background:var(--g)"></div>
-      <span class="section-title">Expand with Retention OS</span>
-      <span class="section-note">${sectionNote}</span>
+      <span class="section-title">Also Available</span>
+      <span class="section-note">Additional OS Layers — expand any time</span>
       <div class="section-line"></div>
     </div>
-    <div class="addon-os-grid" style="grid-template-columns:minmax(0,600px)">
-      <div class="addon-os-card">
-        <div class="addon-os-top">
-          <div class="addon-os-left">
-            <div class="addon-os-eyebrow">Additional OS Layer</div>
-            <div class="addon-os-name">${os.name}</div>
-            <div class="addon-os-tagline">${os.tagline}</div>
-          </div>
-          <div class="addon-os-price">
-            <span class="addon-os-cur">${sym()}</span>
-            <div class="addon-os-val">${fmtAmt(os.price).toLocaleString()}</div>
-            <div class="addon-os-model">One-time</div>
-          </div>
-        </div>
-        <div class="addon-os-req">⚠ Requires: ${os.req}</div>
-        <div class="addon-os-divider"></div>
-        <div class="addon-os-modules">
-          <div class="addon-os-modules-label">${isMarketing ? '3 of 5 modules available · 2 require Revenue OS' : '5 Core Modules Included'}</div>
-          ${mods}
-        </div>
-        <div class="addon-os-divider"></div>
-        ${note}
-      </div>
-    </div>
+    <div class="cards">${osList.map(expansionCardHTML).join('')}</div>
   </div>`
 }
 
@@ -725,9 +707,9 @@ function addonOSSectionHTML(){
           <div class="addon-os-tagline">${os.tagline}</div>
         </div>
         <div class="addon-os-price">
-          <span class="addon-os-cur">${sym()}</span>
-          <div class="addon-os-val">${fmtAmt(os.price).toLocaleString()}</div>
-          <div class="addon-os-model">One-time</div>
+          <span class="addon-os-cur">${liveVisibility(os.name)==='Discovery Only'?'':sym()}</span>
+          <div class="addon-os-val">${liveVisibility(os.name)==='Discovery Only'?'<span style="font-size:14px;color:rgba(255,255,255,.3)">Discovery Call</span>':fmtAmt(livePrice(os.name)??os.price).toLocaleString()}</div>
+          <div class="addon-os-model">${liveVisibility(os.name)==='Discovery Only'?'':'One-time'}</div>
         </div>
       </div>
       ${reqEl}
@@ -745,7 +727,7 @@ function addonOSSectionHTML(){
     <div class="section-hdr">
       <div class="section-bar" style="background:var(--g)"></div>
       <span class="section-title">Additional OS Layers</span>
-      <span class="section-count">2 items</span>
+      <span class="section-count">${ADDON_OS.length} items</span>
       <span class="section-note">Expand any install at any time</span>
       <div class="section-line"></div>
     </div>
@@ -1023,8 +1005,12 @@ function filterItems(){
   return allItems.filter(item => {
     const osMatch = activeOS === 'All'
       ? true
-      : item.tier === 'OS Package'
-        || (item.tier !== 'Entry Point' && item.avail.includes(activeOS))
+      : activeOS === 'Additional Layers'
+        ? (item.tier === 'OS Package' && ADDON_OS_NAMES.includes(item.name))
+        : activeOS === 'Entry Point'
+          ? item.tier === 'Entry Point'
+          : item.tier === 'OS Package'
+            || (item.tier !== 'Entry Point' && item.avail.includes(activeOS))
     const searchMatch = !q
       || item.name.toLowerCase().includes(q)
       || item.desc.toLowerCase().includes(q)
@@ -1176,6 +1162,20 @@ function render(){
 
   let html = ''
 
+  // ── Virtual tabs ─────────────────────────────────────────────────────────
+  if (activeOS === 'Additional Layers'){
+    html += addonOSSectionHTML()
+    el.innerHTML = html
+    return
+  }
+
+  if (activeOS === 'Entry Point'){
+    html += bundleSectionHTML()
+    html += sectionHTML('Entry Point', '#94A3B8', filtered, 'Upgrade credit applies · paid amount credited toward full OS')
+    el.innerHTML = html
+    return
+  }
+
   if (activeOS === 'All'){
     html += bundleSectionHTML()
 
@@ -1271,12 +1271,10 @@ function render(){
       }
     }
 
-    // Additional OS expansions at bottom of Revenue OS tab
+    // Additional OS Layers — compact side-by-side cards at bottom of Revenue OS tab
     if (activeOS === 'Revenue OS'){
-      const retOS  = ADDON_OS.find(x => x.name === 'Retention OS')
-      const salesOS = ADDON_OS.find(x => x.name === 'Sales OS')
-      if (retOS)   html += retentionExpansionHTML(retOS, 'revenue')
-      if (salesOS) html += retentionExpansionHTML(salesOS, 'revenue')
+      const expansions = ADDON_OS.filter(x => x.req === 'Revenue OS')
+      if (expansions.length) html += additionalOSExpansionSectionHTML(expansions)
     }
   }
 
