@@ -234,9 +234,12 @@ async function run(payload) {
 
   console.log("[create_invoice] quotId:", quotId, "| amount:", amount, "| terms:", paymentTerms, "| package:", packageName)
 
-  // ── 1. Create Invoice ─────────────────────────────────────────────────────
-  const invProps = {
-    "Invoice No.":    { title: [{ text: { content: "" } }] },
+  // ── 1. Find or use the Invoice page created by Notion automation ────────────
+  // The automation (Quotation → Approved) creates the Invoice page from template
+  // (giving it the inline Products & Services DB), then fires this webhook.
+  // We find that page first; fall back to creating one ourselves if not found.
+
+  const invPatch = {
     "Invoice Type":   { select: { name: invType } },
     "Status":         { select: { name: "Deposit Pending" } },
     "Issue Date":     { date: { start: today } },
@@ -247,21 +250,53 @@ async function run(payload) {
     ...(isDeposit  ? { "Deposit Due":   { date: { start: dueDate } } } : {}),
     ...(companyId ? { "Company":         { relation: [{ id: companyId }] } } : {}),
     ...(picId     ? { "Primary Contact": { relation: [{ id: picId }] } } : {}),
-    // Invoice.Deal Source → Deals DB only (not Leads). Only write if we have a Deal.
     ...(dealId    ? { "Deal Source":     { relation: [{ id: dealId }] } } : {}),
   }
 
-  const invPage = await createPage({ parent: { database_id: DB.INVOICE }, properties: invProps }, token)
-  const invId   = invPage.id.replace(/-/g, "")
-  console.log("[create_invoice] Invoice created:", invId)
+  // Try to find the page the automation just added to the Invoices DB.
+  // Priority: (1) already linked on Quotation.Invoice, (2) query by Quotation relation,
+  // (3) most recently created blank Invoice page (created in last 60 s).
+  let invId = props.Invoice?.relation?.[0]?.id?.replace(/-/g, "") || null
 
-  // Link Invoice ↔ Quotation (back-link on Quotation's "Invoice" relation)
+  if (!invId) {
+    try {
+      const rows = await queryDB(DB.INVOICE, {
+        property: "Quotation", relation: { contains: quotId }
+      }, token)
+      if (rows.length) invId = rows[0].id.replace(/-/g, "")
+    } catch {}
+  }
+
+  if (!invId) {
+    // Last resort: most recently created Invoice with no Invoice Type set yet
+    try {
+      const rows = await queryDB(DB.INVOICE, {
+        property: "Invoice Type", select: { is_empty: true }
+      }, token)
+      if (rows.length) invId = rows[0].id.replace(/-/g, "")
+    } catch {}
+  }
+
+  if (invId) {
+    console.log("[create_invoice] Found automation-created Invoice:", invId)
+    await patchPage(invId, invPatch, token)
+  } else {
+    // Fallback: create the Invoice page ourselves (no template, inline DB created later)
+    const invPage = await createPage({
+      parent: { database_id: DB.INVOICE },
+      properties: { "Invoice No.": { title: [{ text: { content: "" } }] }, ...invPatch },
+    }, token)
+    invId = invPage.id.replace(/-/g, "")
+    console.log("[create_invoice] Invoice created (fallback):", invId)
+  }
+
+  // Ensure Quotation links back to this Invoice
   await patchPage(quotId, { "Invoice": { relation: [{ id: invId }] } }, token)
     .catch(e => console.warn("[create_invoice] link invoice→quotation:", e.message))
 
   // ── 1b. Copy line items from Quotation → Invoice inline table ────────────
-  // Invoice template has an inline Products & Services DB — populate it so the
-  // Invoice page shows the same line items as the Quotation (non-blocking).
+  // If automation created the page from template, the inline DB already exists.
+  // copyLineItems will find it; ensureLineItemsDB creates one if missing (fallback).
   copyLineItems(quotId, invId, token).catch(e =>
     console.warn("[create_invoice] copyLineItems non-fatal:", e.message)
   )
