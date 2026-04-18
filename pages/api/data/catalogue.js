@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     // Catalogue always lives in Opxio's own workspace — use server-side key
     const notionToken = process.env.NOTION_API_KEY
     const rows = await queryDB(CATALOGUE_DB, {
-      filter: { property: "Status", select: { equals: "Active" } }
+      property: "Status", select: { equals: "Active" }
     }, notionToken)
 
     const items = rows
