@@ -169,13 +169,9 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .bundle-note{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);padding-top:8px;border-top:1px solid rgba(255,255,255,.05);width:100%;}
 .bundle-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:2px 8px;}
 
-/* ── OS Packages + Add-on OS side by side ── */
-.os-row{display:flex;gap:16px;align-items:flex-start;margin-bottom:28px;}
-.os-row-main{flex:1;min-width:0;}
-.os-row-aside{width:280px;flex-shrink:0;}
-.os-row-aside .section{margin-bottom:0;}
 /* ── Add-on OS layers section ── */
-.addon-os-grid{display:flex;flex-direction:column;gap:10px;}
+.addon-os-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.addon-os-card{background:#111;border:1px solid rgba(170,255,0,.12);}
 .addon-os-card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;}
 .addon-os-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
 .addon-os-left{flex:1;}
@@ -820,22 +816,41 @@ function render(){
   if (activeOS === 'All'){
     html += bundleSectionHTML()
 
-    // OS Packages + Additional OS Layers side by side
+    // OS Packages + Additional OS Layers in one unified section
     const osPackages = filtered.filter(x => x.tier === 'OS Package')
-    const osPkgSection = osPackages.length ? `<div class="section" style="margin-bottom:0">
-      <div class="section-hdr">
-        <div class="section-bar" style="background:#AAFF00"></div>
-        <span class="section-title">OS Packages</span>
-        <span class="section-count">${osPackages.length} items</span>
-        <div class="section-line"></div>
-      </div>
-      <div class="cards">${osPackages.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
-    </div>` : ''
+    const addonCards = ADDON_OS.map(os => {
+      const mods = os.modules.map((m,i) =>
+        `<div class="card-module-item"><span class="mi-num">${i+1}</span><span>${m}</span></div>`
+      ).join('')
+      const reqPill = os.req
+        ? `<span class="pill pill-req">Req: ${os.req}</span>`
+        : `<span class="pill pill-disc">Base OS only</span>`
+      return `<div class="card addon-os-card" onclick="">
+        <div class="card-top">
+          <div class="card-name-os" style="font-size:15px">${os.name}</div>
+          <div class="tier-dot" style="background:#AAFF00;box-shadow:0 0 6px #AAFF0055"></div>
+        </div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(170,255,0,.4);margin-top:-4px">Additional OS Layer</div>
+        <div class="card-price"><span class="price-cur">RM</span><span class="price-val">${os.price.toLocaleString()}</span></div>
+        <div class="card-module-list">${mods}</div>
+        <div class="card-footer">${reqPill}</div>
+      </div>`
+    }).join('')
 
-    html += `<div class="os-row">
-      <div class="os-row-main">${osPkgSection}</div>
-      <div class="os-row-aside">${addonOSSectionHTML()}</div>
-    </div>`
+    if (osPackages.length){
+      html += `<div class="section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#AAFF00"></div>
+          <span class="section-title">OS Packages</span>
+          <span class="section-count">${osPackages.length + ADDON_OS.length} items</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="cards">
+          ${osPackages.map(item => cardHTML(item, allItems.indexOf(item))).join('')}
+          ${addonCards}
+        </div>
+      </div>`
+    }
 
     for (const tier of TIERS.filter(t => t.key !== 'OS Package')){
       const group = filtered.filter(x => x.tier === tier.key)
