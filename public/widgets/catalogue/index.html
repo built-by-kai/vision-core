@@ -347,7 +347,13 @@ const MODULE_DBS = {
   'Retainer Health Tracker':        ['Retainers'],
 
   // ── Expansion Modules ──────────────────────────────────────────────────────
-  // Revenue OS
+  // Revenue OS (DB names as they appear in Notion)
+  'Proposals / Quotations Database':        ['Quotations','Deals'],
+  'Client Health & Satisfaction Tracker':   ['Client Accounts'],
+  'Prospect Intelligence Database':         ['Leads','Companies'],
+  'Revenue Forecasting Dashboard':          ['Deals','Invoice','Retainers'],
+  'Ads Performance Tracker':                ['Campaigns','Finance'],
+  'Market Intelligence Log':                ['Leads','Companies'],
   'Lead Capture System':                    ['Leads','Companies','Contacts'],
   'Document Generation Suite':              ['Quotations','Invoice','Receipt'],
   'Proposal Approval & Contract Tracker':   ['Deals','Quotations'],
@@ -424,11 +430,11 @@ const ADDON_OS = [
   },
   {
     name: 'Retention OS',
-    tagline: 'Client retention layer that sits on top of Revenue OS to protect and grow existing accounts.',
-    price: 1700,
+    tagline: 'Client retention layer built on top of Revenue OS to protect and grow existing accounts.',
+    price: 3250,
     req: 'Revenue OS',
     reqLabel: 'Requires Revenue OS',
-    when: 'Add when you have recurring clients and need to track health, renewals, and upsell opportunities. Revenue OS must already be installed — Retention OS reads directly from Retainers and Deals.',
+    when: 'Revenue OS is a technical dependency — both can be purchased and installed together from day one. Add Retention OS when client health, renewals, and upsell tracking are a priority.',
     modules: ['Client Health Tracker','Client Communication Log','Renewal Pipeline','Upsell Opportunity Tracker','Retainer Health Tracker'],
   },
 ]
@@ -445,7 +451,7 @@ function retentionExpansionHTML(os){
     <div class="section-hdr">
       <div class="section-bar" style="background:var(--g)"></div>
       <span class="section-title">Expand with Retention OS</span>
-      <span class="section-note">Available once Revenue OS is installed</span>
+      <span class="section-note">Can be purchased together with Revenue OS from day one</span>
       <div class="section-line"></div>
     </div>
     <div class="addon-os-grid" style="grid-template-columns:minmax(0,600px)">
