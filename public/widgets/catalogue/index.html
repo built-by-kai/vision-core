@@ -36,55 +36,123 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .os-btn:hover:not(.active){color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.12);}
 .os-btn.active{background:#1A1A1A;color:var(--g);border-color:var(--gb);}
 
+/* ── OS Hero Banner ── */
+.os-hero{background:#111;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px 28px;margin-bottom:24px;position:relative;overflow:hidden;}
+.os-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--g),transparent);}
+.os-hero-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.os-hero-left{flex:1;min-width:260px;}
+.os-hero-eyebrow{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(170,255,0,.5);margin-bottom:6px;}
+.os-hero-name{font-size:26px;font-weight:900;letter-spacing:-.03em;color:#fff;margin-bottom:4px;line-height:1.1;}
+.os-hero-tagline{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);margin-bottom:16px;line-height:1.5;}
+.os-hero-modules-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.modules-badge{background:var(--gm);border:1px solid var(--gb);border-radius:8px;padding:4px 12px;display:flex;align-items:center;gap:6px;}
+.modules-badge-num{font-size:18px;font-weight:900;color:var(--g);line-height:1;}
+.modules-badge-label{font-size:10px;font-weight:700;color:rgba(170,255,0,.6);line-height:1.2;}
+.base-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:4px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,.25);}
+.os-module-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.os-module-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;font-size:10.5px;font-weight:600;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:5px;}
+.chip-num{font-size:9px;font-weight:900;color:var(--g);opacity:.7;}
+.os-hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.os-hero-comp{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);margin-bottom:2px;}
+.comp-dot{width:5px;height:5px;border-radius:50%;background:var(--g);opacity:.5;}
+.os-hero-price{display:flex;align-items:baseline;gap:3px;}
+.hero-cur{font-size:14px;font-weight:700;color:rgba(170,255,0,.5);}
+.hero-val{font-size:36px;font-weight:900;letter-spacing:-.05em;color:var(--g);line-height:1;}
+.hero-free{font-size:18px;font-weight:900;letter-spacing:-.02em;color:rgba(255,255,255,.15);}
+.os-hero-model{font-size:10px;font-weight:600;color:rgba(255,255,255,.2);text-align:right;}
+.os-hero-reqpill{background:rgba(255,154,60,.08);border:1px solid rgba(255,154,60,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;color:rgba(255,154,60,.7);margin-top:6px;}
+
 /* ── Section header ── */
 .section{margin-bottom:28px;}
 .section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .section-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0;}
 .section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);}
 .section-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);}
-.section-note{font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-left:4px;}
+.section-note{font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-left:2px;}
 .section-line{flex:1;height:1px;background:rgba(255,255,255,.04);margin-left:4px;}
 
 /* ── Card grid ── */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;}
 
 /* ── Card ── */
-.card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .15s;cursor:default;position:relative;overflow:hidden;}
+.card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .15s,box-shadow .2s;cursor:pointer;position:relative;overflow:hidden;}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;opacity:0;transition:opacity .2s;}
-.card:hover{border-color:rgba(255,255,255,.1);transform:translateY(-1px);}
+.card:hover{border-color:rgba(255,255,255,.12);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
 .card:hover::before{opacity:1;}
+.card-click-hint{position:absolute;bottom:10px;right:12px;font-size:9px;font-weight:700;color:rgba(255,255,255,.1);letter-spacing:.05em;text-transform:uppercase;opacity:0;transition:opacity .2s;}
+.card:hover .card-click-hint{opacity:1;}
 
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
 .card-name{font-size:13px;font-weight:700;color:#fff;line-height:1.3;flex:1;}
 .tier-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
 
-.card-price{display:flex;align-items:baseline;gap:4px;}
+.card-price{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;}
 .price-val{font-size:22px;font-weight:900;letter-spacing:-.04em;color:var(--g);line-height:1;}
 .price-cur{font-size:11px;font-weight:700;color:rgba(170,255,0,.6);margin-right:1px;}
 .price-disc{font-size:12px;font-weight:700;color:rgba(255,255,255,.25);font-style:italic;}
 .price-range{font-size:11px;font-weight:600;color:rgba(170,255,0,.5);margin-left:2px;}
+.card-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);margin-top:-2px;}
 
-.card-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);margin-top:-4px;}
+/* Card body variants */
+.card-module-list{display:flex;flex-direction:column;gap:3px;margin-top:2px;}
+.card-module-item{font-size:11px;font-weight:500;color:rgba(255,255,255,.35);display:flex;align-items:flex-start;gap:6px;line-height:1.35;}
+.mi-num{font-size:9.5px;font-weight:700;color:rgba(170,255,0,.4);flex-shrink:0;margin-top:1px;}
 
-.card-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.card-short{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.35);line-height:1.5;}
+.card-dbs{display:flex;align-items:flex-start;gap:6px;margin-top:3px;}
+.dbs-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.18);flex-shrink:0;margin-top:1px;}
+.dbs-val{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);line-height:1.4;}
 
-.card-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:auto;}
+.card-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+
+.card-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:4px;}
 .pill{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;}
 .pill-os{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.06);}
 .pill-req{background:rgba(255,154,60,.07);color:rgba(255,154,60,.75);border:1px solid rgba(255,154,60,.14);}
 .pill-sub{background:rgba(192,132,252,.07);color:rgba(192,132,252,.8);border:1px solid rgba(192,132,252,.14);}
 .pill-disc{background:var(--gm);color:var(--g);border:1px solid var(--gb);}
 
-/* ── Tier config ── */
-:root{
-  --c-os:#AAFF00;
-  --c-core:#4A9EFF;
-  --c-exp:#FF9A3C;
-  --c-auto:#C084FC;
-  --c-dash:#F472B6;
-  --c-int:#2DD4BF;
-  --c-ai:#FF6B6B;
-}
+/* ── Detail Drawer ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s;}
+.drawer-overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:95vw;background:#141414;border-left:1px solid rgba(255,255,255,.08);z-index:101;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.drawer.open{transform:translateX(0);}
+.drawer-header{padding:20px 22px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;display:flex;align-items:flex-start;gap:12px;}
+.drawer-header-left{flex:1;}
+.drawer-eyebrow{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.drawer-name{font-size:20px;font-weight:900;letter-spacing:-.02em;color:#fff;line-height:1.2;}
+.drawer-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.drawer-close:hover{background:rgba(255,255,255,.1);color:#fff;}
+.drawer-body{flex:1;overflow-y:auto;padding:20px 22px;}
+.drawer-body::-webkit-scrollbar{width:3px;}
+.drawer-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
+
+/* Drawer sections */
+.d-section{margin-bottom:22px;}
+.d-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:8px;}
+.d-price-row{display:flex;align-items:baseline;gap:5px;}
+.d-cur{font-size:14px;font-weight:700;color:rgba(170,255,0,.5);}
+.d-price{font-size:32px;font-weight:900;letter-spacing:-.04em;color:var(--g);line-height:1;}
+.d-range{font-size:14px;font-weight:700;color:rgba(170,255,0,.5);}
+.d-price-disc{font-size:16px;font-weight:700;color:rgba(255,255,255,.3);font-style:italic;}
+.d-sub{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);margin-top:4px;}
+.d-text{font-size:13px;font-weight:500;color:rgba(255,255,255,.5);line-height:1.65;}
+.d-divider{height:1px;background:rgba(255,255,255,.05);margin:20px 0;}
+.d-modules{display:flex;flex-direction:column;gap:6px;}
+.d-module-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px;}
+.d-module-num{font-size:10px;font-weight:900;color:var(--g);opacity:.6;width:14px;flex-shrink:0;}
+.d-module-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);}
+.d-db-row{display:flex;flex-wrap:wrap;gap:5px;}
+.d-db-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:rgba(255,255,255,.35);}
+.d-pills{display:flex;flex-wrap:wrap;gap:5px;}
+.d-avail-chip{background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.12);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:rgba(74,158,255,.7);}
+.d-req-chip{background:rgba(255,154,60,.07);border:1px solid rgba(255,154,60,.14);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:rgba(255,154,60,.75);}
+.d-tier-row{display:flex;align-items:center;gap:8px;}
+.d-tier-dot{width:8px;height:8px;border-radius:50%;}
+.d-tier-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.4);}
+.d-model-row{display:flex;gap:8px;flex-wrap:wrap;}
+.d-model-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.35);}
+.d-model-chip.highlight{background:rgba(192,132,252,.07);border-color:rgba(192,132,252,.14);color:rgba(192,132,252,.8);}
 
 /* ── Empty ── */
 .empty{text-align:center;padding:60px 0;color:rgba(255,255,255,.15);font-size:13px;font-weight:700;}
@@ -113,6 +181,19 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 <div class="os-bar" id="os-bar"></div>
 <div id="catalogue"></div>
 
+<!-- Detail Drawer -->
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-header-left">
+      <div class="drawer-eyebrow" id="d-eyebrow"></div>
+      <div class="drawer-name" id="d-name"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="d-body"></div>
+</div>
+
 <script>
 let allItems = [], activeOS = 'All'
 const _tok = new URLSearchParams(location.search).get('token') || ''
@@ -121,17 +202,219 @@ function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p }
 const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS']
 
 const TIERS = [
-  { key: 'OS Package',        color: '#AAFF00', label: 'OS Packages' },
-  { key: 'Core Module',       color: '#4A9EFF', label: 'Core Modules' },
-  { key: 'Expansion Module',  color: '#FF9A3C', label: 'Expansion Modules' },
-  { key: 'Automation',        color: '#C084FC', label: 'Automations' },
-  { key: 'Dashboard & Widget',color: '#F472B6', label: 'Dashboards & Widgets' },
-  { key: 'Integration',       color: '#2DD4BF', label: 'Integrations' },
-  { key: 'AI Agent',          color: '#FF6B6B', label: 'AI Agents' },
+  { key: 'OS Package',         color: '#AAFF00', label: 'OS Packages' },
+  { key: 'Core Module',        color: '#4A9EFF', label: 'Core Modules' },
+  { key: 'Expansion Module',   color: '#FF9A3C', label: 'Expansion Modules' },
+  { key: 'Automation',         color: '#C084FC', label: 'Automations' },
+  { key: 'Dashboard & Widget', color: '#F472B6', label: 'Dashboards & Widgets' },
+  { key: 'Integration',        color: '#2DD4BF', label: 'Integrations' },
+  { key: 'AI Agent',           color: '#FF6B6B', label: 'AI Agents' },
 ]
+
+const OS_META = {
+  'Base OS':        { tagline: 'Always included. Never charged. The foundation every workspace is built on.', req: null },
+  'Revenue OS':     { tagline: 'Fixes pipeline chaos, invisible deals, and payment blind spots.', req: null },
+  'Operations OS':  { tagline: 'Fixes unclear ownership, inconsistent delivery, and no process visibility.', req: null },
+  'Marketing OS':   { tagline: 'Kills scattered campaigns, content chaos, and lead tracking gaps.', req: null },
+  'Finance OS':     { tagline: 'Fixes invisible cash flow, missed payments, and payroll chaos.', req: null },
+  'Team OS':        { tagline: 'Full HR infrastructure — from hiring to performance to compensation.', req: null },
+  'Retention OS':   { tagline: 'Client retention layer built on top of Revenue OS.', req: 'Revenue OS' },
+}
+
+const OS_MODULES = {
+  'Base OS':        ['Companies & People','Client Accounts','Team Members & Staff Directory','Company Profile','Dashboard Hub'],
+  'Revenue OS':     ['CRM, Pipeline & Deals','Product & Pricing Catalogue','Billing & Payment Tracker','Retainer Management','Meetings & Calls Log'],
+  'Operations OS':  ['Project & Task Management','Client Delivery Tracker','Approval & QC Tracker','Internal Meeting & Action Log','Resource & Capacity Planner'],
+  'Marketing OS':   ['Content Production Tracker','Campaign Tracker','Lead Generation Tracker','Marketing Performance Tracker','Brand & Asset Library'],
+  'Finance OS':     ['Finance Ledger','Cash Flow Tracker','Invoice & Payment Tracker','Payroll & Staff Costs','Profit & Loss Tracker'],
+  'Team OS':        ['Hiring Pipeline','Team Onboarding Tracker','Performance & Goals','Leave & Availability','Role & Compensation Log'],
+  'Retention OS':   ['Client Health Tracker','Client Communication Log','Renewal Pipeline','Upsell Opportunity Tracker','Retainer Health Tracker'],
+}
+
+const MODULE_DESC = {
+  'Companies & People':             'Central directory for all companies and contacts.',
+  'Client Accounts':                'Active client records, health status, and account details.',
+  'Team Members & Staff Directory': 'All staff records, roles, and access levels.',
+  'Company Profile':                'Your own company details, branding, and settings.',
+  'Dashboard Hub':                  'Workspace homepage and navigation centre.',
+  'CRM, Pipeline & Deals':          'Every lead from first contact to close — source, stage, and timeline fully tracked.',
+  'Product & Pricing Catalogue':    'Structured product library that powers all quotations and deal packages.',
+  'Billing & Payment Tracker':      'Quotation, invoice, receipt, and payment status end to end — nothing falls through.',
+  'Retainer Management':            'All recurring client agreements, billing cycles, and renewal dates in one place.',
+  'Meetings & Calls Log':           'Full history of every sales call and client meeting with notes and follow-ups.',
+  'Project & Task Management':      'Every project and task tracked from kickoff to delivery with deadlines and owners.',
+  'Client Delivery Tracker':        'Live visibility over every active client engagement — what is due, what is at risk.',
+  'Approval & QC Tracker':          'Client sign-offs, revision rounds, and scope change approvals all tracked.',
+  'Internal Meeting & Action Log':  'Action items and decisions from internal meetings captured and assigned.',
+  'Resource & Capacity Planner':    'See who is overloaded before it becomes a problem — workload mapped per person.',
+  'Content Production Tracker':     'From brief to published — full content pipeline with assignees and due dates.',
+  'Campaign Tracker':               'All active campaigns tracked with budgets, channels, and live performance data.',
+  'Lead Generation Tracker':        'Every lead source, channel, and conversion tracked end to end.',
+  'Marketing Performance Tracker':  'Campaign KPIs and channel performance in one view — no spreadsheet needed.',
+  'Brand & Asset Library':          'Central library for all brand assets, guidelines, and approved materials.',
+  'Finance Ledger':                 'Every transaction recorded and categorised by type, project, and period.',
+  'Cash Flow Tracker':              'Money in, money out — real-time liquidity view with projected balances.',
+  'Invoice & Payment Tracker':      'Outstanding invoices, collection status, and overdue alerts.',
+  'Payroll & Staff Costs':          'Staff salary, EPF, SOCSO, and payroll records all in one database.',
+  'Profit & Loss Tracker':          'Revenue vs. costs tracked by month and project — know your margins.',
+  'Hiring Pipeline':                'Full applicant tracking from first contact through offer and hire.',
+  'Team Onboarding Tracker':        'Structured onboarding checklist and timeline for every new hire.',
+  'Performance & Goals':            'OKRs, review cycles, and performance history tracked per team member.',
+  'Leave & Availability':           'Leave requests, approvals, and real-time team capacity visibility.',
+  'Role & Compensation Log':        'Role definitions, salary bands, and pay change history all recorded.',
+  'Client Health Tracker':          'Engagement score, satisfaction signals, and churn risk per active client.',
+  'Client Communication Log':       'All touchpoints with every client — calls, emails, and check-ins in one timeline.',
+  'Renewal Pipeline':               'Retainer renewals tracked before they lapse — never lose a client to admin.',
+  'Upsell Opportunity Tracker':     'Expansion opportunities mapped by existing client with deal value and stage.',
+  'Retainer Health Tracker':        'Delivery status, utilisation rate, and value metrics per active retainer.',
+}
+
+const MODULE_DBS = {
+  'Companies & People':             ['Companies','Contacts'],
+  'Client Accounts':                ['Client Accounts'],
+  'Team Members & Staff Directory': ['Team'],
+  'Company Profile':                ['Company Profile'],
+  'Dashboard Hub':                  ['All databases'],
+  'CRM, Pipeline & Deals':          ['Leads','Deals','Companies','Contacts'],
+  'Product & Pricing Catalogue':    ['Catalogue'],
+  'Billing & Payment Tracker':      ['Quotations','Invoice','Receipt'],
+  'Retainer Management':            ['Retainers','Client Accounts'],
+  'Meetings & Calls Log':           ['Meetings','Contacts'],
+  'Project & Task Management':      ['Projects','Tasks','Phases'],
+  'Client Delivery Tracker':        ['Projects','Client Accounts'],
+  'Approval & QC Tracker':          ['Projects','Tasks'],
+  'Internal Meeting & Action Log':  ['Meetings','Team'],
+  'Resource & Capacity Planner':    ['Team','Projects'],
+  'Content Production Tracker':     ['Content','Team'],
+  'Campaign Tracker':               ['Campaigns'],
+  'Lead Generation Tracker':        ['Leads'],
+  'Marketing Performance Tracker':  ['Campaigns','Leads'],
+  'Brand & Asset Library':          ['Assets'],
+  'Finance Ledger':                 ['Finance'],
+  'Cash Flow Tracker':              ['Finance'],
+  'Invoice & Payment Tracker':      ['Invoice','Receipt'],
+  'Payroll & Staff Costs':          ['Team','Finance'],
+  'Profit & Loss Tracker':          ['Finance','Invoice'],
+  'Hiring Pipeline':                ['Hiring','Contacts'],
+  'Team Onboarding Tracker':        ['Team'],
+  'Performance & Goals':            ['Team'],
+  'Leave & Availability':           ['Team'],
+  'Role & Compensation Log':        ['Team'],
+  'Client Health Tracker':          ['Client Accounts'],
+  'Client Communication Log':       ['Contacts','Meetings'],
+  'Renewal Pipeline':               ['Retainers','Client Accounts'],
+  'Upsell Opportunity Tracker':     ['Deals','Client Accounts'],
+  'Retainer Health Tracker':        ['Retainers'],
+}
 
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
+// ─── Drawer ──────────────────────────────────────────────────────────────────
+function openDrawer(idx){
+  const item = allItems[idx]
+  if (!item) return
+  const c = tierColor(item.tier)
+
+  // Header
+  document.getElementById('d-eyebrow').textContent = item.tier || ''
+  document.getElementById('d-eyebrow').style.color = c
+  document.getElementById('d-name').textContent = item.name
+
+  let body = ''
+
+  // Price block
+  body += `<div class="d-section">`
+  body += `<div class="d-label">Pricing</div>`
+  if (item.visibility === 'Discovery Only'){
+    body += `<div class="d-price-disc">Discovery Call</div>`
+    body += `<div class="d-sub">Pricing shared after discovery — scope varies per client.</div>`
+  } else if (!item.price || item.price === 0){
+    body += `<div class="d-price-disc">Complimentary</div>`
+    body += `<div class="d-sub">Always included at no extra cost.</div>`
+  } else {
+    const hasRange = item.priceMax && item.priceMax !== item.price
+    body += `<div class="d-price-row">
+      <span class="d-cur">RM</span>
+      <span class="d-price">${item.price.toLocaleString()}</span>
+      ${hasRange ? `<span class="d-range">– ${item.priceMax.toLocaleString()}</span>` : ''}
+    </div>`
+    if (item.model) body += `<div class="d-sub">${item.model}${item.model === 'Setup + Subscription' && item.monthly ? ` · RM ${item.monthly}/mo from Month ${item.term||'6'}` : ''}</div>`
+  }
+  body += `</div><div class="d-divider"></div>`
+
+  // Description
+  const desc = MODULE_DESC[item.name] || item.desc
+  if (desc){
+    body += `<div class="d-section"><div class="d-label">About</div><div class="d-text">${desc}</div></div>`
+    body += `<div class="d-divider"></div>`
+  }
+
+  // For OS Packages: show full module list
+  const mods = OS_MODULES[item.name]
+  if (item.tier === 'OS Package' && mods){
+    body += `<div class="d-section"><div class="d-label">Included Modules (${mods.length})</div>`
+    body += `<div class="d-modules">`
+    mods.forEach((m,i) => {
+      body += `<div class="d-module-row"><span class="d-module-num">${i+1}</span><span class="d-module-name">${m}</span></div>`
+    })
+    body += `</div></div><div class="d-divider"></div>`
+    // Base OS note
+    body += `<div class="d-section"><div class="d-label">Also Includes</div><div class="d-text" style="color:rgba(255,255,255,.3)">Base OS — 5 foundation databases always included complimentary: Companies & People, Client Accounts, Team Members & Staff Directory, Company Profile, Dashboard Hub.</div></div><div class="d-divider"></div>`
+  }
+
+  // For Core Modules: databases
+  const dbs = MODULE_DBS[item.name]
+  if (item.tier === 'Core Module' && dbs){
+    body += `<div class="d-section"><div class="d-label">Notion Databases</div>`
+    body += `<div class="d-db-row">`
+    dbs.forEach(db => { body += `<span class="d-db-chip">${db}</span>` })
+    body += `</div></div><div class="d-divider"></div>`
+  }
+
+  // Available To
+  if (item.avail && item.avail.length && item.tier !== 'OS Package'){
+    body += `<div class="d-section"><div class="d-label">Available To</div><div class="d-pills">`
+    item.avail.forEach(a => { body += `<span class="d-avail-chip">${a}</span>` })
+    body += `</div></div>`
+  }
+
+  // Requires
+  if (item.requiresNames && item.requiresNames.length){
+    body += `<div class="d-section"><div class="d-label">Requires</div><div class="d-pills">`
+    item.requiresNames.forEach(r => { body += `<span class="d-req-chip">${r}</span>` })
+    body += `</div></div>`
+  }
+
+  // Tier + model meta
+  body += `<div class="d-divider"></div>`
+  body += `<div class="d-section"><div class="d-label">Category</div>`
+  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${item.tier}</div></div></div>`
+
+  if (item.model){
+    body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
+    body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
+    if (item.model === 'Setup + Subscription' && item.monthly){
+      body += `<span class="d-model-chip highlight">RM ${item.monthly}/mo</span>`
+      if (item.term) body += `<span class="d-model-chip">${item.term}</span>`
+    }
+    body += `</div></div>`
+  }
+
+  document.getElementById('d-body').innerHTML = body
+  document.getElementById('overlay').classList.add('open')
+  document.getElementById('drawer').classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeDrawer(){
+  document.getElementById('overlay').classList.remove('open')
+  document.getElementById('drawer').classList.remove('open')
+  document.body.style.overflow = ''
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer() })
+
+// ─── Build UI ────────────────────────────────────────────────────────────────
 function buildOSBar(){
   document.getElementById('os-bar').innerHTML = OS_LIST.map(os =>
     `<button class="os-btn${activeOS===os?' active':''}" onclick="setOS('${os}')">${os}</button>`
@@ -156,9 +439,11 @@ function filterItems(){
 
 function priceHTML(item){
   if (item.visibility === 'Discovery Only')
-    return `<div class="price-disc">Discovery Call</div>`
+    return `<div class="card-price"><div class="price-disc">Discovery Call</div></div>`
   if (!item.price && item.price !== 0)
-    return `<div class="price-disc">Custom</div>`
+    return `<div class="card-price"><div class="price-disc">Custom</div></div>`
+  if (item.price === 0)
+    return `<div class="card-price"><div class="price-disc">Complimentary</div></div>`
   const hasRange = item.priceMax && item.priceMax !== item.price
   return `<div class="card-price">
     <span class="price-cur">RM</span>
@@ -166,46 +451,119 @@ function priceHTML(item){
     ${hasRange ? `<span class="price-range">– ${item.priceMax.toLocaleString()}</span>` : ''}
   </div>
   ${item.model === 'Setup + Subscription' && item.monthly
-    ? `<div class="card-sub">+ RM ${item.monthly}/mo · ${item.term||'6 mo fixed'}</div>`
+    ? `<div class="card-sub">+ RM ${item.monthly}/mo</div>`
     : ''}`
+}
+
+function cardBodyHTML(item){
+  if (item.tier === 'OS Package'){
+    const mods = OS_MODULES[item.name]
+    if (mods){
+      return `<div class="card-module-list">${
+        mods.map((m,i) => `<div class="card-module-item"><span class="mi-num">${i+1}</span><span>${m}</span></div>`).join('')
+      }</div>`
+    }
+  }
+  if (item.tier === 'Core Module'){
+    const desc = MODULE_DESC[item.name] || ''
+    const dbs  = (MODULE_DBS[item.name] || []).join(' · ')
+    return `${desc ? `<div class="card-short">${desc}</div>` : ''}
+    ${dbs ? `<div class="card-dbs"><span class="dbs-label">DBs</span><span class="dbs-val">${dbs}</span></div>` : ''}`
+  }
+  return item.desc ? `<div class="card-desc">${item.desc}</div>` : ''
 }
 
 function footerHTML(item){
   const pills = []
   if (item.visibility === 'Discovery Only') pills.push(`<span class="pill pill-disc">Discovery Only</span>`)
   if (item.model === 'Setup + Subscription') pills.push(`<span class="pill pill-sub">Subscription</span>`)
-  if (item.requiresNames.length)
+  if (item.requiresNames && item.requiresNames.length)
     item.requiresNames.forEach(r => pills.push(`<span class="pill pill-req">Req: ${r}</span>`))
-  else if (item.avail.length && item.tier !== 'OS Package')
-    item.avail.slice(0,3).forEach(a => pills.push(`<span class="pill pill-os">${a}</span>`))
+  else if (item.avail && item.avail.length && item.tier !== 'OS Package')
+    item.avail.slice(0,2).forEach(a => pills.push(`<span class="pill pill-os">${a}</span>`))
   return pills.join('')
 }
 
-function cardHTML(item){
+function cardHTML(item, idx){
   const c = tierColor(item.tier)
   const footer = footerHTML(item)
-  return `<div class="card" style="--card-color:${c}">
-    <style>.card[style*="${c}"]::before{background:linear-gradient(90deg,${c},transparent);}</style>
+  const body = cardBodyHTML(item)
+  return `<div class="card" onclick="openDrawer(${idx})" style="--card-color:${c}">
+    <style>.card[style*="${c.replace('#','')}"]::before{background:linear-gradient(90deg,${c},transparent);}</style>
     <div class="card-top">
       <div class="card-name">${item.name}</div>
       <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
     </div>
     ${priceHTML(item)}
-    ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
+    ${body}
     ${footer ? `<div class="card-footer">${footer}</div>` : ''}
+    <div class="card-click-hint">View details →</div>
   </div>`
 }
 
-function sectionHTML(title, color, items){
+function osHeroHTML(os){
+  const osCard = allItems.find(x => x.name === os && x.tier === 'OS Package')
+  const modules = OS_MODULES[os] || []
+  const meta = OS_META[os] || {}
+
+  let priceEl = ''
+  if (osCard){
+    if (osCard.visibility === 'Discovery Only'){
+      priceEl = `<div class="price-disc" style="font-size:15px">Discovery Call</div>`
+    } else if (!osCard.price || osCard.price === 0){
+      priceEl = `<div class="hero-free">Complimentary</div>`
+    } else {
+      priceEl = `<div class="os-hero-price">
+        <span class="hero-cur">RM</span>
+        <span class="hero-val">${osCard.price.toLocaleString()}</span>
+      </div>
+      <div class="os-hero-model">One-time setup</div>`
+    }
+  }
+
+  const chipHTML = modules.map((m,i) =>
+    `<div class="os-module-chip"><span class="chip-num">${i+1}</span>${m}</div>`
+  ).join('')
+
+  const reqHTML = meta.req
+    ? `<div class="os-hero-reqpill">Requires: ${meta.req}</div>`
+    : ''
+
+  return `<div class="os-hero">
+    <div class="os-hero-inner">
+      <div class="os-hero-left">
+        <div class="os-hero-eyebrow">OS Package</div>
+        <div class="os-hero-name">${os}</div>
+        <div class="os-hero-tagline">${meta.tagline || ''}</div>
+        <div class="os-hero-modules-row">
+          <div class="modules-badge">
+            <span class="modules-badge-num">${modules.length}</span>
+            <span class="modules-badge-label">Core<br>Modules</span>
+          </div>
+          <div class="base-badge">+ Base OS</div>
+        </div>
+        <div class="os-module-chips">${chipHTML}</div>
+      </div>
+      <div class="os-hero-right">
+        <div class="os-hero-comp"><span class="comp-dot"></span>Base OS Complimentary</div>
+        ${priceEl}
+        ${reqHTML}
+      </div>
+    </div>
+  </div>`
+}
+
+function sectionHTML(title, color, items, note=''){
   if (!items.length) return ''
   return `<div class="section">
     <div class="section-hdr">
       <div class="section-bar" style="background:${color}"></div>
       <span class="section-title">${title}</span>
+      ${note ? `<span class="section-note">${note}</span>` : ''}
       <div class="section-line"></div>
       <span class="section-count">${items.length}</span>
     </div>
-    <div class="cards">${items.map(cardHTML).join('')}</div>
+    <div class="cards">${items.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
   </div>`
 }
 
@@ -222,43 +580,33 @@ function render(){
   let html = ''
 
   if (activeOS === 'All'){
-    // Group by tier
     for (const tier of TIERS){
       const group = filtered.filter(x => x.tier === tier.key)
       html += sectionHTML(tier.label, tier.color, group)
     }
   } else {
-    // OS-specific view: OS Package → Included (Core Modules) → Add-ons
-    const osCard   = filtered.filter(x => x.tier === 'OS Package')
+    html += osHeroHTML(activeOS)
     const included = filtered.filter(x => x.tier === 'Core Module')
     const addons   = filtered.filter(x => !['OS Package','Core Module'].includes(x.tier))
-
-    html += sectionHTML(activeOS, '#AAFF00', osCard)
 
     if (included.length){
       html += `<div class="section">
         <div class="section-hdr">
           <div class="section-bar" style="background:#4A9EFF"></div>
-          <span class="section-title">Included with ${activeOS}</span>
-          <div class="section-note">Comes in the package — no extra cost</div>
+          <span class="section-title">Included Modules</span>
+          <span class="section-note">Comes with ${activeOS}</span>
           <div class="section-line"></div>
-          <span class="section-count">${included.length} modules</span>
+          <span class="section-count">${included.length}</span>
         </div>
-        <div class="cards">${included.map(cardHTML).join('')}</div>
+        <div class="cards">${included.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
       </div>`
     }
 
     if (addons.length){
-      html += `<div class="section">
-        <div class="section-hdr">
-          <div class="section-bar" style="background:#FF9A3C"></div>
-          <span class="section-title">Available Add-ons</span>
-          <div class="section-note">Sold separately</div>
-          <div class="section-line"></div>
-          <span class="section-count">${addons.length}</span>
-        </div>
-        <div class="cards">${addons.map(cardHTML).join('')}</div>
-      </div>`
+      for (const tier of TIERS.filter(t => !['OS Package','Core Module'].includes(t.key))){
+        const group = addons.filter(x => x.tier === tier.key)
+        if (group.length) html += sectionHTML(tier.label, tier.color, group, 'Add-on')
+      }
     }
   }
 
