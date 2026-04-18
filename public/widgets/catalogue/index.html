@@ -433,6 +433,48 @@ const ADDON_OS = [
   },
 ]
 
+function retentionExpansionHTML(os){
+  const mods = os.modules.map((m,i) =>
+    `<div class="addon-os-module-row">
+      <span class="addon-os-module-num">${i+1}</span>
+      <span class="addon-os-module-name">${m}</span>
+    </div>`
+  ).join('')
+
+  return `<div class="bundles-section">
+    <div class="section-hdr">
+      <div class="section-bar" style="background:var(--g)"></div>
+      <span class="section-title">Expand with Retention OS</span>
+      <span class="section-note">Available once Revenue OS is installed</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="addon-os-grid" style="grid-template-columns:minmax(0,600px)">
+      <div class="addon-os-card">
+        <div class="addon-os-top">
+          <div class="addon-os-left">
+            <div class="addon-os-eyebrow">Additional OS Layer</div>
+            <div class="addon-os-name">${os.name}</div>
+            <div class="addon-os-tagline">${os.tagline}</div>
+          </div>
+          <div class="addon-os-price">
+            <span class="addon-os-cur">RM</span>
+            <div class="addon-os-val">${os.price.toLocaleString()}</div>
+            <div class="addon-os-model">One-time</div>
+          </div>
+        </div>
+        <div class="addon-os-req">⚠ Requires: ${os.req}</div>
+        <div class="addon-os-divider"></div>
+        <div class="addon-os-modules">
+          <div class="addon-os-modules-label">5 Core Modules Included</div>
+          ${mods}
+        </div>
+        <div class="addon-os-divider"></div>
+        <div class="addon-os-when"><strong>When to add:</strong> ${os.when}</div>
+      </div>
+    </div>
+  </div>`
+}
+
 function addonOSSectionHTML(){
   const cards = ADDON_OS.map(os => {
     const mods = os.modules.map((m,i) =>
@@ -816,43 +858,7 @@ function render(){
   if (activeOS === 'All'){
     html += bundleSectionHTML()
 
-    // OS Packages + Additional OS Layers in one unified section
-    const osPackages = filtered.filter(x => x.tier === 'OS Package')
-    const addonCards = ADDON_OS.map(os => {
-      const mods = os.modules.map((m,i) =>
-        `<div class="card-module-item"><span class="mi-num">${i+1}</span><span>${m}</span></div>`
-      ).join('')
-      const reqPill = os.req
-        ? `<span class="pill pill-req">Req: ${os.req}</span>`
-        : `<span class="pill pill-disc">Base OS only</span>`
-      return `<div class="card addon-os-card" onclick="">
-        <div class="card-top">
-          <div class="card-name-os" style="font-size:15px">${os.name}</div>
-          <div class="tier-dot" style="background:#AAFF00;box-shadow:0 0 6px #AAFF0055"></div>
-        </div>
-        <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(170,255,0,.4);margin-top:-4px">Additional OS Layer</div>
-        <div class="card-price"><span class="price-cur">RM</span><span class="price-val">${os.price.toLocaleString()}</span></div>
-        <div class="card-module-list">${mods}</div>
-        <div class="card-footer">${reqPill}</div>
-      </div>`
-    }).join('')
-
-    if (osPackages.length){
-      html += `<div class="section">
-        <div class="section-hdr">
-          <div class="section-bar" style="background:#AAFF00"></div>
-          <span class="section-title">OS Packages</span>
-          <span class="section-count">${osPackages.length + ADDON_OS.length} items</span>
-          <div class="section-line"></div>
-        </div>
-        <div class="cards">
-          ${osPackages.map(item => cardHTML(item, allItems.indexOf(item))).join('')}
-          ${addonCards}
-        </div>
-      </div>`
-    }
-
-    for (const tier of TIERS.filter(t => t.key !== 'OS Package')){
+    for (const tier of TIERS){
       const group = filtered.filter(x => x.tier === tier.key)
       html += sectionHTML(tier.label, tier.color, group)
     }
@@ -904,6 +910,12 @@ function render(){
         const group = addons.filter(x => x.tier === tier.key)
         if (group.length) html += sectionHTML(tier.label, tier.color, group, 'Add-on')
       }
+    }
+
+    // Retention OS expansion card shown on Revenue OS tab only
+    if (activeOS === 'Revenue OS'){
+      const retOS = ADDON_OS.find(x => x.name === 'Retention OS')
+      if (retOS) html += retentionExpansionHTML(retOS)
     }
   }
 
