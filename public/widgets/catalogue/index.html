@@ -505,6 +505,7 @@ const MODULE_DBS = {
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
 
 // ─── Add-on OS layers section ─────────────────────────────────────────────────
+const ADDON_OS_NAMES = ['Team OS','Retention OS']
 const ADDON_OS = [
   {
     name: 'Team OS',
@@ -689,7 +690,8 @@ function openDrawer(idx){
   const c = tierColor(item.tier)
 
   // Header
-  document.getElementById('d-eyebrow').textContent = item.tier || ''
+  const eyebrowLabel = ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : (item.tier || '')
+  document.getElementById('d-eyebrow').textContent = eyebrowLabel
   document.getElementById('d-eyebrow').style.color = c
   document.getElementById('d-name').textContent = item.name
 
@@ -762,7 +764,7 @@ function openDrawer(idx){
   // Tier + model meta
   body += `<div class="d-divider"></div>`
   body += `<div class="d-section"><div class="d-label">Category</div>`
-  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${item.tier}</div></div></div>`
+  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : item.tier}</div></div></div>`
 
   if (item.model){
     body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
@@ -903,10 +905,12 @@ function osHeroHTML(os){
     ? `<div class="os-hero-reqpill">Requires: ${meta.req}</div>`
     : ''
 
+  const isAddonOS = ADDON_OS_NAMES.includes(os)
+
   return `<div class="os-hero">
     <div class="os-hero-inner">
       <div class="os-hero-left">
-        <div class="os-hero-eyebrow">OS Package</div>
+        <div class="os-hero-eyebrow">${isAddonOS ? 'Additional OS Layer' : 'OS Package'}</div>
         <div class="os-hero-name">${os}</div>
         <div class="os-hero-tagline">${meta.tagline || ''}</div>
         <div class="os-hero-modules-row">
@@ -957,8 +961,25 @@ function render(){
     html += bundleSectionHTML()
 
     for (const tier of TIERS){
-      const group = filtered.filter(x => x.tier === tier.key)
-      html += sectionHTML(tier.label, tier.color, group)
+      let group = filtered.filter(x => x.tier === tier.key)
+      // OS Packages section: exclude Additional OS layers
+      if (tier.key === 'OS Package') group = group.filter(x => !ADDON_OS_NAMES.includes(x.name))
+      if (group.length) html += sectionHTML(tier.label, tier.color, group)
+    }
+
+    // Additional OS Layers section
+    const addonOSCards = filtered.filter(x => x.tier === 'OS Package' && ADDON_OS_NAMES.includes(x.name))
+    if (addonOSCards.length){
+      html += `<div class="section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:var(--g)"></div>
+          <span class="section-title">Additional OS Layers</span>
+          <span class="section-count">${addonOSCards.length} items</span>
+          <span class="section-note">Expand any install at any time</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="cards">${addonOSCards.map(item => cardHTML(item, allItems.indexOf(item))).join('')}</div>
+      </div>`
     }
   } else {
     html += osHeroHTML(activeOS)
