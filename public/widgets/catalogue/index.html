@@ -1278,11 +1278,6 @@ function render(){
       if (retOS)   html += retentionExpansionHTML(retOS, 'revenue')
       if (salesOS) html += retentionExpansionHTML(salesOS, 'revenue')
     }
-    // Retention OS on Marketing OS tab (partial availability)
-    if (activeOS === 'Marketing OS'){
-      const retOS = ADDON_OS.find(x => x.name === 'Retention OS')
-      if (retOS) html += retentionExpansionHTML(retOS, 'marketing')
-    }
   }
 
   el.innerHTML = html
