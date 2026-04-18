@@ -168,6 +168,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .bundle-detail{font-size:11px;font-weight:500;color:rgba(255,255,255,.3);line-height:1.6;}
 .bundle-note{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);padding-top:8px;border-top:1px solid rgba(255,255,255,.05);width:100%;}
 .bundle-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:2px 8px;}
+.bundle-price-row{display:flex;align-items:baseline;gap:4px;justify-content:center;}
 
 /* ── Add-on OS layers section ── */
 .addon-os-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
@@ -307,6 +308,8 @@ const MODULE_DESC = {
   'Renewal Pipeline':               'Retainer renewals tracked before they lapse — never lose a client to admin.',
   'Upsell Opportunity Tracker':     'Expansion opportunities mapped by existing client with deal value and stage.',
   'Retainer Health Tracker':        'Delivery status, utilisation rate, and value metrics per active retainer.',
+  'Team OS':        'Full HR infrastructure for growing teams. Covers every stage from recruitment to offboarding — hiring pipeline, structured onboarding, performance tracking, leave management, and role & compensation records. Requires Base OS only, no other OS dependency.',
+  'Retention OS':   'Client retention layer that sits on top of Revenue OS. Tracks client health, manages renewal pipelines, surfaces upsell opportunities, and monitors retainer performance — so you never lose a client to admin or neglect. Revenue OS is a hard technical dependency; both can be purchased and installed together from day one.',
 }
 
 const MODULE_DBS = {
@@ -422,7 +425,7 @@ const ADDON_OS = [
   {
     name: 'Team OS',
     tagline: 'Full HR infrastructure — from hiring through to performance and compensation.',
-    price: 1700,
+    price: 1800,
     req: null,
     reqLabel: 'Base OS only',
     when: 'Add when your team is growing and people management is becoming a bottleneck. No other OS required — works standalone from day one.',
@@ -431,7 +434,7 @@ const ADDON_OS = [
   {
     name: 'Retention OS',
     tagline: 'Client retention layer built on top of Revenue OS to protect and grow existing accounts.',
-    price: 3250,
+    price: 2000,
     req: 'Revenue OS',
     reqLabel: 'Requires Revenue OS',
     when: 'Revenue OS is a technical dependency — both can be purchased and installed together from day one. Add Retention OS when client health, renewals, and upsell tracking are a priority.',
@@ -533,25 +536,25 @@ function addonOSSectionHTML(){
 // ─── Bundle tiers section ─────────────────────────────────────────────────────
 const BUNDLES = [
   {
-    cls: 'b1', name: 'Starter', layers: 1, color: '#AAFF00',
+    cls: 'b1', name: 'Starter', layers: 1, price: 3250,
     tagline: 'One operational area fully systemised.',
     detail: 'Pick any single Core OS — Revenue, Operations, Marketing, or Finance. Best for businesses solving one specific problem first.',
     example: 'e.g. Revenue OS only',
   },
   {
-    cls: 'b2', name: 'Dual', layers: 2, color: '#60A5FA',
+    cls: 'b2', name: 'Dual', layers: 2, price: 5900,
     tagline: 'Two pillars connected into one system.',
     detail: 'Any two Core OS working together with shared databases. The most popular starting point for growing agencies.',
     example: 'e.g. Revenue OS + Operations OS',
   },
   {
-    cls: 'b3', name: 'Pro', layers: 3, color: '#A78BFA',
+    cls: 'b3', name: 'Pro', layers: 3, price: 8500,
     tagline: 'Serious operational depth across three areas.',
     detail: 'Three Core OS fully integrated. Business intelligence starts kicking in when you have this much connected data.',
     example: 'e.g. Revenue + Operations + Finance OS',
   },
   {
-    cls: 'b4', name: 'Full Stack', layers: 4, color: '#FF9A3C',
+    cls: 'b4', name: 'Full Stack', layers: 4, price: 11500,
     tagline: 'All four Core OS running together.',
     detail: 'The complete infrastructure layer — Revenue, Operations, Marketing, and Finance all connected. Built for agencies ready to run on data.',
     example: 'All 4 Core OS',
@@ -571,6 +574,11 @@ function bundleSectionHTML(){
       <div class="bundle-os-blocks">
         ${blocks}
         <span class="bundle-count">${b.layers} of 4 OS</span>
+      </div>
+      <div class="bundle-price-row">
+        <span style="font-size:11px;font-weight:700;color:rgba(170,255,0,.5);line-height:1">RM</span>
+        <span style="font-size:26px;font-weight:900;color:var(--g);letter-spacing:-.04em;line-height:1">${b.price.toLocaleString()}</span>
+        <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.2);align-self:flex-end;padding-bottom:2px">one-time</span>
       </div>
       <div class="bundle-desc">${b.tagline}</div>
       <div class="bundle-detail">${b.detail}</div>
