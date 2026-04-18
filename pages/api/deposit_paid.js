@@ -77,9 +77,10 @@ async function createClientAccount({ invoiceId, companyId, companyName, dealId, 
     const osInstalled = (packages || []).map(n => ({ name: n }))
 
     const caProps = {
-      "Install Name":    { title: [{ text: { content: companyName || "New Client" } }] },
-      "Status":          { select: { name: "Active" } },
-      "Install Date":    { date: { start: today } },
+      "Install Name":  { title: [{ text: { content: companyName || "New Client" } }] },
+      "Status":        { select: { name: "Active" } },
+      "Client Health": { select: { name: "🟢 Green" } },
+      "Install Date":  { date: { start: today } },
       ...(formUrl    ? { "Onboarding Form": { url: formUrl } } : {}),
       ...(companyId  ? { "Company":         { relation: [{ id: companyId  }] } } : {}),
       ...(dealId     ? { "Linked Deal":     { relation: [{ id: dealId     }] } } : {}),
