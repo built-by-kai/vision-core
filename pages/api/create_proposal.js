@@ -369,44 +369,47 @@ export default async function handler(req, res) {
   const body  = req.body || {}
   const rawId = body.page_id || body.source?.page_id || body.data?.page_id || body.data?.id
   if (!rawId) return res.status(400).json({ error: "Missing page_id" })
-  const leadId = rawId.replace(/-/g, "")
+  const sourceId = rawId.replace(/-/g, "")
 
   // Route to Convert to Deal handler if type=deal
   if ((body.type || req.query.type) === "deal") {
-    return handleConvertToDeal(leadId, res).catch(e => {
+    return handleConvertToDeal(sourceId, res).catch(e => {
       console.error("[convert_to_deal] error:", e.message)
       return res.status(500).json({ error: e.message })
     })
   }
 
   try {
-    // ── 1. Get Lead info ─────────────────────────────────────────────────────
-    const lead       = await getPage(leadId, process.env.NOTION_API_KEY)
-    const leadProps  = lead.properties
-    const companyIds = (leadProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+    // ── 1. Detect source — Lead or Deal ─────────────────────────────────────
+    const sourcePage  = await getPage(sourceId, process.env.NOTION_API_KEY)
+    const sourceProps = sourcePage.properties
+    const parentDb    = (sourcePage.parent?.database_id || "").replace(/-/g, "")
+    const isFromDeal  = parentDb === DB.DEALS
+    const leadId      = isFromDeal ? null : sourceId
+    const dealId      = isFromDeal ? sourceId : null
 
+    console.log("[create_proposal] source:", isFromDeal ? "deal" : "lead", sourceId)
+
+    const companyIds = (sourceProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
     let picIds = []
     for (const f of ["Primary Contact", "PIC Name", "PIC", "Contact", "Person in Charge"]) {
-      picIds = (leadProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
+      picIds = (sourceProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
       if (picIds.length) break
     }
 
-    // Resolve OS type
-    // OS Interest (Leads field) or Package Type (Deals field) — check both
-    const osName = leadProps["OS Interest"]?.select?.name || leadProps["Package Type"]?.select?.name || ""
+    // Resolve OS type — Lead uses "OS Interest", Deal uses "Package Type"
+    const osName = sourceProps["OS Interest"]?.select?.name || sourceProps["Package Type"]?.select?.name || ""
     const pkgRaw = osName.toLowerCase().trim()
     const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
 
-    // Add-ons from lead — field is "Add-ons" (lowercase o)
     const addonSlugs = []
-    for (const item of (leadProps["Add-ons"]?.multi_select || leadProps["Add-Ons"]?.multi_select || [])) {
+    for (const item of (sourceProps["Add-ons"]?.multi_select || sourceProps["Add-Ons"]?.multi_select || [])) {
       const k = item.name.toLowerCase().trim()
       for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
         if (k.includes(key)) { addonSlugs.push(val); break }
       }
     }
 
-    // Fetch products in parallel
     const isOS = OS_PACKAGE_SLUGS.has(slug)
     const [mainProduct, baseProduct, ...addonProducts] = await Promise.all([
       fetchProductInfo(slug),
@@ -414,18 +417,18 @@ export default async function handler(req, res) {
       ...addonSlugs.map(s => fetchProductInfo(s)),
     ])
 
-    console.log("[create_proposal] lead:", leadId, "slug:", slug, "addons:", addonSlugs.length)
+    console.log("[create_proposal] slug:", slug, "addons:", addonSlugs.length, "fromDeal:", isFromDeal)
 
     // ── 2. Find recently created Proposal page ───────────────────────────────
-    // Primary: via Lead.Proposals bidirectional relation (most reliable)
-    // Fallback: time-based search (if button wasn't set up with Deal Source)
     let propId = null
-    let recent = await findProposalFromLead(leadProps)
+
+    // Check the source page's Proposals relation (works for both Lead and Deal)
+    let recent = await findProposalFromLead(sourceProps)
     if (!recent) {
       console.log("[create_proposal] relation not found yet — retrying after 2.5s")
       await new Promise(r => setTimeout(r, 2500))
-      const freshLead = await getPage(leadId, process.env.NOTION_API_KEY)
-      recent = await findProposalFromLead(freshLead.properties)
+      const freshPage = await getPage(sourceId, process.env.NOTION_API_KEY)
+      recent = await findProposalFromLead(freshPage.properties)
     }
     if (!recent) recent = await findRecentProposal()
 
@@ -433,7 +436,6 @@ export default async function handler(req, res) {
       propId = recent.id
       console.log("[create_proposal] found proposal:", propId)
     } else {
-      // Fallback: create proposal page directly
       const today = new Date().toISOString().split("T")[0]
       const newProp = await createPage({
         parent: { database_id: DB.PROPOSALS },
@@ -443,8 +445,10 @@ export default async function handler(req, res) {
           "Date":          { date: { start: today } },
           "Payment Terms": { select: { name: "50% Deposit" } },
           ...(osName ? { "OS Type": { select: { name: osName } } } : {}),
-          ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-          ...(picIds.length ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
+          ...(companyIds.length ? { "Company":          { relation: [{ id: companyIds[0] }] } } : {}),
+          ...(picIds.length     ? { "Primary Contact":  { relation: [{ id: picIds[0] }] } } : {}),
+          ...(leadId            ? { "Lead Source":      { relation: [{ id: leadId }] } } : {}),
+          ...(dealId            ? { "Deal Source":      { relation: [{ id: dealId }] } } : {}),
         }
       }, process.env.NOTION_API_KEY)
       propId = newProp.id.replace(/-/g, "")
@@ -453,20 +457,18 @@ export default async function handler(req, res) {
 
     // ── 3. Patch Proposal properties ─────────────────────────────────────────
     const today = new Date().toISOString().split("T")[0]
+    const situation = plain(sourceProps.Situation?.rich_text || [])
     const patchProps = {
       "Status":        { select: { name: "Draft" } },
       "Date":          { date: { start: today } },
       "Payment Terms": { select: { name: "50% Deposit" } },
-      "Lead Source":   { relation: [{ id: leadId }] },
-      ...(osName               ? { "OS Type":    { select: { name: osName } } } : {}),
+      ...(osName                  ? { "OS Type":    { select: { name: osName } } } : {}),
       ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
-      ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
-      ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
-      // Copy Situation from Lead so it pre-fills the proposal — editable in Notion before generating
-      ...((() => {
-        const sit = plain(leadProps.Situation?.rich_text || [])
-        return sit ? { "Situation": { rich_text: [{ text: { content: sit.slice(0, 2000) } }] } } : {}
-      })()),
+      ...(companyIds.length       ? { "Company":         { relation: [{ id: companyIds[0] }] } } : {}),
+      ...(picIds.length           ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
+      ...(leadId                  ? { "Lead Source":     { relation: [{ id: leadId }] } } : {}),
+      ...(dealId                  ? { "Deal Source":     { relation: [{ id: dealId }] } } : {}),
+      ...(situation               ? { "Situation":       { rich_text: [{ text: { content: situation.slice(0, 2000) } }] } } : {}),
     }
     await patchPage(propId, patchProps, process.env.NOTION_API_KEY)
 

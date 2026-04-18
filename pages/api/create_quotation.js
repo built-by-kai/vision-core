@@ -112,11 +112,14 @@ function buildModuleDescription(slug) {
     .join("\n")
 }
 
-// ── Detect source type ─────────────────────────────────────────────────────
+// ── Detect source type — Lead / Deal / Company ─────────────────────────────
 async function detectSource(pageId) {
-  const page  = await getPage(pageId, process.env.NOTION_API_KEY)
-  const props = page.properties
-  if (props.Stage?.type === "status") return { type: "lead", props }
+  const page     = await getPage(pageId, process.env.NOTION_API_KEY)
+  const props    = page.properties
+  const parentDb = (page.parent?.database_id || "").replace(/-/g, "")
+  if (parentDb === DB.DEALS) return { type: "deal", props }
+  if (parentDb === DB.LEADS || props["Lead Name"]?.type === "title") return { type: "lead", props }
+  if (props.Stage?.type === "status") return { type: "lead", props }  // legacy fallback
   return { type: "company", props }
 }
 
@@ -250,38 +253,56 @@ async function findQuotationFromLead(leadProps, maxAgeSeconds = 180) {
 
 // ── Patch quotation properties (parallel) ─────────────────────────────────
 // All patches run in parallel via Promise.allSettled for speed.
-async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, packageName }) {
+// Pass leadId OR dealId depending on source — sets the right back-relation.
+async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, dealId, packageName }) {
   const today = new Date().toISOString().split("T")[0]
   const token = process.env.NOTION_API_KEY
 
-  // Build all property patches we want to apply
   const propPatches = {
     "Issue Date":    { date: { start: today } },
     "Payment Terms": { select: { name: "50% Deposit" } },
     "Status":        { select: { name: "Draft" } },
-    ...(quoteType   ? { "Quote Type":   { select: { name: quoteType } } } : {}),
-    ...(companyIds.length ? { "Company": { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(quoteType         ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+    ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
     ...(picIds?.length    ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
   }
 
-  // Patch all core props + Deal Source in parallel — fast and no blocking waits
   const patches = Object.entries(propPatches).map(([k, v]) =>
     patchPage(quotId, { [k]: v }, token).catch(e =>
       console.warn(`[patch] '${k}' failed:`, e.message.slice(0, 150))
     )
   )
 
-  // Lead Source — links Quotation back to the Lead (Quotation.Lead Source → Leads DB)
-  // NOTE: "Deal Source" on Quotations points to Deals DB, so use "Lead Source" for Leads.
-  if (leadId) {
-    patches.push(
-      patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token)
-        .catch(() => {})
-    )
-  }
+  // Link back to the originating page — Lead or Deal
+  if (leadId) patches.push(patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {}))
+  if (dealId) patches.push(patchPage(quotId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {}))
 
   await Promise.allSettled(patches)
   console.log("[create_quotation] props patched")
+}
+
+// ── Find quotation from a Deal page ───────────────────────────────────────
+async function findQuotationFromDeal(dealProps, maxAgeSeconds = 180) {
+  // Deals DB uses "Quotations" (plural) relation
+  const quotationIds = [
+    ...(dealProps.Quotations?.relation || []),
+    ...(dealProps.Quotation?.relation  || []),
+  ].map(r => r.id.replace(/-/g, ""))
+  if (!quotationIds.length) return null
+
+  const pages = await Promise.all(
+    quotationIds.map(async qId => {
+      try {
+        const q   = await getPage(qId, process.env.NOTION_API_KEY)
+        const age = (Date.now() - new Date(q.created_time)) / 1000
+        console.log(`[findQuotFromDeal] ${qId.slice(0,8)} age:${age.toFixed(0)}s`)
+        return age <= maxAgeSeconds ? { id: qId, page: q, age } : null
+      } catch { return null }
+    })
+  )
+  const recent = pages.filter(Boolean).sort((a, b) => a.age - b.age)[0]
+  if (recent) return { id: recent.id, url: recent.page.url }
+  return null
 }
 
 // ── Find line items DB on quotation page ──────────────────────────────────
@@ -418,7 +439,7 @@ export default async function handler(req, res) {
     const { type: sourceType, props } = await detectSource(pageId)
     console.log("[create_quotation] source:", sourceType, pageId)
 
-    let leadId = null, companyIds = [], picIds = [], product = null, addons = [], quoteType = "New Business"
+    let leadId = null, dealId = null, companyIds = [], picIds = [], product = null, addons = [], quoteType = "New Business"
 
     if (sourceType === "lead") {
       leadId = pageId
@@ -429,6 +450,34 @@ export default async function handler(req, res) {
       addons     = info.addons
       quoteType  = product?.quote_type || "New Business"
       console.log("[create_quotation] lead info:", { companyIds, picIds: picIds.length, product: product?.name, addons: addons.length })
+
+    } else if (sourceType === "deal") {
+      dealId = pageId
+      companyIds = (props.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+      for (const f of ["Primary Contact", "PIC Name", "PIC", "Contact"]) {
+        picIds = (props[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
+        if (picIds.length) break
+      }
+      // Read package from Deal's "Package Type" select
+      const pkgRaw = (props["Package Type"]?.select?.name || "").toLowerCase().trim()
+      const slug   = PACKAGE_SLUG_MAP[pkgRaw] || null
+      product      = await fetchProductInfo(slug)
+      quoteType    = product?.quote_type || "New Business"
+      // Add-ons from Deal
+      const addonSlugMap = {
+        "additional system module":"addon-system-module","automation (within database)":"addon-automation-within",
+        "automation — within database":"addon-automation-within","automation (cross-database)":"addon-automation-cross",
+        "automation — cross-database":"addon-automation-cross","enhanced dashboard":"addon-dashboard",
+        "advanced dashboard":"addon-dashboard","custom widget":"addon-widget",
+        "api / external integration":"addon-api-integration","lead capture system":"addon-lead-capture",
+        "client portal view":"addon-client-portal","ai agent integration":"addon-ai-agent",
+      }
+      for (const item of (props["Add-ons"]?.multi_select || [])) {
+        const aSlug = addonSlugMap[item.name.toLowerCase().trim()]
+        if (aSlug) { const ap = await fetchProductInfo(aSlug); if (ap?.id) addons.push(ap) }
+      }
+      console.log("[create_quotation] deal info:", { companyIds, picIds: picIds.length, product: product?.name, addons: addons.length })
+
     } else {
       companyIds = [pageId]
     }
@@ -436,10 +485,26 @@ export default async function handler(req, res) {
     // ── 2. Find or create quotation page ────────────────────────────────────
     let quotId = null, quotUrl = null, foundViaNotion = false
 
+    // Shared line-item builder — used by both lead and deal branches
+    async function buildLineItems(quotId, liDbId) {
+      if (!product?.id) return
+      try {
+        const dbId = liDbId || await createLineItemsDB(quotId)
+        ensureProductRelation(dbId)
+        const isOS = OS_PACKAGE_SLUGS.has(product.slug)
+        const baseProduct = isOS ? await fetchProductInfo("base-os") : null
+        const lineItems = []
+        if (isOS && baseProduct?.id) lineItems.push(baseProduct)
+        lineItems.push({ ...product, description: buildModuleDescription(product.slug) || product.description })
+        lineItems.push(...addons)
+        for (const item of lineItems) await createLineItem(dbId, item)
+        console.log(`[create_quotation] ${lineItems.length} line items created`)
+      } catch (e) {
+        console.warn("[create_quotation] line items error:", e.message)
+      }
+    }
+
     if (sourceType === "lead") {
-      // Notion's button fires the webhook BEFORE it finishes updating the
-      // bidirectional Quotation relation on the lead page. If we find nothing,
-      // wait 2.5s and re-fetch the lead page to get the updated relation.
       let recent = await findQuotationFromLead(props)
       if (!recent) {
         console.log("[create_quotation] quotation not in relation yet — retrying after 2.5s")
@@ -448,46 +513,37 @@ export default async function handler(req, res) {
           const freshLead = await getPage(leadId, process.env.NOTION_API_KEY)
           recent = await findQuotationFromLead(freshLead.properties)
           if (recent) console.log("[create_quotation] found quotation on retry")
-        } catch (e) {
-          console.warn("[create_quotation] retry fetch failed:", e.message)
-        }
+        } catch (e) { console.warn("[create_quotation] retry fetch failed:", e.message) }
       }
       if (recent) {
         quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
         console.log("[create_quotation] found quotation via lead relation:", quotId)
-        // Patch props in parallel with finding the line items DB (saves ~1s)
         const [, liDbId] = await Promise.all([
           patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, packageName: product?.name }),
           findLineItemsDB(quotId),
         ])
-        // ── 3. Line items ──────────────────────────────────────────────────
-        if (product?.id) {
-          try {
-            const dbId = liDbId || await createLineItemsDB(quotId)
-            ensureProductRelation(dbId) // fire-and-forget, no wait
+        await buildLineItems(quotId, liDbId)
+      }
 
-            // Pre-fetch base-os in parallel with building line item list
-            const isOS = OS_PACKAGE_SLUGS.has(product.slug)
-            const [baseProduct] = await Promise.all([
-              isOS ? fetchProductInfo("base-os") : Promise.resolve(null),
-            ])
-
-            const lineItems = []
-            if (isOS && baseProduct?.id) lineItems.push(baseProduct)
-            lineItems.push({ ...product, description: buildModuleDescription(product.slug) || product.description })
-            lineItems.push(...addons)
-
-            // Create line items SEQUENTIALLY to preserve order:
-            // Base OS → Main product → Add-ons
-            // (Promise.allSettled fires in parallel and Notion creates out of order)
-            for (const item of lineItems) {
-              await createLineItem(dbId, item)
-            }
-            console.log(`[create_quotation] ${lineItems.length} line items created`)
-          } catch (e) {
-            console.warn("[create_quotation] line items error:", e.message)
-          }
-        }
+    } else if (sourceType === "deal") {
+      let recent = await findQuotationFromDeal(props)
+      if (!recent) {
+        console.log("[create_quotation] quotation not in deal relation yet — retrying after 2.5s")
+        await new Promise(r => setTimeout(r, 2500))
+        try {
+          const freshDeal = await getPage(dealId, process.env.NOTION_API_KEY)
+          recent = await findQuotationFromDeal(freshDeal.properties)
+          if (recent) console.log("[create_quotation] found quotation on retry")
+        } catch (e) { console.warn("[create_quotation] deal retry failed:", e.message) }
+      }
+      if (recent) {
+        quotId = recent.id; quotUrl = recent.url; foundViaNotion = true
+        console.log("[create_quotation] found quotation via deal relation:", quotId)
+        const [, liDbId] = await Promise.all([
+          patchQuotationProps(quotId, { companyIds, picIds, quoteType, dealId, packageName: product?.name }),
+          findLineItemsDB(quotId),
+        ])
+        await buildLineItems(quotId, liDbId)
       }
     }
 
@@ -499,9 +555,10 @@ export default async function handler(req, res) {
         "Status":        { select: { name: "Draft" } },
         "Issue Date":    { date: { start: today } },
         "Payment Terms": { select: { name: "50% Deposit" } },
-        ...(quoteType         ? { "Quote Type": { select: { name: quoteType } } } : {}),
-        ...(companyIds.length ? { "Company":    { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(leadId            ? { "Deal Source":{ relation: [{ id: leadId }] } } : {}),
+        ...(quoteType         ? { "Quote Type":  { select: { name: quoteType } } } : {}),
+        ...(companyIds.length ? { "Company":     { relation: [{ id: companyIds[0] }] } } : {}),
+        ...(leadId            ? { "Lead Source": { relation: [{ id: leadId }] } } : {}),
+        ...(dealId            ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
       }
       const page = await createPage({ parent: { database_id: DB.QUOTATIONS }, properties: cprops }, process.env.NOTION_API_KEY)
       quotId  = page.id.replace(/-/g, "")
