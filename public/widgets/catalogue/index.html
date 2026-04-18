@@ -206,7 +206,7 @@ const TIERS = [
   { key: 'Expansion Module',   color: '#A78BFA', label: 'Expansion Modules' },
   { key: 'Automation',         color: '#FFD60A', label: 'Automations' },
   { key: 'Dashboard & Widget', color: '#FF9A3C', label: 'Dashboards & Widgets' },
-  { key: 'Integration',        color: '#C4956A', label: 'Integrations' },
+  { key: 'Integration',        color: '#F472B6', label: 'Integrations' },
   { key: 'AI Agent',           color: '#FF6B6B', label: 'AI Agents' },
 ]
 
@@ -304,6 +304,68 @@ const MODULE_DBS = {
   'Renewal Pipeline':               ['Retainers','Client Accounts'],
   'Upsell Opportunity Tracker':     ['Deals','Client Accounts'],
   'Retainer Health Tracker':        ['Retainers'],
+
+  // ── Expansion Modules ──────────────────────────────────────────────────────
+  // Revenue OS
+  'Lead Capture System':                    ['Leads','Companies','Contacts'],
+  'Document Generation Suite':              ['Quotations','Invoice','Receipt'],
+  'Proposal Approval & Contract Tracker':   ['Deals','Quotations'],
+  'Payment Reminder Automation':            ['Invoice','Retainers'],
+  'Referral & Partner Tracker':             ['Companies','Contacts','Leads'],
+  'Revenue Forecasting Dashboard':          ['Deals','Invoice','Retainers'],
+  'WhatsApp Redirect on Deal Stage':        ['Deals','Contacts'],
+  // Operations OS
+  'Project Kickoff Automation':             ['Projects','Tasks','Phases'],
+  'Client Onboarding Kickoff':              ['Projects','Client Accounts'],
+  'SOP & Playbook Library':                 ['SOPs'],
+  'Client Feedback & Revision Tracker':     ['Projects','Client Accounts'],
+  'Deliverables Tracker':                   ['Projects','Tasks'],
+  'Client Onboarding Tracker':              ['Client Accounts','Projects'],
+  'Task Auto-Assignment Automation':        ['Tasks','Team'],
+  'Deadline Reminder Automation':           ['Tasks','Projects'],
+  'Team Responsibility Matrix':             ['Team','Projects'],
+  'Decision Log':                           ['Meetings','Team'],
+  // Marketing OS
+  'Ads Tracker':                            ['Campaigns','Finance'],
+  'UTM & Link Tracker':                     ['Leads','Campaigns'],
+  'Influencer & KOL Tracker':              ['Contacts','Campaigns'],
+  'Campaign Kickoff Automation':            ['Campaigns','Tasks'],
+  // Agency Upgrade Pack
+  'Client Campaign Tracker':                ['Campaigns','Client Accounts'],
+  'Campaign Approval Tracker':              ['Campaigns','Projects'],
+  'Creative Revision Tracker':              ['Projects','Tasks'],
+  'Client Reporting Tracker':               ['Client Accounts','Campaigns'],
+  'Client Performance Dashboard':           ['Campaigns','Client Accounts'],
+  'Report Generation Suite':               ['Campaigns','Client Accounts'],
+  'Client Campaign Kickoff Automation':     ['Campaigns','Tasks'],
+  'Approval Workflow Automation':           ['Projects','Tasks'],
+  // Finance OS
+  'Expense Management':                     ['Finance'],
+  'Tax & Compliance Tracker':               ['Finance'],
+  'EPF & SOCSO Log':                        ['Team','Finance'],
+  'Budget & Department Tracker':            ['Finance','Team'],
+  'Client Profitability Tracker':           ['Invoice','Client Accounts'],
+  // Team OS
+  'Offboarding Tracker':                    ['Team','Contacts'],
+  'Training & Development Tracker':         ['Team'],
+  '1-on-1 & Check-in Log':                 ['Team'],
+  'KPI Tracker per Team Member':            ['Team'],
+  'Hiring Kickoff Automation':              ['Hiring','Tasks'],
+  'Attendance Tracker':                     ['Team'],
+  // Retention OS
+  'Churn Risk Tracker':                     ['Client Accounts'],
+  'NPS & Feedback Log':                     ['Client Accounts','Contacts'],
+  'Contract Renewal Tracker':               ['Retainers','Client Accounts'],
+  'Renewal Kickoff Automation':             ['Retainers','Tasks'],
+  'Client Tier & VIP Tracker':              ['Client Accounts'],
+  // Cross-OS
+  'Enhanced Dashboard':                     ['All databases'],
+  'Custom Widget':                          ['Configured per install'],
+  'API & Webhook Automations':              ['Configured per install'],
+  'API & External Integration':             ['Configured per install'],
+  'Client Portal View':                     ['Client Accounts','Projects'],
+  'Ads Platform Integration':               ['Campaigns','Finance'],
+  'AI Agent Integration':                   ['Configured per install'],
 }
 
 function tierColor(t){ return TIERS.find(x=>x.key===t)?.color || '#fff' }
@@ -361,9 +423,9 @@ function openDrawer(idx){
     body += `<div class="d-section"><div class="d-label">Also Includes</div><div class="d-text" style="color:rgba(255,255,255,.3)">Base OS — 5 foundation databases always included complimentary: Companies & People, Client Accounts, Team Members & Staff Directory, Company Profile, Dashboard Hub.</div></div><div class="d-divider"></div>`
   }
 
-  // For Core Modules: databases
+  // Databases (Core Modules, Expansions, Automations, Dashboards, Integrations)
   const dbs = MODULE_DBS[item.name]
-  if (item.tier === 'Core Module' && dbs){
+  if (dbs && item.tier !== 'OS Package'){
     body += `<div class="d-section"><div class="d-label">Notion Databases</div>`
     body += `<div class="d-db-row">`
     dbs.forEach(db => { body += `<span class="d-db-chip">${db}</span>` })
@@ -463,7 +525,7 @@ function cardBodyHTML(item){
       }</div>`
     }
   }
-  if (item.tier === 'Core Module'){
+  if (item.tier === 'Core Module' || item.tier === 'Expansion Module' || item.tier === 'Automation' || item.tier === 'Dashboard & Widget' || item.tier === 'Integration'){
     const desc = MODULE_DESC[item.name] || ''
     const dbs  = (MODULE_DBS[item.name] || []).join(' · ')
     return `${desc ? `<div class="card-short">${desc}</div>` : ''}
