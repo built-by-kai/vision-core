@@ -427,24 +427,56 @@ async function run(payload) {
     console.log("[create_invoice] Linked supplementary invoice to existing project:", projectId)
   }
 
-  // ── 3. Advance Lead/Deal → "Awaiting Deposit" and populate Deal Value ───────
-  if (sourceId) {
-    // Advance stage to Awaiting Deposit (works on both Lead and Deal)
-    await patchPage(sourceId, { "Stage": { status: { name: "Awaiting Deposit" } } }, token)
-      .catch(e => console.warn("[create_invoice] stage advance:", e.message))
-  }
-  if (dealId && amount) {
-    // Quotation approved → update Deal Value on the linked Deal
-    await patchPage(dealId, {
-      "Deal Value": { number: amount },
-      "Quotation":  { relation: [{ id: quotId }] },
-      "Invoices":   { relation: [{ id: invId }] },
-    }, token).catch(e => console.warn("[create_invoice] deal value patch:", e.message))
-  }
-  if (leadId && !dealId) {
-    // Lead not yet converted — link Quotation back to Invoice on Lead's Quotations rollup
-    // (no Deal yet; Deal Value will be set in deposit_paid.js when deposit is received)
-    await patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {})
+  const isAddon = quoteType === "Add-on"
+
+  // ── 3. Advance stage + update Deal Value ──────────────────────────────────
+  if (isAddon) {
+    // Add-on: accumulate Deal Value (don't overwrite), link quotation + invoice
+    if (dealId && amount) {
+      try {
+        const deal         = await getPage(dealId, token)
+        const currentValue = deal.properties["Deal Value"]?.number || 0
+        await patchPage(dealId, {
+          "Deal Value": { number: Math.round((currentValue + amount) * 100) / 100 },
+          "Quotation":  { relation: [{ id: quotId }] },
+          "Invoices":   { relation: [{ id: invId  }] },
+        }, token)
+        console.log(`[create_invoice] add-on: deal value ${currentValue} + ${amount} = ${currentValue + amount}`)
+      } catch (e) {
+        console.warn("[create_invoice] add-on deal value accumulate:", e.message)
+      }
+    }
+    // Update the Add-on record's Agreed Price with the quotation amount
+    try {
+      const addonRows = await queryDB(DB.ADD_ONS, {
+        property: "Quotation", relation: { contains: quotId }
+      }, token)
+      if (addonRows.length) {
+        await patchPage(addonRows[0].id.replace(/-/g, ""), {
+          "Agreed Price (MYR)": { number: amount },
+          "Status":             { select: { name: "Active" } },
+        }, token)
+        console.log("[create_invoice] add-on record updated:", addonRows[0].id)
+      }
+    } catch (e) {
+      console.warn("[create_invoice] add-on record update:", e.message)
+    }
+  } else {
+    // Regular quotation: advance stage → Awaiting Deposit
+    if (sourceId) {
+      await patchPage(sourceId, { "Stage": { status: { name: "Awaiting Deposit" } } }, token)
+        .catch(e => console.warn("[create_invoice] stage advance:", e.message))
+    }
+    if (dealId && amount) {
+      await patchPage(dealId, {
+        "Deal Value": { number: amount },
+        "Quotation":  { relation: [{ id: quotId }] },
+        "Invoices":   { relation: [{ id: invId  }] },
+      }, token).catch(e => console.warn("[create_invoice] deal value patch:", e.message))
+    }
+    if (leadId && !dealId) {
+      await patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {})
+    }
   }
 
   // ── 4. Mark Quotation → Approved ─────────────────────────────────────────
