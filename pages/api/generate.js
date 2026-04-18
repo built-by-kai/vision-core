@@ -74,9 +74,10 @@ async function handleQuotation(pageId) {
 async function handleProposal(pageId) {
   const data = await fetchProposalData(pageId, process.env.NOTION_API_KEY)
 
-  // ── Generate sequential ref number if page title is still empty ─────────
-  // fetchProposalData returns a timestamp fallback if title is blank — detect and replace
-  const titleIsBlank = !data.proposal_no || /PRO-\d{4}-\d{10,}/.test(data.proposal_no)
+  // ── Generate sequential ref number if page title isn't a valid PRO ref ──
+  // Treat "New Proposal", empty, timestamp fallbacks, or anything that isn't
+  // PRO-YYYY-NNN as blank so we always write a clean sequential number.
+  const titleIsBlank = !data.proposal_no || !/^PRO-\d{4}-\d{3,}$/i.test(data.proposal_no.trim())
   const proposalNo   = titleIsBlank ? await generateProposalNo() : data.proposal_no
 
   // ── Map fetched data → renderProposal format ────────────────────────────
