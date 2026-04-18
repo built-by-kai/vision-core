@@ -388,7 +388,9 @@ async function processProposal(sourceId) {
   const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
 
   const addonSlugs = []
+  const addonNames = []
   for (const item of (sourceProps["Add-ons"]?.multi_select || sourceProps["Add-Ons"]?.multi_select || [])) {
+    addonNames.push(item.name)
     const k = item.name.toLowerCase().trim()
     for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
       if (k.includes(key)) { addonSlugs.push(val); break }
@@ -440,12 +442,22 @@ async function processProposal(sourceId) {
   }
 
   // ── 3. Patch Proposal properties ───────────────────────────────────────────
-  const today     = new Date().toISOString().split("T")[0]
-  const situation = plain(sourceProps.Situation?.rich_text || [])
+  const today      = new Date().toISOString().split("T")[0]
+  const validUntilD = new Date(); validUntilD.setDate(validUntilD.getDate() + 30)
+  const validUntil  = validUntilD.toISOString().split("T")[0]
+  const situation  = plain(sourceProps.Situation?.rich_text || [])
+
+  // Build Packages multi_select: OS name + any add-ons
+  const packagesList = []
+  if (osName) packagesList.push({ name: osName })
+  addonNames.forEach(n => packagesList.push({ name: n }))
+
   await patchPage(propId, {
     "Status":        { select: { name: "Draft" } },
     "Date":          { date: { start: today } },
+    "Valid Until":   { date: { start: validUntil } },
     "Payment Terms": { select: { name: "50% Deposit" } },
+    ...(packagesList.length     ? { "Packages":        { multi_select: packagesList } } : {}),
     ...(osName                  ? { "OS Type":         { select:   { name: osName } } } : {}),
     ...(mainProduct?.quote_type ? { "Quote Type":      { select:   { name: mainProduct.quote_type } } } : {}),
     ...(companyIds.length       ? { "Company":         { relation: [{ id: companyIds[0] }] } } : {}),
