@@ -277,8 +277,7 @@ async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, lead
     )
   )
 
-  // Link back to the originating page — Lead or Deal
-  if (leadId) patches.push(patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {}))
+  // Link back to the originating Deal (Quotations DB only has Deal Source, no Lead Source field)
   if (dealId) patches.push(patchPage(quotId, { "Deal Source": { relation: [{ id: dealId }] } }, token).catch(() => {}))
 
   await Promise.allSettled(patches)
@@ -561,7 +560,6 @@ export default async function handler(req, res) {
         "Payment Terms": { select: { name: "50% Deposit" } },
         ...(quoteType         ? { "Quote Type":  { select: { name: quoteType } } } : {}),
         ...(companyIds.length ? { "Company":     { relation: [{ id: companyIds[0] }] } } : {}),
-        ...(leadId            ? { "Lead Source": { relation: [{ id: leadId }] } } : {}),
         ...(dealId            ? { "Deal Source": { relation: [{ id: dealId }] } } : {}),
       }
       const page = await createPage({ parent: { database_id: DB.QUOTATIONS }, properties: cprops }, process.env.NOTION_API_KEY)

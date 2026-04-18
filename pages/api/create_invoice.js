@@ -368,7 +368,7 @@ async function run(payload) {
 
     const projProps = {
       "Project Name": { title: [{ text: { content: projectName } }] },
-      "Status":       { status: { name: "Pending Start" } },
+      "Status":       { status: { name: "Awaiting Build" } },
       "Quotation":    { relation: [{ id: quotId }] },
       "Invoice":      { relation: [{ id: invId }] },
       ...(companyId ? { "Company": { relation: [{ id: companyId }] } } : {}),
@@ -379,11 +379,8 @@ async function run(payload) {
     projectId = projPage.id.replace(/-/g, "")
     console.log("[create_invoice] Project created:", projectId)
 
-    // Back-link Project on Quotation
-    // Note: Invoice → Client Account is linked later in deposit_paid when the
-    // Client Account record is actually created. Don't link here.
-    await patchPage(quotId, { "Project": { relation: [{ id: projectId }] } }, token)
-      .catch(e => console.warn("[create_invoice] link project→quotation:", e.message))
+    // Note: Quotations DB has no "Project" field — no back-link needed here.
+    // Invoice → Client Account is linked later in deposit_paid.
 
     // ── 2b. Create default Phases for the new project ──────────────────────
     const phaseList = MICRO_PACKAGES.has(packageName) ? PHASES_MICRO : PHASES_FULL
@@ -474,9 +471,8 @@ async function run(payload) {
         "Invoices":   { relation: [{ id: invId  }] },
       }, token).catch(e => console.warn("[create_invoice] deal value patch:", e.message))
     }
-    if (leadId && !dealId) {
-      await patchPage(quotId, { "Lead Source": { relation: [{ id: leadId }] } }, token).catch(() => {})
-    }
+    // Note: Quotations DB has no "Lead Source" field — Lead link is established
+    // when the Lead converts to a Deal via convert_to_deal.js
   }
 
   // ── 4. Mark Quotation → Approved ─────────────────────────────────────────

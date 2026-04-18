@@ -78,11 +78,9 @@ async function createAddonQuotation({ companyId, dealId, projectId, token }) {
     "Status":        { select: { name: "Draft" } },
     "Issue Date":    { date: { start: today } },
     "Payment Terms": { select: { name: "Full Upfront" } },
-    "Quote Type":    { select: { name: "Add-on" } },
-    "Package Type":  { rich_text: [{ text: { content: "Add-on" } }] },
+    "Quote Type":    { select: { name: "Expansion" } },
     ...(companyId ? { "Company":     { relation: [{ id: companyId }] } } : {}),
     ...(dealId    ? { "Deal Source": { relation: [{ id: dealId    }] } } : {}),
-    ...(projectId ? { "Project":     { relation: [{ id: projectId }] } } : {}),
   }
   const r = await fetch("https://api.notion.com/v1/pages", {
     method:  "POST",

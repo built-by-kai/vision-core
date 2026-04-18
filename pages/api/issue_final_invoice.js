@@ -114,7 +114,7 @@ async function run(payload) {
   // ── Update Project → In Review ─────────────────────────────────────────
   try {
     await patchPage(projectId, {
-      "Status":            { status: { name: "In Review" } },
+      "Status":            { status: { name: "Client Review" } },
       "Final Invoice":     { relation: [{ id: invId }] },
     }, process.env.NOTION_API_KEY)
   } catch (e) {
