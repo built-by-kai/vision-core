@@ -206,8 +206,22 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .bundle-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:2px 8px;}
 .bundle-price-row{display:flex;align-items:baseline;gap:4px;justify-content:center;}
 
+/* Bundle options table (Entry Point tab) */
+.bopt-table{display:flex;flex-direction:column;gap:2px;}
+.bopt-row{display:flex;align-items:flex-start;gap:20px;padding:14px 16px;border-radius:10px;background:#111;border:1px solid rgba(255,255,255,.05);}
+.bopt-row:not(:last-child){margin-bottom:2px;}
+.bopt-left{flex-shrink:0;width:140px;}
+.bopt-name{font-size:15px;font-weight:900;letter-spacing:-.02em;color:#fff;margin-bottom:2px;}
+.bopt-layers{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);margin-bottom:3px;}
+.bopt-note{font-size:10px;font-weight:500;color:rgba(255,255,255,.2);}
+.bopt-combos{display:flex;flex-wrap:wrap;gap:5px;flex:1;align-items:flex-start;padding-top:2px;}
+.bopt-combo{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:4px 8px;}
+.bopt-os{font-size:10px;font-weight:700;color:rgba(255,255,255,.45);}
+.bopt-plus{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);}
+
+
 /* ── Add-on OS layers section ── */
-.addon-os-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.addon-os-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;}
 .addon-os-card{background:#111;border:1px solid rgba(170,255,0,.12);}
 .addon-os-card{background:#111;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;}
 .addon-os-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
@@ -222,8 +236,8 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .addon-os-req{display:inline-flex;align-items:center;gap:5px;background:rgba(255,154,60,.07);border:1px solid rgba(255,154,60,.14);border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;color:rgba(255,154,60,.8);}
 .addon-os-req-free{display:inline-flex;align-items:center;gap:5px;background:rgba(170,255,0,.05);border:1px solid rgba(170,255,0,.12);border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;color:rgba(170,255,0,.5);}
 .addon-os-divider{height:1px;background:rgba(255,255,255,.05);}
-.addon-os-modules{display:flex;flex-direction:column;gap:4px;}
-.addon-os-modules-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;}
+.addon-os-modules{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;}
+.addon-os-modules-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;grid-column:1/-1;}
 .addon-os-module-row{display:flex;align-items:center;gap:8px;}
 .addon-os-module-num{font-size:9.5px;font-weight:700;color:rgba(170,255,0,.4);width:12px;flex-shrink:0;}
 .addon-os-module-name{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);}
@@ -366,7 +380,7 @@ const MODULE_DESC = {
   <div class="d-about-row"><span class="d-about-row-label">Best for</span>Testing the system before expanding, or fixing a single bottleneck fast</div>
   <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Every ringgit paid here is credited toward your full OS at any time</div>
 </div>
-<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+<div class="d-about-note">At 4+ modules, we move you to a Starter install (1 full Core OS) at RM 3,250 — every ringgit paid here is credited toward it.</div>`,
 
   'Micro Install — 2 Modules': `Two-module install that covers a pair of related workflows. Base OS always included.
 <div class="d-about-rows">
@@ -374,7 +388,7 @@ const MODULE_DESC = {
   <div class="d-about-row"><span class="d-about-row-label">Popular</span>CRM + Billing · Project Management + Client Delivery · Content + Campaign</div>
   <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Full credit applied if you expand to a complete OS later</div>
 </div>
-<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+<div class="d-about-note">At 4+ modules, we move you to a Starter install (1 full Core OS) at RM 3,250 — every ringgit paid here is credited toward it.</div>`,
 
   'Micro Install — 3 Modules': `Three-module install — the most complete Micro Install option before stepping into a full OS.
 <div class="d-about-rows">
@@ -382,7 +396,7 @@ const MODULE_DESC = {
   <div class="d-about-row"><span class="d-about-row-label">Popular</span>Sales Starter: CRM + Billing + Catalogue · Ops Starter: Projects + Delivery + Approval · Content Starter: Campaign + Content + Brand</div>
   <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Full credit applied if you expand to a complete OS later</div>
 </div>
-<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+<div class="d-about-note">At 4+ modules, we move you to a Starter install (1 full Core OS) at RM 3,250 — every ringgit paid here is credited toward it.</div>`,
 
   // ── Core OS Packages ──────────────────────────────────────────────────────
   'Revenue OS': `Fixes pipeline chaos, invisible deals, and payment blind spots. The core commercial layer for any service business.
@@ -801,6 +815,46 @@ function bundleSectionHTML(){
   </div>`
 }
 
+// Bundle options reference — used on Entry Point tab (4 core OSes only, no dependency conflicts)
+const CORE_OS = ['Revenue OS','Operations OS','Marketing OS','Finance OS']
+function bundleOptionsHTML(){
+  const opts = [
+    { name:'Starter', layers:1, price:3250, note:'Pick any 1 Core OS' },
+    { name:'Dual',    layers:2, price:5800, note:'Pick any 2 Core OS' },
+    { name:'Pro',     layers:3, price:8050, note:'Pick any 3 Core OS' },
+    { name:'Full Stack', layers:4, price:10000, note:'All 4 Core OS included' },
+  ]
+  // Generate all combos up to 4 choose layers
+  function combos(arr, k){
+    if (k===1) return arr.map(x=>[x])
+    return arr.flatMap((v,i) => combos(arr.slice(i+1),k-1).map(c=>[v,...c]))
+  }
+  const rows = opts.map(b => {
+    const comboList = combos(CORE_OS, b.layers)
+    const comboHTML = comboList.map(c =>
+      `<div class="bopt-combo">${c.map(os=>`<span class="bopt-os">${os.replace(' OS','')}</span>`).join('<span class="bopt-plus">+</span>')}</div>`
+    ).join('')
+    return `<div class="bopt-row">
+      <div class="bopt-left">
+        <div class="bopt-name">${b.name}</div>
+        <div class="bopt-layers">${b.layers} Core OS · <span style="color:var(--g)">${sym()} ${fmtAmt(b.price).toLocaleString()}</span></div>
+        <div class="bopt-note">${b.note}</div>
+      </div>
+      <div class="bopt-combos">${comboHTML}</div>
+    </div>`
+  }).join('')
+
+  return `<div class="bundles-section">
+    <div class="section-hdr">
+      <div class="section-bar" style="background:var(--g)"></div>
+      <span class="section-title">Bundle Options</span>
+      <span class="section-note">All combinations using Core OS only · no dependency conflicts</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="bopt-table">${rows}</div>
+  </div>`
+}
+
 // ─── Drawer ──────────────────────────────────────────────────────────────────
 function openDrawer(idx){
   const item = allItems[idx]
@@ -1173,8 +1227,8 @@ function render(){
   }
 
   if (activeOS === 'Entry Point'){
-    html += bundleSectionHTML()
-    html += sectionHTML('Entry Point', '#94A3B8', filtered, 'Upgrade credit applies · paid amount credited toward full OS')
+    html += bundleOptionsHTML()
+    html += sectionHTML('Entry Point', '#94A3B8', filtered, 'Upgrade credit applies · amount paid credited toward full OS')
     el.innerHTML = html
     return
   }
