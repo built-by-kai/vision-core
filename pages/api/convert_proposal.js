@@ -321,7 +321,10 @@ export default async function handler(req, res) {
       : await getPage(proposalId, process.env.NOTION_API_KEY)
     const pp = proposalPage.properties
 
-    const osTypeRaw  = pp["OS Type"]?.select?.name || ""
+    // OS Type — prefer select field, fall back to Packages multi_select
+    const OS_NAMES = ["Agency OS","Business OS","Marketing OS","Operations OS","Revenue OS","Team OS","Retention OS","Intelligence OS"]
+    const packageNames = (pp["Packages"]?.multi_select || []).map(s => s.name)
+    const osTypeRaw  = pp["OS Type"]?.select?.name || packageNames.find(n => OS_NAMES.includes(n)) || ""
     const payTerms   = pp["Payment Terms"]?.select?.name || "50% Deposit"
     const proposalQT = pp["Quote Type"]?.select?.name || "New Business"
     const quoteType  = QUOTE_TYPE_MAP[proposalQT] || "New Business"
@@ -387,15 +390,25 @@ export default async function handler(req, res) {
     const osSlug  = OS_SLUG_MAP[osTypeRaw.toLowerCase().trim()] || null
     const isOsPkg = osSlug && OS_PACKAGE_SLUGS.has(osSlug)
 
-    // Fetch add-ons from Deal first; fall back to Proposal's inline Products DB
-    const [baseProduct, mainProduct, dealAddons, proposalAddons] = await Promise.all([
+    // Fetch add-ons from Deal first; fall back to Proposal's inline Products DB;
+    // final fallback: resolve add-on slugs from Packages multi_select field
+    const addonPackageNames = packageNames.filter(n => !OS_NAMES.includes(n))
+    const [baseProduct, mainProduct, dealAddons, proposalAddons, packagesAddons] = await Promise.all([
       isOsPkg ? fetchProduct("base-os") : Promise.resolve(null),
       osSlug  ? fetchProduct(osSlug)    : Promise.resolve(null),
       dealIds.length ? fetchDealAddons(dealIds[0]) : Promise.resolve([]),
       fetchProposalAddons(proposalId, osSlug),
+      Promise.all(
+        addonPackageNames.map(n => {
+          const slug = ADDON_SLUG_MAP[n.toLowerCase().trim()]
+          return slug ? fetchProduct(slug) : Promise.resolve(null)
+        })
+      ).then(r => r.filter(Boolean)),
     ])
-    // Use Deal add-ons if available; otherwise fall back to Proposal's inline add-ons
-    const addonProducts = dealAddons.length ? dealAddons : proposalAddons
+    // Priority: Deal add-ons → Proposal inline DB add-ons → Packages field add-ons
+    const addonProducts = dealAddons.length ? dealAddons
+      : proposalAddons.length ? proposalAddons
+      : packagesAddons
 
     const lineItems = []
     if (isOsPkg && baseProduct?.id) lineItems.push(baseProduct)
