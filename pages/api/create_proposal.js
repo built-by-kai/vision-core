@@ -361,6 +361,125 @@ async function handleConvertToDeal(leadId, res) {
   return res.status(200).json({ status: "ok", leadId, dealId, dealUrl: dealPage.url })
 }
 
+// ─── Main processing ─────────────────────────────────────────────────────────
+async function processProposal(sourceId) {
+  const token = process.env.NOTION_API_KEY
+
+  // ── 1. Detect source — Lead or Deal ───────────────────────────────────────
+  const sourcePage  = await getPage(sourceId, token)
+  const sourceProps = sourcePage.properties
+  const parentDb    = (sourcePage.parent?.database_id || "").replace(/-/g, "")
+  const isFromDeal  = parentDb === DB.DEALS
+  const leadId      = isFromDeal ? null : sourceId
+  const dealId      = isFromDeal ? sourceId : null
+
+  console.log("[create_proposal] source:", isFromDeal ? "deal" : "lead", sourceId)
+
+  const companyIds = (sourceProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
+  let picIds = []
+  for (const f of ["Primary Contact", "PIC Name", "PIC", "Contact", "Person in Charge"]) {
+    picIds = (sourceProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
+    if (picIds.length) break
+  }
+
+  // Resolve OS type — Lead uses "OS Interest", Deal uses "Package Type"
+  const osName = sourceProps["OS Interest"]?.select?.name || sourceProps["Package Type"]?.select?.name || ""
+  const pkgRaw = osName.toLowerCase().trim()
+  const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
+
+  const addonSlugs = []
+  for (const item of (sourceProps["Add-ons"]?.multi_select || sourceProps["Add-Ons"]?.multi_select || [])) {
+    const k = item.name.toLowerCase().trim()
+    for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
+      if (k.includes(key)) { addonSlugs.push(val); break }
+    }
+  }
+
+  const isOS = OS_PACKAGE_SLUGS.has(slug)
+  const [mainProduct, baseProduct, ...addonProducts] = await Promise.all([
+    fetchProductInfo(slug),
+    isOS ? fetchProductInfo("base-os") : Promise.resolve(null),
+    ...addonSlugs.map(s => fetchProductInfo(s)),
+  ])
+
+  console.log("[create_proposal] slug:", slug, "addons:", addonSlugs.length, "fromDeal:", isFromDeal)
+
+  // ── 2. Find recently created Proposal page ─────────────────────────────────
+  // Try relation first (instant if Action 1 set Deal Source / Lead Source),
+  // fall straight to time-based fallback — no sleep, avoids webhook timeout
+  let recent = await findProposalFromLead(sourceProps)
+  if (!recent) {
+    console.log("[create_proposal] relation empty — trying time-based fallback")
+    recent = await findRecentProposal()
+  }
+
+  let propId
+  if (recent) {
+    propId = recent.id
+    console.log("[create_proposal] found proposal:", propId)
+  } else {
+    const today = new Date().toISOString().split("T")[0]
+    const newProp = await createPage({
+      parent: { database_id: DB.PROPOSALS },
+      properties: {
+        "Ref Number":    { title: [{ text: { content: "" } }] },
+        "Status":        { select: { name: "Draft" } },
+        "Date":          { date: { start: today } },
+        "Payment Terms": { select: { name: "50% Deposit" } },
+        ...(osName        ? { "OS Type":         { select:   { name: osName } } } : {}),
+        ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
+        ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
+        ...(leadId        ? { "Lead Source":      { relation: [{ id: leadId }] } } : {}),
+        ...(dealId        ? { "Deal Source":      { relation: [{ id: dealId }] } } : {}),
+      },
+    }, token)
+    propId = newProp.id.replace(/-/g, "")
+    console.log("[create_proposal] fallback created:", propId)
+  }
+
+  // ── 3. Patch Proposal properties ───────────────────────────────────────────
+  const today     = new Date().toISOString().split("T")[0]
+  const situation = plain(sourceProps.Situation?.rich_text || [])
+  await patchPage(propId, {
+    "Status":        { select: { name: "Draft" } },
+    "Date":          { date: { start: today } },
+    "Payment Terms": { select: { name: "50% Deposit" } },
+    ...(osName                  ? { "OS Type":         { select:   { name: osName } } } : {}),
+    ...(mainProduct?.quote_type ? { "Quote Type":      { select:   { name: mainProduct.quote_type } } } : {}),
+    ...(companyIds.length       ? { "Company":         { relation: [{ id: companyIds[0] }] } } : {}),
+    ...(picIds.length           ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
+    ...(leadId                  ? { "Lead Source":     { relation: [{ id: leadId }] } } : {}),
+    ...(dealId                  ? { "Deal Source":     { relation: [{ id: dealId }] } } : {}),
+    ...(situation               ? { "Situation":       { rich_text: [{ text: { content: situation.slice(0, 2000) } }] } } : {}),
+  }, token)
+
+  // ── 4. Line Items DB ───────────────────────────────────────────────────────
+  // Wait briefly for Notion's template to finish rendering, then check once
+  await new Promise(r => setTimeout(r, 1500))
+  let dbId = await findLineItemsDB(propId)
+  if (!dbId) {
+    dbId = await createLineItemsDB(propId)
+    console.log("[create_proposal] created line items DB:", dbId)
+  }
+
+  // ── 5. Fill line items ─────────────────────────────────────────────────────
+  const lineItems = []
+  if (isOS && baseProduct?.id) lineItems.push(baseProduct)
+  if (mainProduct?.id)         lineItems.push(mainProduct)
+  lineItems.push(...addonProducts.filter(Boolean))
+
+  const existingRows = await getExistingRows(dbId)
+  console.log(`[create_proposal] ${existingRows.length} existing rows, ${lineItems.length} products`)
+
+  for (let i = 0; i < lineItems.length; i++) {
+    if (i < existingRows.length) await fillRow(existingRows[i].id, lineItems[i])
+    else                          await createLineItem(dbId, lineItems[i])
+  }
+
+  console.log(`[create_proposal] ✓ prop ${propId} — ${lineItems.length} line items, source: ${isFromDeal ? "deal" : "lead"}`)
+  return { propId, productName: mainProduct?.name ?? null, lineItemsCount: lineItems.length }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method === "GET") return res.json({ service: "Opxio — Create Proposal", status: "ready" })
@@ -379,143 +498,12 @@ export default async function handler(req, res) {
     })
   }
 
-  try {
-    // ── 1. Detect source — Lead or Deal ─────────────────────────────────────
-    const sourcePage  = await getPage(sourceId, process.env.NOTION_API_KEY)
-    const sourceProps = sourcePage.properties
-    const parentDb    = (sourcePage.parent?.database_id || "").replace(/-/g, "")
-    const isFromDeal  = parentDb === DB.DEALS
-    const leadId      = isFromDeal ? null : sourceId
-    const dealId      = isFromDeal ? sourceId : null
+  // ── Respond immediately — prevents Notion's 10s webhook timeout ───────────
+  // Processing continues async below; Notion button sees 200 = success
+  res.status(200).json({ status: "ok", message: "Proposal creation started" })
 
-    console.log("[create_proposal] source:", isFromDeal ? "deal" : "lead", sourceId)
-
-    const companyIds = (sourceProps.Company?.relation || []).map(r => r.id.replace(/-/g, ""))
-    let picIds = []
-    for (const f of ["Primary Contact", "PIC Name", "PIC", "Contact", "Person in Charge"]) {
-      picIds = (sourceProps[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
-      if (picIds.length) break
-    }
-
-    // Resolve OS type — Lead uses "OS Interest", Deal uses "Package Type"
-    const osName = sourceProps["OS Interest"]?.select?.name || sourceProps["Package Type"]?.select?.name || ""
-    const pkgRaw = osName.toLowerCase().trim()
-    const slug   = OS_TYPE_SLUG_MAP[pkgRaw] || "operations-os"
-
-    const addonSlugs = []
-    for (const item of (sourceProps["Add-ons"]?.multi_select || sourceProps["Add-Ons"]?.multi_select || [])) {
-      const k = item.name.toLowerCase().trim()
-      for (const [key, val] of Object.entries(ADDON_SLUG_MAP)) {
-        if (k.includes(key)) { addonSlugs.push(val); break }
-      }
-    }
-
-    const isOS = OS_PACKAGE_SLUGS.has(slug)
-    const [mainProduct, baseProduct, ...addonProducts] = await Promise.all([
-      fetchProductInfo(slug),
-      isOS ? fetchProductInfo("base-os") : Promise.resolve(null),
-      ...addonSlugs.map(s => fetchProductInfo(s)),
-    ])
-
-    console.log("[create_proposal] slug:", slug, "addons:", addonSlugs.length, "fromDeal:", isFromDeal)
-
-    // ── 2. Find recently created Proposal page ───────────────────────────────
-    let propId = null
-
-    // Check the source page's Proposals relation (works for both Lead and Deal)
-    let recent = await findProposalFromLead(sourceProps)
-    if (!recent) {
-      console.log("[create_proposal] relation not found yet — retrying after 2.5s")
-      await new Promise(r => setTimeout(r, 2500))
-      const freshPage = await getPage(sourceId, process.env.NOTION_API_KEY)
-      recent = await findProposalFromLead(freshPage.properties)
-    }
-    if (!recent) recent = await findRecentProposal()
-
-    if (recent) {
-      propId = recent.id
-      console.log("[create_proposal] found proposal:", propId)
-    } else {
-      const today = new Date().toISOString().split("T")[0]
-      const newProp = await createPage({
-        parent: { database_id: DB.PROPOSALS },
-        properties: {
-          "Ref Number":    { title: [{ text: { content: "" } }] },
-          "Status":        { select: { name: "Draft" } },
-          "Date":          { date: { start: today } },
-          "Payment Terms": { select: { name: "50% Deposit" } },
-          ...(osName ? { "OS Type": { select: { name: osName } } } : {}),
-          ...(companyIds.length ? { "Company":          { relation: [{ id: companyIds[0] }] } } : {}),
-          ...(picIds.length     ? { "Primary Contact":  { relation: [{ id: picIds[0] }] } } : {}),
-          ...(leadId            ? { "Lead Source":      { relation: [{ id: leadId }] } } : {}),
-          ...(dealId            ? { "Deal Source":      { relation: [{ id: dealId }] } } : {}),
-        }
-      }, process.env.NOTION_API_KEY)
-      propId = newProp.id.replace(/-/g, "")
-      console.log("[create_proposal] fallback created:", propId)
-    }
-
-    // ── 3. Patch Proposal properties ─────────────────────────────────────────
-    const today = new Date().toISOString().split("T")[0]
-    const situation = plain(sourceProps.Situation?.rich_text || [])
-    const patchProps = {
-      "Status":        { select: { name: "Draft" } },
-      "Date":          { date: { start: today } },
-      "Payment Terms": { select: { name: "50% Deposit" } },
-      ...(osName                  ? { "OS Type":    { select: { name: osName } } } : {}),
-      ...(mainProduct?.quote_type ? { "Quote Type": { select: { name: mainProduct.quote_type } } } : {}),
-      ...(companyIds.length       ? { "Company":         { relation: [{ id: companyIds[0] }] } } : {}),
-      ...(picIds.length           ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
-      ...(leadId                  ? { "Lead Source":     { relation: [{ id: leadId }] } } : {}),
-      ...(dealId                  ? { "Deal Source":     { relation: [{ id: dealId }] } } : {}),
-      ...(situation               ? { "Situation":       { rich_text: [{ text: { content: situation.slice(0, 2000) } }] } } : {}),
-    }
-    await patchPage(propId, patchProps, process.env.NOTION_API_KEY)
-
-    // ── 4. Line Items DB ─────────────────────────────────────────────────────
-    // Notion template may still be applying — retry before creating a new DB
-    let dbId = await findLineItemsDB(propId)
-    if (!dbId) {
-      console.log("[create_proposal] inline DB not found — retrying after 2s")
-      await new Promise(r => setTimeout(r, 2000))
-      dbId = await findLineItemsDB(propId)
-    }
-    if (!dbId) {
-      dbId = await createLineItemsDB(propId)
-      console.log("[create_proposal] created line items DB:", dbId)
-    }
-
-    // ── 5. Fill line items (Base OS → Main product → Add-ons) ───────────────
-    const lineItems = []
-    if (isOS && baseProduct?.id) lineItems.push(baseProduct)
-    if (mainProduct?.id)         lineItems.push(mainProduct)
-    lineItems.push(...addonProducts.filter(Boolean))
-
-    // Use existing template placeholder rows first, create new rows for overflow
-    const existingRows = await getExistingRows(dbId)
-    console.log(`[create_proposal] ${existingRows.length} existing rows, ${lineItems.length} products`)
-
-    for (let i = 0; i < lineItems.length; i++) {
-      if (i < existingRows.length) {
-        // Fill the existing placeholder row in place
-        await fillRow(existingRows[i].id, lineItems[i])
-      } else {
-        // More products than placeholder rows — create new rows
-        await createLineItem(dbId, lineItems[i])
-      }
-    }
-    console.log(`[create_proposal] ${lineItems.length} line items populated`)
-
-    // ── 6. Stage advancement removed — proposal/quotation status tracked on documents
-
-    return res.status(200).json({
-      status: "ok", propId,
-      productName: mainProduct?.name ?? null,
-      lineItemsCount: lineItems.length,
-    })
-  } catch (e) {
-    console.error("[create_proposal] error:", e.message, e.stack)
-    return res.status(500).json({ error: e.message })
-  }
+  processProposal(sourceId).catch(e => {
+    console.error("[create_proposal] async error:", e.message, e.stack)
+  })
 }
 
