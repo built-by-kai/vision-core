@@ -63,53 +63,88 @@ async function findLineItemsDB(pageId, token) {
   return null
 }
 
+// ── Create inline Products & Services DB on a page (if it doesn't exist) ──
+async function ensureLineItemsDB(pageId, token) {
+  // Check if it already exists
+  let dbId = await findLineItemsDB(pageId, token)
+  if (dbId) return dbId
+
+  // Create child_database block directly on the page
+  const r = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children`, {
+    method:  "PATCH",
+    headers: hdrs(token),
+    body:    JSON.stringify({
+      children: [{
+        type:           "child_database",
+        child_database: { title: "Products & Services" },
+      }]
+    }),
+  })
+  if (!r.ok) {
+    console.warn("[create_invoice] ensureLineItemsDB create block:", await r.text())
+    return null
+  }
+  const blocks = (await r.json()).results || []
+  const dbBlock = blocks.find(b => b.type === "child_database")
+  if (!dbBlock) { console.warn("[create_invoice] child_database block missing from response"); return null }
+  dbId = dbBlock.id.replace(/-/g, "")
+
+  // Set schema: rename "Name" → "Notes", add Qty, Unit Price, Product relation
+  const sp = await fetch(`https://api.notion.com/v1/databases/${dbId}`, {
+    method:  "PATCH",
+    headers: hdrs(token),
+    body:    JSON.stringify({
+      properties: {
+        "Name":       { name: "Notes" },
+        "Qty":        { number: { format: "number" } },
+        "Unit Price": { number: { format: "number" } },
+        "Product":    { relation: { database_id: DB.CATALOGUE, single_property: {} } },
+      },
+    }),
+  })
+  if (!sp.ok) console.warn("[create_invoice] ensureLineItemsDB schema:", await sp.text())
+
+  return dbId
+}
+
 // ── Copy line items from Quotation's inline DB to Invoice's inline DB ────
+// Creates the inline DB on the Invoice page if it doesn't exist yet.
 async function copyLineItems(quotId, invId, token) {
   try {
     // Find source (Quotation) inline DB
     const srcDbId = await findLineItemsDB(quotId, token)
     if (!srcDbId) { console.log("[create_invoice] no source line items DB on quotation"); return }
 
-    // Find target (Invoice) inline DB — created by Notion template
-    // Allow a moment for the template to be fully applied
-    let tgtDbId = await findLineItemsDB(invId, token)
-    if (!tgtDbId) {
-      await new Promise(r => setTimeout(r, 1500))
-      tgtDbId = await findLineItemsDB(invId, token)
-    }
-    if (!tgtDbId) { console.log("[create_invoice] no target line items DB on invoice"); return }
-
-    // Read source rows
+    // Read source rows first — nothing to copy if empty
     const srcRows = await queryDB(srcDbId, undefined, token)
-    if (!srcRows.length) return
+    if (!srcRows.length) { console.log("[create_invoice] quotation line items empty"); return }
+
+    // Ensure Invoice has an inline DB (create one if missing)
+    const tgtDbId = await ensureLineItemsDB(invId, token)
+    if (!tgtDbId) { console.log("[create_invoice] could not create target line items DB on invoice"); return }
 
     // Write each row to the target DB
     let written = 0
     for (const row of srcRows) {
-      const rp = row.properties
+      const rp         = row.properties
       const productRels = rp.Product?.relation || []
       const qty         = rp.Qty?.number || 1
       const unitPrice   = rp["Unit Price"]?.number ?? 0
+      const notesArr    = rp.Notes?.title || []
 
-      const props = {
-        "Notes":      { title: rp.Notes?.title || [] },
-        "Qty":        { number: qty },
-        "Unit Price": { number: unitPrice },
-        ...(productRels.length ? { "Product": { relation: [{ id: productRels[0].id }] } } : {}),
-      }
-
-      // Try with description column names
-      for (const descCol of ["Product Description", "Description", null]) {
-        try {
-          const p = descCol
-            ? { ...props, [descCol]: rp[descCol] || { rich_text: [] } }
-            : props
-          await createPage({ parent: { database_id: tgtDbId }, properties: p }, token)
-          written++
-          break
-        } catch (e) {
-          if (!descCol) console.warn("[create_invoice] line item write failed:", e.message)
-        }
+      try {
+        await createPage({
+          parent: { database_id: tgtDbId },
+          properties: {
+            "Notes":      { title: notesArr },
+            "Qty":        { number: qty },
+            "Unit Price": { number: unitPrice },
+            ...(productRels.length ? { "Product": { relation: [{ id: productRels[0].id }] } } : {}),
+          },
+        }, token)
+        written++
+      } catch (e) {
+        console.warn("[create_invoice] line item write failed:", e.message)
       }
     }
     console.log(`[create_invoice] copied ${written} line items from quotation to invoice`)

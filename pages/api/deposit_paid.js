@@ -2,7 +2,7 @@
 // POST /api/deposit_paid   { "page_id": "<invoice_page_id>" }
 // Triggered by Notion button "Mark Deposit Paid" on Invoice page.
 
-import { getPage, patchPage, createPage, queryDB, plain, DB, createLedgerEntry } from "../../lib/notion"
+import { getPage, patchPage, createPage, queryDB, plain, DB, createLedgerEntry, hdrs } from "../../lib/notion"
 
 function cleanPhone(phone = "") {
   const digits = phone.replace(/\D/g, "")
@@ -45,6 +45,46 @@ function buildWaUrl(phone, companyName, formUrl) {
     "— Opxio",
   ]
   return `https://wa.me/${phoneClean}?text=${encodeURIComponent(lines.join("\n"))}`
+}
+
+// ── Create a Client Account record in the Client Accounts DB ─────────────
+// Called when a deposit is marked as received. Creates the post-install client record
+// and links it back to the Invoice's "Client Account" relation field.
+async function createClientAccount({ invoiceId, companyId, companyName, dealId, leadId, picId, projectId, packages, today, token }) {
+  try {
+    const osInstalled = (packages || []).map(n => ({ name: n }))
+
+    const caProps = {
+      "Install Name": { title: [{ text: { content: companyName || "New Client" } }] },
+      "Status":       { select: { name: "Active" } },
+      "Install Date": { date: { start: today } },
+      ...(companyId  ? { "Company":        { relation: [{ id: companyId  }] } } : {}),
+      ...(dealId     ? { "Linked Deal":    { relation: [{ id: dealId     }] } } : {}),
+      ...(leadId     ? { "Linked Lead":    { relation: [{ id: leadId     }] } } : {}),
+      ...(picId      ? { "PIC":            { relation: [{ id: picId      }] } } : {}),
+      ...(projectId  ? { "Project Tracker":{ relation: [{ id: projectId  }] } } : {}),
+      ...(osInstalled.length ? { "OS Installed": { multi_select: osInstalled } } : {}),
+    }
+
+    const caPage = await createPage({ parent: { database_id: DB.CLIENT_ACCOUNTS }, properties: caProps }, token)
+    const caId   = caPage.id.replace(/-/g, "")
+    console.log("[deposit_paid] Client Account created:", caId)
+
+    // Link Invoice → Client Account
+    await patchPage(invoiceId, { "Client Account": { relation: [{ id: caId }] } }, token)
+      .catch(e => console.warn("[deposit_paid] link invoice→client account:", e.message))
+
+    // Link Project → Client Account (if project exists)
+    if (projectId) {
+      await patchPage(projectId, { "Client Account": { relation: [{ id: caId }] } }, token)
+        .catch(() => {})
+    }
+
+    return caId
+  } catch (e) {
+    console.warn("[deposit_paid] createClientAccount:", e.message)
+    return null
+  }
 }
 
 async function triggerSetupProject(projectId) {
@@ -93,6 +133,7 @@ async function run(payload) {
   }, token)
 
   const companyId   = props.Company?.relation?.[0]?.id?.replace(/-/g, "") || null
+  const picId       = props["Primary Contact"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   let   quotationId = props.Quotation?.relation?.[0]?.id?.replace(/-/g, "") || null
   const implIdRaw   = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
   // Invoice.Deal Source → Deals DB only (not Leads). Start null; set after conversion.
@@ -326,11 +367,27 @@ async function run(payload) {
       // If we created a new Deal (from Lead conversion), link it to the Project
       ...(dealId && dealId !== leadId ? { "Deals": { relation: [{ id: dealId }] } } : {}),
     }, token)
-    try {
-      await patchPage(pageId, { "Client Account": { relation: [{ id: projectId }] } }, token)
-    } catch {}
     ;[phasesCount, tasksCount] = await triggerSetupProject(projectId)
   }
+
+  // ── Create Client Account record ───────────────────────────────────────────
+  // Build OS Installed list from package + add-ons
+  const packages = []
+  if (formPackage) packages.push(formPackage)
+  formAddons.forEach(a => packages.push(a))
+
+  const clientAccountId = await createClientAccount({
+    invoiceId:   pageId,
+    companyId,
+    companyName,
+    dealId,
+    leadId,
+    picId,
+    projectId,
+    packages,
+    today,
+    token,
+  })
 
   // ── Finance Ledger — auto-create Deposit entry ───────────────────────────
   const depositAmt = props["Deposit (50%)"]?.number || props["Amount (MYR)"]?.number || props["Amount"]?.number || 0
@@ -348,18 +405,20 @@ async function run(payload) {
   }, token).catch(() => {})
 
   return {
-    status:         "success",
-    invoice_id:     pageId,
-    lead_id:        leadId,
-    deal_id:        dealId,
-    project_id:     projectId,
-    company_id:     companyId,
-    form_url:       formUrl,
-    wa_url:         waUrl || null,
-    form_package:   formPackage,
-    form_addons:    formAddons,
-    phases_created: phasesCount,
-    tasks_created:  tasksCount,
+    status:            "success",
+    invoice_id:        pageId,
+    lead_id:           leadId,
+    deal_id:           dealId,
+    project_id:        projectId,
+    client_account_id: clientAccountId,
+    company_id:        companyId,
+    form_url:          formUrl,
+    wa_url:            waUrl || null,
+    form_package:      formPackage,
+    form_addons:       formAddons,
+    packages,
+    phases_created:    phasesCount,
+    tasks_created:     tasksCount,
   }
 }
 
