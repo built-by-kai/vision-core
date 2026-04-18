@@ -424,7 +424,8 @@ async function run(payload) {
     console.log("[create_invoice] Linked supplementary invoice to existing project:", projectId)
   }
 
-  const isAddon = quoteType === "Add-on"
+  // Add-on quotations use Quote Type "Expansion" (not "Add-on" — invalid option)
+  const isAddon = quoteType === "Expansion" && !!existingProjectId
 
   // ── 3. Advance stage + update Deal Value ──────────────────────────────────
   if (isAddon) {

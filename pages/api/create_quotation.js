@@ -461,23 +461,38 @@ export default async function handler(req, res) {
         picIds = (props[f]?.relation || []).map(r => r.id.replace(/-/g, ""))
         if (picIds.length) break
       }
-      // Read package from Deal's "Package Type" select
-      const pkgRaw = (props["Package Type"]?.select?.name || "").toLowerCase().trim()
-      const slug   = PACKAGE_SLUG_MAP[pkgRaw] || null
-      product      = await fetchProductInfo(slug)
-      quoteType    = product?.quote_type || "New Business"
-      // Add-ons from Deal
-      const addonSlugMap = {
-        "additional system module":"addon-system-module","automation (within database)":"addon-automation-within",
-        "automation — within database":"addon-automation-within","automation (cross-database)":"addon-automation-cross",
-        "automation — cross-database":"addon-automation-cross","enhanced dashboard":"addon-dashboard",
-        "advanced dashboard":"addon-dashboard","custom widget":"addon-widget",
-        "api / external integration":"addon-api-integration","lead capture system":"addon-lead-capture",
-        "client portal view":"addon-client-portal","ai agent integration":"addon-ai-agent",
-      }
-      for (const item of (props["Add-ons"]?.multi_select || [])) {
-        const aSlug = addonSlugMap[item.name.toLowerCase().trim()]
-        if (aSlug) { const ap = await fetchProductInfo(aSlug); if (ap?.id) addons.push(ap) }
+      // Read package from Deal's "Packages" multi_select (primary OS selection)
+      const pkgMulti  = (props.Packages?.multi_select || [])
+      const pkgSelect = props["Package Type"]?.select?.name || ""
+      const pkgRaw    = (pkgMulti[0]?.name || pkgSelect).toLowerCase().trim()
+      const slug      = PACKAGE_SLUG_MAP[pkgRaw] || null
+      product         = await fetchProductInfo(slug)
+      quoteType       = product?.quote_type || "New Business"
+
+      // Add-ons from Deal: "Add-ons" is a relation field pointing to Catalogue DB
+      // (Deals.Add-ons should link to Catalogue items, not the Add-ons Tracker DB)
+      const addonRelIds = (props["Add-ons"]?.relation || []).map(r => r.id.replace(/-/g, ""))
+      if (addonRelIds.length) {
+        const addonResults = await Promise.all(
+          addonRelIds.map(async id => {
+            try {
+              const p = await getPage(id, process.env.NOTION_API_KEY)
+              const pp = p.properties
+              return {
+                id,
+                name:  plain(pp["Product Name"]?.title || pp.Name?.title || []),
+                price: pp.Price?.number ?? pp["Unit Price"]?.number ?? null,
+                quote_type: pp["Quote Type"]?.select?.name || "New Business",
+                description: plain(pp.Description?.rich_text || []),
+                slug: plain(pp.Slug?.rich_text || []),
+              }
+            } catch (e) {
+              console.warn("[create_quotation] addon fetch:", e.message)
+              return null
+            }
+          })
+        )
+        addons.push(...addonResults.filter(Boolean).filter(a => a.name))
       }
       console.log("[create_quotation] deal info:", { companyIds, picIds: picIds.length, product: product?.name, addons: addons.length })
 
