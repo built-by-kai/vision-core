@@ -41,8 +41,9 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .section-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0;}
 .section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);}
-.section-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);margin-left:auto;}
-.section-line{flex:1;height:1px;background:rgba(255,255,255,.04);}
+.section-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);}
+.section-note{font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-left:4px;}
+.section-line{flex:1;height:1px;background:rgba(255,255,255,.04);margin-left:4px;}
 
 /* ── Card grid ── */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
@@ -65,7 +66,7 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 
 .card-sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);margin-top:-4px;}
 
-.card-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.55;flex:1;}
+.card-desc{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
 
 .card-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:auto;}
 .pill{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;}
@@ -190,8 +191,21 @@ function cardHTML(item){
       <div class="tier-dot" style="background:${c};box-shadow:0 0 6px ${c}55"></div>
     </div>
     ${priceHTML(item)}
-    ${item.desc ? `<div class="card-desc">${item.desc.length > 90 ? item.desc.slice(0,90)+'…' : item.desc}</div>` : ''}
+    ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
     ${footer ? `<div class="card-footer">${footer}</div>` : ''}
+  </div>`
+}
+
+function sectionHTML(title, color, items){
+  if (!items.length) return ''
+  return `<div class="section">
+    <div class="section-hdr">
+      <div class="section-bar" style="background:${color}"></div>
+      <span class="section-title">${title}</span>
+      <div class="section-line"></div>
+      <span class="section-count">${items.length}</span>
+    </div>
+    <div class="cards">${items.map(cardHTML).join('')}</div>
   </div>`
 }
 
@@ -206,19 +220,48 @@ function render(){
   }
 
   let html = ''
-  for (const tier of TIERS){
-    const group = filtered.filter(x => x.tier === tier.key)
-    if (!group.length) continue
-    html += `<div class="section">
-      <div class="section-hdr">
-        <div class="section-bar" style="background:${tier.color}"></div>
-        <span class="section-title">${tier.label}</span>
-        <div class="section-line"></div>
-        <span class="section-count">${group.length}</span>
-      </div>
-      <div class="cards">${group.map(cardHTML).join('')}</div>
-    </div>`
+
+  if (activeOS === 'All'){
+    // Group by tier
+    for (const tier of TIERS){
+      const group = filtered.filter(x => x.tier === tier.key)
+      html += sectionHTML(tier.label, tier.color, group)
+    }
+  } else {
+    // OS-specific view: OS Package → Included (Core Modules) → Add-ons
+    const osCard   = filtered.filter(x => x.tier === 'OS Package')
+    const included = filtered.filter(x => x.tier === 'Core Module')
+    const addons   = filtered.filter(x => !['OS Package','Core Module'].includes(x.tier))
+
+    html += sectionHTML(activeOS, '#AAFF00', osCard)
+
+    if (included.length){
+      html += `<div class="section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#4A9EFF"></div>
+          <span class="section-title">Included with ${activeOS}</span>
+          <div class="section-note">Comes in the package — no extra cost</div>
+          <div class="section-line"></div>
+          <span class="section-count">${included.length} modules</span>
+        </div>
+        <div class="cards">${included.map(cardHTML).join('')}</div>
+      </div>`
+    }
+
+    if (addons.length){
+      html += `<div class="section">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#FF9A3C"></div>
+          <span class="section-title">Available Add-ons</span>
+          <div class="section-note">Sold separately</div>
+          <div class="section-line"></div>
+          <span class="section-count">${addons.length}</span>
+        </div>
+        <div class="cards">${addons.map(cardHTML).join('')}</div>
+      </div>`
+    }
   }
+
   el.innerHTML = html
 }
 
