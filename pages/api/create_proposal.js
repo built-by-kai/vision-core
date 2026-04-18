@@ -405,12 +405,14 @@ async function processProposal(sourceId) {
   console.log("[create_proposal] slug:", slug, "addons:", addonSlugs.length, "fromDeal:", isFromDeal)
 
   // ── 2. Find recently created Proposal page ─────────────────────────────────
-  // Try relation first (instant if Action 1 set Deal Source / Lead Source),
-  // fall straight to time-based fallback — no sleep, avoids webhook timeout
+  // Notion button Action 1 creates the proposal before Action 2 fires the
+  // webhook, so the relation should already be populated. Try it immediately,
+  // then fall to time-based scan — no sleep needed.
   let recent = await findProposalFromLead(sourceProps)
   if (!recent) {
-    console.log("[create_proposal] relation empty — trying time-based fallback")
-    recent = await findRecentProposal()
+    // Relation not set yet (race) — scan by recency directly
+    console.log("[create_proposal] relation empty — scanning by recency")
+    recent = await findRecentProposal(300) // 5-min window
   }
 
   let propId
@@ -454,9 +456,12 @@ async function processProposal(sourceId) {
   }, token)
 
   // ── 4. Line Items DB ───────────────────────────────────────────────────────
-  // Wait briefly for Notion's template to finish rendering, then check once
-  await new Promise(r => setTimeout(r, 1500))
+  // Check immediately; if template hasn't applied yet, wait once then try again
   let dbId = await findLineItemsDB(propId)
+  if (!dbId) {
+    await new Promise(r => setTimeout(r, 1200))
+    dbId = await findLineItemsDB(propId)
+  }
   if (!dbId) {
     dbId = await createLineItemsDB(propId)
     console.log("[create_proposal] created line items DB:", dbId)
@@ -498,12 +503,12 @@ export default async function handler(req, res) {
     })
   }
 
-  // ── Respond immediately — prevents Notion's 10s webhook timeout ───────────
-  // Processing continues async below; Notion button sees 200 = success
-  res.status(200).json({ status: "ok", message: "Proposal creation started" })
-
-  processProposal(sourceId).catch(e => {
-    console.error("[create_proposal] async error:", e.message, e.stack)
-  })
+  try {
+    const result = await processProposal(sourceId)
+    return res.status(200).json({ status: "ok", ...result })
+  } catch (e) {
+    console.error("[create_proposal] error:", e.message, e.stack)
+    return res.status(500).json({ error: e.message })
+  }
 }
 
