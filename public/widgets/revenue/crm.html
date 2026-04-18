@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}html{height:100%;}
 body{font-family:'Satoshi',-apple-system,sans-serif;padding:16px;background:#191919;color:#fff;overflow-y:auto;height:100%;transition:background .3s,color .3s;}
 body.light{background:#F5F5F5;color:#111;}
-:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.12);}
+:root{--g:#AAFF00;--gm:rgba(170,255,0,.12);--gb:rgba(170,255,0,.18);--lost:#FF6B35;--lostm:rgba(255,107,53,.12);--amber:#FBBF24;--amberm:rgba(251,191,36,.12);}
 body.light{--g:#5C9900;--gm:rgba(92,153,0,.1);--gb:rgba(92,153,0,.2);}
 .card{background:#1E1E1E;border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:border-color .2s;}
 .card:hover{border-color:rgba(170,255,0,.1);}
@@ -31,12 +31,14 @@ body.light .h-title{color:#111;}
 .ts{font-size:9px;font-weight:500;color:rgba(255,255,255,.18);}
 body.light .ts{color:rgba(0,0,0,.22);}
 /* Stat row */
-.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
-.stat-row.has-delivery{grid-template-columns:repeat(6,1fr);}
+.stat-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:12px;}
+.stat-row.has-delivery{grid-template-columns:repeat(8,1fr);}
 .stat{padding:18px 18px 16px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g),transparent);opacity:0;transition:opacity .25s;}
 .stat:hover::before{opacity:1;}
+.stat.stat-amber::before{background:linear-gradient(90deg,var(--amber),transparent);}
 .s-dot{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--g);opacity:.55;}
+.s-dot.amber{background:var(--amber);}
 .s-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.85);margin-bottom:10px;line-height:1.4;}
 body.light .s-lbl{color:rgba(0,0,0,.8);}
 .s-val{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--g);}
@@ -65,7 +67,7 @@ body.light .mbn.ad{background:rgba(61,122,0,.12);color:#3D7A00;}
 /* Funnel */
 .f-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
 .f-row:last-child{margin-bottom:0;}
-.f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.5);width:84px;flex-shrink:0;line-height:1.3;}
+.f-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.5);width:100px;flex-shrink:0;line-height:1.3;}
 body.light .f-lbl{color:rgba(0,0,0,.4);}
 .f-bg{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,.04);overflow:hidden;}
 body.light .f-bg{background:rgba(0,0,0,.05);}
@@ -77,9 +79,10 @@ body.light .f-bg{background:rgba(0,0,0,.05);}
 body.light .lm     {background:rgba(92,153,0,.35);}
 body.light .dm     {background:rgba(61,122,0,.40);}
 body.light .lm-lost{background:rgba(200,70,20,.45);}
-
 .f-n{font-size:12px;font-weight:900;color:rgba(255,255,255,.6);width:24px;text-align:right;flex-shrink:0;}
 body.light .f-n{color:rgba(0,0,0,.5);}
+.f-val{font-size:10px;font-weight:700;color:var(--g);min-width:68px;text-align:right;flex-shrink:0;opacity:.8;}
+body.light .f-val{color:var(--g);}
 /* Donut — centered in remaining panel space */
 .donut-wrap{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 0;}
 .d-val{font-weight:900;fill:#fff;}
@@ -104,9 +107,9 @@ body.light .chart-title{color:rgba(0,0,0,.7);}
 .ctip{position:absolute;background:#252525;border:1px solid var(--gb);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--g);pointer-events:none;display:none;white-space:nowrap;z-index:10;}
 body.light .ctip{background:#fff;border-color:rgba(0,0,0,.1);}
 /* Responsive */
-@media(max-width:1100px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:600px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:600px){.stat-row{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:64px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
+@media(max-width:1300px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:900px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.stat-row,.stat-row.has-delivery{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.panel{padding:16px;}.f-lbl{width:72px;}.donut-wrap{flex-direction:column;gap:14px;}.chart-card{padding:14px 16px;}}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px;}
@@ -140,22 +143,22 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </div>
   <div class="card stat">
     <div class="s-dot"></div>
+    <div class="s-lbl">Qualified Leads</div>
+    <div class="s-val" id="d-qualified">—</div>
+    <div class="s-sub">Discovery done</div>
+  </div>
+  <div class="card stat" id="d-followup-card">
+    <div class="s-dot amber" id="d-followup-dot"></div>
+    <div class="s-lbl">Follow Ups Today</div>
+    <div class="s-val" id="d-followups">—</div>
+    <div class="s-sub" id="d-followups-sub">Due today</div>
+  </div>
+  <div class="card stat">
+    <div class="s-dot"></div>
     <div class="s-lbl">Active Deals</div>
     <div class="s-val" id="d-deals">—</div>
     <div class="s-sub" id="d-deals-sub">In deal pipeline</div>
     <div class="s-sub" id="d-deals-val" style="color:var(--g);opacity:.7;font-weight:700;margin-top:2px;"></div>
-  </div>
-  <div class="card stat">
-    <div class="s-dot"></div>
-    <div class="s-lbl" id="d-potential-lbl">Potential Value</div>
-    <div class="s-val" id="d-potential">—</div>
-    <div class="s-sub" id="d-potential-sub">Pre-win deal value</div>
-  </div>
-  <div class="card stat" id="d-delivery-card" style="display:none;">
-    <div class="s-dot"></div>
-    <div class="s-lbl" id="d-delivery-lbl">In Delivery</div>
-    <div class="s-val" id="d-building">—</div>
-    <div class="s-sub" id="d-delivery-sub">—</div>
   </div>
   <div class="card stat">
     <div class="s-dot" style="background:var(--lost);"></div>
@@ -164,11 +167,17 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
     <div class="s-sub" id="d-lost-sub">Leads + deals combined</div>
     <div class="s-sub" id="d-lost-val" style="color:var(--lost);opacity:.7;font-weight:700;margin-top:2px;"></div>
   </div>
+  <div class="card stat" id="d-delivery-card" style="display:none;">
+    <div class="s-dot"></div>
+    <div class="s-lbl" id="d-delivery-lbl">In Build</div>
+    <div class="s-val" id="d-building">—</div>
+    <div class="s-sub" id="d-delivery-sub">—</div>
+  </div>
   <div class="card stat">
     <div class="s-dot"></div>
     <div class="s-lbl">Conv. Rate</div>
     <div class="s-val" id="d-conv">—</div>
-    <div class="s-sub" id="d-conv-sub">Leads converted this month</div>
+    <div class="s-sub" id="d-conv-sub">This month · leads</div>
   </div>
 </div>
 
@@ -191,6 +200,14 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
       <div class="legend" id="legend"></div>
     </div>
   </div>
+</div>
+
+<div class="card chart-card" style="margin-top:10px;" id="deals-value-panel">
+  <div class="chart-hdr">
+    <span class="chart-title">Deals Pipeline by Stage Value</span>
+    <span class="chart-badge" id="dvbadge">—</span>
+  </div>
+  <div id="deals-value-rows"></div>
 </div>
 
 <div class="card chart-card">
@@ -261,6 +278,10 @@ let pipeData = null;
 let dealsData = null;
 let chartData = [];
 
+// ── Stage display name mapping ───────────────────────────────────────────────
+const STAGE_DISPLAY = { 'Building': 'In Build' };
+function displayStage(s) { return STAGE_DISPLAY[s] || s; }
+
 function toggleLight(){
   light = !light;
   document.body.classList.toggle('light', light);
@@ -330,7 +351,7 @@ function renderDynamicFunnel(stages, stageOrder, label, lostLabel) {
     const isLost = lostLabel && key === lostLabel;
     const cls = isLost ? 'lm-lost' : (funnelMode === 'deals' ? 'dm' : 'lm');
     return `<div class="f-row">
-      <span class="f-lbl">${key}</span>
+      <span class="f-lbl">${esc(key)}</span>
       <div class="f-bg"><div class="f-fill ${cls}" style="width:${pct}%;"></div></div>
       <span class="f-n">${n || ''}</span>
     </div>`;
@@ -355,6 +376,39 @@ function renderFunnel() {
   }
 }
 
+// ── Deals by Stage Value ──────────────────────────────────────────────────────
+function renderDealsValue() {
+  const el = document.getElementById('deals-value-rows');
+  const panel = document.getElementById('deals-value-panel');
+  if (!dealsData || !dealsData.stageValues || !dealsData.stageOrder) {
+    panel.style.display = 'none';
+    return;
+  }
+  const { stageValues, stages, stageOrder, lostLabel } = dealsData;
+  const lost = lostLabel || 'Lost';
+  const rows = stageOrder
+    .filter(s => s !== lost && ((stages[s] || 0) > 0 || (stageValues[s] || 0) > 0))
+    .map(s => ({ stage: s, count: stages[s] || 0, value: stageValues[s] || 0 }));
+
+  if (!rows.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  const maxVal = Math.max(...rows.map(r => r.value), 1);
+  const totalVal = rows.reduce((s, r) => s + r.value, 0);
+  document.getElementById('dvbadge').textContent = fmtRM(totalVal) || '—';
+
+  el.innerHTML = rows.map(r => {
+    const pct = r.value > 0 ? Math.max(Math.round((r.value / maxVal) * 100), 4) : 0;
+    const valStr = r.value > 0 ? fmtRM(r.value) : '—';
+    return `<div class="f-row" style="margin-bottom:10px;">
+      <span class="f-lbl" style="width:110px;">${esc(displayStage(r.stage))}</span>
+      <div class="f-bg"><div class="f-fill dm" style="width:${pct}%;"></div></div>
+      <span class="f-n" style="width:20px;font-size:11px;color:rgba(255,255,255,.35);">${r.count}</span>
+      <span class="f-val">${valStr}</span>
+    </div>`;
+  }).join('');
+}
+
 // ── Data load ─────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
@@ -367,46 +421,62 @@ async function loadData() {
     pipeData  = jp;
     dealsData = jd;
 
-    document.getElementById('d-active').textContent    = jp.totalActive ?? '—';
-    // Potential value: deals pipeline first, then leads pipeline, then active deal value
-    const potVal = jd.potentialValue || jp.leadsPotentialValue || jd.buildingValue || 0;
-    const potLbl = jd.potentialValue     ? 'Potential Value'
-                 : jp.leadsPotentialValue ? 'Leads Potential'
-                 : jd.buildingValue       ? 'Active Deal Value'
-                 : 'Deal Value';
-    const potSub = jd.potentialValue     ? 'Pre-win deal value'
-                 : jp.leadsPotentialValue ? 'From active leads'
-                 : jd.buildingValue       ? 'Won deals in progress'
-                 : 'No active deals';
-    document.getElementById('d-potential').textContent     = potVal ? fmtRM(potVal) : '—';
-    document.getElementById('d-potential-lbl').textContent = potLbl;
-    document.getElementById('d-potential-sub').textContent = potSub;
-    document.getElementById('d-conv').textContent      = jp.convRate != null ? jp.convRate + '%' : '—';
-    document.getElementById('d-conv-sub').textContent = fmtMonthLbl(filterMonth) + ' · leads';
+    // ── Active Leads ──────────────────────────────────────────────────────────
+    document.getElementById('d-active').textContent = jp.totalActive ?? '—';
 
-    // ── Active Deals (in-progress won stages, excluding delivered) ────────
+    // ── Qualified Leads (Discovery Done stage) ────────────────────────────────
+    const qualifiedCount = jp.stages?.['Discovery Done'] || 0;
+    document.getElementById('d-qualified').textContent = qualifiedCount;
+
+    // ── Follow Ups Due Today ──────────────────────────────────────────────────
+    const followUps = jp.followUpsDueToday ?? 0;
+    const followUpOverdue = jp.followUpsOverdue ?? 0;
+    const followUpEl = document.getElementById('d-followups');
+    followUpEl.textContent = followUps;
+    followUpEl.className = 's-val' + (followUps > 0 ? ' amber' : '');
+    const followUpCard = document.getElementById('d-followup-card');
+    followUpCard.style.borderColor = followUps > 0 ? 'rgba(251,191,36,.25)' : '';
+    const subParts = [];
+    if (followUps > 0) subParts.push(followUps + ' due today');
+    if (followUpOverdue > 0) subParts.push(followUpOverdue + ' overdue');
+    document.getElementById('d-followups-sub').textContent = subParts.length ? subParts.join(' · ') : 'None due today';
+
+    // ── Potential value ───────────────────────────────────────────────────────
+    // (kept in Active Deals card)
+
+    // ── Conv. Rate — computed from thisMonthLeads as denominator ─────────────
+    const convLeads = jp.thisMonthLeads || 0;
+    const convWon   = jp.thisMonthConverted || 0;
+    const convRate  = convLeads > 0 ? Math.round((convWon / convLeads) * 100) : null;
+    document.getElementById('d-conv').textContent = convRate != null ? convRate + '%' : '—';
+    document.getElementById('d-conv-sub').textContent =
+      convLeads > 0
+        ? `${convWon}/${convLeads} leads · ${fmtMonthLbl(filterMonth)}`
+        : fmtMonthLbl(filterMonth) + ' · no leads yet';
+
+    // ── Active Deals ──────────────────────────────────────────────────────────
     document.getElementById('d-deals').textContent = jd.activeDealsCount ?? '—';
     document.getElementById('d-deals-sub').textContent =
-      jd.activeWonStages?.length ? jd.activeWonStages.join(' · ') : 'In deal pipeline';
+      jd.activeWonStages?.length ? jd.activeWonStages.map(displayStage).join(' · ') : 'In deal pipeline';
     const dealsValEl = document.getElementById('d-deals-val');
     if (jd.wonValue) { dealsValEl.textContent = fmtRM(jd.wonValue); dealsValEl.style.display = ''; }
     else { dealsValEl.style.display = 'none'; }
 
-    // ── In Delivery card — show only when >1 active won stage (e.g. Opxio) ─
+    // ── In Build card — show only when >1 active won stage ───────────────────
     const delivCard = document.getElementById('d-delivery-card');
     const statRow   = document.querySelector('.stat-row');
     if (jd.deliveryStage && (jd.activeWonStages?.length || 0) > 1) {
       delivCard.style.display = '';
       statRow.classList.add('has-delivery');
-      document.getElementById('d-delivery-lbl').textContent = jd.deliveryStage;
+      document.getElementById('d-delivery-lbl').textContent = displayStage(jd.deliveryStage);
       document.getElementById('d-building').textContent     = jd.deliveryCount ?? '—';
-      document.getElementById('d-delivery-sub').textContent = jd.deliveryStage + ' stage';
+      document.getElementById('d-delivery-sub').textContent = displayStage(jd.deliveryStage) + ' stage';
     } else {
       delivCard.style.display = 'none';
       statRow.classList.remove('has-delivery');
     }
 
-    // ── Lost — combined leads + deals (month-specific) ───────────────────
+    // ── Lost — combined leads + deals (month-specific) ────────────────────────
     const lostLeads = jp.thisMonthLost   ?? 0;
     const lostDeals = jd.lostThisMonth   ?? 0;
     document.getElementById('d-lost').textContent = lostLeads + lostDeals;
@@ -420,6 +490,7 @@ async function loadData() {
 
     renderDonut(jp.sources);
     renderFunnel();
+    renderDealsValue();
 
     chartData = jp.monthly || [];
     document.getElementById('cbadge').textContent = chartData.reduce((s,d)=>s+d.v,0) + ' total this year';
@@ -573,4 +644,3 @@ window.addEventListener('resize', drawChart);
 })();
 </script>
 </body></html>
-

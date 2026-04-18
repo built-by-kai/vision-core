@@ -56,7 +56,8 @@ export default async function handler(req, res) {
     const deliveredLabel   = client.labels?.dealDeliveredLabel  || DEFAULT_DEL_LABEL
     const lostLabel        = client.labels?.dealLostLabel       || DEFAULT_LOST_LABEL
 
-    const stages = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
+    const stages      = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
+    const stageValues = Object.fromEntries(ALL_STAGES.map(s => [s, 0]))
 
     let potentialValue     = 0
     let buildingValue      = 0
@@ -84,6 +85,7 @@ export default async function handler(req, res) {
       const inScope = monthFiltered ? isThisMonth : true
 
       if (inScope && stage in stages) stages[stage]++
+      if (inScope && stage in stageValues) stageValues[stage] += value
 
       if (inScope && POTENTIAL_STAGES.includes(stage)) {
         potentialValue += value
@@ -158,6 +160,7 @@ export default async function handler(req, res) {
       lostThisMonth,
       lostValueThisMonth,
       lostLabel,
+      stageValues,
       wonDeals,
       lostDeals,
       activeDealsCount,

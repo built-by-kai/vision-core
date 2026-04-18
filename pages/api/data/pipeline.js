@@ -28,6 +28,7 @@ export default async function handler(req, res) {
     const ACTIVE_STAGES = client.labels?.activeStages || ["Incoming","Contacted","Discovery Done"]
 
     const now   = new Date()
+    const todayStr = now.toISOString().slice(0, 10)
     const _qm   = req.query.month ? parseInt(req.query.month) - 1 : null  // 1-12 → 0-11
     const _qy   = req.query.year  ? parseInt(req.query.year)      : null
     const month = (_qm !== null && !isNaN(_qm)) ? _qm : now.getMonth()
@@ -50,6 +51,8 @@ export default async function handler(req, res) {
     let thisMonthLost          = 0
     let lostLeadsValueThisMonth = 0
     let leadsPotentialValue    = 0
+    let followUpsDueToday      = 0
+    let followUpsOverdue       = 0
     const sourceCounts     = {}
     const lostLeads        = []
 
@@ -79,6 +82,10 @@ export default async function handler(req, res) {
         if (!boardGroups[stage]) boardGroups[stage] = []
         boardGroups[stage].push({ name, pkg })
         leadsPotentialValue += leadVal
+        // Follow-up tracking
+        const followUpDate = p["Next Follow-up"]?.date?.start || p["Follow Up Date"]?.date?.start || null
+        if (followUpDate === todayStr) followUpsDueToday++
+        else if (followUpDate && followUpDate < todayStr) followUpsOverdue++
       }
 
       if (inScope && stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
@@ -143,6 +150,8 @@ export default async function handler(req, res) {
       lostLeadsValue,
       lostLeadsValueThisMonth,
       lostLeads,
+      followUpsDueToday,
+      followUpsOverdue,
       sources: Object.entries(sourceCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([label, count]) => ({ label, count })),
