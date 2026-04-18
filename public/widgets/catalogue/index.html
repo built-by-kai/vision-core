@@ -426,7 +426,8 @@ function openDrawer(idx){
   // Databases (Core Modules, Expansions, Automations, Dashboards, Integrations)
   const dbs = MODULE_DBS[item.name]
   if (dbs && item.tier !== 'OS Package'){
-    body += `<div class="d-section"><div class="d-label">Notion Databases</div>`
+    body += `<div class="d-section"><div class="d-label">Connected Databases</div>`
+    body += `<div class="d-text" style="font-size:11px;margin-bottom:8px;color:rgba(255,255,255,.25)">Databases this module reads from and writes to — shared with other modules that need the same data.</div>`
     body += `<div class="d-db-row">`
     dbs.forEach(db => { body += `<span class="d-db-chip">${db}</span>` })
     body += `</div></div><div class="d-divider"></div>`
@@ -529,7 +530,7 @@ function cardBodyHTML(item){
     const desc = MODULE_DESC[item.name] || ''
     const dbs  = (MODULE_DBS[item.name] || []).join(' · ')
     return `${desc ? `<div class="card-short">${desc}</div>` : ''}
-    ${dbs ? `<div class="card-dbs"><span class="dbs-label">DBs</span><span class="dbs-val">${dbs}</span></div>` : ''}`
+    ${dbs ? `<div class="card-dbs"><span class="dbs-label">Uses</span><span class="dbs-val">${dbs}</span></div>` : ''}`
   }
   return item.desc ? `<div class="card-desc">${item.desc}</div>` : ''
 }
