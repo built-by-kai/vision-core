@@ -117,44 +117,45 @@ body.light .seg-count{color:#111;}
 .seg-pct{font-size:10px;font-weight:700;color:var(--g);opacity:.85;width:36px;text-align:right;flex-shrink:0;}
 /* Country map card — D3 Natural Earth */
 .map-card{overflow:hidden;margin-bottom:10px;}
-.map-card-body{display:flex;min-height:240px;}
-.map-canvas-side{flex:1;position:relative;overflow:hidden;background:#0a0a0a;min-height:220px;}
-body.light .map-canvas-side{background:#f0f0f0;}
-.map-canvas-label{position:absolute;top:14px;left:16px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);z-index:2;}
-body.light .map-canvas-label{color:rgba(0,0,0,.3);}
-/* D3 map wrap */
-.map-d3-wrap{position:absolute;top:0;left:0;width:100%;height:100%;}
-.map-d3-wrap svg{display:block;}
-.map-info-side{width:200px;border-left:1px solid rgba(255,255,255,.05);padding:22px 18px;display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
-body.light .map-info-side{border-left-color:rgba(0,0,0,.06);}
-/* Right stats panel */
-.map-stats-side{width:210px;display:flex;flex-direction:column;gap:7px;padding:14px 14px 14px 0;flex-shrink:0;}
-/* Total leads card */
-.ms-total{background:#111;border:0.5px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-body.light .ms-total{background:#f7f7f7;border-color:rgba(0,0,0,.07);}
+/* flex row: map fills left, stats panel right */
+.map-card-body{display:flex;height:260px;}
+/* Left: map area — flex column so child fills it */
+.map-canvas-side{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#0a0a0a;}
+body.light .map-canvas-side{background:#ececec;}
+.map-canvas-label{position:absolute;top:12px;left:14px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.22);z-index:2;pointer-events:none;}
+body.light .map-canvas-label{color:rgba(0,0,0,.28);}
+/* D3 map wrap — flex:1 so it stretches to fill map-canvas-side height */
+.map-d3-wrap{flex:1;width:100%;overflow:hidden;}
+.map-d3-wrap svg{display:block;width:100%;height:100%;}
+/* Right stats panel — no extra bg, sits on top of .card bg (#1E1E1E) */
+.map-stats-side{width:216px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-left:1px solid rgba(255,255,255,.05);}
+body.light .map-stats-side{border-left-color:rgba(0,0,0,.06);}
+/* Total leads card — matches widget .stat style */
+.ms-total{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+body.light .ms-total{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.06);}
 .ms-total-left{flex:1;min-width:0;}
-.ms-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:6px;}
-body.light .ms-lbl{color:rgba(0,0,0,.35);}
-.ms-num{font-size:30px;font-weight:500;letter-spacing:-1.5px;color:#fff;line-height:1;}
+.ms-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.3);margin-bottom:8px;}
+body.light .ms-lbl{color:rgba(0,0,0,.3);}
+.ms-num{font-size:28px;font-weight:900;letter-spacing:-1.5px;color:#fff;line-height:1;}
 body.light .ms-num{color:#111;}
-.ms-delta{font-size:11px;font-weight:700;margin-top:5px;color:var(--g);}
-.ms-delta.down{color:#666;}
+.ms-delta{font-size:10px;font-weight:700;margin-top:5px;color:var(--g);}
+.ms-delta.down{color:rgba(255,255,255,.3);}
+body.light .ms-delta.down{color:rgba(0,0,0,.3);}
 /* Circular ring */
-.ms-ring-svg{width:46px;height:46px;flex-shrink:0;transform:rotate(-90deg);}
-.ms-ring-track{fill:none;stroke:#222;stroke-width:4;}
-body.light .ms-ring-track{stroke:#e0e0e0;}
-.ms-ring-fill{fill:none;stroke:#AAFF00;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
-body.light .ms-ring-fill{stroke:#5C9900;}
-/* 2×2 country grid */
-.ms-countries{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;}
-.ms-cc{background:#111;border:0.5px solid rgba(255,255,255,.07);border-radius:8px;padding:11px 11px 9px;display:flex;flex-direction:column;}
-body.light .ms-cc{background:#f7f7f7;border-color:rgba(0,0,0,.07);}
-.ms-cc-name{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
-body.light .ms-cc-name{color:rgba(0,0,0,.38);}
-.ms-cc-pct{font-size:19px;font-weight:500;letter-spacing:-.5px;color:#fff;line-height:1.1;}
+.ms-ring-svg{width:44px;height:44px;flex-shrink:0;transform:rotate(-90deg);}
+.ms-ring-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:4;}
+body.light .ms-ring-track{stroke:rgba(0,0,0,.1);}
+.ms-ring-fill{fill:none;stroke:var(--g);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
+/* 2×2 country grid — fills remaining height */
+.ms-countries{display:grid;grid-template-columns:1fr 1fr;gap:5px;flex:1;align-content:start;}
+.ms-cc{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 11px 9px;display:flex;flex-direction:column;}
+body.light .ms-cc{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.06);}
+.ms-cc-name{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;}
+body.light .ms-cc-name{color:rgba(0,0,0,.3);}
+.ms-cc-pct{font-size:20px;font-weight:900;letter-spacing:-1px;color:#fff;line-height:1;}
 body.light .ms-cc-pct{color:#111;}
-.ms-cc-bar{height:2px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:8px;}
-body.light .ms-cc-bar{background:rgba(0,0,0,.08);}
+.ms-cc-bar{height:2px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:9px;}
+body.light .ms-cc-bar{background:rgba(0,0,0,.07);}
 .ms-cc-bar-fill{height:100%;border-radius:99px;background:var(--g);transition:width .6s cubic-bezier(.4,0,.2,1);}
 /* UTM section */
 .utm-grid{display:grid;grid-template-columns:repeat(3,1fr);}
@@ -753,6 +754,10 @@ async function loadTopo(){
 const HQ_LNG=101.9, HQ_LAT=4.2; // Opxio HQ — Kuala Lumpur
 
 async function drawSvgMap(){
+  if(typeof d3==='undefined'||typeof topojson==='undefined'){
+    console.warn('[map] D3 or topojson not loaded yet');
+    return;
+  }
   const wrap=document.getElementById('map-d3-wrap');
   if(!wrap) return;
 
@@ -760,16 +765,19 @@ async function drawSvgMap(){
   wrap.innerHTML='';
 
   const isDark=!document.body.classList.contains('light');
-  const FILL   = isDark?'#1a1a1a':'#e0e0e0';
-  const STROKE = isDark?'#2a2a2a':'#c8c8c8';
-  const BG     = isDark?'#0a0a0a':'#f0f0f0';
+  const FILL   = isDark?'#1c1c1c':'#ddd';
+  const STROKE = isDark?'#2c2c2c':'#c4c4c4';
+  const BG     = isDark?'#0a0a0a':'#ececec';
   const ACCENT = isDark?'#AAFF00':'#5C9900';
 
-  const W=wrap.clientWidth||600;
-  const H=wrap.clientHeight||240;
+  // offsetWidth/Height works even when the element is about to paint
+  const W=wrap.offsetWidth||wrap.parentElement?.offsetWidth||600;
+  const H=wrap.offsetHeight||260;
 
   const svg=d3.select(wrap).append('svg')
     .attr('width',W).attr('height',H)
+    .attr('viewBox',`0 0 ${W} ${H}`)
+    .style('width','100%').style('height','100%')
     .style('background',BG);
 
   // Load world topology
