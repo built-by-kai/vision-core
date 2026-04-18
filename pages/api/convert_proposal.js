@@ -374,15 +374,21 @@ export default async function handler(req, res) {
 
     // ── 3. Patch quotation properties in parallel ───────────────────────────
     const today = new Date().toISOString().split("T")[0]
+    const validUntilD = new Date(); validUntilD.setDate(validUntilD.getDate() + 30)
+    const validUntil  = validUntilD.toISOString().split("T")[0]
+    // Build Packages list: OS name + any add-on names from Packages field
+    const quotPackages = packageNames.map(n => ({ name: n }))
     await patchPage(quotId, {
       "Status":        { select: { name: "Draft" } },
       "Issue Date":    { date: { start: today } },
+      "Valid Until":   { date: { start: validUntil } },
       "Payment Terms": { select: { name: payTerms } },
-      ...(quoteType         ? { "Quote Type":   { select: { name: quoteType } } } : {}),
-      ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
-      ...(dealIds.length    ? { "Deal Source":  { relation: [{ id: dealIds[0] }] } } : {}),
-      ...(leadIds.length    ? { "Lead Source":  { relation: [{ id: leadIds[0] }] } } : {}),
-      ...(picIds.length     ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
+      ...(quoteType            ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+      ...(quotPackages.length  ? { "Packages":     { multi_select: quotPackages } } : {}),
+      ...(companyIds.length    ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
+      ...(dealIds.length       ? { "Deal Source":  { relation: [{ id: dealIds[0] }] } } : {}),
+      ...(leadIds.length       ? { "Lead Source":  { relation: [{ id: leadIds[0] }] } } : {}),
+      ...(picIds.length        ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
     }, process.env.NOTION_API_KEY)
     console.log("[convert_proposal] quotation props patched")
 

@@ -133,7 +133,7 @@ async function run(payload) {
   if (!quotationAmount && quotationId) {
     try {
       const qp = await getPage(quotationId, token)
-      quotationAmount = qp.properties.Amount?.number || 0
+      quotationAmount = qp.properties["Amount (MYR)"]?.number || qp.properties.Amount?.number || 0
     } catch {}
   }
 

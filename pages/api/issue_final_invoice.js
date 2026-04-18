@@ -46,7 +46,7 @@ async function run(payload) {
   if (quotationId) {
     try {
       const qpage = await getPage(quotationId, process.env.NOTION_API_KEY)
-      totalAmount  = qpage.properties.Amount?.number || 0
+      totalAmount  = qpage.properties["Amount (MYR)"]?.number || qpage.properties.Amount?.number || 0
       paymentTerms = qpage.properties["Payment Terms"]?.select?.name || "50% Deposit"
     } catch (e) {
       console.warn("[issue_final_invoice] quotation fetch:", e.message)

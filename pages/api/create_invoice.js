@@ -180,7 +180,7 @@ async function run(payload) {
 
   const quoteType    = props["Quote Type"]?.select?.name || "New Business"
   const paymentTerms = props["Payment Terms"]?.select?.name || "50% Deposit"
-  const amount       = props.Amount?.number || 0
+  const amount       = props["Amount (MYR)"]?.number || props.Amount?.number || 0
   const packageName  = derivePackage(props) || null  // null if no OS detected — don't use quoteType as package
 
   // Linked IDs

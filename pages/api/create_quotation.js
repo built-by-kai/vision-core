@@ -256,13 +256,17 @@ async function findQuotationFromLead(leadProps, maxAgeSeconds = 180) {
 // Pass leadId OR dealId depending on source — sets the right back-relation.
 async function patchQuotationProps(quotId, { companyIds, picIds, quoteType, leadId, dealId, packageName }) {
   const today = new Date().toISOString().split("T")[0]
+  const validUntilD = new Date(); validUntilD.setDate(validUntilD.getDate() + 30)
+  const validUntil  = validUntilD.toISOString().split("T")[0]
   const token = process.env.NOTION_API_KEY
 
   const propPatches = {
     "Issue Date":    { date: { start: today } },
+    "Valid Until":   { date: { start: validUntil } },
     "Payment Terms": { select: { name: "50% Deposit" } },
     "Status":        { select: { name: "Draft" } },
     ...(quoteType         ? { "Quote Type":   { select: { name: quoteType } } } : {}),
+    ...(packageName       ? { "Packages":     { multi_select: [{ name: packageName }] } } : {}),
     ...(companyIds.length ? { "Company":      { relation: [{ id: companyIds[0] }] } } : {}),
     ...(picIds?.length    ? { "Primary Contact": { relation: [{ id: picIds[0] }] } } : {}),
   }
