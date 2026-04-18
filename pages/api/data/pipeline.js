@@ -57,9 +57,10 @@ export default async function handler(req, res) {
     const sourceCounts     = {}
     const lostLeads        = []
 
-    // Determine "converted" and "lost" labels — last two stages if not explicitly named
-    const wonLabel  = ALL_STAGES.find(s => /won|convert/i.test(s))  || ALL_STAGES[ALL_STAGES.length - 2] || "Converted"
-    const lostLabel = ALL_STAGES.find(s => /lost/i.test(s))         || ALL_STAGES[ALL_STAGES.length - 1] || "Lost"
+    // Determine "converted" and "lost" labels — explicit from labels, or regex fallback
+    const wonLabel   = client.labels?.wonLabel  || ALL_STAGES.find(s => /won|convert/i.test(s))  || "Converted"
+    const lostLabel  = client.labels?.lostLabel || ALL_STAGES.find(s => /lost/i.test(s))         || "Lost"
+    const lostLabels = client.labels?.lostLabels || [lostLabel]  // e.g. ["Lost","Ghosted","Disqualified"]
 
     for (const lead of leads) {
       const p     = lead.properties
@@ -90,12 +91,12 @@ export default async function handler(req, res) {
         else if (followUpDate && followUpDate < todayStr) followUpsOverdue++
       }
 
-      if (inScope && stage === lostLabel) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
+      if (inScope && lostLabels.includes(stage)) lostLeads.push({ name, value: leadVal, pkg, stage, lostReason, url: pageUrl, created: lead.created_time })
 
       if (isThisMonth) {
         thisMonthLeads++
-        if (stage === wonLabel)  thisMonthConverted++
-        if (stage === lostLabel) { thisMonthLost++; lostLeadsValueThisMonth += leadVal; }
+        if (stage === wonLabel)            thisMonthConverted++
+        if (lostLabels.includes(stage))    { thisMonthLost++; lostLeadsValueThisMonth += leadVal; }
       }
 
       const mKey  = created.toLocaleString("default", { month: "short" })
@@ -130,7 +131,7 @@ export default async function handler(req, res) {
     const convTotal = thisMonthConverted + thisMonthLost
     const convRate  = convTotal > 0 ? Math.round((thisMonthConverted / convTotal) * 100) : null
 
-    const totalLostLeads  = stages[lostLabel] || 0
+    const totalLostLeads  = lostLabels.reduce((s, l) => s + (stages[l] || 0), 0)
     const lostLeadsValue  = lostLeads.reduce((s, d) => s + (d.value || 0), 0)
 
     res.status(200).json({
@@ -148,6 +149,7 @@ export default async function handler(req, res) {
       thisMonthWon:        thisMonthConverted,
       totalLostLeads,
       lostLabel,
+      lostLabels,
       leadsPotentialValue,
       lostLeadsValue,
       lostLeadsValueThisMonth,
