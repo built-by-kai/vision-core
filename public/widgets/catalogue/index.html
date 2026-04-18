@@ -118,7 +118,7 @@ let allItems = [], activeOS = 'All'
 const _tok = new URLSearchParams(location.search).get('token') || ''
 function apiUrl(p){ return _tok ? p + '?token=' + encodeURIComponent(_tok) : p }
 
-const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Business OS','Team OS','Retention OS','Finance OS','Agentic OS']
+const OS_LIST = ['All','Revenue OS','Operations OS','Marketing OS','Finance OS','Team OS','Retention OS']
 
 const TIERS = [
   { key: 'OS Package',        color: '#AAFF00', label: 'OS Packages' },
