@@ -793,7 +793,21 @@ function openDrawer(idx){
   }
   body += `</div><div class="d-divider"></div>`
 
-  // Description
+  // Category + Pricing Model — right after pricing
+  body += `<div class="d-section"><div class="d-label">Category</div>`
+  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : item.tier}</div></div></div>`
+  if (item.model){
+    body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
+    body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
+    if (item.model === 'Setup + Subscription' && item.monthly){
+      body += `<span class="d-model-chip highlight">${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo</span>`
+      if (item.term) body += `<span class="d-model-chip">${item.term}</span>`
+    }
+    body += `</div></div>`
+  }
+  body += `<div class="d-divider"></div>`
+
+  // About
   const desc = MODULE_DESC[item.name] || item.desc
   if (desc){
     body += `<div class="d-section"><div class="d-label">About</div><div class="d-text">${desc}</div></div>`
@@ -809,20 +823,19 @@ function openDrawer(idx){
       body += `<div class="d-module-row"><span class="d-module-num">${i+1}</span><span class="d-module-name">${m}</span></div>`
     })
     body += `</div></div><div class="d-divider"></div>`
-    // Base OS note
-    body += `<div class="d-section"><div class="d-label">Also Includes</div>
-      <div class="d-db-row" style="margin-top:2px">
-        ${['Companies & People','Client Accounts','Team Members & Staff Directory','Company Profile','Dashboard Hub'].map(m=>`<span class="d-db-chip">${m}</span>`).join('')}
-      </div>
-      <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.18);margin-top:6px;">Base OS — always complimentary</div>
+    // Base OS — clear label + chips
+    body += `<div class="d-section">
+      <div class="d-label">Also Includes</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(170,255,0,.4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Base OS — Complimentary</div>
+      <div class="d-db-row">${['Companies & People','Client Accounts','Team Members & Staff Directory','Company Profile','Dashboard Hub'].map(m=>`<span class="d-db-chip">${m}</span>`).join('')}</div>
     </div><div class="d-divider"></div>`
   }
 
-  // Databases (Core Modules, Expansions, Automations, Dashboards, Integrations)
+  // Databases
   const dbs = MODULE_DBS[item.name]
   if (dbs && item.tier !== 'OS Package'){
     body += `<div class="d-section"><div class="d-label">Connected Databases</div>`
-    body += `<div class="d-text" style="font-size:11px;margin-bottom:8px;color:rgba(255,255,255,.25)">Databases this module reads from and writes to — shared with other modules that need the same data.</div>`
+    body += `<div class="d-text" style="font-size:11px;margin-bottom:8px;color:rgba(255,255,255,.25)">Databases this module reads from and writes to.</div>`
     body += `<div class="d-db-row">`
     dbs.forEach(db => { body += `<span class="d-db-chip">${db}</span>` })
     body += `</div></div><div class="d-divider"></div>`
@@ -839,21 +852,6 @@ function openDrawer(idx){
   if (item.requiresNames && item.requiresNames.length){
     body += `<div class="d-section"><div class="d-label">Requires</div><div class="d-pills">`
     item.requiresNames.forEach(r => { body += `<span class="d-req-chip">${r}</span>` })
-    body += `</div></div>`
-  }
-
-  // Tier + model meta
-  body += `<div class="d-divider"></div>`
-  body += `<div class="d-section"><div class="d-label">Category</div>`
-  body += `<div class="d-tier-row"><div class="d-tier-dot" style="background:${c}"></div><div class="d-tier-name">${ADDON_OS_NAMES.includes(item.name) ? 'Additional OS Layer' : item.tier}</div></div></div>`
-
-  if (item.model){
-    body += `<div class="d-section"><div class="d-label">Pricing Model</div><div class="d-model-row">`
-    body += `<span class="d-model-chip${item.model === 'Setup + Subscription' ? ' highlight' : ''}">${item.model}</span>`
-    if (item.model === 'Setup + Subscription' && item.monthly){
-      body += `<span class="d-model-chip highlight">${sym()} ${fmtAmt(item.monthly).toLocaleString()}/mo</span>`
-      if (item.term) body += `<span class="d-model-chip">${item.term}</span>`
-    }
     body += `</div></div>`
   }
 
