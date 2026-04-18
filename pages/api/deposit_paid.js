@@ -4,6 +4,28 @@
 
 import { getPage, patchPage, createPage, queryDB, plain, DB, createLedgerEntry, hdrs } from "../../lib/notion"
 
+// ── Extract OS package + add-ons from any page's properties ─────────────────
+// Works across Leads ("OS Interest" select + "Add-ons" multi_select)
+// and Deals/Quotations ("Packages" multi_select).
+const OS_NAMES = new Set([
+  "Agency OS","Business OS","Marketing OS","Operations OS","Revenue OS",
+  "Team OS","Retention OS","Intelligence OS","Starter OS",
+  "Micro Install — 1 Module","Micro Install — 2 Modules","Micro Install — 3 Modules",
+])
+function extractPackageInfo(props) {
+  // 1. Try "Packages" multi_select (on Deals and Quotations)
+  const pkgMulti = (props["Packages"]?.multi_select || []).map(s => s.name)
+  if (pkgMulti.length) {
+    const osName = pkgMulti.find(n => OS_NAMES.has(n)) || pkgMulti[0]
+    const addons = pkgMulti.filter(n => n !== osName)
+    return { pkg: osName, addons }
+  }
+  // 2. Try "OS Interest" select + "Add-ons" multi_select (on Leads)
+  const osSel    = props["OS Interest"]?.select?.name || props["Package Type"]?.select?.name || ""
+  const addons   = (props["Add-ons"]?.multi_select || []).map(s => s.name)
+  return { pkg: osSel, addons }
+}
+
 function cleanPhone(phone = "") {
   const digits = phone.replace(/\D/g, "")
   return digits.startsWith("0") ? "6" + digits : digits
@@ -206,9 +228,9 @@ async function run(payload) {
         const notes         = plain(lp.Notes?.rich_text     || [])
         const discoveryCall = lp["Discovery Call"]?.date?.start || null
 
-        // Capture for onboarding form URL
-        formPackage = osInterest
-        formAddons  = addons.map(a => a.name)
+        // Capture for onboarding form URL (prefer Lead's OS Interest + Add-ons)
+        ;({ pkg: formPackage, addons: formAddons } = extractPackageInfo(lp))
+        if (!formPackage) formPackage = osInterest
 
         // ── Check if a Deal was already created (e.g., via "Convert to Deal") ──
         // If so, reuse it instead of creating a duplicate.
@@ -232,8 +254,11 @@ async function run(payload) {
             }
             await patchPage(dealId, dealPatches, token)
             // Capture package info from the existing Deal for onboarding form
-            if (!formPackage) formPackage = existingDeal.properties["Package Type"]?.select?.name || ""
-            if (!formAddons.length) formAddons = (existingDeal.properties["Add-ons"]?.multi_select || []).map(a => a.name)
+            if (!formPackage || !formAddons.length) {
+              const { pkg, addons } = extractPackageInfo(existingDeal.properties)
+              if (!formPackage) formPackage = pkg
+              if (!formAddons.length) formAddons = addons
+            }
           } catch (e) {
             console.warn("[deposit_paid] existing deal advance:", e.message)
           }
@@ -300,8 +325,7 @@ async function run(payload) {
         }
 
         // Capture for onboarding form URL
-        formPackage = sourcePage.properties["Package Type"]?.select?.name || ""
-        formAddons  = (sourcePage.properties["Add-ons"]?.multi_select || []).map(a => a.name)
+        ;({ pkg: formPackage, addons: formAddons } = extractPackageInfo(sourcePage.properties))
       }
     } catch (e) {
       console.warn("[deposit_paid] stage advance:", e.message)
@@ -344,13 +368,23 @@ async function run(payload) {
   }
 
   // ── Project setup (heavy — may take multiple seconds) ─────────────────────
-  let projectId = props["Client Account"]?.relation?.[0]?.id?.replace(/-/g, "") || null
+  // Note: Invoice "Client Account" field points to Client Accounts DB — not Projects.
+  // Find project by querying Projects DB via Quotation or Company relation.
+  let projectId = null
   let phasesCount = 0, tasksCount = 0
 
-  if (!projectId && quotationId) {
+  if (quotationId) {
     try {
       const rows = await queryDB(DB.PROJECTS, {
         property: "Quotation", relation: { contains: quotationId }
+      }, token)
+      if (rows.length) projectId = rows[0].id.replace(/-/g, "")
+    } catch {}
+  }
+  if (!projectId && companyId) {
+    try {
+      const rows = await queryDB(DB.PROJECTS, {
+        property: "Company", relation: { contains: companyId }
       }, token)
       if (rows.length) projectId = rows[0].id.replace(/-/g, "")
     } catch {}
