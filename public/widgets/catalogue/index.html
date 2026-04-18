@@ -138,6 +138,10 @@ body{font-family:'Satoshi',-apple-system,sans-serif;background:#0D0D0D;color:#ff
 .d-price-disc{font-size:16px;font-weight:700;color:rgba(255,255,255,.3);font-style:italic;}
 .d-sub{font-size:11px;font-weight:600;color:rgba(255,255,255,.25);margin-top:4px;}
 .d-text{font-size:13px;font-weight:500;color:rgba(255,255,255,.5);line-height:1.65;}
+.d-about-rows{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.d-about-row{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.35);line-height:1.55;}
+.d-about-row-label{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.18);white-space:nowrap;padding-top:2px;min-width:52px;}
+.d-about-note{font-size:11px;font-weight:600;color:rgba(170,255,0,.35);margin-top:8px;padding:6px 10px;background:rgba(170,255,0,.04);border:1px solid rgba(170,255,0,.08);border-radius:6px;}
 .d-divider{height:1px;background:rgba(255,255,255,.05);margin:20px 0;}
 .d-modules{display:flex;flex-direction:column;gap:6px;}
 .d-module-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px;}
@@ -273,43 +277,123 @@ const OS_MODULES = {
 }
 
 const MODULE_DESC = {
-  'Companies & People':             'Central directory for all companies and contacts.',
-  'Client Accounts':                'Active client records, health status, and account details.',
-  'Team Members & Staff Directory': 'All staff records, roles, and access levels.',
-  'Company Profile':                'Your own company details, branding, and settings.',
-  'Dashboard Hub':                  'Workspace homepage and navigation centre.',
-  'CRM, Pipeline & Deals':          'Every lead from first contact to close — source, stage, and timeline fully tracked.',
-  'Product & Pricing Catalogue':    'Structured product library that powers all quotations and deal packages.',
-  'Billing & Payment Tracker':      'Quotation, invoice, receipt, and payment status end to end — nothing falls through.',
-  'Retainer Management':            'All recurring client agreements, billing cycles, and renewal dates in one place.',
-  'Meetings & Calls Log':           'Full history of every sales call and client meeting with notes and follow-ups.',
-  'Project & Task Management':      'Every project and task tracked from kickoff to delivery with deadlines and owners.',
-  'Client Delivery Tracker':        'Live visibility over every active client engagement — what is due, what is at risk.',
-  'Approval & QC Tracker':          'Client sign-offs, revision rounds, and scope change approvals all tracked.',
-  'Internal Meeting & Action Log':  'Action items and decisions from internal meetings captured and assigned.',
-  'Resource & Capacity Planner':    'See who is overloaded before it becomes a problem — workload mapped per person.',
-  'Content Production Tracker':     'From brief to published — full content pipeline with assignees and due dates.',
-  'Campaign Tracker':               'All active campaigns tracked with budgets, channels, and live performance data.',
-  'Lead Generation Tracker':        'Every lead source, channel, and conversion tracked end to end.',
-  'Marketing Performance Tracker':  'Campaign KPIs and channel performance in one view — no spreadsheet needed.',
-  'Brand & Asset Library':          'Central library for all brand assets, guidelines, and approved materials.',
-  'Finance Ledger':                 'Every transaction recorded and categorised by type, project, and period.',
-  'Cash Flow Tracker':              'Money in, money out — real-time liquidity view with projected balances.',
-  'Invoice & Payment Tracker':      'Outstanding invoices, collection status, and overdue alerts.',
-  'Payroll & Staff Costs':          'Staff salary, EPF, SOCSO, and payroll records all in one database.',
-  'Profit & Loss Tracker':          'Revenue vs. costs tracked by month and project — know your margins.',
-  'Hiring Pipeline':                'Full applicant tracking from first contact through offer and hire.',
-  'Team Onboarding Tracker':        'Structured onboarding checklist and timeline for every new hire.',
-  'Performance & Goals':            'OKRs, review cycles, and performance history tracked per team member.',
-  'Leave & Availability':           'Leave requests, approvals, and real-time team capacity visibility.',
-  'Role & Compensation Log':        'Role definitions, salary bands, and pay change history all recorded.',
-  'Client Health Tracker':          'Engagement score, satisfaction signals, and churn risk per active client.',
-  'Client Communication Log':       'All touchpoints with every client — calls, emails, and check-ins in one timeline.',
-  'Renewal Pipeline':               'Retainer renewals tracked before they lapse — never lose a client to admin.',
-  'Upsell Opportunity Tracker':     'Expansion opportunities mapped by existing client with deal value and stage.',
-  'Retainer Health Tracker':        'Delivery status, utilisation rate, and value metrics per active retainer.',
-  'Team OS':        'Full HR infrastructure for growing teams. Covers every stage from recruitment to offboarding — hiring pipeline, structured onboarding, performance tracking, leave management, and role & compensation records. Requires Base OS only, no other OS dependency.',
-  'Retention OS':   'Client retention layer that sits on top of Revenue OS. Tracks client health, manages renewal pipelines, surfaces upsell opportunities, and monitors retainer performance — so you never lose a client to admin or neglect. Revenue OS is a hard technical dependency; both can be purchased and installed together from day one.',
+
+  // ── Micro Installs ────────────────────────────────────────────────────────
+  'Micro Install — 1 Module': `Entry-level install for businesses that want to solve one specific problem without committing to a full OS.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Includes</span>Base OS (complimentary) + 1 module of your choice from any Core OS</div>
+  <div class="d-about-row"><span class="d-about-row-label">Best for</span>Testing the system before expanding, or fixing a single bottleneck fast</div>
+  <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Every ringgit paid here is credited toward your full OS at any time</div>
+</div>
+<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+
+  'Micro Install — 2 Modules': `Two-module install that covers a pair of related workflows. Base OS always included.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Includes</span>Base OS (complimentary) + 2 modules of your choice from any Core OS</div>
+  <div class="d-about-row"><span class="d-about-row-label">Popular</span>CRM + Billing · Project Management + Client Delivery · Content + Campaign</div>
+  <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Full credit applied if you expand to a complete OS later</div>
+</div>
+<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+
+  'Micro Install — 3 Modules': `Three-module install — the most complete Micro Install option before stepping into a full OS.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Includes</span>Base OS (complimentary) + 3 modules of your choice from any Core OS</div>
+  <div class="d-about-row"><span class="d-about-row-label">Popular</span>Sales Starter: CRM + Billing + Catalogue · Ops Starter: Projects + Delivery + Approval · Content Starter: Campaign + Content + Brand</div>
+  <div class="d-about-row"><span class="d-about-row-label">Upgrade</span>Full credit applied if you expand to a complete OS later</div>
+</div>
+<div class="d-about-note">At 4+ modules, you're automatically redirected to a full OS install at the bundle price.</div>`,
+
+  // ── Core OS Packages ──────────────────────────────────────────────────────
+  'Revenue OS': `Fixes pipeline chaos, invisible deals, and payment blind spots. The core commercial layer for any service business.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Lead to close tracking, deal pipeline, product catalogue, invoicing, payment collection, and retainer management</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Deals falling through the cracks, no visibility on outstanding payments, quoting from memory</div>
+  <div class="d-about-row"><span class="d-about-row-label">Unlocks</span>Retention OS (client retention layer, can be installed together from day one)</div>
+</div>`,
+
+  'Operations OS': `Fixes unclear ownership, inconsistent delivery, and no process visibility across projects and clients.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Project and task management, client delivery tracking, approval and QC, internal meeting logs, and team capacity</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Not knowing what's due, who owns what, or whether a project is on track</div>
+  <div class="d-about-row"><span class="d-about-row-label">Pairs with</span>Revenue OS — together they cover the full client lifecycle from sale to delivery</div>
+</div>`,
+
+  'Marketing OS': `Fixes scattered campaigns, content chaos, and zero visibility over lead generation and marketing performance.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Content production pipeline, campaign tracking, lead generation, performance reporting, and brand asset library</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Content dropped without publishing, campaign results in five different spreadsheets, no clear picture of what's working</div>
+  <div class="d-about-row"><span class="d-about-row-label">Agency?</span>Add the Agency Upgrade Pack for client campaign management, approval workflows, and reporting</div>
+</div>`,
+
+  'Finance OS': `Fixes invisible cash flow, missed payments, and payroll chaos. Real financial visibility for service businesses.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Finance ledger, cash flow tracking, invoice and payment status, payroll and staff costs, and profit & loss</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Not knowing your margins, chasing payments with no system, payroll done manually every month</div>
+  <div class="d-about-row"><span class="d-about-row-label">Pairs with</span>Revenue OS for a complete commercial and financial picture in one workspace</div>
+</div>`,
+
+  'Team OS': `Full HR infrastructure for growing teams — from first hire through to performance and compensation.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Hiring pipeline, structured onboarding, performance and goals, leave and availability, and role & compensation records</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Onboarding done in WhatsApp, no record of what was agreed on salaries, team capacity invisible to managers</div>
+  <div class="d-about-row"><span class="d-about-row-label">Requires</span>Base OS only — no other OS dependency. Can be added at any time.</div>
+</div>`,
+
+  'Retention OS': `Client retention layer that protects and grows existing accounts — built on top of Revenue OS.
+<div class="d-about-rows">
+  <div class="d-about-row"><span class="d-about-row-label">Covers</span>Client health tracking, communication log, renewal pipeline, upsell opportunity tracker, and retainer health</div>
+  <div class="d-about-row"><span class="d-about-row-label">Solves</span>Clients going quiet before churning, renewals missed, no system to track upsell opportunities per account</div>
+  <div class="d-about-row"><span class="d-about-row-label">Requires</span>Revenue OS (hard technical dependency — but both can be purchased and installed together from day one)</div>
+</div>`,
+
+  // ── Base OS Modules ───────────────────────────────────────────────────────
+  'Companies & People':             'Central directory for all companies and contact persons in your workspace. Every other database links back to these records.',
+  'Client Accounts':                'Active client records with health status, account details, and OS install overview. Activated automatically when a deposit is received.',
+  'Team Members & Staff Directory': 'All staff records with roles, access levels, and contact details. Foundation for task assignment, capacity planning, and payroll.',
+  'Company Profile':                'Your own company details, branding, bank info, and workspace settings — referenced across all generated documents.',
+  'Dashboard Hub':                  'Workspace homepage and navigation centre. The entry point for every OS layer installed.',
+
+  // ── Revenue OS Modules ────────────────────────────────────────────────────
+  'CRM, Pipeline & Deals':          'Every lead from first contact to close — source, stage, deal value, and timeline fully tracked. Powers quotations, invoices, and project creation.',
+  'Product & Pricing Catalogue':    'Structured product and service library that powers all quotations. Keeps pricing consistent and makes quoting fast.',
+  'Billing & Payment Tracker':      'Quotations, invoices, receipts, and payment status from end to end. Nothing falls through — every amount owed and received is recorded.',
+  'Retainer Management':            'All recurring client agreements, billing cycles, renewal dates, and retainer value in one place. Required by Retention OS.',
+  'Meetings & Calls Log':           'Full history of every sales call and client meeting with notes, attendees, and follow-up actions attached.',
+
+  // ── Operations OS Modules ─────────────────────────────────────────────────
+  'Project & Task Management':      'Every project and task tracked from kickoff to delivery — with phases, deadlines, assignees, and status all in one database.',
+  'Client Delivery Tracker':        'Live visibility over every active client engagement. See what is due, what is at risk, and what needs attention before it becomes a problem.',
+  'Approval & QC Tracker':          'Client sign-offs, revision rounds, and scope change approvals all tracked with timestamps and decision records.',
+  'Internal Meeting & Action Log':  'Action items and decisions from internal meetings captured, assigned, and tracked so nothing is lost after the call ends.',
+  'Resource & Capacity Planner':    'See who is overloaded before it becomes a problem. Workload mapped per team member across all active projects.',
+
+  // ── Marketing OS Modules ──────────────────────────────────────────────────
+  'Content Production Tracker':     'From brief to published — full content pipeline with status, assignees, due dates, and content type tracked per piece.',
+  'Campaign Tracker':               'All active campaigns tracked with budget, channels, timeline, and live performance data in one view.',
+  'Lead Generation Tracker':        'Every lead source, channel, and conversion tracked end to end. Feeds into the CRM when Revenue OS is installed.',
+  'Marketing Performance Tracker':  'Campaign KPIs and channel performance in one view — no spreadsheet needed. Compare what is working across periods.',
+  'Brand & Asset Library':          'Central library for all brand assets, guidelines, logos, and approved creative materials. Always one place to find the right file.',
+
+  // ── Finance OS Modules ────────────────────────────────────────────────────
+  'Finance Ledger':                 'Every transaction recorded and categorised by type, project, and period. The single source of truth for all money movement.',
+  'Cash Flow Tracker':              'Money in, money out — real-time liquidity view with projected balances so you always know where you stand.',
+  'Invoice & Payment Tracker':      'Outstanding invoices, collection status, and overdue alerts. Works alongside Billing & Payment Tracker when Revenue OS is also installed.',
+  'Payroll & Staff Costs':          'Staff salary, EPF, SOCSO, and payroll records all in one database. Links to Team Members for headcount tracking.',
+  'Profit & Loss Tracker':          'Revenue vs. costs tracked by month and project. Know your actual margins, not just your revenue number.',
+
+  // ── Team OS Modules ───────────────────────────────────────────────────────
+  'Hiring Pipeline':                'Full applicant tracking from first contact through offer letter and hire. Keeps every candidate's status and history in one place.',
+  'Team Onboarding Tracker':        'Structured onboarding checklist and timeline for every new hire. No more onboarding from memory or WhatsApp threads.',
+  'Performance & Goals':            'OKRs, review cycles, and performance history tracked per team member. Makes performance conversations structured and documented.',
+  'Leave & Availability':           'Leave requests, approvals, and real-time team capacity visibility. Know who is available before assigning new work.',
+  'Role & Compensation Log':        'Role definitions, salary bands, and pay change history all recorded. Removes ambiguity around compensation decisions.',
+
+  // ── Retention OS Modules ──────────────────────────────────────────────────
+  'Client Health Tracker':          'Engagement score, satisfaction signals, and churn risk per active client. Spot at-risk accounts before they go quiet.',
+  'Client Communication Log':       'All touchpoints with every client — calls, emails, and check-ins in one timeline. No more digging through inboxes to piece together history.',
+  'Renewal Pipeline':               'Retainer renewals tracked and surfaced before they lapse. Requires Retainer Management from Revenue OS.',
+  'Upsell Opportunity Tracker':     'Expansion opportunities mapped by existing client — with deal value, stage, and probability tracked per account.',
+  'Retainer Health Tracker':        'Delivery status, utilisation rate, and value metrics per active retainer. Requires Retainer Management from Revenue OS.',
 }
 
 const MODULE_DBS = {
