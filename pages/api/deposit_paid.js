@@ -26,6 +26,14 @@ function extractPackageInfo(props) {
   return { pkg: osSel, addons }
 }
 
+// ── Map Lead Entry Point → Client Origin ──────────────────────────────────
+function mapClientOrigin(entryPoint = "") {
+  if (!entryPoint) return null
+  if (entryPoint === "Cold Outreach")  return "Outbound"
+  if (entryPoint === "Referral Direct") return "Referral"
+  return "Inbound"  // Notion Form, Website Form, WhatsApp Direct, LinkedIn DM, etc.
+}
+
 function cleanPhone(phone = "") {
   const digits = phone.replace(/\D/g, "")
   return digits.startsWith("0") ? "6" + digits : digits
@@ -72,7 +80,7 @@ function buildWaUrl(phone, companyName, formUrl) {
 // ── Create a Client Account record in the Client Accounts DB ─────────────
 // Called when a deposit is marked as received. Creates the post-install client record
 // and links it back to the Invoice's "Client Account" relation field.
-async function createClientAccount({ invoiceId, companyId, companyName, dealId, leadId, picId, projectId, packages, formUrl, today, token }) {
+async function createClientAccount({ invoiceId, companyId, companyName, dealId, leadId, picId, projectId, packages, formUrl, clientOrigin, today, token }) {
   try {
     const osInstalled = (packages || []).map(n => ({ name: n }))
 
@@ -81,7 +89,8 @@ async function createClientAccount({ invoiceId, companyId, companyName, dealId, 
       "Status":        { select: { name: "Active" } },
       "Client Health": { select: { name: "🟢 Green" } },
       "Install Date":  { date: { start: today } },
-      ...(formUrl    ? { "Onboarding Form": { url: formUrl } } : {}),
+      ...(clientOrigin ? { "Client Origin": { select: { name: clientOrigin } } } : {}),
+      ...(formUrl      ? { "Onboarding Form": { url: formUrl } } : {}),
       ...(companyId  ? { "Company":         { relation: [{ id: companyId  }] } } : {}),
       ...(dealId     ? { "Linked Deal":     { relation: [{ id: dealId     }] } } : {}),
       ...(leadId     ? { "Linked Lead":     { relation: [{ id: leadId     }] } } : {}),
@@ -98,10 +107,10 @@ async function createClientAccount({ invoiceId, companyId, companyName, dealId, 
     await patchPage(invoiceId, { "Client Account": { relation: [{ id: caId }] } }, token)
       .catch(e => console.warn("[deposit_paid] link invoice→client account:", e.message))
 
-    // Link Project → Client Account (if project exists)
+    // Back-link Project → Client Account
     if (projectId) {
       await patchPage(projectId, { "Client Account": { relation: [{ id: caId }] } }, token)
-        .catch(() => {})
+        .catch(e => console.warn("[deposit_paid] link project→client account:", e.message))
     }
 
     return caId
@@ -207,9 +216,10 @@ async function run(payload) {
   // OR from: Quotation.Deal Source → Deals DB (existing Deal)
   // • Lead  → mark Lead "Converted", spin up a new Deal at "Building"
   // • Deal  → advance Deal to "Building" directly
-  let dealId      = null  // will be set if we create or find a Deal
-  let formPackage = ""    // OS package name for onboarding form URL
-  let formAddons  = []    // add-on names for onboarding form URL
+  let dealId        = null  // will be set if we create or find a Deal
+  let formPackage   = ""    // OS package name for onboarding form URL
+  let formAddons    = []    // add-on names for onboarding form URL
+  let clientOrigin  = null  // mapped from Lead Entry Point
 
   if (leadId) {
     try {
@@ -232,6 +242,9 @@ async function run(payload) {
         // Capture for onboarding form URL (prefer Lead's OS Interest + Add-ons)
         ;({ pkg: formPackage, addons: formAddons } = extractPackageInfo(lp))
         if (!formPackage) formPackage = osInterest
+
+        // Map Entry Point → Client Origin
+        clientOrigin = mapClientOrigin(lp["Entry Point"]?.select?.name || "")
 
         // ── Check if a Deal was already created (e.g., via "Convert to Deal") ──
         // If so, reuse it instead of creating a duplicate.
@@ -408,7 +421,7 @@ async function run(payload) {
   formAddons.forEach(a => packages.push(a))
 
   const clientAccountId = await createClientAccount({
-    invoiceId:   pageId,
+    invoiceId: pageId,
     companyId,
     companyName,
     dealId,
@@ -417,6 +430,7 @@ async function run(payload) {
     projectId,
     packages,
     formUrl,
+    clientOrigin,
     today,
     token,
   })
